@@ -319,7 +319,7 @@ TEST_CASE ("release curves", "[comp]")
     CHECK (reductionAfterRelease (false, true) == Catch::Approx (10.33).margin (0.1));
 }
 
-static double worstAliasDb (int oversampling)
+static double worstAliasDb (int oversampling, double* worstHz = nullptr)
 {
     constexpr double sampleRate = 44100.0;
 
@@ -343,8 +343,18 @@ static double worstAliasDb (int oversampling)
         const auto wrapped = std::fmod ((double) harmonic * 15000.0, sampleRate);
         const auto alias = std::min (wrapped, sampleRate - wrapped);
 
-        if (std::abs (alias - 15000.0) > 1.0 && alias > 1.0)
-            worst = std::max (worst, levelAt (signal.left, 44100, alias, sampleRate));
+        if (std::abs (alias - 15000.0) < 1.0 || alias < 1.0)
+            continue;
+
+        const auto level = levelAt (signal.left, 44100, alias, sampleRate);
+
+        if (level > worst)
+        {
+            worst = level;
+
+            if (worstHz != nullptr)
+                *worstHz = alias;
+        }
     }
 
     return worst;
@@ -352,7 +362,11 @@ static double worstAliasDb (int oversampling)
 
 TEST_CASE ("aliasing is below -90 dBFS at 4x", "[comp]")
 {
-    REQUIRE (worstAliasDb (CompDsp::x4) < -90.0);
+    double worstHz = 0.0;
+    const auto worst = worstAliasDb (CompDsp::x4, &worstHz);
+
+    INFO ("worst alias at " << worstHz << " Hz");
+    REQUIRE (worst < -90.0);
 }
 
 TEST_CASE ("limiter holds the ceiling at extreme levels", "[comp]")

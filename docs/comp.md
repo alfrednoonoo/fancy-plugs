@@ -16,11 +16,10 @@ Everything inside the brackets runs at the oversampled rate.
 
 - **Detector input:** Main L+R, Main L, Main R, Sidechain L+R, Sidechain L, Sidechain R, Mid, Side. L+R modes detect each channel separately, and Link channels decides how they combine. The others feed both channels the same detector signal.
 - **Detector filters:** 2nd-order state-variable high-pass and low-pass. The filters switch out completely at their extremes: Highpass at 20 Hz, Lowpass at 24 kHz.
-- **RMS size:** a one-pole average of the squared detector signal. 0 ms is peak detection. A one-pole average is used in place of a sliding window, so the size can move smoothly without recomputing a window on the audio thread.
+- **RMS size:** a one-pole average of the squared detector signal. 0 ms is peak detection. A one-pole average is used in place of a sliding window, so the size can move smoothly without recomputing a window on the audio thread. With oversampling on, the average is never shorter than 20 µs. Without that minimum, the log of an instantaneous square has corners at each signal peak, and their harmonics fold into the gain.
 - **Link:** when Link channels is on, each channel's level moves towards the louder channel by Link amount, default 100 %.
 - **Gain computer:** log domain, with a quadratic soft knee centred on Threshold over Knee dB. **Weird** moves the knee so it starts at Threshold and ends Knee dB above it, so compression arrives later.
 - **Ballistics:** see below.
-- **Gain smoothing:** with oversampling on, the gain reduction passes through a 2nd-order 20 kHz low-pass before it is applied. The gain has sharp corners at each signal peak, and without this their harmonics fold back into the audio.
 - **Make-up:** Auto make-up adds half of the gain reduction that a 0 dBFS signal would get: `0.5 × (1 - 1/ratio) × -threshold`.
 - **Preview filter:** replaces the wet signal with the filtered detector signal.
 - **Feedback detection:** the detector reads the previous output sample of the compressor in place of the main input. Sidechain inputs are unaffected.
