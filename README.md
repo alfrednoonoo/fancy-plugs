@@ -26,6 +26,6 @@ Add `%USERPROFILE%\VST3-Dev` to REAPER's VST plug-in paths once, then after each
 
 ## Attribution
 
-UI design based on "ReaPlugs (vst GUI)" by Eugene Reznik, CC BY 4.0 â€” https://www.figma.com/community/file/967866927752067729. Modified from the original.
+UI design based on "ReaPlugs (vst GUI)" by Eugene Reznik, CC BY 4.0 — https://www.figma.com/community/file/967866927752067729. Modified from the original.
 
 The Inter typeface is used under the SIL Open Font License; see `assets/fonts/Inter-LICENSE.txt`.
