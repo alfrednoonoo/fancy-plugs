@@ -52,7 +52,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ runner.os }}-${{ env.PLUGIN }}
+          key: ${{ github.job }}-${{ runner.os }}
           max-size: 2G
 
       - name: Configure

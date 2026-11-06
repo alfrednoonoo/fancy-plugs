@@ -32,7 +32,7 @@ template <typename Processor>
 bool renderPlugin (const juce::String& slug, const juce::File& outputDir)
 {
     Processor processor;
-    const std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditorIfNeeded());
+    const std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditorAndMakeActive());
 
     if (editor == nullptr)
         return false;
