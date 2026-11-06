@@ -68,14 +68,14 @@ public:
     struct Style
     {
         float faceDiameter, triangleSide, triangleDistance, arcThickness;
-        float labelHeight;
+        float labelHeight, valueHeight;
         bool showText;
     };
 
-    static constexpr Style largeStyle { 70.0f, 12.5f, 22.0f, 2.5f, 14.0f, true };
-    static constexpr Style mediumStyle { 42.0f, 10.0f, 11.0f, 2.5f, 12.5f, true };
-    static constexpr Style smallStyle { 28.0f, 7.0f, 7.5f, 2.0f, 11.5f, true };
-    static constexpr Style headerStyle { 16.0f, 5.0f, 4.0f, 1.5f, 0.0f, false };
+    static constexpr Style largeStyle { 70.0f, 12.5f, 22.0f, 2.5f, 14.0f, 14.0f, true };
+    static constexpr Style mediumStyle { 42.0f, 10.0f, 11.0f, 2.5f, 12.5f, 12.0f, true };
+    static constexpr Style smallStyle { 28.0f, 7.0f, 7.5f, 2.0f, 11.5f, 11.5f, true };
+    static constexpr Style headerStyle { 17.0f, 5.0f, 4.0f, 1.5f, 0.0f, 0.0f, false };
 
     Knob (juce::RangedAudioParameter& parameter, const juce::String& label, juce::Colour accent, const Style& style, bool bipolar = false);
 

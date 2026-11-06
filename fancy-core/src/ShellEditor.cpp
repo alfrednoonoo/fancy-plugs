@@ -132,7 +132,7 @@ void ShellEditor::resized()
 void ShellEditor::layoutHeader()
 {
     const auto compact = headerStyle == HeaderStyle::compact;
-    constexpr int top = 8, itemHeight = 17, gap = 5;
+    constexpr int top = 6, itemHeight = 16, gap = 5;
 
     int x = compact ? 11 : 12;
 
@@ -148,7 +148,7 @@ void ShellEditor::layoutHeader()
     place (ioPill, compact ? 27 : 58);
 
     powerPill.setBounds (width - 43, top, 32, itemHeight);
-    outputKnob.setBounds (width - 72, 4, 24, 24);
+    outputKnob.setBounds (width - 72, 2, 24, 24);
 }
 
 void ShellEditor::timerCallback()

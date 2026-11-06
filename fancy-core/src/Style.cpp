@@ -85,6 +85,7 @@ juce::Path gear (juce::Rectangle<float> area)
 
     struct Corner { float offset, radius; };
     const Corner profile[] { { -0.38f, inner }, { -0.24f, outer }, { 0.24f, outer }, { 0.38f, inner } };
+    bool started = false;
 
     juce::Path path;
 
@@ -94,10 +95,12 @@ juce::Path gear (juce::Rectangle<float> area)
         {
             const auto point = centre.getPointOnCircumference (corner.radius, ((float) tooth + corner.offset) * step);
 
-            if (path.isEmpty())
+            if (! started)
                 path.startNewSubPath (point);
             else
                 path.lineTo (point);
+
+            started = true;
         }
     }
 

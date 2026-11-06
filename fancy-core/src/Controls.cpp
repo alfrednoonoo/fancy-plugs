@@ -190,7 +190,7 @@ void Knob::paint (juce::Graphics& g)
         g.setColour (colours::textPrimary);
         g.drawText (labelText, bounds.withHeight (16.0f), juce::Justification::centred, false);
 
-        g.setFont (font (Weight::regular, 12.0f));
+        g.setFont (font (Weight::regular, knobStyle.valueHeight));
         g.setColour (accentColour);
         g.drawText (getValueText(), bounds.withTop (bounds.getBottom() - 16.0f), juce::Justification::centred, false);
     }
@@ -370,7 +370,7 @@ void PillButton::setText (const juce::String& text)
 void PillButton::paint (juce::Graphics& g)
 {
     paintPill (g, getLocalBounds().toFloat(), colours::grey3);
-    g.setFont (font (Weight::regular, 12.0f));
+    g.setFont (font (Weight::regular, buttonText == "+" ? 16.0f : 12.0f));
     g.setColour (colours::textPrimary);
     g.drawText (buttonText, getLocalBounds(), juce::Justification::centred, false);
 }
