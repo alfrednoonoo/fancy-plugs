@@ -1,0 +1,13 @@
+Filters: [measure]
+Randomness seeded to: 2253612292
+Kicker CPU at 48 kHz, 128 samples, stereo: 0.1491 % (target < 0.5 %)
+Wet-only response, Freq 50 Hz, Q 2, tone   20.0 Hz:  -13.90 dB
+Wet-only response, Freq 50 Hz, Q 2, tone   30.0 Hz:   -7.71 dB
+Wet-only response, Freq 50 Hz, Q 2, tone   50.0 Hz:   -0.04 dB
+Wet-only response, Freq 50 Hz, Q 2, tone   70.0 Hz:   -4.60 dB
+Wet-only response, Freq 50 Hz, Q 2, tone  100.0 Hz:  -10.00 dB
+Wet-only response, Freq 50 Hz, Q 2, tone  240.0 Hz:  -19.31 dB
+===============================================================================
+test cases: 2 | 2 passed
+assertions: - none -
+

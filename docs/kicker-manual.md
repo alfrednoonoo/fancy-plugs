@@ -1,0 +1,46 @@
+# Fancy Kicker manual
+
+Fancy Kicker adds a focused low-frequency boost to a kick or bass. It filters a narrow band around Freq and mixes it back in with the original signal.
+
+## Controls
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Freq | 20–240 Hz | 50.0 Hz | Centre of the boosted band |
+| Wet | -inf to +12 dB | -12.0 dB | Level of the filtered band |
+| Dry | -inf to +12 dB | 0.0 dB | Level of the original signal |
+| Header knob | -24 to +12 dB | 0.0 dB | Output level, also shown in the EDIT drawer |
+| ON pill | | on | Bypass, with a short fade. The controls dim while it's off |
+
+### EDIT drawer
+
+Click **EDIT** to open it and **Done** to close it.
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Filter Q | 0.5–10 | 2.00 | Width of the band. Higher is narrower and rings longer |
+| Output | -24 to +12 dB | 0.0 dB | The same control as the header knob |
+| Mono below Freq | off/on | off | Sums the input to the filter to mono, so the added low end is identical in both channels. The dry signal stays stereo |
+| Soft clip | off/on | off | Rounds peaks at the output so they can't exceed 0 dBFS. It starts acting at about -3 dBFS |
+
+## Using the knobs
+
+- **Drag** up or down. Hold **Shift** for fine control.
+- **Double-click** to reset to the default.
+- **Ctrl-click** to type a value.
+- **Mouse wheel** to nudge, with **Shift** for smaller steps.
+- **Right-click** for the host's automation menu.
+
+## Presets and window size
+
+Use the dropdown to load a preset and **+** to save your own. User presets are stored in `%APPDATA%\Fancy Plugs\Fancy Kicker\Presets`.
+
+**Prm** lists the parameters, sets the UI size (100, 125, 150 or 200 %) and has the About box.
+
+## Latency and phase
+
+Latency is 0 samples at all settings. The filtered signal is minimum-phase, so it stays aligned with the dry signal at Freq, apart from a small phase lead from a 15 Hz filter that keeps DC and infrasonic energy out of the wet path. At 50 Hz, wet and dry at equal level sum to about +5.8 dB. The sum is smaller at the bottom of the Freq range.
+
+## Credits
+
+UI design based on "ReaPlugs (vst GUI)" by Eugene Reznik, CC BY 4.0 — https://www.figma.com/community/file/967866927752067729. Modified from the original.
