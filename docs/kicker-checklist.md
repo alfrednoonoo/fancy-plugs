@@ -29,6 +29,7 @@
 - [ ] Choosing a preset from the dropdown changes the settings.
 - [ ] **+** saves a preset, and it appears in the dropdown, including in a new instance.
 - [ ] Prm > UI size at 200 % resizes the window and everything stays sharp.
+- [ ] At 100 % the window is a comfortable size. It is 392 × 472, larger than the first build. Tell me if it feels too big.
 - [ ] Prm > About shows the design attribution.
 
 ## State

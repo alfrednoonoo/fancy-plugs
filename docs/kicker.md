@@ -53,6 +53,6 @@ XML with a `stateVersion` attribute (currently 1) plus `uiScale` and `presetName
 
 ## Layout
 
-Base window is 265 × 315, measured from `reference/04__kicker.png` with the host title bar removed. In and Out are each a stereo pair of bars with one readout per pair, as in the mockup.
+Base window is 392 × 472, the Figma Kicker frame without its 22 px host title bar, and all positions come from that frame. In and Out are each a stereo pair of bars with one readout per pair.
 
 The EDIT drawer opens over the left panel, so the window and main layout don't change.
