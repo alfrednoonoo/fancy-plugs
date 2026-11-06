@@ -24,6 +24,20 @@ public:
         a2 = (1.0 - alpha) / a0;
     }
 
+    void setButterworthLowPass (double frequency, double sampleRate) noexcept
+    {
+        const auto w = 2.0 * std::numbers::pi * frequency / sampleRate;
+        const auto cosW = std::cos (w);
+        const auto alpha = std::sin (w) * std::numbers::sqrt2 * 0.5; // sin(w) / (2Q), Q = 1/sqrt(2)
+        const auto a0 = 1.0 + alpha;
+
+        b0 = (1.0 - cosW) * 0.5 / a0;
+        b1 = (1.0 - cosW) / a0;
+        b2 = b0;
+        a1 = -2.0 * cosW / a0;
+        a2 = (1.0 - alpha) / a0;
+    }
+
     void reset() noexcept
     {
         z1 = z2 = 0.0;

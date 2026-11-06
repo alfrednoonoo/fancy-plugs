@@ -2,10 +2,10 @@
 
 #include <fancy/dsp/Biquad.h>
 #include <fancy/dsp/Smoother.h>
+#include <fancy/dsp/Svf.h>
 
 #include <algorithm>
 #include <cmath>
-#include <numbers>
 
 // See docs/kicker.md. Contains no JUCE types, so tests can drive it directly.
 class KickerDsp
@@ -44,8 +44,8 @@ public:
 
     void reset()
     {
-        for (auto& state : svf)
-            state = {};
+        for (auto& filter : svf)
+            filter.reset();
 
         for (auto& filter : subsonic)
             filter.reset();
@@ -88,7 +88,7 @@ public:
                 const auto in = (double) channels[ch][i];
 
                 // The filters keep running under bypass, so they are ready when it ends.
-                const auto wetOut = subsonic[ch].process (tick (svf[ch], in + (mid - in) * mono));
+                const auto wetOut = subsonic[ch].process (svf[ch].tick (coefficients, in + (mid - in) * mono).band * coefficients.k);
 
                 if (bypass >= 1.0)
                     continue;
@@ -117,11 +117,6 @@ public:
     }
 
 private:
-    struct SvfState
-    {
-        double ic1 = 0.0, ic2 = 0.0;
-    };
-
     template <typename Assign>
     void applyTargets (const Targets& targets, Assign assign)
     {
@@ -139,43 +134,25 @@ private:
 
     void updateCoefficients (double logHz, double logOfQ) noexcept
     {
-        const auto g = std::tan (std::numbers::pi * std::exp (logHz) / sampleRate);
-
-        k = std::exp (-logOfQ);
-        a1 = 1.0 / (1.0 + g * (g + k));
-        a2 = g * a1;
-        a3 = g * a2;
-    }
-
-    // Returns the constant-peak band-pass output.
-    double tick (SvfState& state, double in) const noexcept
-    {
-        const auto v3 = in - state.ic2;
-        const auto v1 = a1 * state.ic1 + a2 * v3;
-        const auto v2 = state.ic2 + a2 * state.ic1 + a3 * v3;
-
-        state.ic1 = 2.0 * v1 - state.ic1;
-        state.ic2 = 2.0 * v2 - state.ic2;
-
-        return k * v1;
+        coefficients.set (std::exp (logHz), std::exp (logOfQ), sampleRate);
     }
 
     void guardAgainstBadInput() noexcept
     {
         for (int ch = 0; ch < 2; ++ch)
         {
-            if (! std::isfinite (svf[ch].ic1) || ! std::isfinite (svf[ch].ic2) || ! subsonic[ch].isFinite())
+            if (! svf[ch].isFinite() || ! subsonic[ch].isFinite())
             {
-                svf[ch] = {};
+                svf[ch].reset();
                 subsonic[ch].reset();
             }
         }
     }
 
     double sampleRate = 48000.0;
-    double k = 0.5, a1 = 1.0, a2 = 0.0, a3 = 0.0;
 
-    SvfState svf[2];
+    fancy::dsp::SvfCoefficients coefficients;
+    fancy::dsp::Svf svf[2];
     fancy::dsp::Biquad subsonic[2];
 
     fancy::dsp::Smoother logFrequency, logQ, wet, dry, output, monoAmount, softClipAmount, bypassAmount;

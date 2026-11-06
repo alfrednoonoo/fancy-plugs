@@ -25,6 +25,14 @@ private:
 class InOutMeter final : public juce::Component
 {
 public:
+    // Vertical layout, from each plugin's Figma frame. The width is the same everywhere.
+    struct Geometry
+    {
+        float wellBottom, zeroDbY, pixelsPerDb, readoutY;
+    };
+
+    explicit InOutMeter (const Geometry& geometry);
+
     void update (dsp::MeterTap& input, dsp::MeterTap& output, float seconds);
 
     // Sets levels directly, for rendered screenshots.
@@ -33,6 +41,10 @@ public:
     void paint (juce::Graphics&) override;
 
 private:
+    float yForDb (float db) const;
+    void paintBar (juce::Graphics&, float x, const MeterChannel&) const;
+
+    Geometry layout;
     MeterChannel channels[4];
 };
 

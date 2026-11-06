@@ -14,15 +14,9 @@ public:
     void showPreview (bool drawerOpen);
 
 private:
-    class Panels final : public juce::Component
-    {
-    public:
-        void paint (juce::Graphics&) override;
-    };
-
     void onTick (float seconds) override;
 
-    Panels panels;
+    fancy::ui::CaptionPanels panels;
     fancy::ui::Knob freqKnob, wetKnob, dryKnob;
     fancy::ui::EditLink editLink;
     fancy::ui::InOutMeter meter;

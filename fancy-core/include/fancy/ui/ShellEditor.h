@@ -7,6 +7,19 @@
 namespace fancy::ui
 {
 
+// The two-tone body shared by Kicker and Exciter, with the plugin name as a caption.
+class CaptionPanels final : public juce::Component
+{
+public:
+    CaptionPanels (const juce::String& caption, int leftPanelWidth, int captionY);
+
+    void paint (juce::Graphics&) override;
+
+private:
+    juce::String captionText;
+    int leftWidth, captionTop;
+};
+
 // Link with a gear icon that opens a plugin's EDIT drawer.
 class EditLink final : public juce::Component
 {

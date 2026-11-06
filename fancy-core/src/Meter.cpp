@@ -8,37 +8,40 @@ namespace fancy::ui
 namespace
 {
 // Geometry from the Figma LevelController/InOut component, relative to the panel.
-constexpr float wellTop = 49.0f, wellBottom = 364.0f;
-constexpr float zeroDbY = 76.3f;
-constexpr float pixelsPerDb = 4.829f;
+constexpr float wellTop = 49.0f;
 constexpr float barWidth = 8.0f, barGap = 1.0f, wellWidth = 17.0f;
 constexpr float inX = 46.5f, outX = 80.5f;
 constexpr float scaleRight = 37.0f, gridLeft = 39.0f, gridRight = 96.0f;
 
-float yForDb (float db)
+juce::String readout (float db)
 {
-    return juce::jlimit (wellTop, wellBottom, zeroDbY - db * pixelsPerDb);
+    return db <= -60.0f ? juce::String ("-inf") : juce::String (db, 1);
+}
+} // namespace
+
+InOutMeter::InOutMeter (const Geometry& geometry)
+    : layout (geometry)
+{
 }
 
-void paintWell (juce::Graphics& g, float x)
+float InOutMeter::yForDb (float db) const
 {
-    g.setColour (colours::bgWell);
-    g.fillRoundedRectangle (x, wellTop, wellWidth, wellBottom - wellTop, 2.0f);
+    return juce::jlimit (wellTop, layout.wellBottom, layout.zeroDbY - db * layout.pixelsPerDb);
 }
 
-void paintBar (juce::Graphics& g, float x, const MeterChannel& channel)
+void InOutMeter::paintBar (juce::Graphics& g, float x, const MeterChannel& channel) const
 {
-    const juce::Rectangle<float> bar (x, wellTop, barWidth, wellBottom - wellTop);
+    const juce::Rectangle<float> bar (x, wellTop, barWidth, layout.wellBottom - wellTop);
     const auto top = yForDb (channel.level);
 
     g.setGradientFill (juce::ColourGradient (juce::Colour (0xffffcf07), 0.0f, yForDb (-6.0f),
-                                             juce::Colour (0xff00ff96), 0.0f, wellBottom, false));
+                                             juce::Colour (0xff00ff96), 0.0f, layout.wellBottom, false));
     g.fillRect (bar.withTop (top));
 
     if (channel.level > 0.0f)
     {
         g.setColour (colours::accentRed);
-        g.fillRect (bar.withTop (top).withBottom (zeroDbY));
+        g.fillRect (bar.withTop (top).withBottom (layout.zeroDbY));
     }
 
     if (channel.hold > -60.0f)
@@ -47,12 +50,6 @@ void paintBar (juce::Graphics& g, float x, const MeterChannel& channel)
         g.fillRect (bar.withTop (yForDb (channel.hold) - 0.5f).withHeight (1.0f));
     }
 }
-
-juce::String readout (float db)
-{
-    return db <= -60.0f ? juce::String ("-inf") : juce::String (db, 1);
-}
-} // namespace
 
 void MeterChannel::update (float peakGain, float seconds)
 {
@@ -112,8 +109,9 @@ void InOutMeter::paint (juce::Graphics& g)
         g.fillRect (gridLeft, y - 0.5f, gridRight - gridLeft, 1.0f);
     }
 
-    paintWell (g, inX);
-    paintWell (g, outX);
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (inX, wellTop, wellWidth, layout.wellBottom - wellTop, 2.0f);
+    g.fillRoundedRectangle (outX, wellTop, wellWidth, layout.wellBottom - wellTop, 2.0f);
 
     paintBar (g, inX, channels[0]);
     paintBar (g, inX + barWidth + barGap, channels[1]);
@@ -126,8 +124,8 @@ void InOutMeter::paint (juce::Graphics& g)
     const auto inPeak = juce::jmax (channels[0].hold, channels[1].hold);
     const auto outPeak = juce::jmax (channels[2].hold, channels[3].hold);
 
-    g.drawText (readout (inPeak), juce::Rectangle<float> (35.0f, 372.0f, 40.0f, 23.0f), juce::Justification::centred, false);
-    g.drawText (readout (outPeak), juce::Rectangle<float> (69.0f, 372.0f, 40.0f, 23.0f), juce::Justification::centred, false);
+    g.drawText (readout (inPeak), juce::Rectangle<float> (35.0f, layout.readoutY, 40.0f, 23.0f), juce::Justification::centred, false);
+    g.drawText (readout (outPeak), juce::Rectangle<float> (69.0f, layout.readoutY, 40.0f, 23.0f), juce::Justification::centred, false);
 }
 
 } // namespace fancy::ui

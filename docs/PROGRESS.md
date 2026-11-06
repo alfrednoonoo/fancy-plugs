@@ -4,8 +4,8 @@
 
 - Skeleton workflow: done.
 - `fancy-core`: done, except the Verb module card, which is deferred until Verb needs it.
-- Fancy Kicker: built and green in CI, **waiting for the REAPER check** in `docs/kicker-checklist.md` (§7 checks 3 and 7).
-- Next: Fancy Exciter, once the Kicker is signed off.
+- Fancy Kicker: done, signed off in REAPER by the user.
+- Fancy Exciter: in progress.
 
 Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42246329451 (commit `5635d38`).
 
@@ -15,11 +15,11 @@ Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42246329451
 |---|---|---|
 | 1 | Actions run green, artifact contains the plugin | Pass, run above |
 | 2 | pluginval strictness 10 | Pass, GUI tests on |
-| 3 | State survives a REAPER project reload | **Yours to do**; state round-trip and corrupted-state tests pass in CI |
+| 3 | State survives a REAPER project reload | Pass, confirmed by the user |
 | 4 | §5.4 tests | Pass, 15 test cases and 52,834 assertions; numbers in `docs/measurements/kicker.txt` |
 | 5 | Screenshots compared with the reference | Done against the Figma frame, see deviations; `docs/screens/kicker-vs-reference.png` shows Figma on the left and the build on the right |
 | 6 | CPU against the §4.11 target | Pass: 0.07–0.15 % against < 0.5 %, measured on CI runners with every option on |
-| 7 | Installed and confirmed in REAPER | **Yours to do** |
+| 7 | Installed and confirmed in REAPER | Pass, confirmed by the user |
 
 ## Figma
 

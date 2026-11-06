@@ -1,51 +1,32 @@
 #include "KickerProcessor.h"
 #include "KickerEditor.h"
 
-#include <fancy/Decibels.h>
-#include <fancy/plugin/ParamFormat.h>
+#include <fancy/plugin/ParamHelpers.h>
 
 namespace
 {
 constexpr float levelFloorDb = -60.0f;
-
-juce::NormalisableRange<float> logRange (float low, float high, float interval)
-{
-    return { low, high,
-             [] (float start, float end, float normalised) { return start * std::pow (end / start, normalised); },
-             [] (float start, float end, float value) { return std::log (value / start) / std::log (end / start); },
-             [interval] (float start, float end, float value) { return juce::jlimit (start, end, std::round (value / interval) * interval); } };
-}
-
-std::unique_ptr<juce::AudioParameterFloat> levelParameter (const juce::String& id, const juce::String& name, float low, float high, float defaultDb, float floorDb)
-{
-    return std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { id, 1 }, name, juce::NormalisableRange<float> (low, high, 0.1f), defaultDb,
-        juce::AudioParameterFloatAttributes {}
-            .withLabel ("dB")
-            .withStringFromValueFunction ([floorDb] (float value, int) { return fancy::formatDb (value, floorDb); })
-            .withValueFromStringFunction ([floorDb] (const juce::String& text) { return fancy::parseDb (text, floorDb); }));
-}
 
 fancy::FancyProcessor::Layout createLayout()
 {
     fancy::FancyProcessor::Layout layout;
 
     layout.add (std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { "freq", 1 }, "Freq", logRange (20.0f, 240.0f, 0.1f), 50.0f,
+        juce::ParameterID { "freq", 1 }, "Freq", fancy::logRange (20.0f, 240.0f, 0.1f), 50.0f,
         juce::AudioParameterFloatAttributes {}
             .withLabel ("Hz")
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatHz (value); })
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); })));
 
-    layout.add (levelParameter ("wet", "Wet", levelFloorDb, 12.0f, -12.0f, levelFloorDb));
-    layout.add (levelParameter ("dry", "Dry", levelFloorDb, 12.0f, 0.0f, levelFloorDb));
+    layout.add (fancy::levelParameter ("wet", "Wet", levelFloorDb, 12.0f, -12.0f, levelFloorDb));
+    layout.add (fancy::levelParameter ("dry", "Dry", levelFloorDb, 12.0f, 0.0f, levelFloorDb));
 
     layout.add (std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { "q", 1 }, "Filter Q", logRange (0.5f, 10.0f, 0.01f), 2.0f,
+        juce::ParameterID { "q", 1 }, "Filter Q", fancy::logRange (0.5f, 10.0f, 0.01f), 2.0f,
         juce::AudioParameterFloatAttributes {}
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2); })));
 
-    layout.add (levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
+    layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
 
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "monoBelow", 1 }, "Mono below Freq", false));
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "softClip", 1 }, "Soft clip", false));
@@ -65,10 +46,6 @@ std::vector<fancy::FactoryPreset> createPresets()
     };
 }
 
-double levelToGain (float db)
-{
-    return db <= levelFloorDb ? 0.0 : fancy::dbToGain ((double) db);
-}
 } // namespace
 
 KickerProcessor::KickerProcessor()
@@ -93,8 +70,8 @@ KickerDsp::Targets KickerProcessor::readTargets() const
     KickerDsp::Targets targets;
     targets.frequencyHz = (double) freq.load (std::memory_order_relaxed);
     targets.q = (double) q.load (std::memory_order_relaxed);
-    targets.wetGain = levelToGain (wet.load (std::memory_order_relaxed));
-    targets.dryGain = levelToGain (dry.load (std::memory_order_relaxed));
+    targets.wetGain = fancy::levelToGain (wet.load (std::memory_order_relaxed), levelFloorDb);
+    targets.dryGain = fancy::levelToGain (dry.load (std::memory_order_relaxed), levelFloorDb);
     targets.outputGain = fancy::dbToGain ((double) output.load (std::memory_order_relaxed));
     targets.monoWet = monoBelow.load (std::memory_order_relaxed) >= 0.5f;
     targets.softClip = softClip.load (std::memory_order_relaxed) >= 0.5f;

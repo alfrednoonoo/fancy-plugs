@@ -19,6 +19,27 @@ const char* const attribution =
     "https://www.figma.com/community/file/967866927752067729. Modified from the original.";
 } // namespace
 
+// CaptionPanels ---------------------------------------------------------------
+
+CaptionPanels::CaptionPanels (const juce::String& caption, int leftPanelWidth, int captionY)
+    : captionText (caption), leftWidth (leftPanelWidth), captionTop (captionY)
+{
+}
+
+void CaptionPanels::paint (juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    g.setColour (colours::bgBody);
+    g.fillRect (bounds.removeFromLeft (leftWidth));
+    g.setColour (colours::bgSection);
+    g.fillRect (bounds);
+
+    g.setColour (colours::textSecondary);
+    g.setFont (font (Weight::medium, 12.0f));
+    g.drawText (captionText, leftWidth - 160, captionTop, 136, 18, juce::Justification::centredRight, false);
+}
+
 // EditLink --------------------------------------------------------------------
 
 EditLink::EditLink (juce::Colour accent)

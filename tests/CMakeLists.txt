@@ -10,6 +10,10 @@ if("FANCY_HAS_KICKER=1" IN_LIST fancy_screen_defs)
     target_sources(fancy-tests PRIVATE KickerTests.cpp)
 endif()
 
+if("FANCY_HAS_EXCITER=1" IN_LIST fancy_screen_defs)
+    target_sources(fancy-tests PRIVATE ExciterTests.cpp)
+endif()
+
 target_include_directories(fancy-tests PRIVATE ${fancy_screen_includes})
 
 target_compile_definitions(fancy-tests PRIVATE

@@ -9,28 +9,18 @@ constexpr int baseWidth = 392;
 constexpr int baseHeight = 472;
 constexpr int leftPanelWidth = 264;
 constexpr int bodyHeight = baseHeight - ShellEditor::headerHeight;
+
+constexpr InOutMeter::Geometry meterGeometry { 364.0f, 76.3f, 4.829f, 372.0f };
 } // namespace
-
-void KickerEditor::Panels::paint (juce::Graphics& g)
-{
-    auto bounds = getLocalBounds();
-
-    g.setColour (colours::bgBody);
-    g.fillRect (bounds.removeFromLeft (leftPanelWidth));
-    g.setColour (colours::bgSection);
-    g.fillRect (bounds);
-
-    g.setColour (colours::textSecondary);
-    g.setFont (font (Weight::medium, 12.0f));
-    g.drawText ("Fancy Kicker", 104, 381, 136, 18, juce::Justification::centredRight, false);
-}
 
 KickerEditor::KickerEditor (KickerProcessor& processor)
     : ShellEditor (processor, baseWidth, baseHeight, HeaderStyle::compact),
+      panels ("Fancy Kicker", leftPanelWidth, 381),
       freqKnob (parameter ("freq"), "Freq", colours::uiRed, Knob::largeStyle),
       wetKnob (parameter ("wet"), "Wet", colours::uiRed, Knob::mediumStyle),
       dryKnob (parameter ("dry"), "Dry", colours::uiRed, Knob::mediumStyle),
       editLink (colours::uiRed),
+      meter (meterGeometry),
       qKnob (parameter ("q"), "Filter Q", colours::uiRed, Knob::smallStyle),
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
       monoCheckbox (parameter ("monoBelow"), "Mono below Freq"),

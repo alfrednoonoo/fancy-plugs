@@ -15,6 +15,11 @@
  #include "KickerProcessor.h"
 #endif
 
+#if FANCY_HAS_EXCITER
+ #include "ExciterEditor.h"
+ #include "ExciterProcessor.h"
+#endif
+
 namespace
 {
 
@@ -125,6 +130,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_KICKER
     ok = renderPlugin<KickerProcessor, KickerEditor> ("kicker", outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_EXCITER
+    ok = renderPlugin<ExciterProcessor, ExciterEditor> ("exciter", outputDir) && ok;
    #endif
 
     Gallery gallery;
