@@ -5,9 +5,10 @@
 - Skeleton workflow: done.
 - `fancy-core`: done, except the Verb module card, which is deferred until Verb needs it.
 - Fancy Kicker: done, signed off in REAPER by the user.
-- Fancy Exciter: in progress.
+- Fancy Exciter: built and green in CI, **waiting for the REAPER check** in `docs/exciter-checklist.md` (§7 checks 3 and 7).
+- Next: Fancy Comp, once the Exciter is signed off.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42246329451 (commit `5635d38`).
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42251800797 (commit `12048a8`).
 
 ## Kicker acceptance (§7)
 
@@ -20,6 +21,20 @@ Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42246329451
 | 5 | Screenshots compared with the reference | Done against the Figma frame, see deviations; `docs/screens/kicker-vs-reference.png` shows Figma on the left and the build on the right |
 | 6 | CPU against the §4.11 target | Pass: 0.07–0.15 % against < 0.5 %, measured on CI runners with every option on |
 | 7 | Installed and confirmed in REAPER | Pass, confirmed by the user |
+
+## Exciter acceptance (§7)
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Actions run green, artifact contains the plugin | Pass, run above |
+| 2 | pluginval strictness 10 | Pass for both plugins, GUI tests on |
+| 3 | State survives a REAPER project reload | **Waiting for the user**; state round-trip and corrupted-state tests pass in CI |
+| 4 | §5.5 tests | Pass, 32 test cases across the suite; worst alias at 4× is -114.4 dBFS against the -80 dBFS target. Numbers in `docs/measurements/exciter.txt` |
+| 5 | Screenshots compared with the reference | Done against the Figma frame; `docs/screens/exciter-vs-reference.png` shows Figma, the build, and the EDIT drawer |
+| 6 | CPU against the §4.11 target | Pass: 0.09 % without oversampling against < 0.5 %. 0.77 %, 1.37 % and 2.27 % at 2×, 4× and 8× on CI runners |
+| 7 | Installed and confirmed in REAPER | **Waiting for the user** |
+
+Exciter deviations from Figma: knob arrows follow the §3.2 ranges as the user confirmed, so Freq 2000 Hz sits at 40 % where Figma draws 18 %. The other Kicker notes on peak-hold lines, meter tops, the caption and the About box apply here too.
 
 ## Figma
 
@@ -80,6 +95,7 @@ Target: warm one-plugin build under about 6 minutes (met). The full-suite target
 - Compiler cache is sccache, because the cache action's README recommends it on Windows.
 - Static MSVC runtime, so the plugins don't depend on the VC++ redistributable.
 - Plugin processor and editor sources are compiled directly into `fancy-screens` and `fancy-tests`. Each plugin's `createPluginFilter()` sits in a separate `PluginEntry.cpp` so the symbols don't clash.
+- CI found a real click: after an oversampling change, the dry path restarted at full level once the emptied delay line refilled. The output now stays silent until the delay and filters have settled.
 - `fancy_core` is plain C++ for DSP. `fancy_ui` compiles into each consumer so it picks up that target's JUCE settings.
 - Git identity is set in this repo only, using the GitHub no-reply address.
 - All geometry is in native Figma units at 100 %. The Kicker window is 392 × 472, and the user confirmed they prefer this larger size.

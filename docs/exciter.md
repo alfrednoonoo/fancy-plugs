@@ -43,7 +43,9 @@ One-pole smoothers, per sample: Freq over 30 ms in the log domain, with filter c
 | Oversampling | Latency |
 |---|---|
 | Off | 0 samples |
-| 2×, 4×, 8× | Whole samples, reported to the host. Measured values are in `docs/measurements/exciter.txt` |
+| 2× | 55 samples |
+| 4× | 69 samples |
+| 8× | 74 samples |
 
 Latency doesn't depend on the sample rate in samples. The dry path is delayed by the same amount, and bypass uses the delayed dry path.
 

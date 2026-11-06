@@ -1,0 +1,8 @@
+Oversampling Off: latency   0 samples, worst alias (10 kHz, 0 dBFS, Harmonics 100 %, Boost 12 dB, 44.1 kHz)   -20.5 dBFS at Character 50 %,   -23.0 dBFS at Character 0 %
+Oversampling 2x : latency  55 samples, worst alias (10 kHz, 0 dBFS, Harmonics 100 %, Boost 12 dB, 44.1 kHz)   -39.7 dBFS at Character 50 %,   -55.7 dBFS at Character 0 %
+Oversampling 4x : latency  69 samples, worst alias (10 kHz, 0 dBFS, Harmonics 100 %, Boost 12 dB, 44.1 kHz)  -114.4 dBFS at Character 50 %,  -115.6 dBFS at Character 0 %
+Oversampling 8x : latency  74 samples, worst alias (10 kHz, 0 dBFS, Harmonics 100 %, Boost 12 dB, 44.1 kHz)  -112.3 dBFS at Character 50 %,  -113.5 dBFS at Character 0 %
+Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 0: 0.0877 % (target without oversampling < 0.5 %)
+Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 1: 0.7704 % (target without oversampling < 0.5 %)
+Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 2: 1.3691 % (target without oversampling < 0.5 %)
+Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 3: 2.2702 % (target without oversampling < 0.5 %)
