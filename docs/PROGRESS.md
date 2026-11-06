@@ -82,7 +82,8 @@ Target: warm one-plugin build under about 6 minutes (met). The full-suite target
 - Plugin processor and editor sources are compiled directly into `fancy-screens` and `fancy-tests`. Each plugin's `createPluginFilter()` sits in a separate `PluginEntry.cpp` so the symbols don't clash.
 - `fancy_core` is plain C++ for DSP. `fancy_ui` compiles into each consumer so it picks up that target's JUCE settings.
 - Git identity is set in this repo only, using the GitHub no-reply address.
-- All geometry is in native Figma units at 100 %. The Kicker window is 392 × 472.
+- All geometry is in native Figma units at 100 %. The Kicker window is 392 × 472, and the user confirmed they prefer this larger size.
+- Knob pointers follow the parameter value and range, not the positions drawn in Figma. The user confirmed this.
 - Kicker and Exciter meters are a stereo pair per side, with one readout per pair, as the zoomed mockup shows.
 - Header knob and the EDIT drawer's Output are the same parameter. The drawer is an overlay on the left panel.
 - Kicker `q` range (0.5–10, default 2.0) and `output` range (-24…+12 dB) were chosen here; the brief doesn't give them.
