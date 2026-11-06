@@ -7,8 +7,12 @@ namespace fancy::ui
 
 namespace
 {
-constexpr float arcStart = -0.75f * std::numbers::pi_v<float>;
-constexpr float arcRange = 1.5f * std::numbers::pi_v<float>;
+// 300 degrees of travel from 7 o'clock, as the Figma progress arcs are drawn.
+constexpr float arcStart = -5.0f / 6.0f * std::numbers::pi_v<float>;
+constexpr float arcRange = 5.0f / 3.0f * std::numbers::pi_v<float>;
+constexpr float defaultMarkDiameter = 6.0f;
+constexpr float defaultMarkGap = 8.0f;
+constexpr float bodyFontSize = 14.0f;
 constexpr float fineDragDivisor = 8.0f;
 constexpr float wheelStep = 0.1f;
 
@@ -20,15 +24,15 @@ void paintPill (juce::Graphics& g, juce::Rectangle<float> area, juce::Colour fil
 
 void paintDropdown (juce::Graphics& g, juce::Rectangle<float> bounds, const juce::String& text)
 {
-    paintPill (g, bounds, colours::grey3);
+    paintPill (g, bounds, colours::bgBody);
 
-    g.setFont (font (Weight::regular, 12.0f));
+    g.setFont (font (Weight::regular, bodyFontSize));
     g.setColour (colours::textPrimary);
-    g.drawText (text, bounds.withTrimmedLeft (6.0f).withTrimmedRight (15.0f), juce::Justification::centredLeft, true);
+    g.drawText (text, bounds.withTrimmedLeft (8.0f).withTrimmedRight (18.0f), juce::Justification::centredLeft, true);
 
-    const auto area = juce::Rectangle<float> (6.0f, 9.0f)
-                          .withCentre ({ bounds.getRight() - 8.0f, bounds.getCentreY() });
-    g.setColour (colours::textSecondary);
+    const auto area = juce::Rectangle<float> (7.0f, 10.0f)
+                          .withCentre ({ bounds.getRight() - 9.5f, bounds.getCentreY() });
+    g.setColour (juce::Colours::white.withAlpha (0.4f));
     g.strokePath (icons::chevrons (area), juce::PathStrokeType (1.0f));
 }
 } // namespace
@@ -173,34 +177,49 @@ Knob::Knob (juce::RangedAudioParameter& parameter, const juce::String& label, ju
 
 juce::Rectangle<int> Knob::getValueEditorBounds() const
 {
-    return getLocalBounds().removeFromBottom (18).withSizeKeepingCentre (juce::jmin (getWidth(), 70), 18);
+    const auto height = (int) knobStyle.valueHeight;
+    return getLocalBounds().removeFromBottom (height).withSizeKeepingCentre (juce::jmin (getWidth(), 75), height);
+}
+
+void Knob::setShowDefaultMark (bool shouldShow)
+{
+    showDefaultMark = shouldShow;
+    repaint();
 }
 
 void Knob::paint (juce::Graphics& g)
 {
     const auto bounds = getLocalBounds().toFloat();
-    const auto centre = bounds.getCentre();
-    const auto faceRadius = knobStyle.faceDiameter * 0.5f;
-    const auto arcRadius = faceRadius + knobStyle.arcThickness * 0.5f + 0.8f;
+    const auto style = knobStyle;
+    const auto knobTop = style.showText ? style.labelHeight + style.labelGap : (bounds.getHeight() - style.outerDiameter) * 0.5f;
+    const juce::Point<float> centre (bounds.getCentreX(), knobTop + style.outerDiameter * 0.5f);
+    const auto outerRadius = style.outerDiameter * 0.5f;
+    const auto faceRadius = style.faceDiameter * 0.5f;
+    const auto arcRadius = outerRadius - style.arcThickness * 0.5f;
     const auto valueAngle = arcStart + getNormalised() * arcRange;
 
-    if (knobStyle.showText)
+    if (style.showText)
     {
-        g.setFont (font (Weight::medium, knobStyle.labelHeight));
-        g.setColour (colours::textPrimary);
-        g.drawText (labelText, bounds.withHeight (16.0f), juce::Justification::centred, false);
+        const auto weight = style.mediumWeight ? Weight::medium : Weight::regular;
 
-        g.setFont (font (Weight::regular, knobStyle.valueHeight));
+        g.setFont (font (weight, style.fontSize));
+        g.setColour (colours::textPrimary);
+        g.drawText (labelText, bounds.withHeight (style.labelHeight), juce::Justification::centred, false);
+
         g.setColour (accentColour);
-        g.drawText (getValueText(), bounds.withTop (bounds.getBottom() - 16.0f), juce::Justification::centred, false);
+        g.drawText (getValueText(),
+                    bounds.withTop (knobTop + style.outerDiameter + style.valueGap).withHeight (style.valueHeight),
+                    juce::Justification::centred, false);
     }
 
-    const juce::PathStrokeType stroke (knobStyle.arcThickness, juce::PathStrokeType::curved, juce::PathStrokeType::butt);
+    if (showDefaultMark)
+    {
+        const auto defaultAngle = arcStart + param.getDefaultValue() * arcRange;
+        const auto mark = centre.getPointOnCircumference (outerRadius + defaultMarkGap, defaultAngle);
 
-    juce::Path track;
-    track.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f, arcStart, arcStart + arcRange, true);
-    g.setColour (colours::knobTrack);
-    g.strokePath (track, stroke);
+        g.setColour (colours::grey6);
+        g.fillEllipse (juce::Rectangle<float> (defaultMarkDiameter, defaultMarkDiameter).withCentre (mark));
+    }
 
     const auto litFrom = isBipolar ? arcStart + 0.5f * arcRange : arcStart;
 
@@ -209,24 +228,31 @@ void Knob::paint (juce::Graphics& g)
         juce::Path lit;
         lit.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f, litFrom, valueAngle, true);
         g.setColour (accentColour);
-        g.strokePath (lit, stroke);
+        g.strokePath (lit, juce::PathStrokeType (style.arcThickness, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
     }
+
+    const auto face = juce::Rectangle<float> (style.faceDiameter, style.faceDiameter).withCentre (centre);
 
     g.setGradientFill (juce::ColourGradient (colours::knobTop, centre.x, centre.y - faceRadius,
                                              colours::knobBottom, centre.x, centre.y + faceRadius, false));
-    g.fillEllipse (centre.x - faceRadius, centre.y - faceRadius, knobStyle.faceDiameter, knobStyle.faceDiameter);
+    g.fillEllipse (face);
+
+    g.setColour (juce::Colours::black.withAlpha (0.2f));
+    g.drawEllipse (face, 1.0f);
 
     // An equilateral triangle pointing outwards along the value angle.
-    const auto side = knobStyle.triangleSide;
+    const auto side = style.triangleSide;
     const auto height = side * 0.866f;
 
     juce::Path triangle;
     triangle.addTriangle (0.0f, -height * 0.667f, -side * 0.5f, height * 0.333f, side * 0.5f, height * 0.333f);
 
+    const auto rounded = style.outerDiameter > 30.0f ? triangle.createPathWithRoundedCorners (1.0f) : triangle;
+
     g.setColour (accentColour);
-    g.fillPath (triangle, juce::AffineTransform::translation (0.0f, -knobStyle.triangleDistance)
-                              .rotated (valueAngle)
-                              .translated (centre.x, centre.y));
+    g.fillPath (rounded, juce::AffineTransform::translation (0.0f, -style.triangleDistance)
+                             .rotated (valueAngle)
+                             .translated (centre.x, centre.y));
 }
 
 // Fader -----------------------------------------------------------------------
@@ -238,34 +264,43 @@ Fader::Fader (juce::RangedAudioParameter& parameter, juce::Colour accent)
 
 juce::Rectangle<int> Fader::getValueEditorBounds() const
 {
-    return getLocalBounds().removeFromBottom (18);
+    return getLocalBounds().removeFromBottom (23);
 }
 
 void Fader::paint (juce::Graphics& g)
 {
-    constexpr float capHeight = 9.0f;
-    constexpr float capWidth = 14.0f;
-    constexpr float trackWidth = 4.0f;
-    constexpr float readoutHeight = 16.0f;
+    // Sizes from the Figma Slider/Vertical component.
+    constexpr float handleWidth = 22.0f, handleHeight = 12.0f;
+    constexpr float trackWidth = 2.0f, fillWidth = 6.0f;
+    constexpr float readoutHeight = 23.0f, readoutGap = 8.0f;
 
     auto bounds = getLocalBounds().toFloat();
     const auto readout = bounds.removeFromBottom (readoutHeight);
-    const auto track = bounds.withSizeKeepingCentre (trackWidth, bounds.getHeight() - capHeight);
-    const auto capY = track.getBottom() - getNormalised() * track.getHeight();
+    bounds.removeFromBottom (readoutGap);
+
+    const auto centreX = bounds.getCentreX();
+    const auto travel = bounds.reduced (0.0f, handleHeight * 0.5f);
+    const auto yFor = [&] (float normalised) { return travel.getBottom() - normalised * travel.getHeight(); };
+    const auto handleY = yFor (getNormalised());
 
     g.setColour (colours::bgWell);
-    g.fillRoundedRectangle (track, 1.5f);
+    g.fillRoundedRectangle (bounds.withSizeKeepingCentre (trackWidth, bounds.getHeight()), 1.0f);
+
+    g.fillEllipse (juce::Rectangle<float> (defaultMarkDiameter, defaultMarkDiameter)
+                       .withCentre ({ centreX + 8.0f, yFor (param.getDefaultValue()) }));
 
     g.setColour (accentColour);
-    g.fillRoundedRectangle (track.withTop (capY), 1.5f);
+    g.fillRoundedRectangle (bounds.withSizeKeepingCentre (fillWidth, bounds.getHeight()).withTop (handleY), 2.0f);
 
-    const auto cap = juce::Rectangle<float> (capWidth, capHeight).withCentre ({ track.getCentreX(), capY });
-    g.setColour (colours::grey6);
-    g.fillRoundedRectangle (cap, 1.5f);
+    const auto handle = juce::Rectangle<float> (handleWidth, handleHeight).withCentre ({ centreX, handleY });
+
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (handle, 2.0f);
     g.setColour (accentColour);
-    g.fillRect (cap.withSizeKeepingCentre (capWidth - 4.0f, 1.5f));
+    g.drawRoundedRectangle (handle.reduced (0.5f), 2.0f, 1.0f);
+    g.fillRoundedRectangle (handle.withSizeKeepingCentre (12.0f, 2.0f), 1.0f);
 
-    g.setFont (font (Weight::regular, 11.5f));
+    g.setFont (font (Weight::regular, bodyFontSize));
     g.setColour (colours::textPrimary);
     g.drawText (getValueText().upToFirstOccurrenceOf (" ", false, false), readout, juce::Justification::centred, false);
 }
@@ -279,7 +314,7 @@ ParamCheckbox::ParamCheckbox (juce::RangedAudioParameter& parameter, const juce:
 
 void ParamCheckbox::paint (juce::Graphics& g)
 {
-    constexpr float size = 13.0f;
+    constexpr float size = 14.0f;
 
     const auto bounds = getLocalBounds().toFloat();
     const auto box = bounds.withWidth (size).withSizeKeepingCentre (size, size);
@@ -287,22 +322,24 @@ void ParamCheckbox::paint (juce::Graphics& g)
     if (isOn())
     {
         g.setColour (accentColour);
-        g.fillRoundedRectangle (box, 2.5f);
+        g.fillRoundedRectangle (box, 3.0f);
 
         juce::Path tick;
-        tick.startNewSubPath (box.getX() + 3.0f, box.getCentreY());
-        tick.lineTo (box.getX() + 5.5f, box.getBottom() - 3.5f);
+        tick.startNewSubPath (box.getX() + 3.0f, box.getCentreY() + 0.5f);
+        tick.lineTo (box.getX() + 5.75f, box.getBottom() - 3.5f);
         tick.lineTo (box.getRight() - 3.0f, box.getY() + 3.5f);
-        g.setColour (juce::Colours::white);
-        g.strokePath (tick, juce::PathStrokeType (1.6f));
+        g.setColour (colours::bgWell);
+        g.strokePath (tick, juce::PathStrokeType (1.5f));
     }
     else
     {
+        g.setColour (colours::bgHeader);
+        g.fillRoundedRectangle (box, 3.0f);
         g.setColour (colours::textSecondary);
-        g.drawRoundedRectangle (box.reduced (0.5f), 2.5f, 1.0f);
+        g.drawRoundedRectangle (box.reduced (0.25f), 3.0f, 0.5f);
     }
 
-    g.setFont (font (Weight::regular, 12.5f));
+    g.setFont (font (Weight::regular, bodyFontSize));
     g.setColour (colours::textPrimary);
     g.drawText (labelText, bounds.withTrimmedLeft (size + 6.0f), juce::Justification::centredLeft, false);
 }
@@ -313,17 +350,19 @@ void PowerPill::paint (juce::Graphics& g)
 {
     const auto active = ! isOn();
     const auto bounds = getLocalBounds().toFloat();
-    const auto ink = active ? colours::bgHeader : colours::textSecondary;
+    const auto ink = active ? juce::Colours::black : colours::textSecondary;
 
     paintPill (g, bounds, active ? colours::uiTeal : colours::grey5);
 
-    const auto icon = juce::Rectangle<float> (10.0f, 10.0f)
-                          .withCentre ({ bounds.getX() + 9.0f, bounds.getCentreY() });
-    g.setColour (ink);
-    g.strokePath (icons::power (icon), juce::PathStrokeType (1.4f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    // The wide header pads the same content a little further in.
+    const auto inset = bounds.getWidth() > 50.0f ? 11.0f : 7.0f;
 
-    g.setFont (font (Weight::medium, 11.5f));
-    g.drawText ("ON", bounds.withTrimmedLeft (15.0f), juce::Justification::centredLeft, false);
+    g.setColour (ink);
+    g.strokePath (icons::power (juce::Rectangle<float> (bounds.getX() + inset, bounds.getY() + 6.0f, 11.0f, 12.0f)),
+                  juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+    g.setFont (font (Weight::regular, bodyFontSize));
+    g.drawText ("ON", bounds.withTrimmedLeft (inset + 15.0f), juce::Justification::centredLeft, false);
 }
 
 // ParamDropdown ---------------------------------------------------------------
@@ -369,10 +408,24 @@ void PillButton::setText (const juce::String& text)
 
 void PillButton::paint (juce::Graphics& g)
 {
-    paintPill (g, getLocalBounds().toFloat(), colours::grey3);
-    g.setFont (font (Weight::regular, buttonText == "+" ? 16.0f : 12.0f));
+    const auto bounds = getLocalBounds().toFloat();
+
+    paintPill (g, bounds, colours::bgBody);
+
+    g.setFont (font (Weight::regular, bodyFontSize));
     g.setColour (colours::textPrimary);
-    g.drawText (buttonText, getLocalBounds(), juce::Justification::centred, false);
+
+    if (! buttonText.startsWithChar ('+'))
+    {
+        g.drawText (buttonText, bounds, juce::Justification::centred, false);
+        return;
+    }
+
+    const auto label = buttonText.substring (1).trim();
+    const auto iconCentre = label.isEmpty() ? bounds.getCentre() : juce::Point<float> (bounds.getX() + 14.0f, bounds.getCentreY());
+
+    g.strokePath (icons::plus (juce::Rectangle<float> (10.0f, 10.0f).withCentre (iconCentre)), juce::PathStrokeType (1.5f));
+    g.drawText (label, bounds.withTrimmedLeft (24.0f), juce::Justification::centredLeft, false);
 }
 
 void PillButton::mouseUp (const juce::MouseEvent& event)

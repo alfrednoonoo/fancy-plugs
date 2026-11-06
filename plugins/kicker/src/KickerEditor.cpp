@@ -4,9 +4,10 @@ using namespace fancy::ui;
 
 namespace
 {
-constexpr int baseWidth = 265;
-constexpr int baseHeight = 315;
-constexpr int leftPanelWidth = 178;
+// Native Figma units: the Kicker frame without its 22 px host title bar.
+constexpr int baseWidth = 392;
+constexpr int baseHeight = 472;
+constexpr int leftPanelWidth = 264;
 constexpr int bodyHeight = baseHeight - ShellEditor::headerHeight;
 } // namespace
 
@@ -20,8 +21,8 @@ void KickerEditor::Panels::paint (juce::Graphics& g)
     g.fillRect (bounds);
 
     g.setColour (colours::textSecondary);
-    g.setFont (font (Weight::regular, 11.0f));
-    g.drawText ("Fancy Kicker", 70, 255, 92, 16, juce::Justification::centredRight, false);
+    g.setFont (font (Weight::medium, 12.0f));
+    g.drawText ("Fancy Kicker", 104, 381, 136, 18, juce::Justification::centredRight, false);
 }
 
 KickerEditor::KickerEditor (KickerProcessor& processor)
@@ -41,20 +42,21 @@ KickerEditor::KickerEditor (KickerProcessor& processor)
     panels.setBounds (body.getLocalBounds());
     body.addAndMakeVisible (panels);
 
-    freqKnob.setBounds (29, 18, 120, 117);
-    wetKnob.setBounds (17, 144, 72, 86);
-    dryKnob.setBounds (89, 144, 72, 86);
-    editLink.setBounds (17, 255, 46, 16);
+    freqKnob.setBounds (66, 28, 132, 172);
+    freqKnob.setShowDefaultMark (true);
+    wetKnob.setBounds (34, 216, 90, 123);
+    dryKnob.setBounds (140, 216, 90, 123);
+    editLink.setBounds (16, 377, 64, 24);
     meter.setBounds (leftPanelWidth, 0, baseWidth - leftPanelWidth, bodyHeight);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &freqKnob, &wetKnob, &dryKnob, &editLink, &meter })
         body.addAndMakeVisible (item);
 
     drawer.setBounds (0, 0, leftPanelWidth, bodyHeight);
-    qKnob.setBounds (10, 42, 76, 80);
-    drawerOutputKnob.setBounds (92, 42, 76, 80);
-    monoCheckbox.setBounds (20, 142, 150, 20);
-    softClipCheckbox.setBounds (20, 170, 150, 20);
+    qKnob.setBounds (32, 60, 90, 99);
+    drawerOutputKnob.setBounds (142, 60, 90, 99);
+    monoCheckbox.setBounds (32, 192, 200, 20);
+    softClipCheckbox.setBounds (32, 224, 200, 20);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &qKnob, &drawerOutputKnob, &monoCheckbox, &softClipCheckbox })
         drawer.addAndMakeVisible (item);

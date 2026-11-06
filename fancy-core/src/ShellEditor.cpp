@@ -32,10 +32,10 @@ void EditLink::paint (juce::Graphics& g)
     const auto bounds = getLocalBounds().toFloat();
 
     g.setColour (accentColour);
-    g.fillPath (icons::gear (bounds.withWidth (11.0f).withSizeKeepingCentre (11.0f, 11.0f)));
+    g.fillPath (icons::gear (juce::Rectangle<float> (bounds.getX() + 8.0f, bounds.getCentreY() - 6.0f, 12.0f, 12.0f)));
 
-    g.setFont (font (Weight::regular, 12.0f));
-    g.drawText ("EDIT", bounds.withTrimmedLeft (15.0f), juce::Justification::centredLeft, false);
+    g.setFont (font (Weight::regular, 14.0f));
+    g.drawText ("EDIT", bounds.withTrimmedLeft (24.0f), juce::Justification::centredLeft, false);
 }
 
 void EditLink::mouseUp (const juce::MouseEvent& event)
@@ -56,14 +56,14 @@ void EditDrawer::paint (juce::Graphics& g)
 {
     g.fillAll (colours::bgSection);
 
-    g.setFont (font (Weight::semiBold, 12.0f).withExtraKerningFactor (0.06f));
+    g.setFont (font (Weight::semiBold, 14.0f).withExtraKerningFactor (0.06f));
     g.setColour (colours::textPrimary);
-    g.drawText ("EDIT", getLocalBounds().withHeight (32).withTrimmedLeft (16), juce::Justification::centredLeft, false);
+    g.drawText ("EDIT", getLocalBounds().withHeight (48).withTrimmedLeft (24), juce::Justification::centredLeft, false);
 }
 
 void EditDrawer::resized()
 {
-    closeButton.setBounds (getWidth() - 56, 8, 44, 16);
+    closeButton.setBounds (getWidth() - 78, 12, 62, 24);
 }
 
 // ShellEditor -----------------------------------------------------------------
@@ -71,6 +71,9 @@ void EditDrawer::resized()
 void ShellEditor::Root::paint (juce::Graphics& g)
 {
     g.fillAll (colours::bgHeader);
+
+    g.setColour (juce::Colours::black);
+    g.fillRect (0.0f, (float) headerHeight - 0.5f, (float) getWidth(), 0.5f);
 }
 
 ShellEditor::ShellEditor (FancyProcessor& processor, int baseWidth, int baseHeight, HeaderStyle style)
@@ -131,10 +134,11 @@ void ShellEditor::resized()
 
 void ShellEditor::layoutHeader()
 {
+    // Positions from the Figma Header/Small and Header/Big components.
     const auto compact = headerStyle == HeaderStyle::compact;
-    constexpr int top = 6, itemHeight = 16, gap = 5;
+    constexpr int top = 13, itemHeight = 24, gap = 8;
 
-    int x = compact ? 11 : 12;
+    int x = 16;
 
     const auto place = [&] (juce::Component& item, int itemWidth)
     {
@@ -142,13 +146,15 @@ void ShellEditor::layoutHeader()
         x += itemWidth + gap;
     };
 
-    place (presetDropdown, compact ? 74 : 120);
-    place (saveButton, compact ? 18 : 42);
-    place (parameterButton, compact ? 29 : 62);
-    place (ioPill, compact ? 27 : 58);
+    place (presetDropdown, compact ? 110 : 246);
+    place (saveButton, compact ? 28 : 63);
+    place (parameterButton, compact ? 43 : 86);
+    place (ioPill, compact ? 39 : 80);
 
-    powerPill.setBounds (width - 43, top, 32, itemHeight);
-    outputKnob.setBounds (width - 72, 2, 24, 24);
+    const auto pillWidth = compact ? 48 : 56;
+
+    powerPill.setBounds (width - 16 - pillWidth, top, pillWidth, itemHeight);
+    outputKnob.setBounds (powerPill.getX() - 36, 11, 28, 28);
 }
 
 void ShellEditor::timerCallback()

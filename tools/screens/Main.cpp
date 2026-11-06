@@ -65,16 +65,16 @@ public:
         for (juce::Component* item : std::initializer_list<juce::Component*> { &wetFader, &dryFader, &onBox, &offBox, &dropdown, &tealKnob, &blueKnob, &smallKnob })
             addAndMakeVisible (item);
 
-        wetFader.setBounds (16, 16, 30, 170);
-        dryFader.setBounds (56, 16, 30, 170);
-        tealKnob.setBounds (100, 16, 80, 86);
-        blueKnob.setBounds (190, 16, 80, 86);
-        smallKnob.setBounds (280, 16, 60, 80);
-        onBox.setBounds (100, 116, 100, 20);
-        offBox.setBounds (210, 116, 100, 20);
-        dropdown.setBounds (100, 146, 150, 18);
+        wetFader.setBounds (16, 16, 44, 300);
+        dryFader.setBounds (68, 16, 44, 300);
+        tealKnob.setBounds (128, 16, 90, 123);
+        blueKnob.setBounds (228, 16, 90, 123);
+        smallKnob.setBounds (328, 16, 62, 99);
+        onBox.setBounds (136, 170, 100, 20);
+        offBox.setBounds (246, 170, 100, 20);
+        dropdown.setBounds (136, 204, 180, 24);
 
-        setSize (356, 202);
+        setSize (406, 332);
     }
 
     void paint (juce::Graphics& g) override

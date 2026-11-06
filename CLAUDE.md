@@ -57,26 +57,21 @@ Do not copy literally: host window title bars, the "[LOOSER]" tag (show just the
 
 If a control isn't in this table and isn't visible in the redesign, ask before choosing its type. New controls that aren't in the mockups go in drawers or popovers as dropdowns, toggles or small knobs; they never change the visible main layout.
 
-## Colour tokens (§2.1)
+## Design values
+
+Figma is the source of truth: `design/figma-spec.json` holds every frame, control position, fill, radius and font, with renders in `design/`. All window and control geometry is in native Figma units at 100 %: Kicker 392 × 472, with each frame's 22 px host title bar removed. Read a plugin's frame before building it. Use Inter in place of SF Compact Display.
 
 ```
-bg-page #121212   bg-header #1E1E1E   bg-body #303030    bg-section #262626
-bg-well #141414   bg-verb #292929     bg-verb-alt #1F1F1F
-knob-body #4B4B4B (gradient #4F4F4F to #454545)   knob-track #212121
-grey-3 #282828    grey-5 #434343      grey-6 #4C4C4C
-text-secondary #909090   text-primary #FFFFFF at ~92 % (#EDEDED)
-
-accent-yellow #F1C315  accent-orange #E77E23  accent-red #E84C3C  accent-purple #965AB7
-accent-blue #3798DC    accent-teal #1EBAA1    accent-green #2ACC77
-
-Prefer inside the plugins:
-ui-teal #00A884   ui-teal-bright #00B478   ui-red #E84E3C    ui-blue #3690CC
-ui-purple #9648BA  ui-purple-ir #9858B8 (top edge #B06AD0)
-ui-eq-blue #24AEC6  ui-eq-green #0CC08A   ui-eq-red #C0363C
-
-Meter, loud to quiet: #F7D10A #C7D924 #82E64D #3CF473 #0DFC90; yellow from about -6 dB; red clip cap #E84C3C above 0 dBFS.
-EQ band fills: band colour at ~35 % opacity; curves and handles at 100 %.
+bg-header #1E1E1E  bg-body #303030  bg-section #262626  bg-well #141414
+controls (dropdowns, buttons) #303030, radius 3
+knob face #4F4F4F to #454545, 1 px black 20 % border, no unlit arc
+grey-5 #424242  grey-6 #4C4C4C  text #FFFFFF  text-secondary #8D8D8D
+teal #00A985  module teal #1BBC9C  red #E74D3D  purple #9A59B5  blue #3598DB  green #2DCC70
+meter gradient #FFCF07 to #00FF96; red clip cap #E74D3D
+knob travel: 300 degrees from 7 o'clock
 ```
+
+Figma doesn't use the EQ band blue, green and red variants or the analyzer orange; those keep their §2.1 values.
 
 ## §4 real-time rules
 

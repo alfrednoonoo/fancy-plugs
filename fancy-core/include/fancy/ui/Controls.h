@@ -65,19 +65,24 @@ protected:
 class Knob final : public ParamControl
 {
 public:
+    // Sizes from the Figma Knob and RoundController components.
     struct Style
     {
-        float faceDiameter, triangleSide, triangleDistance, arcThickness;
-        float labelHeight, valueHeight;
-        bool showText;
+        float outerDiameter, faceDiameter, arcThickness, triangleSide, triangleDistance;
+        float labelHeight, labelGap, valueGap, valueHeight;
+        float fontSize;
+        bool mediumWeight, showText;
     };
 
-    static constexpr Style largeStyle { 70.0f, 12.5f, 22.0f, 2.5f, 14.0f, 14.0f, true };
-    static constexpr Style mediumStyle { 42.0f, 10.0f, 11.0f, 2.5f, 12.5f, 12.0f, true };
-    static constexpr Style smallStyle { 28.0f, 7.0f, 7.5f, 2.0f, 11.5f, 11.5f, true };
-    static constexpr Style headerStyle { 17.0f, 5.0f, 4.0f, 1.5f, 0.0f, 0.0f, false };
+    static constexpr Style largeStyle { 116.0f, 104.0f, 5.0f, 19.0f, 34.3f, 19.0f, 8.0f, 4.0f, 25.0f, 16.0f, true, true };
+    static constexpr Style mediumStyle { 72.0f, 62.0f, 4.0f, 15.6f, 17.2f, 17.0f, 8.0f, 3.0f, 23.0f, 14.0f, false, true };
+    static constexpr Style smallStyle { 50.0f, 42.0f, 3.0f, 13.5f, 10.0f, 17.0f, 6.0f, 3.0f, 23.0f, 14.0f, false, true };
+    static constexpr Style headerStyle { 28.0f, 24.0f, 2.0f, 6.1f, 6.1f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false };
 
     Knob (juce::RangedAudioParameter& parameter, const juce::String& label, juce::Colour accent, const Style& style, bool bipolar = false);
+
+    // Shows the dot marking the default position. The designs use it on some knobs only.
+    void setShowDefaultMark (bool shouldShow);
 
     void paint (juce::Graphics&) override;
 
@@ -88,6 +93,7 @@ private:
     juce::Colour accentColour;
     Style knobStyle;
     bool isBipolar;
+    bool showDefaultMark = false;
 };
 
 class Fader final : public ParamControl

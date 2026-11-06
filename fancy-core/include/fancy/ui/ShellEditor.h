@@ -42,7 +42,7 @@ class ShellEditor : public juce::AudioProcessorEditor, private juce::Timer
 public:
     enum class HeaderStyle { compact, full };
 
-    static constexpr int headerHeight = 33;
+    static constexpr int headerHeight = 53;
 
     ShellEditor (FancyProcessor& processor, int baseWidth, int baseHeight, HeaderStyle style);
     ~ShellEditor() override;
