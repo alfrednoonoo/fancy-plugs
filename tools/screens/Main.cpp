@@ -20,6 +20,11 @@
  #include "ExciterProcessor.h"
 #endif
 
+#if FANCY_HAS_COMP
+ #include "CompEditor.h"
+ #include "CompProcessor.h"
+#endif
+
 namespace
 {
 
@@ -134,6 +139,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_EXCITER
     ok = renderPlugin<ExciterProcessor, ExciterEditor> ("exciter", outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_COMP
+    ok = renderPlugin<CompProcessor, CompEditor> ("comp", outputDir) && ok;
    #endif
 
     Gallery gallery;

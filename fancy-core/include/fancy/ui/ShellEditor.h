@@ -101,6 +101,7 @@ private:
     PillButton saveButton, parameterButton, ioPill;
     Knob outputKnob;
     PowerPill powerPill;
+    juce::TooltipWindow tooltips { this, 600 };
 };
 
 } // namespace fancy::ui

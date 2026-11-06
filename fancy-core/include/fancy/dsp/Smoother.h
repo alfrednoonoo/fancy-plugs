@@ -26,6 +26,11 @@ public:
         target = value;
     }
 
+    void snapToTarget() noexcept
+    {
+        current = target;
+    }
+
     double next() noexcept
     {
         if (current != target)

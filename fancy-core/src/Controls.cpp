@@ -171,7 +171,7 @@ void ParamClickControl::clicked()
 // Knob ------------------------------------------------------------------------
 
 Knob::Knob (juce::RangedAudioParameter& parameter, const juce::String& label, juce::Colour accent, const Style& style, bool bipolar)
-    : ParamControl (parameter), labelText (label), accentColour (accent), knobStyle (style), isBipolar (bipolar)
+    : ParamControl (parameter), labelText (label), accentColour (accent), valueColour (accent), knobStyle (style), isBipolar (bipolar)
 {
 }
 
@@ -184,6 +184,12 @@ juce::Rectangle<int> Knob::getValueEditorBounds() const
 void Knob::setShowDefaultMark (bool shouldShow)
 {
     showDefaultMark = shouldShow;
+    repaint();
+}
+
+void Knob::setValueColour (juce::Colour colour)
+{
+    valueColour = colour;
     repaint();
 }
 
@@ -206,7 +212,7 @@ void Knob::paint (juce::Graphics& g)
         g.setColour (colours::textPrimary);
         g.drawText (labelText, bounds.withHeight (style.labelHeight), juce::Justification::centred, false);
 
-        g.setColour (accentColour);
+        g.setColour (valueColour);
         g.drawText (getValueText(),
                     bounds.withTop (knobTop + style.outerDiameter + style.valueGap).withHeight (style.valueHeight),
                     juce::Justification::centred, false);

@@ -12,7 +12,7 @@ namespace fancy::ui
 
 // Parameter-bound control. Provides the §2.3 gestures: vertical drag, shift for fine,
 // double-click to reset, ctrl-click to type, mouse wheel, right-click for the host menu.
-class ParamControl : public juce::Component
+class ParamControl : public juce::Component, public juce::SettableTooltipClient
 {
 public:
     explicit ParamControl (juce::RangedAudioParameter& parameter);
@@ -84,13 +84,16 @@ public:
     // Shows the dot marking the default position. The designs use it on some knobs only.
     void setShowDefaultMark (bool shouldShow);
 
+    // Figma colours some value text differently from the arc.
+    void setValueColour (juce::Colour colour);
+
     void paint (juce::Graphics&) override;
 
 private:
     juce::Rectangle<int> getValueEditorBounds() const override;
 
     juce::String labelText;
-    juce::Colour accentColour;
+    juce::Colour accentColour, valueColour;
     Style knobStyle;
     bool isBipolar;
     bool showDefaultMark = false;

@@ -5,8 +5,8 @@
 - Skeleton workflow: done.
 - `fancy-core`: done, except the Verb module card, which is deferred until Verb needs it.
 - Fancy Kicker: done, signed off in REAPER by the user.
-- Fancy Exciter: built and green in CI, **waiting for the REAPER check** in `docs/exciter-checklist.md` (§7 checks 3 and 7).
-- Next: Fancy Comp, once the Exciter is signed off.
+- Fancy Exciter: done, signed off in REAPER by the user.
+- Fancy Comp: in progress.
 
 Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42251800797 (commit `12048a8`).
 
@@ -28,11 +28,11 @@ Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42251800797
 |---|---|---|
 | 1 | Actions run green, artifact contains the plugin | Pass, run above |
 | 2 | pluginval strictness 10 | Pass for both plugins, GUI tests on |
-| 3 | State survives a REAPER project reload | **Waiting for the user**; state round-trip and corrupted-state tests pass in CI |
+| 3 | State survives a REAPER project reload | Pass, confirmed by the user |
 | 4 | §5.5 tests | Pass, 32 test cases across the suite; worst alias at 4× is -114.4 dBFS against the -80 dBFS target. Numbers in `docs/measurements/exciter.txt` |
 | 5 | Screenshots compared with the reference | Done against the Figma frame; `docs/screens/exciter-vs-reference.png` shows Figma, the build, and the EDIT drawer |
 | 6 | CPU against the §4.11 target | Pass: 0.09 % without oversampling against < 0.5 %. 0.77 %, 1.37 % and 2.27 % at 2×, 4× and 8× on CI runners |
-| 7 | Installed and confirmed in REAPER | **Waiting for the user** |
+| 7 | Installed and confirmed in REAPER | Pass, confirmed by the user |
 
 Exciter deviations from Figma: knob arrows follow the §3.2 ranges as the user confirmed, so Freq 2000 Hz sits at 40 % where Figma draws 18 %. The other Kicker notes on peak-hold lines, meter tops, the caption and the About box apply here too.
 
