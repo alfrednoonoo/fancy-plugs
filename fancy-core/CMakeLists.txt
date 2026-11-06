@@ -1,0 +1,3 @@
+add_library(fancy_core INTERFACE)
+target_include_directories(fancy_core INTERFACE include)
+target_compile_features(fancy_core INTERFACE cxx_std_20)

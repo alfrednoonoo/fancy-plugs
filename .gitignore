@@ -1,0 +1,17 @@
+# Build output and fetched dependencies
+/build/
+/.deps/
+/dist/
+/screens/
+/out/
+
+# Editors and agents
+.claude/
+.vs/
+.vscode/
+.idea/
+*.user
+
+# Secrets: FIGMA_TOKEN lives in the environment only, never in a file
+.env
+.env.*

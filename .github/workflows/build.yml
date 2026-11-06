@@ -1,0 +1,123 @@
+name: build
+
+on:
+  push:
+    branches: ['**']
+    paths-ignore:
+      - 'docs/**'
+      - 'reference/**'
+      - '**.md'
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: Plugin to build
+        type: choice
+        default: all
+        options: [all, kicker, exciter, comp, eq, verb]
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PLUGIN: ${{ github.event.inputs.plugin || 'all' }}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Record build identifiers
+        shell: bash
+        run: |
+          echo "SHORT_SHA=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_ENV"
+          echo "IMAGE_VERSION=$ImageVersion" >> "$GITHUB_ENV"
+
+      # Includes JUCE's prebuilt juceaide, so the key changes with the runner image.
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v6
+        with:
+          path: .deps
+          key: deps-${{ runner.os }}-${{ env.IMAGE_VERSION }}-${{ hashFiles('cmake/Dependencies.cmake') }}
+
+      - name: Set up compiler cache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ runner.os }}-${{ env.PLUGIN }}
+          max-size: 2G
+
+      - name: Configure
+        shell: bash
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_COMPILER=cl
+          -DCMAKE_CXX_COMPILER=cl
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DFANCY_PLUGINS="$PLUGIN"
+          -DFETCHCONTENT_BASE_DIR="$GITHUB_WORKSPACE/.deps"
+          -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run DSP tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Stage VST3 bundles
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $bundles = @(Get-ChildItem -Path build/plugins -Recurse -Directory -Filter '*.vst3')
+          if ($bundles.Count -eq 0) { throw 'No .vst3 bundles were built' }
+          foreach ($bundle in $bundles) { Copy-Item -Path $bundle.FullName -Destination dist -Recurse }
+          Copy-Item -Path scripts/install.ps1 -Destination dist
+          Get-ChildItem -Path dist -Recurse -File | ForEach-Object { $_.FullName }
+
+      - name: Run pluginval
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          curl -fsSLO https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_Windows.zip
+          7z x -y pluginval_Windows.zip -opluginval
+          for bundle in dist/*.vst3; do
+            echo "::group::pluginval $bundle"
+            ./pluginval/pluginval.exe --strictness-level 10 --validate "$bundle"
+            echo "::endgroup::"
+          done
+
+      - name: Render UI screenshots
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          $exe = Get-ChildItem -Path build/tools/screens -Recurse -File -Filter 'fancy-screens.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'fancy-screens.exe was not built' }
+          & $exe.FullName screens
+          if ($LASTEXITCODE -ne 0) { throw "fancy-screens exited with $LASTEXITCODE" }
+          Get-ChildItem -Path screens -File | ForEach-Object { "$($_.Name) $($_.Length)" }
+
+      - name: Upload VST3 artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: FancyPlugs-VST3-${{ env.SHORT_SHA }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-${{ env.SHORT_SHA }}
+          path: screens
+          if-no-files-found: error
+          retention-days: 14
