@@ -15,7 +15,7 @@ constexpr double decibelsPerNeper = 8.685889638;
 constexpr double highPassOffHz = 20.5;
 constexpr double lowPassOffHz = 23900.0;
 constexpr double silenceFloor = 1.0e-30;
-constexpr double minDetectorAverageMs = 0.02;
+constexpr double minDetectorAverageMs = 0.1;
 
 double coefficientFor (double milliseconds, double sampleRate) noexcept
 {
@@ -247,9 +247,9 @@ void CompDsp::applyConfig (const Config& config)
     for (auto* smoother : { &threshold, &slope, &knee, &makeup, &rms, &previewAmount, &lowPassAmount, &highPassAmount, &logLowPass, &logHighPass })
         smoother->setTime (20.0, internalRate);
 
-    // The log of an instantaneous square has corners at each signal peak. Their harmonics
-    // pass the oversampled Nyquist and fold into the gain, where no later filter can reach
-    // them. The square itself is band-limited, so a short average before the log stops this.
+    // At high frequencies an instantaneous level swings the envelope follower through a sharp
+    // sawtooth on every half cycle. Its harmonics pass the oversampled Nyquist and fold into
+    // the gain, where no later filter can reach them. A short average keeps the level steady.
     maxDetectorCoefficient = config.oversampling == off ? 1.0 : coefficientFor (minDetectorAverageMs, internalRate);
 
     resetCore();
