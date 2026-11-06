@@ -319,14 +319,14 @@ TEST_CASE ("release curves", "[comp]")
     CHECK (reductionAfterRelease (false, true) == Catch::Approx (10.33).margin (0.1));
 }
 
-TEST_CASE ("aliasing is below -90 dBFS at 4x", "[comp]")
+static double worstAliasDb (int oversampling)
 {
     constexpr double sampleRate = 44100.0;
 
     auto targets = peakTargets();
     targets.attackMs = 0.1;
     targets.releaseMs = 1.0;
-    targets.oversampling = CompDsp::x4;
+    targets.oversampling = oversampling;
 
     CompDsp dsp;
     prepare (dsp, targets, sampleRate);
@@ -340,7 +340,12 @@ TEST_CASE ("aliasing is below -90 dBFS at 4x", "[comp]")
     for (const auto hz : { 1000.0, 3000.0, 5000.0, 7350.0, 9000.0, 11025.0, 14100.0, 16900.0, 19000.0, 21000.0 })
         worst = std::max (worst, levelAt (signal.left, 44100, hz, sampleRate));
 
-    REQUIRE (worst < -90.0);
+    return worst;
+}
+
+TEST_CASE ("aliasing is below -90 dBFS at 4x", "[comp]")
+{
+    REQUIRE (worstAliasDb (CompDsp::x4) < -90.0);
 }
 
 TEST_CASE ("limiter holds the ceiling at extreme levels", "[comp]")
@@ -777,7 +782,7 @@ TEST_CASE ("comp measurements", "[.measure]")
         CompDsp limited;
         prepare (limited, targets);
 
-        std::printf ("Comp oversampling %-3s: latency %3d samples, %3d with Limit output; CPU %.4f %% at 48 kHz, 128 samples, stereo (target without oversampling < 1 %%)\n",
-                     names[oversampling], latency, limited.getLatencySamples(), percent);
+        std::printf ("Comp oversampling %-3s: latency %3d samples, %3d with Limit output; CPU %.4f %% at 48 kHz, 128 samples, stereo (target without oversampling < 1 %%); worst alias %.1f dBFS (15 kHz, attack 0.1 ms, release 1 ms)\n",
+                     names[oversampling], latency, limited.getLatencySamples(), percent, worstAliasDb (oversampling));
     }
 }

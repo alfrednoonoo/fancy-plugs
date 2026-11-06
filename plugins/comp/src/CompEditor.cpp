@@ -110,7 +110,7 @@ CompEditor::CompEditor (CompProcessor& processor)
     previewCheckbox.setBounds (392, 440, 130, 20);
     limitCheckbox.setBounds (552, 440, 130, 20);
 
-    outMeter.setBounds (760, 24, 60, 426);
+    outMeter.setBounds (750, 24, 70, 426);
     wetLabel.setBounds (820, 24, 44, 17);
     dryLabel.setBounds (866, 24, 44, 17);
     wetFader.setBounds (820, 49, 44, 401);

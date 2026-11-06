@@ -186,9 +186,10 @@ void OutMeter::show (float left, float right)
 void OutMeter::paint (juce::Graphics& g)
 {
     // Geometry from the Figma LevelController/Out component, relative to this component.
-    constexpr float wellX = 22.5f, top = 25.0f, bottom = 395.0f;
+    // The scale area is wider than Figma's, because Inter's digits don't fit its 13 px.
+    constexpr float wellX = 32.5f, top = 25.0f, bottom = 395.0f;
     constexpr float zeroDbY = 60.07f, pixelsPerDb = 5.545f;
-    constexpr float scaleRight = 13.0f, gridLeft = 15.0f;
+    constexpr float scaleRight = 23.0f, gridLeft = 25.0f;
 
     const auto yFor = [] (float db) { return juce::jlimit (top, bottom, zeroDbY - db * pixelsPerDb); };
 
@@ -234,5 +235,5 @@ void OutMeter::paint (juce::Graphics& g)
     g.setFont (font (Weight::regular, 14.0f));
     g.setColour (colours::textSecondary);
     g.drawText (readout (juce::jmax (channels[0].hold, channels[1].hold)),
-                juce::Rectangle<float> (11.0f, 403.0f, 40.0f, 23.0f), juce::Justification::centred, false);
+                juce::Rectangle<float> (21.0f, 403.0f, 40.0f, 23.0f), juce::Justification::centred, false);
 }

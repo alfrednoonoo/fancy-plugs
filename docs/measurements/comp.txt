@@ -1,0 +1,3 @@
+Comp oversampling Off: latency   0 samples, 104 with Limit output; CPU 0.7189 % at 48 kHz, 128 samples, stereo (target without oversampling < 1 %)
+Comp oversampling 2x : latency  55 samples, 159 with Limit output; CPU 2.3611 % at 48 kHz, 128 samples, stereo (target without oversampling < 1 %)
+Comp oversampling 4x : latency  69 samples, 173 with Limit output; CPU 4.3920 % at 48 kHz, 128 samples, stereo (target without oversampling < 1 %)
