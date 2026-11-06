@@ -11,8 +11,8 @@ fancy::FancyProcessor::Layout createLayout()
 {
     fancy::FancyProcessor::Layout layout;
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { "freq", 1 }, "Freq", fancy::logRange (20.0f, 240.0f, 0.1f), 50.0f,
+    layout.add (fancy::floatParameter (
+        "freq", "Freq", fancy::logRange (20.0f, 240.0f, 0.1f), 50.0f,
         juce::AudioParameterFloatAttributes {}
             .withLabel ("Hz")
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatHz (value); })
@@ -21,8 +21,8 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (fancy::levelParameter ("wet", "Wet", levelFloorDb, 12.0f, -12.0f, levelFloorDb));
     layout.add (fancy::levelParameter ("dry", "Dry", levelFloorDb, 12.0f, 0.0f, levelFloorDb));
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { "q", 1 }, "Filter Q", fancy::logRange (0.5f, 10.0f, 0.01f), 2.0f,
+    layout.add (fancy::floatParameter (
+        "q", "Filter Q", fancy::logRange (0.5f, 10.0f, 0.01f), 2.0f,
         juce::AudioParameterFloatAttributes {}
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2); })));
 

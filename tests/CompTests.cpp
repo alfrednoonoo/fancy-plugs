@@ -314,8 +314,9 @@ TEST_CASE ("release curves", "[comp]")
     // Linear falls 8.7 dB per time constant.
     CHECK (reductionAfterRelease (true, false) == Catch::Approx (31.3).margin (0.5));
 
-    // The 100 ms burst only charged the slow envelope to 63 %, so Auto recovers faster.
-    CHECK (reductionAfterRelease (false, true) == Catch::Approx (9.3).margin (0.7));
+    // The 100 ms burst only charged the slow envelope to 63 %, and it then decays to 9.3 dB.
+    // The fast stage trails it by a factor of 1 / (1 - 0.1), which gives 10.3 dB.
+    CHECK (reductionAfterRelease (false, true) == Catch::Approx (10.33).margin (0.1));
 }
 
 TEST_CASE ("aliasing is below -90 dBFS at 4x", "[comp]")
@@ -389,12 +390,16 @@ TEST_CASE ("pre-comp latency is reported and wet and dry stay aligned", "[comp]"
     REQUIRE (latency >= 240);
 
     // With no compression, equal wet and dry sum to the input if and only if they align.
+    // JUCE's fractional delay leaves the oversampled wet path within a small fraction of a
+    // sample. This margin is about 0.03 samples at 5 kHz, where a whole sample would be 0.16.
     const auto input = sine (5000.0, 0.25, rate, 9600);
     auto output = input;
     output.process (dsp);
 
+    const auto margin = oversampling == CompDsp::off ? 1.0e-5 : 6.0e-3;
+
     for (int i = 4800; i < input.size(); ++i)
-        REQUIRE (output.left[(size_t) i] == Catch::Approx (input.left[(size_t) (i - latency)]).margin (2.0e-3));
+        REQUIRE (output.left[(size_t) i] == Catch::Approx (input.left[(size_t) (i - latency)]).margin (margin));
 }
 
 TEST_CASE ("pre-comp catches a transient", "[comp]")
@@ -659,9 +664,15 @@ TEST_CASE ("comp automation with an unchanged value is bit-identical", "[comp]")
 
     for (auto* parameter : automated.getParameters())
     {
+        auto* ranged = dynamic_cast<juce::RangedAudioParameter*> (parameter);
+        const auto before = automated.getApvts().getRawParameterValue (ranged->getParameterID())->load();
+
         parameter->beginChangeGesture();
         parameter->setValueNotifyingHost (parameter->getValue());
         parameter->endChangeGesture();
+
+        INFO (ranged->getParameterID());
+        CHECK (automated.getApvts().getRawParameterValue (ranged->getParameterID())->load() == before);
     }
 
     REQUIRE (render (plain, 2048) == render (automated, 2048));

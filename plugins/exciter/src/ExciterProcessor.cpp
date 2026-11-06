@@ -11,8 +11,8 @@ fancy::FancyProcessor::Layout createLayout()
 {
     fancy::FancyProcessor::Layout layout;
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { "freq", 1 }, "Freq", fancy::logRange (500.0f, 16000.0f, 1.0f), 2000.0f,
+    layout.add (fancy::floatParameter (
+        "freq", "Freq", fancy::logRange (500.0f, 16000.0f, 1.0f), 2000.0f,
         juce::AudioParameterFloatAttributes {}
             .withLabel ("Hz")
             .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " Hz"; })

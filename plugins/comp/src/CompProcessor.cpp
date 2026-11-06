@@ -16,8 +16,8 @@ juce::NormalisableRange<float> skewedRange (float high, float interval, float ce
 
 std::unique_ptr<juce::AudioParameterFloat> timeParameter (const juce::String& id, const juce::String& name, float high, float centre, float defaultMs)
 {
-    return std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { id, 1 }, name, skewedRange (high, 0.1f, centre), defaultMs,
+    return fancy::floatParameter (
+        id, name, skewedRange (high, 0.1f, centre), defaultMs,
         juce::AudioParameterFloatAttributes {}
             .withLabel ("ms")
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
@@ -35,8 +35,8 @@ juce::String filterText (float hz)
 
 std::unique_ptr<juce::AudioParameterFloat> filterParameter (const juce::String& id, const juce::String& name, float defaultHz)
 {
-    return std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { id, 1 }, name, fancy::logRange (20.0f, 24000.0f, 1.0f), defaultHz,
+    return fancy::floatParameter (
+        id, name, fancy::logRange (20.0f, 24000.0f, 1.0f), defaultHz,
         juce::AudioParameterFloatAttributes {}
             .withLabel ("Hz")
             .withStringFromValueFunction ([] (float value, int) { return filterText (value); })
@@ -65,8 +65,8 @@ fancy::FancyProcessor::Layout createLayout()
 
     layout.add (fancy::levelParameter ("threshold", "Threshold", -60.0f, 0.0f, 0.0f, -100.0f));
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { "ratio", 1 }, "Ratio", fancy::logRange (1.0f, (float) CompDsp::infiniteRatio, 0.01f), 4.0f,
+    layout.add (fancy::floatParameter (
+        "ratio", "Ratio", fancy::logRange (1.0f, (float) CompDsp::infiniteRatio, 0.01f), 4.0f,
         juce::AudioParameterFloatAttributes {}
             .withStringFromValueFunction ([] (float value, int) { return ratioText (value); })
             .withValueFromStringFunction ([] (const juce::String& text)
@@ -74,8 +74,8 @@ fancy::FancyProcessor::Layout createLayout()
                                               return text.containsIgnoreCase ("inf") ? (float) CompDsp::infiniteRatio : text.getFloatValue();
                                           })));
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { "knee", 1 }, "Knee", skewedRange (24.0f, 0.01f, 6.0f), 0.5f,
+    layout.add (fancy::floatParameter (
+        "knee", "Knee", skewedRange (24.0f, 0.01f, 6.0f), 0.5f,
         juce::AudioParameterFloatAttributes {}
             .withLabel ("dB")
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2) + " dB"; })
