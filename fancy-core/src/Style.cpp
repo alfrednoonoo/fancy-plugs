@@ -23,7 +23,7 @@ juce::Font font (Weight weight, float height)
                         : weight == Weight::medium   ? typefaces->medium
                                                      : typefaces->semiBold;
 
-    return juce::Font (juce::FontOptions {}.withTypeface (typeface).withHeight (height));
+    return juce::Font (juce::FontOptions {}.withTypeface (typeface).withPointHeight (height));
 }
 
 FancyLookAndFeel::FancyLookAndFeel()

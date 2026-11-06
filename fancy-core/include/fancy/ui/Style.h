@@ -36,6 +36,7 @@ struct Typefaces
     juce::Typeface::Ptr regular, medium, semiBold;
 };
 
+// Height is the em size, matching font sizes in the Figma file.
 juce::Font font (Weight weight, float height);
 
 class FancyLookAndFeel final : public juce::LookAndFeel_V4
