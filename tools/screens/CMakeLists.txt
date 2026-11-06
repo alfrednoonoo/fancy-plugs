@@ -14,7 +14,7 @@ target_compile_definitions(fancy-screens PRIVATE
 
 target_link_libraries(fancy-screens
     PRIVATE
-        fancy_core
+        fancy_ui
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC

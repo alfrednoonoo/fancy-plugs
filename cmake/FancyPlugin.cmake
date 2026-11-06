@@ -39,7 +39,7 @@ function(fancy_add_plugin target)
 
     target_link_libraries(${target}
         PRIVATE
-            fancy_core
+            fancy_ui
             juce::juce_audio_utils
             juce::juce_dsp
         PUBLIC

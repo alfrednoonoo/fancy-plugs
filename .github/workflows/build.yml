@@ -74,6 +74,14 @@ jobs:
       - name: Run DSP tests
         run: ctest --test-dir build --output-on-failure
 
+      - name: Record measurements
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path measurements | Out-Null
+          $exe = Get-ChildItem -Path build/tests -Recurse -File -Filter 'fancy-tests.exe' | Select-Object -First 1
+          & $exe.FullName '[measure]' | Tee-Object -FilePath measurements/measurements.txt
+          if ($LASTEXITCODE -ne 0) { throw "measurements exited with $LASTEXITCODE" }
+
       - name: Stage VST3 bundles
         shell: pwsh
         run: |
@@ -119,5 +127,13 @@ jobs:
         with:
           name: screens-${{ env.SHORT_SHA }}
           path: screens
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload measurements
+        uses: actions/upload-artifact@v7
+        with:
+          name: measurements-${{ env.SHORT_SHA }}
+          path: measurements
           if-no-files-found: error
           retention-days: 14

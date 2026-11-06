@@ -1,15 +1,35 @@
 #pragma once
 
-#include <juce_audio_processors/juce_audio_processors.h>
+#include "KickerProcessor.h"
 
-// Skeleton: an empty panel at the Kicker's window size, until the fancy-core components exist.
-class KickerEditor final : public juce::AudioProcessorEditor
+#include <fancy/ui/Meter.h>
+#include <fancy/ui/ShellEditor.h>
+
+class KickerEditor final : public fancy::ui::ShellEditor
 {
 public:
-    explicit KickerEditor (juce::AudioProcessor& processor);
+    explicit KickerEditor (KickerProcessor& processor);
 
-    void paint (juce::Graphics& g) override;
+    // For rendered screenshots: mockup levels, optionally with the EDIT drawer open.
+    void showPreview (bool drawerOpen);
 
 private:
+    class Panels final : public juce::Component
+    {
+    public:
+        void paint (juce::Graphics&) override;
+    };
+
+    void onTick (float seconds) override;
+
+    Panels panels;
+    fancy::ui::Knob freqKnob, wetKnob, dryKnob;
+    fancy::ui::EditLink editLink;
+    fancy::ui::InOutMeter meter;
+
+    fancy::ui::EditDrawer drawer;
+    fancy::ui::Knob qKnob, drawerOutputKnob;
+    fancy::ui::ParamCheckbox monoCheckbox, softClipCheckbox;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KickerEditor)
 };

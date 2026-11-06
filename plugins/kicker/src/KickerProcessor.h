@@ -1,35 +1,37 @@
 #pragma once
 
-#include <juce_audio_processors/juce_audio_processors.h>
+#include "KickerDsp.h"
 
-// Skeleton: passes audio through unchanged. The real DSP arrives with the Kicker milestone.
-class KickerProcessor final : public juce::AudioProcessor
+#include <fancy/plugin/FancyProcessor.h>
+
+#include <atomic>
+
+class KickerProcessor final : public fancy::FancyProcessor
 {
 public:
     KickerProcessor();
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-    void releaseResources() override;
+    void releaseResources() override {}
+    void reset() override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
     void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) override;
 
     juce::AudioProcessorEditor* createEditor() override;
-    bool hasEditor() const override { return true; }
-
-    const juce::String getName() const override { return "Fancy Kicker"; }
-    bool acceptsMidi() const override { return false; }
-    bool producesMidi() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
-
-    int getNumPrograms() override { return 1; }
-    int getCurrentProgram() override { return 0; }
-    void setCurrentProgram (int) override {}
-    const juce::String getProgramName (int) override { return {}; }
-    void changeProgramName (int, const juce::String&) override {}
-
-    void getStateInformation (juce::MemoryBlock& destData) override;
-    void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
+    KickerDsp::Targets readTargets() const;
+
+    KickerDsp dsp;
+
+    std::atomic<float>& freq;
+    std::atomic<float>& wet;
+    std::atomic<float>& dry;
+    std::atomic<float>& q;
+    std::atomic<float>& output;
+    std::atomic<float>& monoBelow;
+    std::atomic<float>& softClip;
+    std::atomic<float>& bypass;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KickerProcessor)
 };

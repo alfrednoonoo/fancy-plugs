@@ -1,0 +1,77 @@
+#include <fancy/plugin/FancyProcessor.h>
+
+#include <cmath>
+
+namespace fancy
+{
+
+FancyProcessor::FancyProcessor (const juce::String& pluginName,
+                                const juce::Identifier& stateType,
+                                const BusesProperties& buses,
+                                Layout layout,
+                                std::vector<FactoryPreset> factoryPresets)
+    : AudioProcessor (buses),
+      name (pluginName),
+      apvts (*this, nullptr, stateType, std::move (layout)),
+      presets (*this, std::move (factoryPresets))
+{
+}
+
+juce::AudioProcessorParameter* FancyProcessor::getBypassParameter() const
+{
+    return apvts.getParameter ("bypass");
+}
+
+void FancyProcessor::getStateInformation (juce::MemoryBlock& destData)
+{
+    auto state = apvts.copyState();
+    state.setProperty ("stateVersion", stateVersion, nullptr);
+
+    if (const auto xml = state.createXml())
+        copyXmlToBinary (*xml, destData);
+}
+
+void FancyProcessor::setStateInformation (const void* data, int sizeInBytes)
+{
+    if (data == nullptr || sizeInBytes <= 0)
+        return;
+
+    if (const auto xml = getXmlFromBinary (data, sizeInBytes))
+        applyState (juce::ValueTree::fromXml (*xml));
+}
+
+bool FancyProcessor::applyState (const juce::ValueTree& tree)
+{
+    if (! tree.isValid() || tree.getType() != apvts.state.getType())
+        return false;
+
+    auto clean = tree.createCopy();
+
+    for (int i = clean.getNumChildren(); --i >= 0;)
+    {
+        auto child = clean.getChild (i);
+        const auto id = child.getProperty ("id").toString();
+
+        if (apvts.getParameter (id) == nullptr)
+        {
+            clean.removeChild (i, nullptr);
+            continue;
+        }
+
+        const auto value = (double) child.getProperty ("value");
+
+        if (! std::isfinite (value))
+        {
+            clean.removeChild (i, nullptr);
+            continue;
+        }
+
+        const auto range = apvts.getParameterRange (id);
+        child.setProperty ("value", juce::jlimit ((double) range.start, (double) range.end, value), nullptr);
+    }
+
+    apvts.replaceState (clean);
+    return true;
+}
+
+} // namespace fancy
