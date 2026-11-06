@@ -2,6 +2,7 @@
 
 #include "TruePeakLimiter.h"
 
+#include <fancy/dsp/Biquad.h>
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/Svf.h>
 
@@ -92,6 +93,7 @@ private:
     struct ChannelState
     {
         fancy::dsp::Svf highPass, lowPass;
+        fancy::dsp::Biquad gainSmoother;
         std::vector<float> dryDelay, preCompDelay;
         double meanSquare = 0.0;
         double envelope = 0.0;

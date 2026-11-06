@@ -15,6 +15,7 @@ constexpr double decibelsPerNeper = 8.685889638;
 constexpr double highPassOffHz = 20.5;
 constexpr double lowPassOffHz = 23900.0;
 constexpr double silenceFloor = 1.0e-30;
+constexpr double gainSmootherHz = 20000.0;
 
 double coefficientFor (double milliseconds, double sampleRate) noexcept
 {
@@ -179,6 +180,7 @@ void CompDsp::resetCore()
     {
         state.highPass.reset();
         state.lowPass.reset();
+        state.gainSmoother.reset();
         state.meanSquare = 0.0;
         state.envelope = 0.0;
         state.slowEnvelope = 0.0;
@@ -245,6 +247,9 @@ void CompDsp::applyConfig (const Config& config)
 
     for (auto* smoother : { &threshold, &slope, &knee, &makeup, &rms, &previewAmount, &lowPassAmount, &highPassAmount, &logLowPass, &logHighPass })
         smoother->setTime (20.0, internalRate);
+
+    for (auto& state : channels)
+        state.gainSmoother.setButterworthLowPass (gainSmootherHz, internalRate);
 
     resetCore();
     setTargets (current);
@@ -438,6 +443,11 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             }
 
             peakReduction[ch] = std::max (peakReduction[ch], reduction);
+
+            // The gain has sharp corners at each signal peak, so its harmonics reach past the
+            // oversampled Nyquist and fold back into the audio. Band-limiting it stops that.
+            if (factor > 1)
+                reduction = state.gainSmoother.process (reduction);
 
             state.preCompDelay[(size_t) writePosition] = signal[ch][i];
             const auto delayed = (double) state.preCompDelay[(size_t) readPosition];
