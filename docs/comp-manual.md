@@ -48,13 +48,15 @@ Click **EDIT** at the right of the Detector input row to open it, and **Done** t
 
 | Control | Default | What it does |
 |---|---|---|
-| Oversampling | Off | 2x or 4x reduces aliasing at very fast settings, at the cost of CPU and latency |
+| Oversampling | Off | 2x or 4x reduces aliasing at very fast settings, at the cost of CPU and latency. With it on, the detector always averages over at least 0.1 ms |
 | Oversampling filter | Linear | Linear keeps wet and dry phase-aligned. Minimum has less pre-ringing |
 | Release curve | Exponential | Linear falls at a constant dB rate, like older compressors |
 | Feedback detection | off | The detector listens to the compressor's own output, for a gentler, more program-dependent response |
 | Attack = 90 % rise | off | See below |
 | Link amount | 100 % | How strongly linked channels follow the louder one |
 | Output | 0.0 dB | The same control as the header knob |
+
+Aliasing only matters with very fast settings on bright material. In a harsh test (15 kHz sine, attack 0.1 ms, release 1 ms), the worst alias is -56.8 dBFS with oversampling off, -79.2 dBFS at 2x and -100.9 dBFS at 4x.
 
 ## Attack and release times
 
@@ -70,7 +72,7 @@ Attack and release are time constants: the time to cover about 63 % of the dista
 | Limit output | adds 104 samples at 48 kHz |
 | Pre-comp | adds the set time |
 
-Minimum-phase oversampling has its own latency, and `docs/measurements/comp.txt` has the current numbers. REAPER compensates for all of this automatically. Dry is delayed to match, so wet and dry stay aligned.
+Minimum-phase oversampling has a different latency, shown in REAPER. REAPER compensates for all of this automatically. Dry is delayed to match, so wet and dry stay aligned.
 
 Pre-comp, Oversampling and Limit output change the latency. After you stop changing one of them, the plugin waits about 50 ms and then has a short dropout while it reconfigures. Set them before you play rather than automating them.
 

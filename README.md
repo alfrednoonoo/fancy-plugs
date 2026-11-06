@@ -1,6 +1,6 @@
 # Fancy Plugs
 
-Five VST3 effects for personal use on Windows: Fancy Kicker, Fancy Exciter, Fancy Comp, Fancy EQ and Fancy Verb. Fancy Kicker and Fancy Exciter are built, and the others are still to come; see `docs/PROGRESS.md` for status.
+Five VST3 effects for personal use on Windows: Fancy Kicker, Fancy Exciter, Fancy Comp, Fancy EQ and Fancy Verb. Fancy Kicker, Fancy Exciter and Fancy Comp are built, and the others are still to come; see `docs/PROGRESS.md` for status.
 
 ## How builds work
 

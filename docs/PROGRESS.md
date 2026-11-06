@@ -6,9 +6,10 @@
 - `fancy-core`: done, except the Verb module card, which is deferred until Verb needs it.
 - Fancy Kicker: done, signed off in REAPER by the user.
 - Fancy Exciter: done, signed off in REAPER by the user.
-- Fancy Comp: in progress.
+- Fancy Comp: built and green in CI, **waiting for the REAPER check** in `docs/comp-checklist.md` (§7 checks 3 and 7).
+- Next: Fancy EQ, once the Comp is signed off.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42251800797 (commit `12048a8`).
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42263079104 (commit `b575b0a`).
 
 ## Kicker acceptance (§7)
 
@@ -35,6 +36,32 @@ Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42251800797
 | 7 | Installed and confirmed in REAPER | Pass, confirmed by the user |
 
 Exciter deviations from Figma: knob arrows follow the §3.2 ranges as the user confirmed, so Freq 2000 Hz sits at 40 % where Figma draws 18 %. The other Kicker notes on peak-hold lines, meter tops, the caption and the About box apply here too.
+
+## Comp acceptance (§7)
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Actions run green, artifact contains the plugin | Pass, run above |
+| 2 | pluginval strictness 10 | Pass for all three plugins, GUI tests on |
+| 3 | State survives a REAPER project reload | **Waiting for the user**; state round-trip and corrupted-state tests pass in CI |
+| 4 | §5.2 tests | Pass, 57 test cases across the suite. Worst alias at 4× is -100.9 dBFS against the -90 dBFS target. The limiter holds its ceiling up to 200 dB above threshold in every oversampling mode. Numbers in `docs/measurements/comp.txt` |
+| 5 | Screenshots compared with the reference | Done against the Figma frame; `docs/screens/comp-vs-reference.png` shows Figma above the build |
+| 6 | CPU against the §4.11 target | Pass: 0.41–0.72 % without oversampling across runs, against < 1 %. About 2 % at 2× and 3–4 % at 4× on CI runners |
+| 7 | Installed and confirmed in REAPER | **Waiting for the user** |
+
+Comp deviations from Figma:
+
+- **GR panel and Link channels:** added, because the Figma frame omits them and §2.5 requires them. The window is 934 × 527 rather than 834 × 527, and the Out meter's scale is 10 px wider, because Inter's two-digit numbers don't fit Figma's 13 px.
+- **EDIT link:** added at the right of the Detector input row, for the settings that aren't in the mockups.
+- **Checkbox states:** Figma shows Weird, Classic, Auto, Auto make-up, Preview filter and Limit output ticked. These are off by default, and Link channels is on. The comparison render sets the Figma states.
+- **Knob arrows:** follow the values, as the user confirmed. Highpass at 93 Hz and Attack at 3 ms therefore sit differently from Figma, and Threshold -4.4 dB sits near the top of its fader.
+- **Dry fader:** its default dot sits at the bottom, because Dry defaults to -inf. Figma draws it near 0 dB.
+
+Lessons from the Comp build, which apply to the EQ and Verb:
+
+- **Compute test bins from the signal.** The first aliasing test used hand-picked frequencies, missed every odd harmonic and could not fail. A result of -108 dBFS with oversampling off gave it away.
+- **Sawtooth aliasing starts in the envelope.** The harmonics fold when the follower is sampled, so filters placed after it do nothing. Two fixes that assumed otherwise were tried and removed.
+- **JUCE seeds raw parameter values unsnapped.** `FancyProcessor` now writes every parameter once at construction, which fixes this for all plugins. This is what keeps §4.8 bit-identical.
 
 ## Figma
 
@@ -86,6 +113,7 @@ Not tested by anything yet, because CI can't click: drag, shift-drag, double-cli
 | Skeleton, warm | 2m17s | 64 s | 98 % |
 | Kicker, large change | 5m48s | | 75 % |
 | Kicker, small change to shared code | 3m19s–4m11s | | |
+| Three plugins, code change | 4m59s–5m11s | | |
 
 Target: warm one-plugin build under about 6 minutes (met). The full-suite target of 15 minutes can't be measured until more plugins exist. The runner image changes about weekly, which refreshes the dependency cache and adds about 4 minutes of configure time to the next run.
 
@@ -108,7 +136,6 @@ Target: warm one-plugin build under about 6 minutes (met). The full-suite target
 ## Open questions
 
 - **Figma token.** A personal access token was pasted into the conversation and needs revoking and replacing. Do not store it anywhere in this repo. The Figma data is committed, so later sessions only need the token to re-export.
-- **Dropdown fill.** The Figma Dropdown/Small component is #424242, but the header instances override it to #303030. Check which the Comp Detector input uses when building the Comp.
 - pluginval's Steinberg VST3 validator step is skipped, because no validator path is set. The brief doesn't require it.
 - `reference/07__ReaEQ.png`: §3.4 asks for the musical note on the frequency display, but its example and the mockup show it after the gain value. Decide when building the EQ.
 
