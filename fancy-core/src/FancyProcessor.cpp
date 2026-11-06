@@ -15,6 +15,11 @@ FancyProcessor::FancyProcessor (const juce::String& pluginName,
       apvts (*this, nullptr, stateType, std::move (layout)),
       presets (*this, std::move (factoryPresets))
 {
+    // The value tree seeds its raw values without snapping them to each parameter's grid, so
+    // the first write from a host would shift them slightly and change the audio. Writing
+    // them here means a parameter already holds the value any later write would give it.
+    for (auto* parameter : getParameters())
+        parameter->setValueNotifyingHost (parameter->getValue());
 }
 
 juce::AudioProcessorParameter* FancyProcessor::getBypassParameter() const
