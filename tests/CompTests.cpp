@@ -334,11 +334,18 @@ static double worstAliasDb (int oversampling)
     auto signal = sine (15000.0, 0.5, sampleRate, 88200);
     signal.process (dsp);
 
-    // 15 kHz has no harmonics below Nyquist, so anything else here is an alias.
+    // 15 kHz has no harmonics below Nyquist, so every harmonic that lands in the audio band
+    // is an alias. Gain ripple on a sine creates mainly odd harmonics, so all of them count.
     double worst = -200.0;
 
-    for (const auto hz : { 1000.0, 3000.0, 5000.0, 7350.0, 9000.0, 11025.0, 14100.0, 16900.0, 19000.0, 21000.0 })
-        worst = std::max (worst, levelAt (signal.left, 44100, hz, sampleRate));
+    for (int harmonic = 2; harmonic <= 40; ++harmonic)
+    {
+        const auto wrapped = std::fmod ((double) harmonic * 15000.0, sampleRate);
+        const auto alias = std::min (wrapped, sampleRate - wrapped);
+
+        if (std::abs (alias - 15000.0) > 1.0 && alias > 1.0)
+            worst = std::max (worst, levelAt (signal.left, 44100, alias, sampleRate));
+    }
 
     return worst;
 }
