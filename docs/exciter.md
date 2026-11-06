@@ -47,7 +47,7 @@ One-pole smoothers, per sample: Freq over 30 ms in the log domain, with filter c
 
 Latency doesn't depend on the sample rate in samples. The dry path is delayed by the same amount, and bypass uses the delayed dry path.
 
-Changing oversampling while playing fades the output out, swaps the filters, reports the new latency and fades back in. The audio drops out for about 40 ms in total. All oversamplers are built in `prepareToPlay`, so nothing allocates on the audio thread.
+Changing oversampling while playing fades the output out, swaps the filters, reports the new latency, waits for the delay line to refill and the filters to settle, then fades back in. The audio drops out for about 50 ms plus the new latency. All oversamplers are built in `prepareToPlay`, so nothing allocates on the audio thread.
 
 ## State
 

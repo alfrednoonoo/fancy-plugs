@@ -82,6 +82,7 @@ private:
     int delayWritePosition = 0;
     int delayLength = 1;
     int activeLatency = 0;
+    int switchHoldSamples = 0;
 
     fancy::dsp::Smoother logFrequency, boost, harmonics, mixBack, character, output, bypass, switchGain;
 };

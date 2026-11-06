@@ -9,6 +9,7 @@ constexpr double shaperLimit = 1.5;
 constexpr double maxBias = 0.75;
 constexpr double butterworthQ = 0.70710678118654752;
 constexpr double switchFadeMs = 2.0;
+constexpr double switchSettleSeconds = 0.003;
 constexpr double adaaThreshold = 1.0e-6;
 
 double biasFor (double character) noexcept
@@ -135,6 +136,7 @@ void ExciterDsp::snapToTargets (const Targets& targets)
     output.snapTo (targets.outputGain);
     bypass.snapTo (targets.bypass ? 1.0 : 0.0);
     switchGain.snapTo (1.0);
+    switchHoldSamples = 0;
 
     updateFilter (logFrequency.getCurrent());
     selectOversampling (targets.oversampling);
@@ -210,8 +212,15 @@ void ExciterDsp::processChunk (float* const* channels, int numChannels, int offs
         if (switchGain.isSettled())
         {
             selectOversampling (requestedOversampling);
-            switchGain.setTarget (1.0);
+
+            // Stay silent until the empty delay line has refilled and the cleared filters
+            // have settled. Fading in sooner lets the signal restart abruptly, a click.
+            switchHoldSamples = activeLatency + juce::roundToInt (switchSettleSeconds * sampleRate);
         }
+    }
+    else if (switchHoldSamples > 0)
+    {
+        switchHoldSamples -= numSamples;
     }
     else
     {
