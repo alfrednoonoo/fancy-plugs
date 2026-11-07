@@ -6,6 +6,10 @@
 2. Open REAPER and go to Options > Preferences > Plug-ins > VST, then click **Re-scan**.
 3. Add **Fancy MultiComp** to a mix or a drum bus.
 
+## Header
+
+- [ ] The I/O pill reads **4 in 2 out**.
+
 ## Sound
 
 - [ ] At the defaults, the plugin sounds the same as bypassed.

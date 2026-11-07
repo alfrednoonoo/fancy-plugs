@@ -148,7 +148,7 @@ The standard `FancyProcessor` XML, plus the editor's selected band as a `selecte
 
 ## CPU
 
-§4.11 sets no target for this plugin. Target here: under 2 % for 4 bands at 48 kHz/128 samples in LR 24 mode, which is four of Fancy Comp's compressors at about 0.5 % each. Measured with a CI benchmark, in `docs/measurements/multicomp.txt`.
+§4.11 sets no target for this plugin. Target here: under 2 % for 4 bands at 48 kHz/128 samples in LR 24 mode, which is four of Fancy Comp's compressors at about 0.5 % each. Measured with a CI benchmark, in `docs/measurements/multicomp.txt`: 2.17-2.42 % for 4 bands in LR 24, so it's a little over. The cost is mostly `log10` and `pow` on every sample of every band.
 
 ## How each P3.3 issue is handled
 

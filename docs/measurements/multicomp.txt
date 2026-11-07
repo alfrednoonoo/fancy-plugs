@@ -1,0 +1,6 @@
+﻿multicomp flatness: type 0, 8 bands, worst 0.0285 dB
+multicomp flatness: type 1, 8 bands, worst 0.0254 dB
+multicomp flatness: type 2, 8 bands, worst 0.0193 dB
+multicomp cpu: LR 24 4 bands 2.42 %, with limiter 2.55 %, 8 bands 6.74 %
+multicomp cpu: LR 48 4 bands 2.53 %, 8 bands 7.33 %
+multicomp cpu: Linear 4 bands 3.46 %, 8 bands 6.92 %
