@@ -30,7 +30,7 @@ private:
     };
 
     // Input level and the gate's gain over the last 3 s. A click or drag sets Threshold.
-    class History final : public juce::Component
+    class History final : public juce::Component, public juce::SettableTooltipClient
     {
     public:
         History (GateDsp& dsp, juce::RangedAudioParameter& threshold, juce::RangedAudioParameter& hysteresis);
