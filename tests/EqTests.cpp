@@ -216,6 +216,7 @@ TEST_CASE ("responses agree across sample rates", "[eq]")
         makeBand (BandType::band, 15000.0, 6.0, 1.0),
         makeBand (BandType::lowPass, 5000.0, 0.0, 0.707, 2),
         makeBand (BandType::lowPass, 12000.0, 0.0, 0.707, 4),
+        makeBand (BandType::lowPass, 16000.0, 0.0, 2.0, 2),
         makeBand (BandType::highPass, 100.0, 0.0, 0.707, 4),
         makeBand (BandType::highPass, 10000.0, 0.0, 0.707, 2),
         makeBand (BandType::lowShelf, 200.0, 12.0, 0.707, 2),
@@ -747,7 +748,9 @@ TEST_CASE ("changing phase mode while playing is safe", "[eq]")
         REQUIRE (std::abs (sample) < 0.75f);
 
     // Back to full level after the last change.
-    REQUIRE (levelAt (signal.left, 84000, 500.0, rate) == Catch::Approx (fancy::gainToDb (0.5)).margin (0.2));
+    const auto expected = fancy::gainToDb (0.5) + responseDb (targets.bands[0], rate, 500.0);
+
+    REQUIRE (levelAt (signal.left, 84000, 500.0, rate) == Catch::Approx (expected).margin (0.05));
 }
 
 // Analyzer ----------------------------------------------------------------------------------

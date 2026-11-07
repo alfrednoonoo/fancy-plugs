@@ -96,18 +96,32 @@ Section matchedBoost (double w, double gain, double q) noexcept
     return factor (a0, b1, b2, poles);
 }
 
+// Vicanek's poles, with the numerator matched at DC, at w and near Nyquist. Matching at Nyquist
+// itself leaves 1 to 2 dB of error around 20 kHz at 44.1 kHz.
 Section matchedLowPass (double w, double q) noexcept
 {
     const auto poles = mapPoles (w / q, w * w);
     const auto a0 = poles.upper0(), a1 = poles.upper1(), a2 = poles.upper2();
-    const Phi phi (w);
 
-    const auto r1 = (a0 * phi.phi0 + a1 * phi.phi1 + a2 * phi.phi2) * q * q;
-    const auto root0 = std::sqrt (a0);
-    const auto root1 = std::sqrt (std::max ((r1 - a0 * phi.phi0) / phi.phi1, 0.0));
-    const auto b0 = 0.5 * (root0 + root1);
+    const Analog analog { 0.0, 0.0, w * w, w / q, w * w };
 
-    return { b0, root0 - b0, 0.0, poles.a1, poles.a2 };
+    const auto target = [&] (const Phi& phi, double wMatch)
+    {
+        return (a0 * phi.phi0 + a1 * phi.phi1 + a2 * phi.phi2) * analog.powerAt (wMatch) - a0 * phi.phi0;
+    };
+
+    const auto wLow = std::min (w, 0.7 * pi);
+    const auto wHigh = 0.9 * pi;
+    const Phi low (wLow), high (wHigh);
+
+    const auto r1 = target (low, wLow);
+    const auto r2 = target (high, wHigh);
+    const auto determinant = low.phi1 * high.phi2 - low.phi2 * high.phi1;
+
+    return factor (a0,
+                   (r1 * high.phi2 - low.phi2 * r2) / determinant,
+                   (low.phi1 * r2 - high.phi1 * r1) / determinant,
+                   poles);
 }
 
 Section matchedHighPass (double w, double q) noexcept
