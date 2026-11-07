@@ -257,7 +257,10 @@ void EqDsp::updateBands() noexcept
         if (! wanted.sameShape (band.active))
         {
             // A change of shape can't be smoothed, so it's made while the band is out of the path.
+            // The coefficients hold still meanwhile: a ramp left running would overshoot its
+            // target and leave the stable region.
             band.mixTarget = 0.0;
+            band.moving = false;
 
             if (band.mix <= 0.0)
                 snapBand (band, wanted);

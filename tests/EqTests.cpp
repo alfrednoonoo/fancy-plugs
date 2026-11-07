@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <limits>
 #include <numbers>
+#include <random>
 #include <vector>
 
 namespace
@@ -578,6 +579,94 @@ TEST_CASE ("changing band type, slope or power doesn't click", "[eq][sweep]")
     }
 
     REQUIRE (largestStep (signal.left) < 0.09);
+}
+
+TEST_CASE ("changing shape while a band is moving stays stable", "[eq]")
+{
+    auto targets = flatTargets();
+    targets.bands[0] = makeBand (BandType::band, 200.0, 12.0, 8.0);
+
+    EqDsp dsp;
+    prepare (dsp, targets);
+
+    auto signal = sine (500.0, 0.1, rate, 48000);
+
+    constexpr int blockSize = 128;
+
+    for (int start = 0, block = 0; start < signal.size(); start += blockSize, ++block)
+    {
+        // The moving Freq leaves a coefficient ramp running when the type changes.
+        if (block == 40)
+        {
+            targets.bands[0].frequencyHz = 15000.0;
+            dsp.setTargets (targets);
+        }
+
+        if (block == 41)
+            targets.bands[0].type = BandType::lowPass;
+
+        dsp.setTargets (targets);
+
+        float* channels[] { signal.left.data() + start, signal.right.data() + start };
+        dsp.process (channels, 2, std::min (blockSize, signal.size() - start));
+    }
+
+    for (const auto sample : signal.left)
+        REQUIRE (std::abs (sample) < 2.0f);
+}
+
+TEST_CASE ("random parameter changes never produce bad output", "[eq]")
+{
+    const auto seed = GENERATE (1u, 2u, 3u, 4u, 5u);
+    const auto linearPhase = GENERATE (false, true);
+
+    std::mt19937 random (seed);
+
+    const auto uniform = [&random] (double low, double high)
+    {
+        return std::uniform_real_distribution<double> (low, high) (random);
+    };
+
+    const auto randomBand = [&]
+    {
+        auto band = makeBand ((BandType) (random() % 9),
+                              20.0 * std::pow (1200.0, uniform (0.0, 1.0)),
+                              uniform (-24.0, 24.0),
+                              0.1 * std::pow (300.0, uniform (0.0, 1.0)),
+                              eq::slopeOrders[random() % 6]);
+
+        band.on = random() % 4 != 0;
+        return band;
+    };
+
+    auto targets = flatTargets();
+    targets.linearPhase = linearPhase;
+    targets.firLength = 0;
+
+    for (auto& band : targets.bands)
+        band = randomBand();
+
+    EqDsp dsp;
+    prepare (dsp, targets, 44100.0);
+
+    auto signal = sine (440.0, 0.1, 44100.0, 256);
+
+    for (int block = 0; block < 2000; ++block)
+    {
+        auto buffer = signal;
+
+        for (auto& band : targets.bands)
+            if (random() % 3 == 0)
+                band = randomBand();
+
+        dsp.setTargets (targets);
+
+        float* channels[] { buffer.left.data(), buffer.right.data() };
+        dsp.process (channels, 2, buffer.size());
+
+        for (const auto sample : buffer.left)
+            REQUIRE (std::isfinite (sample));
+    }
 }
 
 // Linear phase ------------------------------------------------------------------------------
