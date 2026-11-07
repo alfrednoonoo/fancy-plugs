@@ -1,0 +1,53 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><script src="lib.js"></script></head><body>
+<div class="win" style="width:760px">
+ <div class="hdr"><div class="dd" style="width:150px">Ping-pong 1/8.</div><div class="btn">+ New</div><div class="btn">Parameter</div><div class="btn">2 in 2 out</div><div class="sp"></div><span class="cap">120.0 BPM (host)</span><div data-k data-v=".5" data-c="#00A884" data-s="16" style="width:26px"></div><div class="on">⏻ ON</div></div>
+ <div style="display:flex">
+  <div style="flex:1;padding:10px 10px 8px 12px">
+   <svg id="g" width="610" height="150" style="display:block;background:#262626;border-radius:6px"></svg>
+   <div style="display:flex;align-items:center;gap:6px;margin:10px 0 8px">
+     <div class="tab" style="background:#F1C315;color:#1E1E1E;font-weight:700">1</div><div class="tab" style="border:1px solid #E77E23;color:#fff">2</div><div class="tab" style="border:1px solid #9648BA;color:#fff">3</div><div class="tab" style="color:#EDEDED">+</div>
+     <span class="title" style="margin-left:10px;color:#F1C315">Tap 1</span><span class="cap">375 ms · 1/8 dotted</span>
+     <div class="sp"></div><div class="btn" style="font-size:10.5px;padding:3px 8px">S</div><div class="btn" style="font-size:10.5px;padding:3px 8px;color:#F1C315">⏻</div><div class="btn" style="font-size:12px;padding:1px 8px;color:#909090">×</div>
+   </div>
+   <div style="display:flex;gap:8px">
+    <div class="sec" style="padding:10px 12px;width:186px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="title" style="font-size:10px;color:#909090">Time</span><div class="seg"><span>ms</span><span class="a">Note</span></div></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <div class="knob" data-k data-v=".45" data-c="#F1C315" data-s="50" data-l="Length" data-t="1/8 dotted" style="width:72px"></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="dd" style="font-size:10.5px;padding:3px 7px">1/8 note</div>
+          <div class="seg" style="font-size:9.5px"><span style="padding:3px 5px">♪</span><span class="a" style="padding:3px 5px">♪.</span><span style="padding:3px 5px">♪³</span></div>
+          <span class="cap">= 375.0 ms</span>
+        </div>
+      </div>
+    </div>
+    <div class="sec" style="padding:10px 8px;flex:1;display:flex;align-items:flex-start">
+      <div class="knob" data-k data-v=".42" data-c="#F1C315" data-l="Feedback" data-t="42 %"></div>
+      <div class="knob" data-k data-v=".72" data-c="#3690CC" data-l="Lowpass" data-t="4.5 kHz"></div>
+      <div class="knob" data-k data-v=".22" data-c="#3690CC" data-l="Highpass" data-t="180 Hz"></div>
+      <div class="knob" data-k data-v="1" data-c="#F1C315" data-l="Resolution" data-t="24 bit"></div>
+      <div class="knob" data-k data-v=".75" data-c="#F1C315" data-l="Width" data-t="1.00"></div>
+      <div class="knob" data-k data-v=".2" data-c="#F1C315" data-bi data-l="Pan" data-t="60 L"></div>
+      <div data-f data-h="76" data-v=".72" data-c="#F1C315" data-l="Volume" data-t="+0.0" style="margin-left:4px"></div>
+    </div>
+   </div>
+   <div style="display:flex;gap:18px;margin-top:10px;padding-left:2px"><div class="cb"><i class="x"></i>Filters inside feedback loop</div><div class="cb"><i class="x"></i>Ping-pong</div><div class="cb"><i></i>Saturate feedback</div><div class="cb"><i class="x"></i>Smooth time changes</div></div>
+  </div>
+  <div style="width:128px;background:#262626;display:flex;gap:9px;justify-content:center;padding:14px 8px 10px">
+    <div data-m data-h="290" data-v=".55,.6" data-l="Out" data-t="-6.1"></div>
+    <div data-f data-h="290" data-v=".62" data-l="Wet" data-t="-6.0"></div>
+    <div data-f data-h="290" data-v=".8" data-l="Dry" data-t="+0.0"></div>
+  </div>
+ </div>
+</div>
+<script>
+const W=610,H=150,x=ms=>30+(W-44)*ms/2000,base=H-26;
+let s='';for(let b=0;b<=4;b++){s+=`<line x1="${x(b*500)}" y1="10" x2="${x(b*500)}" y2="${base}" stroke="${b?'#3a3a3a':'#4C4C4C'}"/><text x="${x(b*500)}" y="${H-10}" fill="#909090" font-size="9" text-anchor="${b==4?'end':b==0?'start':'middle'}">${b*500} ms</text>`}
+for(let b=0;b<16;b++){if(b%4)s+=`<line x1="${x(b*125)}" y1="${base-6}" x2="${x(b*125)}" y2="${base}" stroke="#434343"/>`}
+s+=`<line x1="30" y1="${base}" x2="${W-14}" y2="${base}" stroke="#4C4C4C"/>`;
+s+=`<rect x="${x(0)-3}" y="20" width="6" height="${base-20}" rx="2" fill="#EDEDED" opacity=".85"/><text x="${x(0)+7}" y="22" fill="#909090" font-size="9">dry</text>`;
+const T=[[375,.9,'#F1C315',.42,-1],[500,.62,'#E77E23',.25,1],[750,.45,'#9648BA',0,0]];
+T.forEach(([t,v,c,fb,pan],i)=>{let a=v,k=1;while(t*k<2000&&a>.06){const h=(base-20)*a;s+=`<rect x="${x(t*k)-4}" y="${base-h}" width="8" height="${h}" rx="2" fill="${c}" opacity="${k==1?1:.38}"/>`;if(k==1){s+=`<circle cx="${x(t)+pan*0}" cy="${base-h-9}" r="6.5" fill="${i==0?c:'#EDEDED'}" stroke="${c}" stroke-width="1.6"/><text x="${x(t)}" y="${base-h-5.8}" font-size="8.5" font-weight="700" text-anchor="middle" fill="#1E1E1E">${i+1}</text>`}a*=fb;k++;if(!fb)break}});
+s+=`<text x="${W-14}" y="22" fill="#909090" font-size="9" text-anchor="end">faded bars = feedback repeats</text>`;
+document.getElementById('g').innerHTML=s;
+</script></body></html>

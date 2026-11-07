@@ -10,9 +10,9 @@
 - Fancy EQ: done, signed off in REAPER by the user.
 - Fancy Verb: done, signed off in REAPER by the user. All five plugins are finished.
 
-- Release: [v1.0.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.0.0). The repo is private, so the release is too.
+- Release: [v1.0.1](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.0.1), which adds typed values to v1.0.0. The repo is private, so the releases are too.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42395741803 (commit `de83309`): 129 test cases passed with none skipped, and all five plugins passed pluginval at strictness 10. This adds typed values after v1.0.0 and hasn't been released or confirmed in REAPER yet.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42397458861 (commit `3f8e9b8`, version 1.0.1): 129 test cases passed, and all five plugins passed pluginval at strictness 10. Typing values confirmed in REAPER by the user.
 
 ## Kicker acceptance (§7)
 
@@ -135,7 +135,7 @@ Lessons from the Verb build:
 - **Don't pass long patch scripts through a bash heredoc here.** Two failed on quoting before running. Write the script to the scratchpad and run the file.
 - **Shared icons are open paths.** They have to be stroked; filled they show as blobs or nothing.
 
-## Typing values (after v1.0.0)
+## Typing values (v1.0.1)
 
 Applies to every knob and fader in all five plugins, through `ParamControl` in `fancy-core`. Clicking the value text opens a box, as does Ctrl-click anywhere on the control. Enter, clicking away or losing focus applies, and Esc cancels.
 
