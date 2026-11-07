@@ -12,7 +12,7 @@
 
 - Release: [v1.0.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.0.0). The repo is private, so the release is too.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42361894513 (commit `16b6027`, version 1.0.0).
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42395741803 (commit `de83309`): 129 test cases passed with none skipped, and all five plugins passed pluginval at strictness 10. This adds typed values after v1.0.0 and hasn't been released or confirmed in REAPER yet.
 
 ## Kicker acceptance (§7)
 
@@ -145,6 +145,7 @@ Applies to every knob and fader in all five plugins, through `ParamControl` in `
 - **Unchanged text isn't applied.** The box shows a rounded value, so applying it would move the control by itself.
 - **The box sits on the layout root,** not the control, so it can be wider than a fader and still follows the UI size menu.
 - **Log ranges clamp before the log.** A typed negative frequency was otherwise a NaN.
+- **Test windows must be opaque.** A layered window that was never painted can't be hit-tested, so `ComponentPeer::handleMouseEvent` delivers nothing to it. `tests/ValueEntryTests.cpp` sends gestures straight to the control, and only click-away goes through the window, because the box watches for that on the desktop.
 
 ## Figma
 
