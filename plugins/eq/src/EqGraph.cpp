@@ -3,6 +3,7 @@
 #include <fancy/Decibels.h>
 #include <fancy/ui/Style.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iterator>
 #include <numbers>
@@ -341,7 +342,8 @@ void EqGraph::paintGrid (juce::Graphics& g)
         {
             const auto hz = decade * digit;
 
-            if (hz >= 50.0 && hz <= 20000.0)
+            // Figma has no lines between 50 and 100 Hz.
+            if (hz == 50.0 || (hz >= 100.0 && hz <= 20000.0))
                 g.fillRect ((float) xForHz (hz, (double) width) - 0.25f, 0.0f, 0.5f, height);
         }
     }
@@ -379,7 +381,7 @@ void EqGraph::paintLabels (juce::Graphics& g)
     }
 
     if (analyzerMode != 0)
-        g.drawText (analyzerMode == 1 ? "pre" : "post", 4, height - 14, 26, 14, juce::Justification::centredLeft, false);
+        g.drawText (analyzerMode == 1 ? "pre" : "post", 4, 4, 30, 14, juce::Justification::centredLeft, false);
 }
 
 void EqGraph::paintSpectrum (juce::Graphics& g)
@@ -435,21 +437,43 @@ void EqGraph::paintBands (juce::Graphics& g)
             continue;
 
         juce::Path curve;
-        curve.startNewSubPath (0.0f, zero);
+        curve.startNewSubPath (0.0f, yForDb (clampDb (band.db[0])));
 
-        for (int x = 0; x < width; ++x)
+        for (int x = 1; x < width; ++x)
             curve.lineTo ((float) x, yForDb (clampDb (band.db[(size_t) x])));
 
-        curve.lineTo ((float) width, zero);
-        curve.closeSubPath();
+        auto region = curve;
+        region.lineTo ((float) width, zero);
+        region.lineTo (0.0f, zero);
+        region.closeSubPath();
 
         const auto colour = bandColour (b);
 
         g.setColour (colour.withAlpha (bandFillOpacity[(size_t) b % std::size (bandFillOpacity)]));
-        g.fillPath (curve);
+        g.fillPath (region);
 
         g.setColour (colour);
         g.strokePath (curve, juce::PathStrokeType (1.0f));
+    }
+
+    // Figma's 0 dB line takes each band's colour in turn.
+    std::vector<std::pair<float, juce::Colour>> stops;
+
+    for (int b = 0; b < eq::maxBands; ++b)
+        if (bands[(size_t) b].used && bands[(size_t) b].spec.on)
+            stops.emplace_back ((float) xForHz (bands[(size_t) b].spec.frequencyHz, (double) width) / (float) width, bandColour (b));
+
+    if (! stops.empty())
+    {
+        std::sort (stops.begin(), stops.end(), [] (const auto& a, const auto& b) { return a.first < b.first; });
+
+        juce::ColourGradient gradient (stops.front().second, 0.0f, zero, stops.back().second, (float) width, zero, false);
+
+        for (const auto& [position, colour] : stops)
+            gradient.addColour (juce::jlimit (0.0, 1.0, (double) position), colour);
+
+        g.setGradientFill (gradient);
+        g.fillRect (0.0f, zero - 0.5f, (float) width, 1.0f);
     }
 
     if (showPhase)

@@ -7,7 +7,8 @@
 - Fancy Kicker: done, signed off in REAPER by the user.
 - Fancy Exciter: done, signed off in REAPER by the user.
 - Fancy Comp: done, signed off in REAPER by the user.
-- Next: Fancy EQ.
+- Fancy EQ: built, **results pending below**.
+- Next: Fancy Verb, once the EQ is signed off.
 
 Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42263079104 (commit `b575b0a`).
 

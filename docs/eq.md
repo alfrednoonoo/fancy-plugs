@@ -17,7 +17,8 @@ Each band is an analog prototype, split into first- and second-order sections an
 | Type | Prototype | Digital match |
 |---|---|---|
 | Band | `(s² + A/Q·w·s + w²) / (s² + w/(A·Q)·s + w²)`, `A = √gain` | Vicanek's matched peak. A cut is the inverse of the matching boost, so boosts and cuts mirror exactly |
-| Low pass, High pass | Butterworth cascade | Vicanek's matched low and high pass |
+| Low pass | Butterworth cascade | Matched poles; numerator matched at DC, at Freq (held between 0.6 and 0.7 × Nyquist) and at 0.9 × Nyquist. Vicanek's own low pass left 1.7 dB of error near 20 kHz at 44.1 kHz |
+| High pass | Butterworth cascade | Vicanek's matched high pass |
 | Band pass | `(w/Q·s) / (s² + w/Q·s + w²)` | Vicanek's matched band pass |
 | Notch | `(s² + w²) / (s² + w/Q·s + w²)` | Matched poles with zeros exactly on the unit circle |
 | All pass | `(s² - w/Q·s + w²) / (s² + w/Q·s + w²)` | Matched poles with the mirrored numerator |
@@ -30,7 +31,7 @@ Each band is an analog prototype, split into first- and second-order sections an
 
 **Limits:** Freq is held to 0.48 × the processing rate. A 24 kHz band at 44.1 kHz therefore sits at 21.2 kHz.
 
-Prototyped against the analog response before coding, ignoring anything more than 60 dB down. The largest errors below 20 kHz were 1.8 dB for a 20 kHz ±18 dB bell at 44.1 kHz and 1.2 dB for an 18 kHz ±18 dB shelf at 44.1 kHz, and under 0.1 dB in general at 96 kHz. An 18 kHz +6 dB bell at 44.1 kHz is the §5.1 test case.
+Prototyped against the analog response before coding, ignoring anything more than 60 dB down. The largest errors below 20 kHz were 1.8 dB for a 20 kHz ±18 dB bell at 44.1 kHz and 1.2 dB for an 18 kHz ±18 dB shelf at 44.1 kHz, and under 0.1 dB in general at 96 kHz. An 18 kHz +6 dB bell at 44.1 kHz is the §5.1 test case. Cascades add their sections' errors, so a 48 dB/oct low pass reaches about 1 dB near 20 kHz at 44.1 and 48 kHz, where it's already far down the slope.
 
 ## Parameters
 
@@ -135,5 +136,9 @@ The Figma frames are 802 × 625 without the host title bar. The graph is 734 wid
 **EDIT link:** sits in the header's empty space, left of the Output knob, so both layouts get it without moving anything. The drawer holds Phase, FIR length, Oversampling, the selected band's Slope, Graph range and the analyzer settings. Slope is also on the band's right-click menu.
 
 **Knob arcs:** Gain lights from the centre as §2.3 says. Figma draws it from the minimum.
+
+**Compact card:** Figma's stored positions for the knobs disagree with its own render, which spaces them evenly. The build follows the render.
+
+**Q:** Figma's bell at "2.0" is wider than a true Q of 2, because the original control was bandwidth in octaves. The build keeps Q, as §2.5 labels it, so the curve in the comparison render is narrower.
 
 **Band colours:** Figma's EQ Graph uses #E74D3D, #9A59B5, #3598DB and #1BBC9C, and these replace the §2.1 band colours. Bands 5 and up continue with green, yellow, orange, and then repeat.

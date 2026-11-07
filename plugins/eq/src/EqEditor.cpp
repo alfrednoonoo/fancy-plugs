@@ -308,8 +308,8 @@ void EqEditor::BandEditor::resized()
     {
         typeDropdown.setBounds (16, 45, 94, 32);
         frequencyKnob.setBounds (138, 25, 62, 79);
-        gainKnob.setBounds (190, 25, 100, 79);
-        qKnob.setBounds (298, 25, 62, 79);
+        gainKnob.setBounds (198, 25, 100, 79);
+        qKnob.setBounds (292, 25, 62, 79);
         powerIcon.setBounds (406, 17, 14, 15);
         plusButton.setBounds (406, 56, 14, 14);
         closeButton.setBounds (407, 94, 12, 12);
@@ -640,7 +640,7 @@ void EqEditor::applyPreviewValues()
     processor.setParameter ("b2q", 2.0f);
     processor.setParameter ("b3freq", 1600.0f);
     processor.setParameter ("b3gain", 6.5f);
-    processor.setParameter ("b3q", 1.4f);
+    processor.setParameter ("b3q", 0.8f);
     processor.setParameter ("b4freq", 17000.0f);
     processor.setParameter ("b4gain", -13.0f);
     processor.setParameter ("gain", -7.3f);
