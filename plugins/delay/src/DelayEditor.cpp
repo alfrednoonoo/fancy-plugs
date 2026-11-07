@@ -199,8 +199,8 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
     closeButton.setBounds (630, tabRowY + 7, 8, 8);
 
     loopCheckbox.setBounds (15, footerY, 178, 20);
-    pingCheckbox.setBounds (205, footerY, 77, 20);
-    saturateCheckbox.setBounds (294, footerY, 125, 20);
+    pingCheckbox.setBounds (205, footerY, 86, 20);
+    saturateCheckbox.setBounds (294, footerY, 130, 20);
 
     for (auto* checkbox : { &loopCheckbox, &pingCheckbox, &saturateCheckbox })
         checkbox->setLabelHeight (labelHeight);
@@ -310,7 +310,7 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
 
     tabs.toFront (false);
 
-    smoothCheckbox.setBounds (431, footerY, 142, 20);
+    smoothCheckbox.setBounds (431, footerY, 151, 20);
     smoothCheckbox.setLabelHeight (labelHeight);
     editLink.setBounds (582, footerY - 2, 64, 24);
     outMeter.setBounds (650, 10, 46, 340);
