@@ -38,7 +38,7 @@ ThresholdMeter::ThresholdMeter (juce::RangedAudioParameter& threshold)
 {
 }
 
-juce::Rectangle<int> ThresholdMeter::getValueEditorBounds() const
+juce::Rectangle<int> ThresholdMeter::getValueArea() const
 {
     return getLocalBounds().removeFromBottom (23);
 }

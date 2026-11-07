@@ -16,7 +16,7 @@ public:
 
 private:
     float getDragPixels() const override { return 270.0f; }
-    juce::Rectangle<int> getValueEditorBounds() const override;
+    juce::Rectangle<int> getValueArea() const override;
 
     fancy::ui::MeterChannel channels[2];
     bool isCompressing = false;

@@ -49,6 +49,7 @@ This one takes a little longer than the others, because there's more to try. Use
 ## Controls
 
 - [ ] Drag, Shift-drag, double-click, Ctrl-click typing and the mouse wheel all work on knobs and faders.
+- [ ] Click a value, type `-12` and press Enter: the control moves to it. Repeat and click on empty space instead: it applies too. Repeat and press Esc: nothing changes. Try it on a knob, on Threshold and on Wet.
 - [ ] Right-click on a knob shows REAPER's menu.
 - [ ] Hovering over Attack shows its tooltip.
 - [ ] The Detector input dropdown opens and changes setting.

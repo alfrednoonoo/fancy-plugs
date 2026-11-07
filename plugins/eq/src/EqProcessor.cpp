@@ -43,7 +43,7 @@ private:
                  },
                  [logScale] (float start, float end, float value)
                  {
-                     return logScale->load (std::memory_order_relaxed) ? std::log (value / start) / std::log (end / start)
+                     return logScale->load (std::memory_order_relaxed) ? std::log (juce::jlimit (start, end, value) / start) / std::log (end / start)
                                                                        : (value - start) / (end - start);
                  },
                  [] (float start, float end, float value)
@@ -107,7 +107,7 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
             band == 0 || band == 3 ? 0.707f : 1.0f,
             juce::AudioParameterFloatAttributes {}
                 .withStringFromValueFunction ([] (float value, int) { return qText (value); })
-                .withValueFromStringFunction ([] (const juce::String& text) { return text.getFloatValue(); })));
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
         layout.add (std::make_unique<Choice> (juce::ParameterID { EqProcessor::id (band, "slope"), 1 }, prefix + "Slope", slopes, 1));
     }
 
@@ -139,7 +139,7 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
                                            .withAutomatable (false)
                                            .withLabel ("%")
                                            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
-                                           .withValueFromStringFunction ([] (const juce::String& text) { return text.getFloatValue(); })));
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
     return layout;
 }

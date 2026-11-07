@@ -71,6 +71,7 @@ Use a full mix or a loop with plenty of top end.
 ## Controls
 
 - [ ] Drag, Shift-drag, double-click, Ctrl-click typing and the mouse wheel all work on the knobs and the Gain fader.
+- [ ] Click a value, type `2.5k` and press Enter: the control moves to it. Repeat and click on empty space instead: it applies too. Repeat and press Esc: nothing changes. Try it on Freq, and on the Gain fader with `-3`.
 - [ ] Right-click on a knob shows REAPER's menu.
 - [ ] The ON pill switches cleanly, and the controls dim while it's off.
 

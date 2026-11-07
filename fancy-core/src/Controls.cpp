@@ -1,5 +1,8 @@
 #include <fancy/ui/Controls.h>
 
+#include <fancy/plugin/ParamFormat.h>
+
+#include <cmath>
 #include <numbers>
 
 namespace fancy::ui
@@ -15,6 +18,8 @@ constexpr float defaultMarkGap = 8.0f;
 constexpr float bodyFontSize = 14.0f;
 constexpr float fineDragDivisor = 8.0f;
 constexpr float wheelStep = 0.1f;
+constexpr int valueEditorWidth = 76;
+constexpr int valueEditorMinHeight = 22;
 
 void paintPill (juce::Graphics& g, juce::Rectangle<float> area, juce::Colour fill)
 {
@@ -34,6 +39,50 @@ void paintDropdown (juce::Graphics& g, juce::Rectangle<float> bounds, const juce
                           .withCentre ({ bounds.getRight() - 9.5f, bounds.getCentreY() });
     g.setColour (juce::Colours::white.withAlpha (0.4f));
     g.strokePath (icons::chevrons (area), juce::PathStrokeType (1.0f));
+}
+
+// Clicking a plain component leaves keyboard focus where it was, so losing focus alone
+// wouldn't close the box. This watches every click in the plugin while the box is open.
+class ValueEditor final : public juce::TextEditor
+{
+public:
+    ValueEditor() { juce::Desktop::getInstance().addGlobalMouseListener (&clickWatcher); }
+    ~ValueEditor() override { juce::Desktop::getInstance().removeGlobalMouseListener (&clickWatcher); }
+
+    std::function<void()> onClickAway;
+
+private:
+    struct ClickWatcher final : public juce::MouseListener
+    {
+        explicit ClickWatcher (ValueEditor& editorToWatch) : editor (editorToWatch) {}
+
+        void mouseDown (const juce::MouseEvent& event) override
+        {
+            if (event.eventComponent != &editor && ! editor.isParentOf (event.eventComponent) && editor.onClickAway != nullptr)
+                editor.onClickAway();
+        }
+
+        ValueEditor& editor;
+    };
+
+    ClickWatcher clickWatcher { *this };
+};
+
+// The box goes on the component holding the plugin's layout, so it can be wider than a fader
+// and still scales with the UI size menu.
+juce::Component& valueEditorParent (juce::Component& control)
+{
+    auto* holder = &control;
+
+    while (auto* parent = holder->getParentComponent())
+    {
+        if (dynamic_cast<juce::AudioProcessorEditor*> (parent) != nullptr)
+            break;
+
+        holder = parent;
+    }
+
+    return *holder;
 }
 } // namespace
 
@@ -68,13 +117,8 @@ void ParamControl::mouseDown (const juce::MouseEvent& event)
         return;
     }
 
-    if (event.mods.isCtrlDown() || event.mods.isCommandDown())
-    {
-        showValueEditor();
-        return;
-    }
-
     dragging = true;
+    clickOpensEditor = event.mods.isCtrlDown() || event.mods.isCommandDown() || getValueArea().contains (event.getPosition());
     lastDragY = event.position.y;
     attachment.beginGesture();
 }
@@ -82,6 +126,10 @@ void ParamControl::mouseDown (const juce::MouseEvent& event)
 void ParamControl::mouseDrag (const juce::MouseEvent& event)
 {
     if (! dragging)
+        return;
+
+    // Until the mouse has moved far enough to be a drag, this may still be a click to type.
+    if (clickOpensEditor && ! event.mouseWasDraggedSinceMouseDown())
         return;
 
     const auto divisor = event.mods.isShiftDown() ? getDragPixels() * fineDragDivisor : getDragPixels();
@@ -92,12 +140,16 @@ void ParamControl::mouseDrag (const juce::MouseEvent& event)
     attachment.setValueAsPartOfGesture (param.convertFrom0to1 (normalised));
 }
 
-void ParamControl::mouseUp (const juce::MouseEvent&)
+void ParamControl::mouseUp (const juce::MouseEvent& event)
 {
-    if (dragging)
-        attachment.endGesture();
+    if (! dragging)
+        return;
 
+    attachment.endGesture();
     dragging = false;
+
+    if (clickOpensEditor && ! event.mouseWasDraggedSinceMouseDown())
+        showValueEditor();
 }
 
 void ParamControl::mouseDoubleClick (const juce::MouseEvent& event)
@@ -127,34 +179,70 @@ void ParamControl::showHostMenu()
 
 void ParamControl::showValueEditor()
 {
-    valueEditor = std::make_unique<juce::TextEditor>();
-    valueEditor->setJustification (juce::Justification::centred);
-    valueEditor->setFont (font (Weight::regular, 12.0f));
-    valueEditor->setText (getValueText(), false);
-    valueEditor->setBounds (getValueEditorBounds());
-    addAndMakeVisible (*valueEditor);
-    valueEditor->selectAll();
-    valueEditor->grabKeyboardFocus();
+    if (valueEditor != nullptr)
+        return;
 
-    valueEditor->onReturnKey = [this]
-    {
-        const auto normalised = param.getValueForText (valueEditor->getText());
-        setDenormalised (param.convertFrom0to1 (juce::jlimit (0.0f, 1.0f, normalised)));
-        hideValueEditor();
-    };
+    auto& holder = valueEditorParent (*this);
+    const auto valueArea = getValueArea();
+    const auto area = holder.getLocalArea (this, valueArea.isEmpty() ? getLocalBounds() : valueArea);
 
-    valueEditor->onEscapeKey = [this] { hideValueEditor(); };
-    valueEditor->onFocusLost = [this] { hideValueEditor(); };
+    textBeforeEditing = getValueText();
+
+    auto editor = std::make_unique<ValueEditor>();
+    editor->setJustification (juce::Justification::centred);
+    editor->setFont (font (Weight::regular, 12.0f));
+    editor->setText (textBeforeEditing, false);
+    editor->setPopupMenuEnabled (false);
+    editor->setSelectAllWhenFocused (true);
+    editor->setBounds (area.withSizeKeepingCentre (valueEditorWidth, juce::jmax (area.getHeight(), valueEditorMinHeight))
+                           .constrainedWithin (holder.getLocalBounds()));
+
+    editor->onReturnKey = [this] { closeValueEditor (true); };
+    editor->onEscapeKey = [this] { closeValueEditor (false); };
+    editor->onFocusLost = [this] { closeValueEditor (true); };
+    editor->onClickAway = [this] { closeValueEditor (true); };
+
+    holder.addAndMakeVisible (*editor);
+    editor->selectAll();
+    editor->grabKeyboardFocus();
+
+    valueEditor = std::move (editor);
 }
 
-// Deferred, because this runs inside the text editor's own callbacks.
-void ParamControl::hideValueEditor()
+void ParamControl::closeValueEditor (bool applyText)
 {
+    if (valueEditor == nullptr || valueEditorClosing)
+        return;
+
+    valueEditorClosing = true;
+
+    const auto text = valueEditor->getText();
+    valueEditor->setVisible (false);
+
+    // Deferred, because this runs inside the text editor's own callbacks.
     juce::MessageManager::callAsync ([safeThis = juce::Component::SafePointer<ParamControl> (this)]
     {
         if (safeThis != nullptr)
+        {
             safeThis->valueEditor.reset();
+            safeThis->valueEditorClosing = false;
+        }
     });
+
+    if (applyText)
+        applyTypedText (text);
+}
+
+void ParamControl::applyTypedText (const juce::String& text)
+{
+    // The box shows a rounded value, so applying it unchanged would move the control.
+    if (text.trim() == textBeforeEditing || ! isValueText (text))
+        return;
+
+    const auto normalised = param.getValueForText (text.trim());
+
+    if (std::isfinite (normalised))
+        setDenormalised (param.convertFrom0to1 (juce::jlimit (0.0f, 1.0f, normalised)));
 }
 
 // ParamClickControl -----------------------------------------------------------
@@ -179,10 +267,13 @@ Knob::Knob (juce::RangedAudioParameter& parameter, const juce::String& label, ju
 {
 }
 
-juce::Rectangle<int> Knob::getValueEditorBounds() const
+juce::Rectangle<int> Knob::getValueArea() const
 {
-    const auto height = (int) knobStyle.valueHeight;
-    return getLocalBounds().removeFromBottom (height).withSizeKeepingCentre (juce::jmin (getWidth(), 75), height);
+    if (! knobStyle.showText)
+        return {};
+
+    const auto top = knobStyle.labelHeight + knobStyle.labelGap + knobStyle.outerDiameter + knobStyle.valueGap;
+    return getLocalBounds().withTop (juce::roundToInt (top)).withHeight (juce::roundToInt (knobStyle.valueHeight));
 }
 
 void Knob::setShowDefaultMark (bool shouldShow)
@@ -314,7 +405,7 @@ Fader::Fader (juce::RangedAudioParameter& parameter, juce::Colour accent)
 {
 }
 
-juce::Rectangle<int> Fader::getValueEditorBounds() const
+juce::Rectangle<int> Fader::getValueArea() const
 {
     return getLocalBounds().removeFromBottom (23);
 }

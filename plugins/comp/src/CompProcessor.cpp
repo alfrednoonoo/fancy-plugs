@@ -21,7 +21,7 @@ std::unique_ptr<juce::AudioParameterFloat> timeParameter (const juce::String& id
         juce::AudioParameterFloatAttributes {}
             .withLabel ("ms")
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return text.getFloatValue(); }));
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
 }
 
 juce::String filterText (float hz)
@@ -69,17 +69,14 @@ fancy::FancyProcessor::Layout createLayout()
         "ratio", "Ratio", fancy::logRange (1.0f, (float) CompDsp::infiniteRatio, 0.01f), 4.0f,
         juce::AudioParameterFloatAttributes {}
             .withStringFromValueFunction ([] (float value, int) { return ratioText (value); })
-            .withValueFromStringFunction ([] (const juce::String& text)
-                                          {
-                                              return text.containsIgnoreCase ("inf") ? (float) CompDsp::infiniteRatio : text.getFloatValue();
-                                          })));
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseRatio (text, (float) CompDsp::infiniteRatio); })));
 
     layout.add (fancy::floatParameter (
         "knee", "Knee", skewedRange (24.0f, 0.01f, 6.0f), 0.5f,
         juce::AudioParameterFloatAttributes {}
             .withLabel ("dB")
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2) + " dB"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return text.getFloatValue(); })));
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
     layout.add (toggle ("weird", "Weird", false));
     layout.add (timeParameter ("attack", "Attack", 500.0f, 30.0f, 3.0f));

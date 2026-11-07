@@ -135,6 +135,17 @@ Lessons from the Verb build:
 - **Don't pass long patch scripts through a bash heredoc here.** Two failed on quoting before running. Write the script to the scratchpad and run the file.
 - **Shared icons are open paths.** They have to be stroked; filled they show as blobs or nothing.
 
+## Typing values (after v1.0.0)
+
+Applies to every knob and fader in all five plugins, through `ParamControl` in `fancy-core`. Clicking the value text opens a box, as does Ctrl-click anywhere on the control. Enter, clicking away or losing focus applies, and Esc cancels.
+
+- **Header knob:** it shows no value text, so it opens with Ctrl-click only. The EDIT drawer's Output is the same parameter and has clickable text.
+- **Double-click on value text:** opens the box rather than resetting. Double-click on the knob or fader itself still resets.
+- **Click detection:** JUCE doesn't move focus when a plain component is clicked, so the box watches clicks through a global mouse listener while it's open.
+- **Unchanged text isn't applied.** The box shows a rounded value, so applying it would move the control by itself.
+- **The box sits on the layout root,** not the control, so it can be wider than a fader and still follows the UI size menu.
+- **Log ranges clamp before the log.** A typed negative frequency was otherwise a NaN.
+
 ## Figma
 
 File `v9yFzkjuAzh1qzjEweURsh`, "ReaPlugs (vst GUI) (Community)". `design/figma-spec.json` holds every frame, position, fill, radius and font; `design/` has 2× renders of the frames and main components; `design/icons/` has the glyph SVGs. Commit the data, never the token.
@@ -173,9 +184,11 @@ Figma uses SF Compact Display for the scale numbers. That font can't be bundled,
 
 Tested in CI: DSP, state, presets, automation, bypass and layouts through pluginval, editor opening, rendered screenshots.
 
-Not tested by anything yet, because CI can't click: graph handles and their gestures, IR trim handles, dragging modules, the add panel, the chain strip, file dialogs, window resizing, drag, shift-drag, double-click, ctrl-click typing, mouse wheel, right-click menus, the preset and save dialogs, the UI size menu, opening and closing the EDIT drawer, and the bypass dimming. All of these are on the REAPER checklist.
+Not tested by anything yet, because CI can't click: graph handles and their gestures, IR trim handles, dragging modules, the add panel, the chain strip, file dialogs, window resizing, drag, shift-drag, double-click, mouse wheel, right-click menus, the preset and save dialogs, the UI size menu, opening and closing the EDIT drawer, and the bypass dimming. All of these are on the REAPER checklist.
 
-`scripts/get-latest.ps1` and `scripts/install.ps1` were run end to end, with `USERPROFILE` pointed at a scratch folder. They have not yet installed into the real `%USERPROFILE%\VST3-Dev`.
+Typing values is tested in CI with real mouse events sent through a window (`tests/ValueEntryTests.cpp`). Keyboard focus inside REAPER is not, so that part stays on the checklists.
+
+`scripts/get-latest.ps1` and `scripts/install.ps1` have installed into the real `%USERPROFILE%\VST3-Dev`.
 
 ## Build times
 

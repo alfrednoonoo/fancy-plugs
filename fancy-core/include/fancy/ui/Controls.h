@@ -11,7 +11,8 @@ namespace fancy::ui
 {
 
 // Parameter-bound control. Provides the §2.3 gestures: vertical drag, shift for fine,
-// double-click to reset, ctrl-click to type, mouse wheel, right-click for the host menu.
+// double-click to reset, mouse wheel, right-click for the host menu. A click on the value,
+// or a ctrl-click anywhere, opens a box to type a new value.
 class ParamControl : public juce::Component, public juce::SettableTooltipClient
 {
 public:
@@ -29,7 +30,8 @@ protected:
     juce::String getValueText() const;
     void setDenormalised (float newValue);
 
-    virtual juce::Rectangle<int> getValueEditorBounds() const { return getLocalBounds(); }
+    // Where the value is written. Empty for a control that doesn't show one.
+    virtual juce::Rectangle<int> getValueArea() const { return {}; }
     virtual float getDragPixels() const { return 200.0f; }
 
     juce::RangedAudioParameter& param;
@@ -37,11 +39,15 @@ protected:
 private:
     void showHostMenu();
     void showValueEditor();
-    void hideValueEditor();
+    void closeValueEditor (bool applyText);
+    void applyTypedText (const juce::String& text);
 
     float value = 0.0f;
     float lastDragY = 0.0f;
     bool dragging = false;
+    bool clickOpensEditor = false;
+    bool valueEditorClosing = false;
+    juce::String textBeforeEditing;
     juce::ParameterAttachment attachment;
     std::unique_ptr<juce::TextEditor> valueEditor;
 };
@@ -96,7 +102,7 @@ public:
     void paint (juce::Graphics&) override;
 
 private:
-    juce::Rectangle<int> getValueEditorBounds() const override;
+    juce::Rectangle<int> getValueArea() const override;
 
     juce::String labelText;
     juce::Colour accentColour, valueColour;
@@ -114,7 +120,7 @@ public:
     void paint (juce::Graphics&) override;
 
 private:
-    juce::Rectangle<int> getValueEditorBounds() const override;
+    juce::Rectangle<int> getValueArea() const override;
     float getDragPixels() const override { return (float) getHeight(); }
 
     juce::Colour accentColour;

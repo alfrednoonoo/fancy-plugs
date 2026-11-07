@@ -24,7 +24,8 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (fancy::floatParameter (
         "q", "Filter Q", fancy::logRange (0.5f, 10.0f, 0.01f), 2.0f,
         juce::AudioParameterFloatAttributes {}
-            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2); })));
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2); })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
 

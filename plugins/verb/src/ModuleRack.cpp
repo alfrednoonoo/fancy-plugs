@@ -44,7 +44,7 @@ juce::String valueText (const verb::Setting& setting, float value)
 
 float parseValue (const verb::Setting& setting, const juce::String& text)
 {
-    return juce::String (setting.unit) == "Hz" ? fancy::parseHz (text) : text.getFloatValue();
+    return juce::String (setting.unit) == "Hz" ? fancy::parseHz (text) : fancy::parseNumber (text);
 }
 
 juce::NormalisableRange<float> rangeOf (const verb::Setting& setting)

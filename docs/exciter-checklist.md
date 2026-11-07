@@ -31,6 +31,7 @@
 ## Controls
 
 - [ ] Drag, Shift-drag, double-click, Ctrl-click typing and the mouse wheel all work on the knobs.
+- [ ] Click a value, type `2.5k` and press Enter: the control moves to it. Repeat and click on empty space instead: it applies too. Repeat and press Esc: nothing changes.
 - [ ] Right-click on a knob shows REAPER's menu.
 - [ ] The small header knob and Output in the EDIT drawer move together.
 - [ ] EDIT opens the drawer, and Done closes it.

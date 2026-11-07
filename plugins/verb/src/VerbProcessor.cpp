@@ -32,7 +32,7 @@ fancy::FancyProcessor::Layout createLayout()
                                        FloatAttributes {}
                                            .withLabel ("ms")
                                            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
-                                           .withValueFromStringFunction ([] (const juce::String& text) { return text.getFloatValue(); })));
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
     layout.add (fancy::floatParameter ("center", "Center", juce::NormalisableRange<float> (-100.0f, 100.0f, 1.0f), 0.0f,
                                        FloatAttributes {}
@@ -44,14 +44,14 @@ fancy::FancyProcessor::Layout createLayout()
                                            })
                                            .withValueFromStringFunction ([] (const juce::String& text)
                                            {
-                                               const auto value = text.getFloatValue();
-                                               return text.containsIgnoreCase ("L") ? -value : value;
+                                               const auto value = fancy::parseNumber (text);
+                                               return text.containsIgnoreCase ("L") ? -std::abs (value) : value;
                                            })));
 
     layout.add (fancy::floatParameter ("width", "Width", juce::NormalisableRange<float> (0.0f, 100.0f, 1.0f), 100.0f,
                                        FloatAttributes {}
                                            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + "W"; })
-                                           .withValueFromStringFunction ([] (const juce::String& text) { return text.getFloatValue(); })));
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
     layout.add (fancy::levelParameter ("wet", "Wet", mixFloorDb, 12.0f, -12.0f, mixFloorDb));
     layout.add (fancy::levelParameter ("dry", "Dry", mixFloorDb, 12.0f, 0.0f, mixFloorDb));

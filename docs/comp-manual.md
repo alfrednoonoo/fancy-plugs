@@ -80,7 +80,7 @@ Pre-comp, Oversampling and Limit output change the latency. After you stop chang
 
 - **Drag** up or down. Hold **Shift** for fine control.
 - **Double-click** to reset to the default.
-- **Ctrl-click** to type a value.
+- **Click the value** to type a new one, or **Ctrl-click** anywhere on the control. Enter or clicking away applies it, and Esc cancels. Units are optional, and frequencies can be typed as `2500` or `2.5k`. A number past the limits stops at the limit, and text with no number in it changes nothing.
 - **Mouse wheel** to nudge, with **Shift** for smaller steps.
 - **Right-click** for the host's automation menu.
 

@@ -16,7 +16,7 @@ inline juce::NormalisableRange<float> logRange (float low, float high, float int
 {
     return { low, high,
              [] (float start, float end, float normalised) { return start * std::pow (end / start, normalised); },
-             [] (float start, float end, float value) { return std::log (value / start) / std::log (end / start); },
+             [] (float start, float end, float value) { return std::log (juce::jlimit (start, end, value) / start) / std::log (end / start); },
              [interval] (float start, float end, float value) { return juce::jlimit (start, end, std::round (value / interval) / (1.0f / interval)); } };
 }
 
@@ -47,7 +47,7 @@ inline std::unique_ptr<juce::AudioParameterFloat> percentParameter (const juce::
         juce::AudioParameterFloatAttributes {}
             .withLabel ("%")
             .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return text.getFloatValue(); }));
+            .withValueFromStringFunction ([] (const juce::String& text) { return parseNumber (text); }));
 }
 
 // Silence at or below floorDb, otherwise the linear gain.

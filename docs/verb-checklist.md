@@ -27,6 +27,7 @@
 - [ ] The mouse wheel scrolls the rack, and so does dragging in the chain strip.
 - [ ] The strip's outline follows what's visible.
 - [ ] Knob gestures work on module knobs: drag, shift-drag, double-click, ctrl-click to type.
+- [ ] Click a value, type `2.5k` and press Enter: the control moves to it. Repeat and click on empty space instead: it applies too. Repeat and press Esc: nothing changes. Try it on a Lowpass module knob, on Pre-delay, and on the Wet fader with `-6`.
 - [ ] Right-clicking a module knob doesn't crash, and shows no automation menu.
 
 ## While audio plays
