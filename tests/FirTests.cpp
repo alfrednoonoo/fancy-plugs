@@ -385,6 +385,8 @@ TEST_CASE ("release time doesn't depend on the FFT size", "[fir]")
 
     const auto measured = (reached - start) * blockMs;
 
+    std::printf ("fir release: size %d, 63 %% after %.0f ms, set to %.0f ms\n", size, measured, releaseMs);
+
     INFO ("size " << size << ", measured " << measured << " ms against " << releaseMs);
     CHECK (measured == Approx (releaseMs).epsilon (0.1));
 }
@@ -416,6 +418,9 @@ TEST_CASE ("a 1 kHz sidechain reduces only the bins near 1 kHz", "[fir]")
     {
         return 10.0 * std::log10 (bandEnergy (run.left, start, low, high) / bandEnergy (main, start - latency, low, high));
     };
+
+    std::printf ("fir sidechain: 980-1020 Hz %.1f dB, 200-400 Hz %.2f dB, 4-6 kHz %.2f dB\n",
+                 change (980.0, 1020.0), change (200.0, 400.0), change (4000.0, 6000.0));
 
     // Near is the detector's reach, two bins of 11.7 Hz either side, plus the sine's own width.
     INFO ("near 1 kHz " << change (980.0, 1020.0) << " dB, 4-6 kHz " << change (4000.0, 6000.0) << " dB, 200-400 Hz " << change (200.0, 400.0) << " dB");
@@ -487,6 +492,8 @@ TEST_CASE ("subtraction leaves the sine and doesn't warble", "[fir]")
 
     // The sine keeps its level.
     const auto sineChange = 10.0 * std::log10 (bandEnergy (run.left, 96000, 990.0, 1010.0) / bandEnergy (tone, 96000 - latency, 990.0, 1010.0));
+
+    std::printf ("fir subtract: sine change %.2f dB\n", sineChange);
 
     INFO ("sine change " << sineChange << " dB");
     CHECK (std::abs (sineChange) < 0.5);
@@ -580,6 +587,8 @@ TEST_CASE ("subtraction leaves the sine and doesn't warble", "[fir]")
 
     const auto plainVariance = variance (true);
     const auto wienerVariance = variance (false);
+
+    std::printf ("fir subtract: residual variance, plain subtraction %.1f dB^2, Fancy FIR %.1f dB^2\n", plainVariance, wienerVariance);
 
     INFO ("residual variance: plain " << plainVariance << " dB^2, Fancy FIR " << wienerVariance << " dB^2");
     CHECK (wienerVariance < 0.7 * plainVariance);

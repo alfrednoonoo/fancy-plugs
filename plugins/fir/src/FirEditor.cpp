@@ -149,7 +149,7 @@ void FirEditor::LearnCard::paint (juce::Graphics& g)
 
     g.setFont (font (Weight::regular, labelHeight));
     g.setColour (colours::textSecondary);
-    g.drawFittedText ("Play a section with only noise.\nLearning stops by itself.", 12, 70, getWidth() - 24, 32, juce::Justification::topLeft, 2);
+    g.drawFittedText ("Play a section with only noise.\nLearning stops by itself.", 12, 68, getWidth() - 20, 34, juce::Justification::topLeft, 2, 0.85f);
 }
 
 void FirEditor::LearnCard::mouseUp (const juce::MouseEvent& event)
@@ -206,8 +206,8 @@ FirEditor::FirEditor (FirProcessor& processor)
     modeSwitch.setBounds (50, 10, 308, 25);
     modeSwitch.setTextHeight (labelHeight);
     modeSwitch.setFitToText (true);
-    editLabel.setBounds (500, 10, 40, 25);
-    editDropdown.setBounds (546, 10, 103, 25);
+    editLabel.setBounds (484, 10, 40, 25);
+    editDropdown.setBounds (530, 10, 119, 25);
     editDropdown.setTextHeight (labelHeight);
 
     graph.setBounds (graphX, graphY, graphWidth, graphHeight);
@@ -217,9 +217,9 @@ FirEditor::FirEditor (FirProcessor& processor)
     styleLabel (curveCaption, {}, colours::textSecondary, juce::Justification::topLeft);
     curveCaption.setBounds (leftCardX + 12, cardY + 8, leftCardWidth - 24, 16);
     resetButton.setBounds (leftCardX + 12, cardY + 30, leftCardWidth - 24, 24);
-    flatButton.setBounds (leftCardX + 12, cardY + 62, 46, 24);
-    tiltButton.setBounds (leftCardX + 64, cardY + 62, 46, 24);
-    demudButton.setBounds (leftCardX + 116, cardY + 62, 50, 24);
+    flatButton.setBounds (leftCardX + 12, cardY + 62, 42, 24);
+    tiltButton.setBounds (leftCardX + 60, cardY + 62, 40, 24);
+    demudButton.setBounds (leftCardX + 106, cardY + 62, 60, 24);
 
     styleLabel (convolveText, "Convolves the left input with the right one, which acts as the impulse response. Route the sound to channel 1 and the response to channel 2.",
                 colours::textSecondary, juce::Justification::topLeft);

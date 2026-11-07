@@ -1,0 +1,119 @@
+# Fancy FIR: manual
+
+A spectral processor. It splits the sound into thousands of narrow frequency bands, works on each, and puts them back together. The Mode switch picks what it does to them.
+
+## Modes
+
+| Mode | What the curve means | What it does |
+|---|---|---|
+| EQ | Gain | Shapes the sound with any curve you draw |
+| Gate | Threshold | Lets through each frequency that's above its threshold, and turns the rest down to Floor |
+| Compressor | Threshold | Compresses each frequency above its threshold by Ratio |
+| Subtract | | Removes a learned noise, such as hiss, hum or air conditioning |
+| Convolve L/R | | Convolves the left input with the right one |
+
+EQ, Gate and Compressor each keep their own curve, so changing mode doesn't lose them.
+
+## The graph
+
+The grey fill is the input's spectrum, and the orange line is the output's, read the same way as Fancy EQ's analyzer. A -12 dBFS sine reads -12 dB.
+
+The coloured line is the mode's curve, or the noise profile in Subtract. In Compressor, yellow below the 0 dB line shows the gain reduction at each frequency.
+
+Double-click the top or bottom number on the left to type the graph's range.
+
+## Drawing the curve
+
+With **Edit** set to Points (smooth) or Points (flat):
+
+| Gesture | What it does |
+|---|---|
+| Click on the curve | Adds a point there, and you can drag it straight away |
+| Drag a point | Moves it |
+| Shift-drag a point | Moves it up and down only |
+| Ctrl-drag anywhere | Moves the whole curve up and down |
+| Alt-click a point | Deletes it |
+| Double-click a point | Sets it to 0 dB |
+| Right-click a point | Type its frequency and gain. Frequency accepts `2500` or `2.5k` |
+
+Points (smooth) draws a smooth curve that never overshoots its points. Points (flat) draws straight lines between them. Outside the first and last points, the curve stays level. Up to 64 points.
+
+With **Freehand**, draw with the mouse, and Ctrl-drag to move the whole curve. Switching to Freehand starts from what the points drew. Switching back shows the points again.
+
+In EQ, **Reset curve** goes back to flat, and **Flat**, **Tilt** and **De-mud** load starting curves. In Gate and Compressor, Reset curve goes back to the default threshold.
+
+## Gate and Compressor
+
+| Control | Range | What it does |
+|---|---|---|
+| Floor (Gate) | -inf to 0 dB | How far a closed frequency is turned down |
+| Ratio (Compressor) | 0.5:1 to 100:1 | Above 1:1 compresses. Below 1:1 raises the level above the threshold, by up to +24 dB |
+| Attack | 0-200 ms | How fast it reacts |
+| Release | 0-2000 ms | How fast it recovers |
+
+Attack and Release are time constants, the time to reach about 63 % of the change. They're the same at every FFT size.
+
+Each frequency is judged by the loudest level within two of its neighbours. That way a tone opens or ducks as a whole, rather than losing its edges.
+
+## Subtract
+
+1. Play a section with only the noise in it.
+2. Click **Learn**. It listens for the learn length, 2 s by default, then stops by itself.
+3. Play the whole track. The noise profile is the red line, and anything near or below it is reduced.
+
+The profile is saved with the project. **Clear** removes it, and **Re-learn** captures a new one. The learn length is in EDIT.
+
+| Control | Range | What it does |
+|---|---|---|
+| Reduction | 0 to -60 dB | The most any frequency is turned down |
+| Offset | -20 to +20 dB | Moves the profile. Higher removes more, and can thin the sound |
+| Smoothing | 0-100 % | Smooths the reduction across time and frequency. Higher avoids "musical noise", the warbling bleeps of hard noise reduction |
+| Release | 10-500 ms | How fast reduction returns after a louder moment |
+
+Start with Reduction at -12 to -18 dB. Going deeper removes more, but sounds more processed.
+
+## Sidechain detector
+
+In Gate, Compressor and Subtract, the plugin's channels 3 and 4 are used to make the decisions:
+
+- **Gate and Compressor:** compare the sidechain with the thresholds at each frequency. For example, a vocal on the sidechain can carve space for itself in a pad, only at the vocal's frequencies.
+- **Subtract:** treats the sidechain as the noise, without a learned profile.
+
+## Listen
+
+**Listen to removed noise** in Subtract, or **Listen to gain-reduced part** in Gate and Compressor, plays only what's being taken away. Use it to check you're not removing what you want to keep.
+
+## Convolve L/R
+
+Convolves the left channel with the right. The right channel acts as an impulse response, renewed for each block of FFT-size samples, and the result plays on both outputs. Route the sound to channel 1 and the response to channel 2. The result isn't normalised, so a dense right channel is loud, and the Gain fader is there for that.
+
+## FFT size and latency
+
+A larger FFT size gives finer frequency detail and smoother results, but more latency and slower reactions. Low latency halves the latency at the same frequency detail, with a little more smearing.
+
+| FFT size | Latency | Latency, Low latency |
+|---|---|---|
+| 128 to 4096 | the FFT size | half the FFT size |
+| 8192 to 32768 | the FFT size plus 1/8 of it | half the FFT size, plus 1/8 of it |
+
+At 48 kHz, 2048 is 42.7 ms, and 4096 is 85.3 ms. The header shows the current latency, and the plugin reports it to REAPER. At 8192 and above, the extra 1/8 lets the work spread out, so large sizes don't cause dropouts.
+
+Changing FFT size, Low latency or Convolve L/R builds a new engine in the background, then crossfades to it. Changing between the other modes is immediate.
+
+**Reduce artifacts** smooths the gain across neighbouring frequencies, which keeps sharp curves from ringing. It's on by default.
+
+## Gain
+
+The Gain fader sets the output level, from -24 to +24 dB.
+
+## Typing values
+
+To type a value, click it, or Ctrl-click anywhere on a knob or fader. Enter or clicking away applies it, and Esc cancels. Units are optional. Text with no number in it changes nothing, and a number past the limits stops at the limit.
+
+- Ratio accepts `3`, `3:1`, `0.5:1` and `1:2`. Here `a:b` means `a / b`, as in Fancy MultiComp.
+- Curve points: right-click one to type its frequency and gain.
+- The graph's range: double-click the top or bottom number.
+
+## EDIT
+
+The `EDIT` link at the right of the footer holds Learn length and Output.
