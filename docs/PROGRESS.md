@@ -10,7 +10,9 @@
 - Fancy EQ: done, signed off in REAPER by the user.
 - Fancy Verb: done, signed off in REAPER by the user. All five plugins are finished.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42356997609 (commit `e76ebce`).
+- Release: [v1.0.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.0.0). The repo is private, so the release is too.
+
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42361894513 (commit `16b6027`, version 1.0.0).
 
 ## Kicker acceptance (§7)
 
