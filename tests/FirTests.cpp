@@ -417,8 +417,9 @@ TEST_CASE ("a 1 kHz sidechain reduces only the bins near 1 kHz", "[fir]")
         return 10.0 * std::log10 (bandEnergy (run.left, start, low, high) / bandEnergy (main, start - latency, low, high));
     };
 
-    INFO ("near 1 kHz " << change (950.0, 1050.0) << " dB, 4-6 kHz " << change (4000.0, 6000.0) << " dB, 200-400 Hz " << change (200.0, 400.0) << " dB");
-    CHECK (change (950.0, 1050.0) < -10.0);
+    // Near is the detector's reach, two bins of 11.7 Hz either side, plus the sine's own width.
+    INFO ("near 1 kHz " << change (980.0, 1020.0) << " dB, 4-6 kHz " << change (4000.0, 6000.0) << " dB, 200-400 Hz " << change (200.0, 400.0) << " dB");
+    CHECK (change (980.0, 1020.0) < -10.0);
     CHECK (std::abs (change (4000.0, 6000.0)) < 0.5);
     CHECK (std::abs (change (200.0, 400.0)) < 0.5);
 }

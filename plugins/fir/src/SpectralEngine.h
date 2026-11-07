@@ -68,6 +68,7 @@ private:
     void publishReduction() noexcept;
 
     double perHop (double milliseconds) const noexcept;
+    void measureLevels (const std::vector<float>& spectrum) noexcept;
     float binPower (const std::vector<float>& spectrum, int bin) const noexcept;
 
     Config engineConfig;
@@ -95,7 +96,7 @@ private:
 
     // Per bin, per channel.
     std::vector<float> gains[2], envelopes[2], priorSnr[2], smoothedKey[2], mask[2];
-    std::vector<float> binHz, curveDb[numCurves], profilePower, scratch;
+    std::vector<float> binHz, curveDb[numCurves], profilePower, scratch, detectorLevels;
     int seenCurveVersion[numCurves] { -1, -1, -1 };
     int seenProfileVersion = -1;
     bool profileReady = false;

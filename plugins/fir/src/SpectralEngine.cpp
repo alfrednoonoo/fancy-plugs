@@ -14,6 +14,10 @@ namespace
 constexpr double maxExpansionDb = 24.0;
 constexpr double powerFloor = 1.0e-20;
 
+// A sine covers about five bins of the analysis window. Each bin's detector takes the loudest
+// within this many bins either side, so the whole of a sine opens or ducks together.
+constexpr int detectorReach = 2;
+
 int nextPowerOfTwo (int value) noexcept
 {
     auto size = 1;
@@ -142,6 +146,7 @@ SpectralEngine::SpectralEngine (const Config& config, double sampleRate, Shared&
 
     profilePower.assign ((size_t) bins, 0.0f);
     scratch.assign ((size_t) bins, 0.0f);
+    detectorLevels.assign ((size_t) bins, 0.0f);
     learnSum.assign ((size_t) bins, 0.0);
 }
 
@@ -175,6 +180,23 @@ float SpectralEngine::binPower (const std::vector<float>& spectrum, int bin) con
 {
     const auto re = spectrum[(size_t) bin * 2], im = spectrum[(size_t) bin * 2 + 1];
     return re * re + im * im;
+}
+
+void SpectralEngine::measureLevels (const std::vector<float>& spectrum) noexcept
+{
+    for (int k = 0; k < bins; ++k)
+        scratch[(size_t) k] = binPower (spectrum, k);
+
+    for (int k = 0; k < bins; ++k)
+    {
+        auto loudest = 0.0f;
+
+        for (int j = std::max (0, k - detectorReach); j <= std::min (bins - 1, k + detectorReach); ++j)
+            loudest = std::max (loudest, scratch[(size_t) j]);
+
+        const auto level = (double) loudest * levelScale * levelScale;
+        detectorLevels[(size_t) k] = (float) (10.0 * std::log10 (std::max (level, powerFloor)));
+    }
 }
 
 void SpectralEngine::refreshCurve (int curve) noexcept
@@ -346,10 +368,11 @@ void SpectralEngine::computeMasks() noexcept
         {
             const auto attack = perHop (settings.gateAttackMs), release = perHop (settings.gateReleaseMs);
 
+            measureLevels (useKey ? key : spectrum);
+
             for (int k = 0; k < bins; ++k)
             {
-                const auto power = (double) binPower (useKey ? key : spectrum, k);
-                const auto levelDb = 10.0 * std::log10 (std::max (power * levelScale * levelScale, powerFloor));
+                const auto levelDb = (double) detectorLevels[(size_t) k];
                 const auto target = levelDb >= (double) curveDb[gate][(size_t) k] ? 1.0 : settings.gateFloorGain;
 
                 auto value = (double) gain[(size_t) k];
@@ -370,10 +393,11 @@ void SpectralEngine::computeMasks() noexcept
             const auto slope = std::abs (settings.compSlope);
             const auto expanding = settings.compSlope < 0.0;
 
+            measureLevels (useKey ? key : spectrum);
+
             for (int k = 0; k < bins; ++k)
             {
-                const auto power = (double) binPower (useKey ? key : spectrum, k);
-                const auto levelDb = 10.0 * std::log10 (std::max (power * levelScale * levelScale, powerFloor));
+                const auto levelDb = (double) detectorLevels[(size_t) k];
                 const auto target = fancy::dsp::computeReduction (levelDb, (double) curveDb[compressor][(size_t) k], slope, 0.0, false);
 
                 auto envelope = (double) envelopes[ch][(size_t) k];

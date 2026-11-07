@@ -45,6 +45,8 @@ Every mode except Convolve L/R makes a real, zero-phase gain for each bin of eac
 | Compressor | Threshold per frequency | Fancy Comp's gain computer with no knee, at Ratio. Below 1:1 it's upward expansion, limited to +24 dB |
 | Subtract | Not used. The noise profile is drawn instead | A Wiener mask (below) |
 
+**Detector reach.** A sine covers about five bins of the analysis window. Gate and Compressor give each bin the loudest level within two bins either side, so a sine opens or ducks as one, rather than losing its outer bins below the threshold. A sidechain therefore reaches about ±25 Hz around its frequencies at 4096 points.
+
 **Attack and Release** in Gate and Compressor are time constants in ms, the time to reach about 63 % of the target. They're converted to a coefficient for each hop from the hop's own length, `1 - exp(-hop / τ)`, so they don't depend on the FFT size. Gate's ballistics act on the gain, and Compressor's on the gain reduction in dB.
 
 **Subtract** is a decision-directed Wiener filter:
