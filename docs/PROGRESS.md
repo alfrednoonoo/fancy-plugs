@@ -33,7 +33,7 @@ Phase 2 is finished and released as v1.1.0.
 
 The user set this order on 7 November 2026:
 
-1. **Phase 2.0.1, Fancy Gate:** from `docs/BUILD_PROMPT_PHASE2_0_1.md`, with the mockup `reference/phase2_0_1/15__gate_mockup.png` and its source in `design/phase2_0_1-mockup-src/`. The design note `docs/gate.md` is written, and its open questions need the user's answers before code.
+1. **Phase 2.0.1, Fancy Gate:** from `docs/BUILD_PROMPT_PHASE2_0_1.md`, with the mockup `reference/phase2_0_1/15__gate_mockup.png` and its source in `design/phase2_0_1-mockup-src/`. The design note `docs/gate.md` is written, and one point on velocity timing with Lookahead on needs confirming before code.
 2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order W, D, U, A.
    - W: undo and redo, A/B, and level-matched Compare, for all nine plugins.
    - D: dynamic EQ.
@@ -103,7 +103,7 @@ Lessons from the Delay build:
 
 ## Fancy Gate (Phase 2.0.1)
 
-Not started. The design note, `docs/gate.md`, is waiting for the user's answers to its open questions.
+Not started. The design note, `docs/gate.md`, is written, and it follows the user's answers on velocity and CPU. It's waiting on one point: velocity timing with Lookahead on, where the note's rule differs from the brief's §4.
 
 ## Market research and Phase 3 draft
 

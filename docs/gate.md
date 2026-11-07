@@ -2,7 +2,7 @@
 
 Phase 2.0.1, from `docs/BUILD_PROMPT_PHASE2_0_1.md`, with the mockup `reference/phase2_0_1/15__gate_mockup.png` and its source `design/phase2_0_1-mockup-src/gate.html`. Bundle ID `com.fancyplugs.gate`, plugin code `FGat`. Accent yellow `#F1C315`, which is `colours::accentYellow`, the same as FIR's Gate mode. Detector filters are blue, and global controls teal.
 
-Nothing here is coded until the open questions at the end are answered.
+The user answered the first round of questions on 7 November 2026, and the brief's §4, §5 and §6 were updated to match. One point about velocity timing is still to confirm. See the end of this note.
 
 ## Signal path
 
@@ -109,8 +109,13 @@ This needs a "locked" state on the shared `ParamControl`: ignore changes, report
 - **The events go on the VST3 event output**, which needs `NEEDS_MIDI_OUTPUT` for this plugin only. `fancy_add_plugin` gets an option for it, and the Gate overrides `producesMidi()`.
 - **Timing:** each event goes at the output sample where the gain change is heard. With Lookahead on, that's the detector sample plus `D - Pre-open`. With it off, it's the same sample. An event later than the current block is queued in a small fixed queue for the next one.
 - **Why that alignment:** REAPER delays the track's playback by the reported latency, so notes placed where the gain change is heard line up with the audio REAPER plays.
-- **Note and channel:** a note from 0 to 127 (default 69, A4) and a channel from 1 to 16. The footer's compact dropdown reads "A4 · ch 1", and opens a menu with a note submenu and a channel submenu.
-- **Velocity from level:** off gives a fixed velocity of 100. On maps the detector's peak over the first 5 ms after opening from -60 to 0 dBFS onto 1 to 127. See open question 1.
+- **Note, channel and velocity window:** a note from 0 to 127 (default 69, A4), a channel from 1 to 16, and a velocity window from 1 to 5 ms (default 2). The footer's compact dropdown reads "A4 · ch 1". It opens a menu with a note submenu, a channel submenu and a velocity window submenu in 0.5 ms steps.
+- **Velocity from level off:** the note-on goes out at the sample where the opening is heard, with velocity 100.
+- **Velocity from level on:** the velocity is the detector's peak over the **velocity window** after the gate opens, mapped from -60 to 0 dBFS onto 1 to 127. It isn't the level at the opening, which is just over Threshold for every hit, so soft and hard hits would get nearly the same velocity. The note can't go out until the window has passed:
+  - **Lookahead off:** the note-on is exactly one window late. That's 2 ms by default.
+  - **Lookahead on:** the audio is delayed by `D`, 50 ms, and the gate opens Pre-open ms before the transient. So the window is known with `D - Pre-open - window` to spare. The note is late by `max (0, window - (D - Pre-open))`. That's on time unless Pre-open is within one window of 50 ms. See the question at the end.
+  - **Tooltip:** while the note will be late, the checkbox's tooltip says "Notes are sent 2 ms late to measure how hard each hit is. Turn on Lookahead for on-time notes", with the actual delay.
+- **Note-off** goes out where the closing is heard. It's never before its note-on.
 - **Link off:** MIDI follows the linked state, the louder channel, so one note is sent per hit.
 - **Turning MIDI off** while a note is on sends its note-off.
 
@@ -154,6 +159,7 @@ The warning is set when a Sidechain source is selected and the sidechain's peak 
 | `midiNote` | MIDI note | 0-127 | 69 | | | Shown as a note name |
 | `midiChannel` | MIDI channel | 1-16 | 1 | | | |
 | `velocity` | Velocity from level | off/on | off | | | |
+| `velWindow` | Velocity window | 1-5 | 2 | ms | linear | In the note and channel menu |
 | `output` | Output | -24-+12 | 0 | dB | linear | Header knob, as on every plugin |
 | `bypass` | Bypass | off/on | off | | | §4.6 |
 
@@ -203,7 +209,14 @@ The standard `FancyProcessor` XML. There's nothing beyond the parameters: the hi
 
 ## CPU
 
-The brief's target is under 0.5 % with filters and RMS on and Lookahead off, at 48 kHz and 128 samples. It asks for the median of 5 CI runs. To save build minutes, the benchmark repeats the measurement 5 times in each run and records the median. The figure from successive runs is also kept, as for the other plugins. See open question 2.
+The target is under 0.5 % with filters and RMS on and Lookahead off, at 48 kHz and 128 samples. It's measured by the method in `BUILD_PROMPT_PHASE2_1.md` §0.4:
+
+- In one CI build, each benchmark runs 5 times, and the median is taken.
+- In the same run, Fancy Comp at its default settings is benchmarked as a fixed reference.
+- `docs/measurements/gate.txt` records both the absolute median and the ratio to the reference.
+- The 0.5 % target is checked on the absolute median. Future regressions are checked on the ratio, which cancels most of the difference between runner machines. A ratio more than 15 % above the previous release's fails.
+
+The method lives in a shared test helper, so Phase 2.1 uses the same code for every plugin.
 
 ## How each issue in §5 is handled
 
@@ -216,15 +229,24 @@ The brief's target is under 0.5 % with filters and RMS on and Lookahead off, at 
 | Sidechain doesn't seem to work | Plain source names, the warning, and a REAPER how-to in the manual | Sidechain silent for 2 s with main signal: the warning is set. It clears within 0.5 s of sidechain signal |
 | Clicks with fast attack | The minimum raised-cosine fade | A 1 kHz sine at -6 dBFS opened at the worst phase: no step over 1.5 times the sine's own largest step |
 | Lookahead latency | Zero by default, and a constant 50 ms when on | Off: latency 0, and an impulse comes out at sample 0. On: the same latency for Pre-open 0, 10 and 50 ms, with the output aligned to the input in all three |
-| MIDI triggering with velocity | Sample-placed MIDI and Velocity from level | Hits at -24, -12 and -3 dBFS: velocities rise in that order and match the mapping within ±2. Note-on within 1 sample of the gate's opening in the output |
+| MIDI triggering with velocity | Sample-placed MIDI, and Velocity from level over the velocity window | (1) Hits at -24, -12 and -3 dBFS with the same rise time: velocities rise in that order, match the mapping within ±2, and are at least 20 apart, with Lookahead off and on. (2) Lookahead on, with Pre-open between the window and 50 ms minus the window: note-on within 1 sample of where the opening is heard. (3) Lookahead off: note-on exactly one window after the opening, ±1 sample. (4) Velocity from level off: note-on within 1 sample of the opening, velocity 100. Also: the tooltip shows the actual delay whenever the note is late |
 | Chattering | Hysteresis -6 and Hold 20 by default | A signal moving ±2 dB around Threshold at 20 Hz: at most one open and close a second |
 
 The Pre-open lock gets its own tests: with Lookahead off, the knob reports the hint as its tooltip and ignores drag, wheel and typed values. With it on, it has its normal tooltip and accepts all three. The usual §4 tests also apply: sample rates, block sizes, bit-identical automation, state, bypass, fuzzing and mono.
 
-## Open questions for the user
+## Decisions
 
-1. **Velocity with Lookahead off.** Velocity comes from the peak over the first 5 ms after opening, and the note has to be within 1 sample of the opening. With Lookahead off, there's no latency to wait in, so the 5 ms after opening hasn't happened yet when the note must go out. The options are:
-   - **(a)** With Lookahead off, use the peak up to the opening sample. The note is on time, and velocity is less precise. With Lookahead on, it's exact. Recommended.
-   - **(b)** With Lookahead off, send the note 5 ms late, so velocity is exact.
-   - **(c)** Velocity from level switches Lookahead on. The brief rules this out for the Pre-open knob, so it probably applies here too.
-2. **"Median of 5 CI runs" for CPU.** Five runs is about 30 minutes of build time. Taking the median of 5 repeats in one run gives nearly the same answer, with the usual caveat about runner variation. Is that acceptable?
+- **Velocity** comes from the velocity window after opening, not the level at the opening. With Lookahead off, the note is one window late. The user decided this on 7 November 2026.
+- **CPU** is measured 5 times in one build, with the median taken and Fancy Comp as a same-run reference. The user decided this on 7 November 2026.
+
+## Still to confirm
+
+**Velocity timing with Lookahead on.** The brief's §4 says the note is on time when Pre-open is at least the window, and late by `window - Pre-open` otherwise. That treats Pre-open as the whole lookahead. In fact the audio is always delayed by 50 ms, and Pre-open only sets how early the gate opens within that. So:
+
+| Lookahead on | The brief's rule | This note's rule, `max (0, window - (50 ms - Pre-open))` |
+|---|---|---|
+| Pre-open 0 ms, window 2 ms | 2 ms late | On time. The window is known 48 ms ahead |
+| Pre-open 5 ms (default), window 2 ms | On time | On time |
+| Pre-open 49 ms, window 2 ms | On time, which can't be done: the window isn't over until 1 ms after the note is due | 1 ms late |
+
+This note's rule is never later than the brief's, and is on time for every Pre-open up to 48 ms with the default window. Test (2) checks the range where both agree, Pre-open from the window to 50 ms minus the window. If the user prefers the brief's rule, it's a one-line change.

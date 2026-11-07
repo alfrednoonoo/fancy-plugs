@@ -60,7 +60,8 @@ This extends `docs/BUILD_PROMPT.md` and `docs/BUILD_PROMPT_PHASE2.md`. **Every r
 | Noise | −inf…0 dBFS, default −inf | Adds white noise **only while the gate is open**, scaled by the gate gain (the original's noise mix, e.g. for snare sizzle) |
 | MIDI on open/close | off | Note-on when the gate opens, note-off when it closes, on the VST3 event output bus |
 | MIDI note / channel | 0–127 (default 69 = A4) / 1–16 (default 1) | As in the original |
-| Velocity from level | off | On: velocity follows the detector's peak level in the first 5 ms after opening (−60…0 dBFS mapped to 1–127). For drum triggering |
+| Velocity from level | off | On: velocity follows the detector's peak level over the **velocity window** after the gate opens (−60…0 dBFS mapped to 1–127). For drum triggering. See §4 for timing |
+| Velocity window | 1–5 ms, default 2 ms | Set in the note/channel dropdown's pop-up, next to note and channel |
 
 Factory presets: Vocal clean-up, Kick tight, **Snare (with spill)** and **Tom (with spill)** (these two turn Lookahead on, with Pre-open 2 ms, and say so in the preset name: "… · lookahead"), Duck under kick (Duck, sidechain), Drum trigger to MIDI, Gentle expander (Range −12 dB).
 
@@ -75,6 +76,11 @@ Factory presets: Vocal clean-up, Kick tight, **Snare (with spill)** and **Tom (w
 - **Duck mode**: same detector and state machine, but the gain is applied inverted: when "open", the signal is turned **down** by Range; when "closed", it passes at 0 dB.
 - **Noise**: a white-noise generator with independent L/R, multiplied by the current gate gain (0 when closed) and the Noise level.
 - **MIDI**: sample-accurate note events at the sample where the state changes, compensated for the reported latency so notes line up with the audio REAPER plays back.
+- **Velocity timing.** Don't take velocity from the level at the moment of opening: by definition that level is just over the threshold for every hit, so soft and hard hits would get nearly the same velocity. Velocity must come from the peak **after** opening, over the velocity window. So:
+  - Lookahead on and Pre-open ≥ velocity window: the window is already in the past when the note is due, so the note is **on time** and velocity is exact.
+  - Lookahead off (the default), or Pre-open shorter than the window: the note-on is sent **late by (window − Pre-open)**, 2 ms by default, and velocity is exact.
+  - When Velocity from level is on and the note will be late, the checkbox's tooltip says: "Notes are sent 2 ms late to measure how hard each hit is. Turn on Lookahead for on-time notes." (with the actual delay).
+  - Velocity from level off: notes are always on time, with velocity 100.
 - Denormal protection; no allocation on the audio thread; all controls smoothed (§4.2).
 
 ## 5. Known issues with the original, and the required fix
@@ -89,9 +95,9 @@ These come from user reports (forum, Reddit and Facebook search excerpts, and a 
 | **Sidechain (Aux input) doesn't seem to work.** Users report ReaGate not detecting audio from the auxiliary input; the usual cause is REAPER routing (track channels and plugin pins 3/4). | Detector dropdown names the sources plainly; the "No sidechain signal" warning (§2); a short REAPER sidechain how-to in the manual. Test: with Sidechain L+R selected and the sidechain bus silent for 2 s while the main input has signal, the warning flag is set; it clears within 0.5 s of sidechain signal arriving. |
 | **Clicks when the gate opens with very fast attack.** (One Reddit "click in a closed gate" report turned out to be the user's audio interface, not ReaGate, so it isn't counted. Opening clicks at 0 ms attack are a general gate problem.) | Minimum raised-cosine fade (§4). Test: a 1 kHz sine at −6 dBFS gated open at the worst phase → no sample-to-sample step larger than the sine's own maximum step × 1.5. |
 | **Lookahead adds latency, and changing it during playback upsets compensation.** It also matters for live use and recording, where any latency hurts. | **Zero latency by default**; Lookahead is an explicit, non-automatable switch with a constant 50 ms when on (§4). Tests: Lookahead off → reported latency 0 and an impulse comes out at sample 0; Lookahead on → reported latency identical for Pre-open 0, 10 and 50 ms, and the output is time-aligned with the input in all three. |
-| **People use ReaGate as a drum or guitar trigger for MIDI**, and want velocity to follow how hard the hit was. | Velocity from level (§3), sample-accurate and latency-compensated MIDI. Test: three hits at −24, −12 and −3 dBFS → velocities rise in that order and match the mapping within ±2; note-on timing is within 1 sample of the gate-open sample in the latency-compensated timeline. |
+| **People use ReaGate as a drum or guitar trigger for MIDI**, and want velocity to follow how hard the hit was. | Velocity from level (§3), sample-accurate and latency-compensated MIDI. Tests: (1) three hits at −24, −12 and −3 dBFS with the same rise time → velocities rise in that order, match the mapping within ±2, and are at least 20 apart, in both Lookahead modes. (2) Lookahead on, Pre-open ≥ window → note-on within 1 sample of the gate-open sample in the latency-compensated timeline. (3) Lookahead off → note-on exactly one velocity window after the gate-open sample (±1 sample). (4) Velocity from level off → note-on within 1 sample of gate open, velocity 100. |
 | **Chattering on signals hovering around the threshold.** | Hysteresis default −6 dB (rather than 0) and Hold default 20 ms. Test: a signal wobbling ±2 dB around the threshold at 20 Hz → at most one open/close cycle per second with the defaults. |
 
 ## 6. Acceptance
 
-§7 of `BUILD_PROMPT.md` (green CI, pluginval, screenshots compared with `15__gate_mockup.png`, a REAPER checklist for me that includes a sidechain test and a MIDI-trigger test), plus every §5 test in Catch2 and green in CI. CPU target: < 0.5 % with filters and RMS on, Lookahead off (median of 5 CI runs).
+§7 of `BUILD_PROMPT.md` (green CI, pluginval, screenshots compared with `15__gate_mockup.png`, a REAPER checklist for me that includes a sidechain test and a MIDI-trigger test), plus every §5 test in Catch2 and green in CI. CPU target: < 0.5 % with filters and RMS on, Lookahead off, measured by the CPU method in `BUILD_PROMPT_PHASE2_1.md` §0.4.
