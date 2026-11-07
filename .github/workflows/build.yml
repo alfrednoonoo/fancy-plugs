@@ -69,7 +69,7 @@ jobs:
           -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build build -- -k 0
 
       - name: Run DSP tests
         run: ctest --test-dir build --output-on-failure --verbose

@@ -65,7 +65,7 @@ private:
 
     struct BandValues
     {
-        std::atomic<float>* used, on, type, frequency, gain, q, slope;
+        std::atomic<float>* used, *on, *type, *frequency, *gain, *q, *slope;
     };
 
     SharedFlag logScale;
