@@ -214,11 +214,15 @@ class ParamCheckbox final : public ParamClickControl
 public:
     ParamCheckbox (juce::RangedAudioParameter& parameter, const juce::String& label, juce::Colour accent = colours::uiTeal);
 
+    // For a row of long labels. The default is the Figma body size.
+    void setLabelHeight (float height);
+
     void paint (juce::Graphics&) override;
 
 private:
     juce::String labelText;
     juce::Colour accentColour;
+    float labelHeight = 14.0f;
 };
 
 // The header's power pill: lit while the plugin is active, grey while bypassed.

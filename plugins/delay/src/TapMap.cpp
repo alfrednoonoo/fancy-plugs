@@ -177,8 +177,14 @@ void TapMap::paint (juce::Graphics& g)
         {
             g.setColour (colours::textSecondary);
 
-            g.drawText (juce::String (juce::roundToInt (beat * tick * 0.25)) + " ms",
-                        juce::Rectangle<float> (x - 36.0f, baseline + 5.0f, 72.0f, 16.0f), juce::Justification::centred, false);
+            // The ends line up with the axis, so they can't run off the card.
+            const auto isFirst = tick == 0, isLast = tick == beats * 4;
+            const auto area = isFirst ? juce::Rectangle<float> (x - 4.0f, baseline + 5.0f, 72.0f, 16.0f)
+                                      : (isLast ? juce::Rectangle<float> (x - 72.0f, baseline + 5.0f, 72.0f, 16.0f)
+                                                : juce::Rectangle<float> (x - 36.0f, baseline + 5.0f, 72.0f, 16.0f));
+
+            g.drawText (juce::String (juce::roundToInt (beat * tick * 0.25)) + " ms", area,
+                        isFirst ? juce::Justification::centredLeft : (isLast ? juce::Justification::centredRight : juce::Justification::centred), false);
         }
     }
 

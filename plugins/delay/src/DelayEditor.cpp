@@ -21,9 +21,11 @@ constexpr int controlsCardX = 207, controlsCardWidth = 439;
 constexpr int footerY = 351;
 constexpr int faderTop = 26, faderHeight = 321;
 
-// Between Knob::smallStyle and mediumStyle, and with a smaller font so that six labels fit.
-constexpr Knob::Style lengthStyle { 60.0f, 52.0f, 4.0f, 14.0f, 14.0f, 17.0f, 6.0f, 3.0f, 23.0f, 14.0f, false, true };
-constexpr Knob::Style tapKnobStyle { 50.0f, 42.0f, 3.0f, 13.5f, 10.0f, 17.0f, 6.0f, 3.0f, 23.0f, 13.0f, false, true };
+// Between Knob::smallStyle and mediumStyle. The window fits the mockup's labels at 12 px, not
+// the 14 px of the larger Figma frames.
+constexpr float labelHeight = 12.0f;
+constexpr Knob::Style lengthStyle { 60.0f, 52.0f, 4.0f, 14.0f, 14.0f, 17.0f, 6.0f, 3.0f, 23.0f, labelHeight, false, true };
+constexpr Knob::Style tapKnobStyle { 50.0f, 42.0f, 3.0f, 13.5f, 10.0f, 17.0f, 6.0f, 3.0f, 23.0f, labelHeight, false, true };
 
 constexpr OutMeter::Geometry meterGeometry { 14.5f, 15.0f, 306.0f, 25.0f, 4.75f, 314.0f, false };
 
@@ -188,6 +190,7 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
     placeKnob (widthKnob, 4);
     placeKnob (panKnob, 5);
 
+    volumeLabel.setFont (font (Weight::regular, labelHeight));
     volumeLabel.setBounds (590, cardY + 7, 52, 17);
     volumeFader.setBounds (594, cardY + 26, 44, 112);
 
@@ -195,9 +198,12 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
     powerIcon.setBounds (597, tabRowY + 5, 12, 13);
     closeButton.setBounds (630, tabRowY + 7, 8, 8);
 
-    loopCheckbox.setBounds (15, footerY, 165, 20);
-    pingCheckbox.setBounds (188, footerY, 80, 20);
-    saturateCheckbox.setBounds (276, footerY, 120, 20);
+    loopCheckbox.setBounds (15, footerY, 178, 20);
+    pingCheckbox.setBounds (205, footerY, 77, 20);
+    saturateCheckbox.setBounds (294, footerY, 125, 20);
+
+    for (auto* checkbox : { &loopCheckbox, &pingCheckbox, &saturateCheckbox })
+        checkbox->setLabelHeight (labelHeight);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &modeSwitch, &msKnob, &noteKnob, &noteDropdown, &feelSwitch, &resultLabel,
@@ -304,7 +310,8 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
 
     tabs.toFront (false);
 
-    smoothCheckbox.setBounds (403, footerY, 148, 20);
+    smoothCheckbox.setBounds (431, footerY, 142, 20);
+    smoothCheckbox.setLabelHeight (labelHeight);
     editLink.setBounds (582, footerY - 2, 64, 24);
     outMeter.setBounds (650, 10, 46, 340);
 
@@ -475,7 +482,7 @@ void DelayEditor::showPreview (bool drawerOpen)
 
     selectTap (0);
     tapMap.update();
-    outMeter.show (-6.1f, -5.0f);
+    outMeter.show (-8.0f, -6.1f);
 
     tempoLabel.setText ("120.0 BPM (host)", juce::dontSendNotification);
 

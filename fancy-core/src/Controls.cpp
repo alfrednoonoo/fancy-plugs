@@ -647,6 +647,12 @@ ParamCheckbox::ParamCheckbox (juce::RangedAudioParameter& parameter, const juce:
 {
 }
 
+void ParamCheckbox::setLabelHeight (float height)
+{
+    labelHeight = height;
+    repaint();
+}
+
 void ParamCheckbox::paint (juce::Graphics& g)
 {
     constexpr float size = 14.0f;
@@ -674,7 +680,7 @@ void ParamCheckbox::paint (juce::Graphics& g)
         g.drawRoundedRectangle (box.reduced (0.25f), 3.0f, 0.5f);
     }
 
-    g.setFont (font (Weight::regular, bodyFontSize));
+    g.setFont (font (Weight::regular, labelHeight));
     g.setColour (colours::textPrimary);
     g.drawText (labelText, bounds.withTrimmedLeft (size + 6.0f), juce::Justification::centredLeft, false);
 }
