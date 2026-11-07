@@ -55,6 +55,11 @@ bool FancyProcessor::applyState (const juce::ValueTree& tree)
     for (int i = clean.getNumChildren(); --i >= 0;)
     {
         auto child = clean.getChild (i);
+
+        // Anything else belongs to the plugin, which checks it in stateApplied().
+        if (! child.hasType ("PARAM"))
+            continue;
+
         const auto id = child.getProperty ("id").toString();
 
         if (apvts.getParameter (id) == nullptr)
@@ -76,6 +81,7 @@ bool FancyProcessor::applyState (const juce::ValueTree& tree)
     }
 
     apvts.replaceState (clean);
+    stateApplied();
     return true;
 }
 

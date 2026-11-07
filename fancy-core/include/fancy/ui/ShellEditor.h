@@ -39,12 +39,13 @@ private:
 class EditDrawer final : public juce::Component
 {
 public:
-    EditDrawer();
+    explicit EditDrawer (const juce::String& title = "EDIT");
 
     void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
+    juce::String titleText;
     PillButton closeButton { "Done" };
 };
 

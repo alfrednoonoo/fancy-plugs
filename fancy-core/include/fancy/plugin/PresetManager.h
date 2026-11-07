@@ -14,6 +14,7 @@ struct FactoryPreset
 {
     juce::String name;
     std::vector<std::pair<juce::String, float>> values;
+    juce::String data {}; // for state beyond the parameters; see FancyProcessor::factoryPresetLoaded
 };
 
 // Message-thread only: it touches files and resets parameters.

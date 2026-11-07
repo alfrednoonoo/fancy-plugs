@@ -81,6 +81,7 @@ void PresetManager::load (int index)
     if (index < (int) factory.size())
     {
         loadFactory (factory[(size_t) index]);
+        owner.factoryPresetLoaded (factory[(size_t) index].data);
         setCurrentName (factory[(size_t) index].name);
         return;
     }

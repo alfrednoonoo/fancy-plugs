@@ -30,6 +30,11 @@
  #include "EqProcessor.h"
 #endif
 
+#if FANCY_HAS_VERB
+ #include "VerbEditor.h"
+ #include "VerbProcessor.h"
+#endif
+
 namespace
 {
 
@@ -88,6 +93,33 @@ bool renderEq (const juce::File& outputDir)
 
     editor->showCompactPreview();
     return writeBothScales (*editor, "eq-compact", outputDir) && ok;
+}
+#endif
+
+#if FANCY_HAS_VERB
+bool renderVerb (const juce::File& outputDir)
+{
+    VerbProcessor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<VerbEditor*> (base.get());
+
+    if (editor == nullptr)
+        return false;
+
+    editor->showEmptyPreview();
+    auto ok = writeBothScales (*editor, "verb-empty", outputDir);
+
+    editor->showPreview (VerbEditor::Preview::rack);
+    ok = writeBothScales (*editor, "verb", outputDir) && ok;
+
+    editor->showPreview (VerbEditor::Preview::addPanel);
+    ok = writeBothScales (*editor, "verb-add", outputDir) && ok;
+
+    editor->showPreview (VerbEditor::Preview::setup);
+    ok = writeBothScales (*editor, "verb-edit", outputDir) && ok;
+
+    editor->showPreview (VerbEditor::Preview::scrolled);
+    return writeBothScales (*editor, "verb-scrolled", outputDir) && ok;
 }
 #endif
 
@@ -173,6 +205,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_EQ
     ok = renderEq (outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_VERB
+    ok = renderVerb (outputDir) && ok;
    #endif
 
     Gallery gallery;

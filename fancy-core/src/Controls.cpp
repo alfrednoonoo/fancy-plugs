@@ -115,6 +115,10 @@ void ParamControl::mouseWheelMove (const juce::MouseEvent& event, const juce::Mo
 
 void ParamControl::showHostMenu()
 {
+    // A parameter the host doesn't know about has no automation menu.
+    if (param.getParameterIndex() < 0)
+        return;
+
     if (auto* editor = findParentComponentOfClass<juce::AudioProcessorEditor>())
         if (auto* context = editor->getHostContext())
             if (const auto menu = context->getContextMenuForParameter (&param))

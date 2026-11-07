@@ -69,7 +69,7 @@ void EditLink::mouseUp (const juce::MouseEvent& event)
 
 // EditDrawer ------------------------------------------------------------------
 
-EditDrawer::EditDrawer()
+EditDrawer::EditDrawer (const juce::String& title) : titleText (title)
 {
     closeButton.onClick = [this] { setVisible (false); };
     addAndMakeVisible (closeButton);
@@ -81,7 +81,7 @@ void EditDrawer::paint (juce::Graphics& g)
 
     g.setFont (font (Weight::semiBold, 14.0f).withExtraKerningFactor (0.06f));
     g.setColour (colours::textPrimary);
-    g.drawText ("EDIT", getLocalBounds().withHeight (48).withTrimmedLeft (24), juce::Justification::centredLeft, false);
+    g.drawText (titleText, getLocalBounds().withHeight (48).withTrimmedLeft (24), juce::Justification::centredLeft, false);
 }
 
 void EditDrawer::resized()

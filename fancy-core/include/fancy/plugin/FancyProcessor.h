@@ -45,8 +45,16 @@ public:
     // Validates the tree first, so a damaged preset or session can't reach the parameters.
     bool applyState (const juce::ValueTree& tree);
 
+    // Runs after a state or preset replaces the parameters. A plugin with state beyond its
+    // parameters checks it here.
+    virtual void stateApplied() {}
+
+    // Runs after a factory preset sets its parameters, with the preset's data string.
+    virtual void factoryPresetLoaded (const juce::String& data) { juce::ignoreUnused (data); }
+
     juce::AudioProcessorValueTreeState& getApvts() noexcept { return apvts; }
     PresetManager& getPresets() noexcept { return presets; }
+    const PresetManager& getPresets() const noexcept { return presets; }
 
     dsp::MeterTap inputMeter;
     dsp::MeterTap outputMeter;
