@@ -302,6 +302,7 @@ bool Convolver::collect (Stage& stage, bool offline) noexcept
 
     if (stage.state.compare_exchange_strong (expected, jobRunning, std::memory_order_acquire))
     {
+        takenOverJobs.fetch_add (1, std::memory_order_relaxed);
         stage.transform();
         stage.state.store (jobIdle, std::memory_order_relaxed);
         stage.playing.swap (stage.result);

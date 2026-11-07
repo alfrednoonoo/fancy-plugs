@@ -251,6 +251,7 @@ void VerbEditor::showPreview (Preview preview)
     processor.waitForBuild (20000);
 
     rack.rebuild();
+    rack.hideAddPanel();
     updateDisplay();
 
     if (preview == Preview::addPanel)

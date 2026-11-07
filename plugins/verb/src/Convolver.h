@@ -40,6 +40,9 @@ public:
     // Blocks that played silence in one stage because its job was late.
     int getLateBlocks() const noexcept { return lateBlocks.load (std::memory_order_relaxed); }
 
+    // Background jobs the audio thread had to run itself because the worker hadn't started them.
+    int getTakenOverJobs() const noexcept { return takenOverJobs.load (std::memory_order_relaxed); }
+
 private:
     using Complex = juce::dsp::Complex<float>;
 
@@ -101,6 +104,7 @@ private:
     std::atomic<std::uint32_t> wakeCount { 0 };
     std::atomic<bool> stopping { false };
     std::atomic<int> lateBlocks { 0 };
+    std::atomic<int> takenOverJobs { 0 };
     std::unique_ptr<Worker> worker;
 };
 
