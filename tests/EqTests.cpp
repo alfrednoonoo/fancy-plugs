@@ -581,40 +581,6 @@ TEST_CASE ("changing band type, slope or power doesn't click", "[eq][sweep]")
     REQUIRE (largestStep (signal.left) < 0.09);
 }
 
-TEST_CASE ("changing shape while a band is moving stays stable", "[eq]")
-{
-    auto targets = flatTargets();
-    targets.bands[0] = makeBand (BandType::band, 200.0, 12.0, 8.0);
-
-    EqDsp dsp;
-    prepare (dsp, targets);
-
-    auto signal = sine (500.0, 0.1, rate, 48000);
-
-    constexpr int blockSize = 128;
-
-    for (int start = 0, block = 0; start < signal.size(); start += blockSize, ++block)
-    {
-        // The moving Freq leaves a coefficient ramp running when the type changes.
-        if (block == 40)
-        {
-            targets.bands[0].frequencyHz = 15000.0;
-            dsp.setTargets (targets);
-        }
-
-        if (block == 41)
-            targets.bands[0].type = BandType::lowPass;
-
-        dsp.setTargets (targets);
-
-        float* channels[] { signal.left.data() + start, signal.right.data() + start };
-        dsp.process (channels, 2, std::min (blockSize, signal.size() - start));
-    }
-
-    for (const auto sample : signal.left)
-        REQUIRE (std::abs (sample) < 2.0f);
-}
-
 TEST_CASE ("random parameter changes never produce bad output", "[eq]")
 {
     const auto seed = GENERATE (1u, 2u, 3u, 4u, 5u);

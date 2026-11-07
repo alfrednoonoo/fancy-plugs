@@ -381,7 +381,7 @@ void EqGraph::paintLabels (juce::Graphics& g)
     }
 
     if (analyzerMode != 0)
-        g.drawText (analyzerMode == 1 ? "pre" : "post", 4, 4, 30, 14, juce::Justification::centredLeft, false);
+        g.drawText (analyzerMode == 1 ? "pre" : "post", 40, 4, 30, 14, juce::Justification::centredLeft, false);
 }
 
 void EqGraph::paintSpectrum (juce::Graphics& g)

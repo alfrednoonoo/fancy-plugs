@@ -7,10 +7,10 @@
 - Fancy Kicker: done, signed off in REAPER by the user.
 - Fancy Exciter: done, signed off in REAPER by the user.
 - Fancy Comp: done, signed off in REAPER by the user.
-- Fancy EQ: built, **results pending below**.
+- Fancy EQ: built and green in CI, **waiting for the REAPER check** in `docs/eq-checklist.md` (§7 checks 3 and 7).
 - Next: Fancy Verb, once the EQ is signed off.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42263079104 (commit `b575b0a`).
+Latest run: LATEST_RUN.
 
 ## Kicker acceptance (§7)
 
@@ -64,6 +64,36 @@ Lessons from the Comp build, which apply to the EQ and Verb:
 - **Sawtooth aliasing starts in the envelope.** The harmonics fold when the follower is sampled, so filters placed after it do nothing. Two fixes that assumed otherwise were tried and removed.
 - **JUCE seeds raw parameter values unsnapped.** `FancyProcessor` now writes every parameter once at construction, which fixes this for all plugins. This is what keeps §4.8 bit-identical.
 
+## EQ acceptance (§7)
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Actions run green, artifact contains the plugin | Pass, run above |
+| 2 | pluginval strictness 10 | Pass for all four plugins, GUI tests on, including a rerun with new random seeds |
+| 3 | State survives a REAPER project reload | **Waiting for the user**; state round-trip and corrupted-state tests pass in CI |
+| 4 | §5.1 tests | Pass, 94 test cases across the suite. 18 kHz +6 dB bell at 44.1 kHz is within 0.42 dB of analog up to 20 kHz. Responses at 44.1–192 kHz are within 0.5 dB below 20 kHz for the tested types. A -12 dBFS sine reads -12.1 dB. Numbers in `docs/measurements/eq.txt` |
+| 5 | Screenshots compared with the reference | Done against both Figma frames; `docs/screens/eq-vs-reference.png` shows Figma on the left and the build on the right |
+| 6 | CPU against the §4.11 target | Pass: 0.37–0.46 % for 8 bands without oversampling across runs, against < 1 %. About 1 % at 2×, 1.9 % at 4×, and 0.9–1.1 % in Linear on CI runners |
+| 7 | Installed and confirmed in REAPER | **Waiting for the user** |
+
+EQ deviations from Figma:
+
+- **EDIT link:** added in the header, for the settings that aren't in the mockups.
+- **Window:** resizable through the host's border, minimum 696 × 464, which is §2.4's minimum at Figma scale.
+- **Handles and curves:** follow the values. Figma's band 2 handle sits at 366 Hz on its own axis while its label says 487.7 Hz, and its "2.0" curve is wider than a true Q of 2, because the original control was bandwidth in octaves.
+- **Gain knob:** the arc starts from the centre as §2.3 says. Figma draws it from the minimum.
+- **Compact card:** knob positions follow Figma's render, not its stored positions, which disagree.
+- **Analyzer label:** "pre" or "post" added at the graph's top left, as §5.1 asks.
+- **Show phase:** Figma has no style for it, so it's a thin yellow line.
+- **Analyzer line:** the comparison render uses a made-up spectrum, because CI has no audio.
+
+Lessons from the EQ build, which apply to the Verb:
+
+- **Rerun pluginval.** It picks new random settings each run, and one green run missed a NaN that the next found. A seeded fuzz test now covers this. It was confirmed by removing the fix and watching it fail. A directed test written for the same bug still passed without the fix, so it was removed.
+- **Keep large buffers out of the processor object.** A hosted plugin is on the heap, but tests build it on the stack, and a 512 kB array overflowed it.
+- **A ramp needs an end.** Coefficient increments must stop when the code that refreshes them is skipped.
+- **Prototype DSP in Python first.** With no local compiler, it costs seconds rather than a CI run. The Vicanek formulas were checked this way, and a five-point rational fit was rejected before any C++ was written.
+
 ## Figma
 
 File `v9yFzkjuAzh1qzjEweURsh`, "ReaPlugs (vst GUI) (Community)". `design/figma-spec.json` holds every frame, position, fill, radius and font; `design/` has 2× renders of the frames and main components; `design/icons/` has the glyph SVGs. Commit the data, never the token.
@@ -102,7 +132,7 @@ Figma uses SF Compact Display for the scale numbers. That font can't be bundled,
 
 Tested in CI: DSP, state, presets, automation, bypass and layouts through pluginval, editor opening, rendered screenshots.
 
-Not tested by anything yet, because CI can't click: drag, shift-drag, double-click, ctrl-click typing, mouse wheel, right-click menus, the preset and save dialogs, the UI size menu, opening and closing the EDIT drawer, and the bypass dimming. All of these are on the REAPER checklist.
+Not tested by anything yet, because CI can't click: graph handles and their gestures, window resizing, drag, shift-drag, double-click, ctrl-click typing, mouse wheel, right-click menus, the preset and save dialogs, the UI size menu, opening and closing the EDIT drawer, and the bypass dimming. All of these are on the REAPER checklist.
 
 `scripts/get-latest.ps1` and `scripts/install.ps1` were run end to end, with `USERPROFILE` pointed at a scratch folder. They have not yet installed into the real `%USERPROFILE%\VST3-Dev`.
 
@@ -115,8 +145,9 @@ Not tested by anything yet, because CI can't click: drag, shift-drag, double-cli
 | Kicker, large change | 5m48s | | 75 % |
 | Kicker, small change to shared code | 3m19s–4m11s | | |
 | Three plugins, code change | 4m59s–5m11s | | |
+| Four plugins, code change | 4m48s–5m30s | | |
 
-Target: warm one-plugin build under about 6 minutes (met). The full-suite target of 15 minutes can't be measured until more plugins exist. The runner image changes about weekly, which refreshes the dependency cache and adds about 4 minutes of configure time to the next run.
+Target: warm one-plugin build under about 6 minutes (met). The full-suite target of 15 minutes is on track, at about 5 minutes for four plugins with a warm cache. The runner image changes about weekly, which refreshes the dependency cache and adds about 4 minutes of configure time to the next run.
 
 ## Decisions
 
@@ -132,13 +163,13 @@ Target: warm one-plugin build under about 6 minutes (met). The full-suite target
 - Kicker and Exciter meters are a stereo pair per side, with one readout per pair, as the zoomed mockup shows.
 - Header knob and the EDIT drawer's Output are the same parameter. The drawer is an overlay on the left panel.
 - Kicker `q` range (0.5–10, default 2.0) and `output` range (-24…+12 dB) were chosen here; the brief doesn't give them.
+- The CI build step runs with `-k 0`, so one failed file doesn't hide the compile errors in the others.
 - `tools/screens` also renders `gallery`, a sheet of the fader, dropdown and other controls the Kicker doesn't use.
 
 ## Open questions
 
 - **Figma token.** A personal access token was pasted into the conversation and needs revoking and replacing. Do not store it anywhere in this repo. The Figma data is committed, so later sessions only need the token to re-export.
 - pluginval's Steinberg VST3 validator step is skipped, because no validator path is set. The brief doesn't require it.
-- `reference/07__ReaEQ.png`: §3.4 asks for the musical note on the frequency display, but its example and the mockup show it after the gain value. Decide when building the EQ.
 
 ## Known warnings
 
