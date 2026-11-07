@@ -1220,7 +1220,7 @@ TEST_CASE ("verb measurements", "[.measure]")
 
         auto deadline = start;
         auto active = 0.0, worst = 0.0;
-        auto overBudget = 0;
+        std::vector<int> overBudget;
 
         for (int block = 0; block < blocks; ++block)
         {
@@ -1230,7 +1230,9 @@ TEST_CASE ("verb measurements", "[.measure]")
             const auto used = std::chrono::duration<double> (Clock::now() - blockStart).count();
             active += used;
             worst = std::max (worst, used);
-            overBudget += used > 128.0 / rate ? 1 : 0;
+
+            if (used > 128.0 / rate)
+                overBudget.push_back (block);
 
             deadline += blockTime;
 
@@ -1243,9 +1245,13 @@ TEST_CASE ("verb measurements", "[.measure]")
 
         std::printf ("verb 4 s stereo IR, %s: %.2f %% of one core (audio thread %.2f %%, worker %.2f %%), worst block %.0f us of 2667 us, %d of %d blocks over budget, %d jobs taken over, late blocks %d\n",
                      name, 100.0 * (active + workers) / wall, 100.0 * active / wall, 100.0 * workers / wall, worst * 1.0e6,
-                     overBudget, blocks, convolver.getTakenOverJobs(), convolver.getLateBlocks());
+                     (int) overBudget.size(), blocks, convolver.getTakenOverJobs(), convolver.getLateBlocks());
+
+        for (const auto block : overBudget)
+            std::printf ("  over budget at block %d\n", block);
     };
 
     measure (false, "Zero latency (target < 5 %)");
     measure (true, "Low CPU");
+    measure (false, "Zero latency, second run");
 }
