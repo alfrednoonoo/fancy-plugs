@@ -99,7 +99,7 @@ The standard `FancyProcessor` XML. It adds one non-audio property, `selectedTap`
 
 ## CPU
 
-§4.11 sets no target for this plugin. Target here: under 1 % for 4 taps at 48 kHz/128 samples, in line with Fancy Comp and Fancy EQ. Measured with a CI benchmark, in `docs/measurements/delay.txt`.
+§4.11 sets no target for this plugin. Target here: under 1 % for 4 taps at 48 kHz/128 samples, in line with Fancy Comp and Fancy EQ. Measured with a CI benchmark, in `docs/measurements/delay.txt`: 4 plain taps meet it, and 4 taps with every option on, including Saturate, don't, at about 1.7-2.1 %. The worst case is `tanh`, four times a sample per tap.
 
 ## How each P2.3 issue is handled
 

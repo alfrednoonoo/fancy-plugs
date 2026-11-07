@@ -13,17 +13,65 @@
 - Phase 1 is finished. Phase 2 (below) is the work that comes after it.
 - Release: [v1.0.1](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.0.1), which adds typed values to v1.0.0. The repo is private, so the releases are too.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42397458861 (commit `3f8e9b8`, version 1.0.1): 129 test cases passed, and all five plugins passed pluginval at strictness 10. Typing values confirmed in REAPER by the user.
+Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42397458861 (commit `3f8e9b8`, version 1.0.1): 129 test cases passed, and all five plugins passed pluginval at strictness 10. Typing values confirmed in REAPER by the user.
+
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42405723460 (commit `7c4586d`): 166 test cases passed, and all six plugins passed pluginval at strictness 10.
 
 ## Phase 2
 
 Brief: `docs/BUILD_PROMPT_PHASE2.md`. Mockups: `reference/phase2/`. Each plugin passes §7 and P5 before the next starts, which includes the user's check in REAPER. P5 adds a comparison of each CI screenshot with its mockup, and every P2.3, P3.3 and P4.3 test in the Catch2 suite.
 
-- Fancy Delay: next.
+- Fancy Delay: built and green in CI. Waiting for the user's check in REAPER, with `docs/delay-checklist.md`.
 - Fancy XComp: not started.
 - Fancy FIR: not started.
 
 All three use the shared controls, so every knob and fader gets the typed values added in v1.0.1.
+
+Do not start Fancy XComp until the user has signed off the Delay.
+
+Changes to shared code since v1.0.1, which the next release should include:
+
+- **Drag fix:** dragging accumulates, so controls with coarse steps move on slow drags. This reaches every plugin. Before it, each small move was rounded away against the snapped value.
+- **Moved to `fancy-core`:** `OutMeter`, from Comp, and `ParamPowerIcon` and `IconButton`, from the EQ. All nine Phase 1 screenshots compared after the move were byte-identical.
+- **New in `fancy-core`:** `ParamSegments`, `ColourTabs`, `formatFilterHz`, `ParamCheckbox::setLabelHeight`, and a colour for `Knob::setValueSuffix`.
+
+## Delay acceptance (§7, P5)
+
+Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42405723460 (commit `7c4586d`).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Actions run green, artifact contains the plugin | Pass, run above |
+| 2 | pluginval strictness 10 | Pass for all six plugins, GUI tests on |
+| 3 | State survives a REAPER project reload | Not yet. A save and load test passes in CI, and the REAPER check is the user's |
+| 4 | P2.3 tests | Pass, 166 test cases across the suite. Numbers in `docs/measurements/delay.txt` |
+| 5 | Screenshots compared with the mockup | Done; `docs/screens/delay-vs-reference.png` shows the mockup on the left and the build on the right |
+| 6 | CPU | No §4.11 target. 0.37-0.48 % for 4 plain taps across runs, against the design note's < 1 %. 4 taps with every option on, including Saturate, took 1.67-2.14 %, which is over it. 16 taps took 1.5-1.8 % plain and 6.4-8.5 % with every option |
+| 7 | Installed and confirmed in REAPER | Not yet, waiting for the user |
+
+P2.3 results:
+
+- **Note lengths:** 1/8 dotted, 1/8 triplet and 1/4 at 120 BPM land within a sample of 375.0, 166.67 and 500.0 ms.
+- **Filtered repeats:** with LP 2 kHz and 60 % feedback, the energy above 2 kHz is 21.4, 6.9, 2.7, 1.1 and 0.5 % over five repeats. With the checkbox off it's constant.
+- **Time step:** the 375 to 500 ms test allows the output's largest step to be 5 % above the input's. The brief says no larger than the input's own. The crossfade's slope adds a small amount to a sine, so the margin is there for that.
+- **Tempo ramp:** 100 % feedback through 90 to 180 BPM over 30 s stays below 0 dBFS, with Saturate on and off.
+
+Delay deviations from the mockup:
+
+- **Window:** 760 x 428, not about 410, because the shared header is 53 px and the mockup draws 37.
+- **Controls:** knobs, faders, meters, tabs and the header are the shared components, so the arcs, fader handles and "0.0" rather than "+0.0" follow `fancy-core`, as the brief says.
+- **Right column:** Out, Wet and Dry are 33 px apart, and the Out meter has no scale, as the mockup draws it.
+- **Label size:** 12 px, because the shared 14 px doesn't fit four footer labels or six knob labels in this width.
+- **Length knob:** 60 px, between the shared 50 and 72 px sizes, so that it fits the Time card.
+- **Note dropdown:** reads "1/8" where the mockup draws "1/8 note", because it shares its text with the Length knob.
+- **EDIT link:** added at the right of the footer, for the Multiplier that P2.2 asks for and the mockup doesn't show. It also holds Output, as on Kicker, Exciter and Comp.
+- **Preset name and values:** the render shows "No preset" and default Ping-pong off is overridden to the mockup's state. The repeats are drawn from the real settings, so the faded bars sit in different places.
+
+Lessons from the Delay build:
+
+- **Look at the render, not the layout maths.** All 166 tests passed with four labels clipped, and my width estimates were wrong twice.
+- **Keep test levels below any safety curve,** unless the test is about the curve. A full-scale impulse was the cause of two false failures.
+- **PIL isn't installed here.** `System.Drawing` in PowerShell makes the comparison images with nothing to install.
 
 ## Kicker acceptance (§7)
 

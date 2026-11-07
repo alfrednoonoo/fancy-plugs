@@ -1,0 +1,8 @@
+﻿delay repeat 1: above 2 kHz is 21.4 % of its energy
+delay repeat 2: above 2 kHz is 6.9 % of its energy
+delay repeat 3: above 2 kHz is 2.7 % of its energy
+delay repeat 4: above 2 kHz is 1.1 % of its energy
+delay repeat 5: above 2 kHz is 0.5 % of its energy
+delay cpu: 1 taps plain 0.11 %, everything on 0.42 %
+delay cpu: 4 taps plain 0.37 %, everything on 1.67 %
+delay cpu: 16 taps plain 1.48 %, everything on 6.41 %
