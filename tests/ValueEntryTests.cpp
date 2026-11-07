@@ -22,8 +22,8 @@ std::unique_ptr<juce::AudioParameterFloat> frequencyParameter()
                                       .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); }));
 }
 
-// A real window, so these clicks travel the same route as the mouse's. Nothing here needs
-// the window to have keyboard focus.
+// Gestures go straight to the control under the mouse. Clicks away have to take the real
+// route, because the box watches for them on the desktop, so those go through the window.
 struct Rig
 {
     Rig()
@@ -36,35 +36,72 @@ struct Rig
         window.addAndMakeVisible (knob);
         window.addAndMakeVisible (fader);
         window.addAndMakeVisible (headerKnob);
+
+        // An unpainted window that isn't opaque is layered, and Windows can't hit-test it.
+        window.setOpaque (true);
+        window.setAlwaysOnTop (true);
         window.addToDesktop (0);
         window.setVisible (true);
     }
 
-    ~Rig() { juce::ModifierKeys::currentModifiers = {}; }
+    enum class Phase { down, drag, up };
 
-    void mouse (juce::Point<int> position, juce::ModifierKeys mods)
+    void send (juce::Component& target, Phase phase, juce::Point<int> pressed, juce::Point<int> position, juce::ModifierKeys held, bool dragged)
     {
-        window.getPeer()->handleMouseEvent (juce::MouseInputSource::InputSourceType::mouse, position.toFloat(), mods,
-                                            juce::MouseInputSource::defaultPressure, juce::MouseInputSource::defaultOrientation,
-                                            juce::Time::currentTimeMillis());
+        const auto mods = phase == Phase::up ? held : held.withFlags (juce::ModifierKeys::leftButtonModifier);
+        const auto now = juce::Time::getCurrentTime();
+        const auto local = target.getLocalPoint (&window, position).toFloat();
+        const auto localPressed = target.getLocalPoint (&window, pressed).toFloat();
+
+        const juce::MouseEvent event (juce::Desktop::getInstance().getMainMouseSource(), local, mods,
+                                      juce::MouseInputSource::defaultPressure, juce::MouseInputSource::defaultOrientation,
+                                      juce::MouseInputSource::defaultRotation, juce::MouseInputSource::defaultTiltX,
+                                      juce::MouseInputSource::defaultTiltY, &target, &target, now, localPressed, now, 1, dragged);
+
+        if (phase == Phase::down)
+            target.mouseDown (event);
+        else if (phase == Phase::drag)
+            target.mouseDrag (event);
+        else
+            target.mouseUp (event);
     }
 
     void click (juce::Point<int> position, juce::ModifierKeys held = {})
     {
-        juce::ModifierKeys::currentModifiers = held;
-        mouse (position, held);
-        mouse (position, held.withFlags (juce::ModifierKeys::leftButtonModifier));
-        mouse (position, held);
+        auto* target = window.getComponentAt (position);
+        REQUIRE (target != nullptr);
+
+        send (*target, Phase::down, position, position, held, false);
+        send (*target, Phase::up, position, position, held, false);
     }
 
-    void drag (juce::Point<int> from, juce::Point<int> to)
+    void drag (juce::Point<int> from, juce::Point<int> to, bool farEnoughToBeADrag)
     {
-        const auto down = juce::ModifierKeys {}.withFlags (juce::ModifierKeys::leftButtonModifier);
+        auto* target = window.getComponentAt (from);
+        REQUIRE (target != nullptr);
 
-        mouse (from, {});
-        mouse (from, down);
-        mouse (to, down);
-        mouse (to, {});
+        send (*target, Phase::down, from, from, {}, false);
+        send (*target, Phase::drag, from, to, {}, farEnoughToBeADrag);
+        send (*target, Phase::up, from, to, {}, farEnoughToBeADrag);
+    }
+
+    void clickThroughWindow (juce::Point<int> position)
+    {
+        auto* peer = window.getPeer();
+
+        if (! peer->contains (position, true))
+            SKIP ("This desktop doesn't deliver clicks to the test window");
+
+        const auto send = [&] (juce::ModifierKeys mods)
+        {
+            peer->handleMouseEvent (juce::MouseInputSource::InputSourceType::mouse, position.toFloat(), mods,
+                                    juce::MouseInputSource::defaultPressure, juce::MouseInputSource::defaultOrientation,
+                                    juce::Time::currentTimeMillis());
+        };
+
+        send ({});
+        send (juce::ModifierKeys {}.withFlags (juce::ModifierKeys::leftButtonModifier));
+        send ({});
     }
 
     juce::TextEditor* box()
@@ -188,7 +225,7 @@ TEST_CASE ("Clicking a value opens the box and typing moves the control", "[entr
         REQUIRE (rig.box() != nullptr);
 
         rig.box()->setText ("2500", false);
-        rig.click (rig.emptySpace);
+        rig.clickThroughWindow (rig.emptySpace);
 
         CHECK (rig.freq->get() == Approx (2500.0f).margin (0.1f));
         CHECK (rig.box() == nullptr);
@@ -200,7 +237,7 @@ TEST_CASE ("Clicking a value opens the box and typing moves the control", "[entr
         REQUIRE (rig.box() != nullptr);
 
         rig.box()->setText ("500", false);
-        rig.click (rig.faderTrack);
+        rig.clickThroughWindow (rig.faderTrack);
 
         CHECK (rig.freq->get() == Approx (500.0f).margin (0.1f));
         CHECK (rig.box() == nullptr);
@@ -267,7 +304,7 @@ TEST_CASE ("Clicking a value opens the box and typing moves the control", "[entr
         REQUIRE (rig.box() != nullptr);
         CHECK (rig.box()->getText() == "1.23 kHz");
 
-        rig.click (rig.emptySpace);
+        rig.clickThroughWindow (rig.emptySpace);
 
         CHECK (rig.freq->get() == before);
     }
@@ -306,7 +343,7 @@ TEST_CASE ("Faders take typed values the same way", "[entry]")
         CHECK (rig.box()->getWidth() > rig.fader.getWidth());
 
         rig.box()->setText ("-12.5 dB", false);
-        rig.click (rig.emptySpace);
+        rig.clickThroughWindow (rig.emptySpace);
 
         CHECK (rig.level->get() == Approx (-12.5f));
     }
@@ -343,7 +380,7 @@ TEST_CASE ("Other gestures keep working beside the value box", "[entry]")
     {
         const auto before = rig.freq->get();
 
-        rig.drag (rig.knobValue, rig.knobValue.translated (0, -40));
+        rig.drag (rig.knobValue, rig.knobValue.translated (0, -40), true);
 
         CHECK (rig.box() == nullptr);
         CHECK (rig.freq->get() > before);
@@ -353,7 +390,7 @@ TEST_CASE ("Other gestures keep working beside the value box", "[entry]")
     {
         const auto before = rig.freq->get();
 
-        rig.drag (rig.knobValue, rig.knobValue.translated (0, -1));
+        rig.drag (rig.knobValue, rig.knobValue.translated (0, -1), false);
 
         CHECK (rig.box() != nullptr);
         CHECK (rig.freq->get() == before);
