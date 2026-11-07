@@ -8,7 +8,7 @@
 - Fancy Exciter: done, signed off in REAPER by the user.
 - Fancy Comp: done, signed off in REAPER by the user.
 - Fancy EQ: done, signed off in REAPER by the user.
-- Fancy Verb: built and green in CI, **waiting for the REAPER check** in `docs/verb-checklist.md` (§7 checks 3 and 7). It's the last plugin.
+- Fancy Verb: done, signed off in REAPER by the user. All five plugins are finished.
 
 Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42356997609 (commit `e76ebce`).
 
@@ -100,11 +100,11 @@ Lessons from the EQ build, which apply to the Verb:
 |---|---|---|
 | 1 | Actions run green, artifact contains the plugin | Pass, run above |
 | 2 | pluginval strictness 10 | Pass for all five plugins, GUI tests on |
-| 3 | State survives a REAPER project reload | **Waiting for the user**; state round-trip, corrupted-state, embedded-IR and missing-IR tests pass in CI |
+| 3 | State survives a REAPER project reload | Pass, confirmed by the user |
 | 4 | §5.3 tests | Pass, 121 test cases across the suite. Numbers in `docs/measurements/verb.txt` |
 | 5 | Screenshots compared with the reference | Done against the Figma frames; `docs/screens/verb-vs-reference.png` shows Figma on the left and the build on the right |
 | 6 | CPU against the §4.11 target | Pass: 1.66 % in Zero latency with the audio thread at host priority, against < 5 %. 2.25-3.76 % with it at normal priority. No late blocks |
-| 7 | Installed and confirmed in REAPER | **Waiting for the user** |
+| 7 | Installed and confirmed in REAPER | Pass, confirmed by the user |
 
 Verb deviations from Figma:
 
