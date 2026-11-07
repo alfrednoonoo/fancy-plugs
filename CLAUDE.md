@@ -1,14 +1,16 @@
 # Fancy Plugs: agent notes
 
-`CLAUDE.md` and `AGENTS.md` are identical; change both together. The full brief is `docs/BUILD_PROMPT.md` and its rules override this summary. Session state is in `docs/PROGRESS.md`: read it first and update it at the end of each session.
+`CLAUDE.md` and `AGENTS.md` are identical; change both together. The full brief is `docs/BUILD_PROMPT.md`, and Phase 2 adds `docs/BUILD_PROMPT_PHASE2.md`; their rules override this summary. Session state is in `docs/PROGRESS.md`: read it first and update it at the end of each session.
 
 ## What this is
 
-Five original VST3 effects with a shared UI library, for personal use on Windows 10/11 x64. No installers, signing, licensing, updates or telemetry. Never copy or reference Cockos binaries or source. Bundle IDs are `com.fancyplugs.*`.
+Eight original VST3 effects with a shared UI library, for personal use on Windows 10/11 x64: five in Phase 1 and three in Phase 2. No installers, signing, licensing, updates or telemetry. Never copy or reference Cockos binaries or source. Bundle IDs are `com.fancyplugs.*`.
 
 ## Build order
 
 Finish each step's §7 acceptance checks before starting the next:
+
+Phase 1, done and released:
 
 1. `fancy-core` (shared DSP + UI components)
 2. Fancy Kicker
@@ -17,12 +19,18 @@ Finish each step's §7 acceptance checks before starting the next:
 5. Fancy EQ
 6. Fancy Verb
 
+Phase 2, after Phase 1, from `docs/BUILD_PROMPT_PHASE2.md`:
+
+7. Fancy Delay
+8. Fancy XComp (reuses Fancy Comp's detector and gain computer)
+9. Fancy FIR
+
 Write `docs/<plugin>.md` before coding each plugin: DSP algorithm, parameters (range, default, unit, skew), latency, state format, and how each §5 fix is handled.
 
 ## Working rules
 
 - Ask before changing the parameter list or visual layout, or adding a dependency not named in the brief.
-- Look at every image in `reference/` before building each plugin (index in §9).
+- Look at every image in `reference/` before building each plugin (index in §9). For Phase 2, look at the plugin's mockup in `reference/phase2/`.
 - Commit after each milestone.
 
 ## Cloud-build workflow
@@ -43,6 +51,14 @@ Build only what is below the arrow in each image, with its exact control types: 
 Source priority: Figma data > §2.1/§2.4 measured values > screenshots. The control map below and the §3/§5 functional changes apply even if Figma differs.
 
 Do not copy literally: host window title bars, the "[LOOSER]" tag (show just the plugin name), "Treshold" (use Threshold), Verb Pre-delay in dB (use ms).
+
+## Phase 2 reference mockups
+
+There are no Figma frames for Phase 2. `reference/phase2/` holds 2× mockups drawn in the same design system: `11__delay_mockup.png`, `12__xcomp_mockup.png`, `13__fir_mockup.png`. Divide their pixel sizes by 2. Target windows at 100 %: Delay about 760 × 410, XComp about 760 × 455, FIR about 760 × 430.
+
+The mockups set each control's layout, grouping and type, the way §2.5 does for Phase 1. Exact styling comes from `fancy-core`: where a mockup pixel disagrees with it, `fancy-core` wins. Never fork a component to match a mockup. Defaults come from P2-P4 in the brief, not the sample values drawn in the mockups.
+
+Every knob and fader must use the shared `Knob`, `Fader` or `ThresholdMeter`, so that it has the typed values added in v1.0.1: click the value, or Ctrl-click the control, to type one. Frequencies accept `2500` and `2.5k`. Any readout drawn outside those components needs the same behaviour added.
 
 ## §2.5 control map
 

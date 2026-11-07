@@ -10,9 +10,20 @@
 - Fancy EQ: done, signed off in REAPER by the user.
 - Fancy Verb: done, signed off in REAPER by the user. All five plugins are finished.
 
+- Phase 1 is finished. Phase 2 (below) is the work that comes after it.
 - Release: [v1.0.1](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.0.1), which adds typed values to v1.0.0. The repo is private, so the releases are too.
 
 Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42397458861 (commit `3f8e9b8`, version 1.0.1): 129 test cases passed, and all five plugins passed pluginval at strictness 10. Typing values confirmed in REAPER by the user.
+
+## Phase 2
+
+Brief: `docs/BUILD_PROMPT_PHASE2.md`. Mockups: `reference/phase2/`. Each plugin passes §7 and P5 before the next starts, which includes the user's check in REAPER. P5 adds a comparison of each CI screenshot with its mockup, and every P2.3, P3.3 and P4.3 test in the Catch2 suite.
+
+- Fancy Delay: next.
+- Fancy XComp: not started.
+- Fancy FIR: not started.
+
+All three use the shared controls, so every knob and fader gets the typed values added in v1.0.1.
 
 ## Kicker acceptance (§7)
 
