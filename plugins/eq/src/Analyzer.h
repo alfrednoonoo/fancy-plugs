@@ -53,7 +53,7 @@ public:
     }
 
 private:
-    std::array<float, capacity> buffer {};
+    std::vector<float> buffer = std::vector<float> ((size_t) capacity, 0.0f);
     std::atomic<unsigned int> writeIndex { 0 }, readIndex { 0 };
 };
 
