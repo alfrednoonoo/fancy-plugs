@@ -305,10 +305,12 @@ TEST_CASE ("ping-pong alternates at the right level", "[delay]")
     DelayDsp dsp;
     prepare (dsp, targets);
 
-    auto signal = impulse (delaySamples * 7);
+    // Below the feedback safety curve, which has its own test.
+    Stereo signal (delaySamples * 7);
+    signal.left[0] = signal.right[0] = 0.5f;
     signal.process (dsp, targets);
 
-    auto expected = 1.0;
+    auto expected = 0.5;
 
     for (int repeat = 1; repeat <= 6; ++repeat)
     {
@@ -521,12 +523,41 @@ TEST_CASE ("a held delay doesn't dull its repeats through interpolation", "[dela
 
     CHECK (dsp.getDelaySamples (0) == 4805);
 
-    auto signal = impulse (4805 * 9);
+    Stereo signal (4805 * 9);
+    signal.left[0] = signal.right[0] = 0.5f;
     signal.process (dsp, targets);
 
-    // Only the DC block touches the impulse, and nothing spreads it into its neighbours.
-    CHECK (signal.left[4805 * 8] > 0.99f);
-    CHECK (std::abs (signal.left[4805 * 8 + 1]) < 0.002f);
+    // Interpolation would put a large part of the impulse into its neighbour. All that's
+    // there is the DC block's small tail, from eight passes.
+    CHECK (signal.left[4805 * 8] > 0.49f);
+    CHECK (std::abs (signal.left[4805 * 8 + 1]) < 0.01f);
+}
+
+TEST_CASE ("the feedback safety curve only touches peaks above its knee", "[delay]")
+{
+    const auto level = [] (float input, double feedback)
+    {
+        auto targets = oneTap (10.0);
+        targets.taps[0].feedback = feedback;
+
+        DelayDsp dsp;
+        prepare (dsp, targets);
+
+        Stereo signal (1000);
+        signal.left[0] = signal.right[0] = input;
+        signal.process (dsp, targets);
+
+        return signal.left[480];
+    };
+
+    CHECK (level (0.89f, 0.5) == 0.89f);
+    CHECK (level (1.0f, 0.5) < 1.0f);
+    CHECK (level (1.0f, 0.5) > 0.95f);
+    CHECK (level (2.0f, 0.5) < 1.0f);
+
+    // With Feedback at 0 % it isn't in the path at all.
+    CHECK (level (1.0f, 0.0) == 1.0f);
+    CHECK (level (2.0f, 0.0) == 2.0f);
 }
 
 TEST_CASE ("pan is a balance law and centre is unity", "[delay]")

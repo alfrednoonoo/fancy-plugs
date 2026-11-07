@@ -24,7 +24,7 @@ in ─┬───────────────────────�
 - **Filters inside feedback loop:** on, the loop takes the filtered signal, so each repeat is filtered again. Off, the loop takes the signal before the filters, so every repeat is filtered once, as in the original.
 - **Feedback safety:** Feedback is limited to 100 % unless Saturate feedback is on, when it can reach 110 %. The value stays on the knob, so a stored 105 % comes back when Saturate does.
   - With Saturate on, `tanh` shapes both the tap's output and its loop, including the first echo.
-  - With it off and Feedback above 0 %, a safety curve is linear up to 0.9 and bends towards 1.0 above it. Without this, 100 % feedback on a sustained input would grow without limit.
+  - With it off and Feedback above 0 %, a safety curve is linear up to 0.9 and bends towards 1.0 above it. Without this, 100 % feedback on a sustained input would grow without limit. It acts on the signal going into the ring and on the tap's output, so a full-scale peak loses about 0.3 dB while Feedback is above 0 %. Anything below -0.9 dBFS is untouched.
   - With Feedback at 0 % and Saturate off, neither applies, so a plain delay is untouched.
 - **DC block:** a 5 Hz one-pole high-pass in the feedback path only.
 - **Width:** mid/side, 0.00 to 2.00, after the shaping.
