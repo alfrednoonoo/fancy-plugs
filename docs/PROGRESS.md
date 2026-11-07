@@ -10,7 +10,7 @@
 - Fancy EQ: built and green in CI, **waiting for the REAPER check** in `docs/eq-checklist.md` (§7 checks 3 and 7).
 - Next: Fancy Verb, once the EQ is signed off.
 
-Latest run: LATEST_RUN.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42331021480 (commit `aacb525`).
 
 ## Kicker acceptance (§7)
 

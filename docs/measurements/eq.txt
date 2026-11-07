@@ -1,10 +1,10 @@
-EQ 8 bands (target < 1 %) latency     0 samples (   0.0 ms), CPU 0.3682 % at 48 kHz, 128 samples, stereo
-EQ 8 bands, 2x            latency     5 samples (   0.1 ms), CPU 0.9217 % at 48 kHz, 128 samples, stereo
-EQ 8 bands, 4x            latency     6 samples (   0.1 ms), CPU 1.9031 % at 48 kHz, 128 samples, stereo
-EQ linear 2048            latency  1152 samples (  24.0 ms), CPU 0.8773 % at 48 kHz, 128 samples, stereo
-EQ linear 4096            latency  2304 samples (  48.0 ms), CPU 0.9869 % at 48 kHz, 128 samples, stereo
-EQ linear 8192            latency  4608 samples (  96.0 ms), CPU 0.9341 % at 48 kHz, 128 samples, stereo
-EQ linear 16384           latency  9216 samples ( 192.0 ms), CPU 1.0602 % at 48 kHz, 128 samples, stereo
+EQ 8 bands (target < 1 %) latency     0 samples (   0.0 ms), CPU 0.1585 % at 48 kHz, 128 samples, stereo
+EQ 8 bands, 2x            latency     5 samples (   0.1 ms), CPU 0.4647 % at 48 kHz, 128 samples, stereo
+EQ 8 bands, 4x            latency     6 samples (   0.1 ms), CPU 0.9432 % at 48 kHz, 128 samples, stereo
+EQ linear 2048            latency  1152 samples (  24.0 ms), CPU 0.5067 % at 48 kHz, 128 samples, stereo
+EQ linear 4096            latency  2304 samples (  48.0 ms), CPU 0.5476 % at 48 kHz, 128 samples, stereo
+EQ linear 8192            latency  4608 samples (  96.0 ms), CPU 0.5307 % at 48 kHz, 128 samples, stereo
+EQ linear 16384           latency  9216 samples ( 192.0 ms), CPU 0.5950 % at 48 kHz, 128 samples, stereo
 18 kHz +6 dB bell, Q 1, 44.1 kHz: worst error against analog up to 20 kHz 0.421 dB (target 0.5 dB)
 Rate  44100 Hz, worst error below 20 kHz: bell 8 kHz 0.281 dB, low pass 12 kHz 0.479 dB, high shelf 8 kHz 0.124 dB
 Rate  48000 Hz, worst error below 20 kHz: bell 8 kHz 0.177 dB, low pass 12 kHz 0.484 dB, high shelf 8 kHz 0.096 dB
