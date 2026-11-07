@@ -73,7 +73,7 @@ Lessons from the Comp build, which apply to the EQ and Verb:
 | 3 | State survives a REAPER project reload | **Waiting for the user**; state round-trip and corrupted-state tests pass in CI |
 | 4 | §5.1 tests | Pass, 94 test cases across the suite. 18 kHz +6 dB bell at 44.1 kHz is within 0.42 dB of analog up to 20 kHz. Responses at 44.1–192 kHz are within 0.5 dB below 20 kHz for the tested types. A -12 dBFS sine reads -12.1 dB. Numbers in `docs/measurements/eq.txt` |
 | 5 | Screenshots compared with the reference | Done against both Figma frames; `docs/screens/eq-vs-reference.png` shows Figma on the left and the build on the right |
-| 6 | CPU against the §4.11 target | Pass: 0.37–0.46 % for 8 bands without oversampling across runs, against < 1 %. About 1 % at 2×, 1.9 % at 4×, and 0.9–1.1 % in Linear on CI runners |
+| 6 | CPU against the §4.11 target | Pass: 0.16–0.46 % for 8 bands without oversampling across runs, against < 1 %. 0.5–1.1 % at 2× and 0.9–1.9 % at 4×. Linear is up to about 1.1 %. CI runners vary by about a factor of two |
 | 7 | Installed and confirmed in REAPER | **Waiting for the user** |
 
 EQ deviations from Figma:
