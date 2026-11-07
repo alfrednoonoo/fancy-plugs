@@ -7,8 +7,8 @@
 - Fancy Kicker: done, signed off in REAPER by the user.
 - Fancy Exciter: done, signed off in REAPER by the user.
 - Fancy Comp: done, signed off in REAPER by the user.
-- Fancy EQ: built and green in CI, **waiting for the REAPER check** in `docs/eq-checklist.md` (§7 checks 3 and 7).
-- Next: Fancy Verb, once the EQ is signed off.
+- Fancy EQ: done, signed off in REAPER by the user.
+- Next: Fancy Verb.
 
 Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42331021480 (commit `aacb525`).
 
@@ -70,11 +70,11 @@ Lessons from the Comp build, which apply to the EQ and Verb:
 |---|---|---|
 | 1 | Actions run green, artifact contains the plugin | Pass, run above |
 | 2 | pluginval strictness 10 | Pass for all four plugins, GUI tests on, including a rerun with new random seeds |
-| 3 | State survives a REAPER project reload | **Waiting for the user**; state round-trip and corrupted-state tests pass in CI |
+| 3 | State survives a REAPER project reload | Pass, confirmed by the user |
 | 4 | §5.1 tests | Pass, 94 test cases across the suite. 18 kHz +6 dB bell at 44.1 kHz is within 0.42 dB of analog up to 20 kHz. Responses at 44.1–192 kHz are within 0.5 dB below 20 kHz for the tested types. A -12 dBFS sine reads -12.1 dB. Numbers in `docs/measurements/eq.txt` |
 | 5 | Screenshots compared with the reference | Done against both Figma frames; `docs/screens/eq-vs-reference.png` shows Figma on the left and the build on the right |
 | 6 | CPU against the §4.11 target | Pass: 0.16–0.46 % for 8 bands without oversampling across runs, against < 1 %. 0.5–1.1 % at 2× and 0.9–1.9 % at 4×. Linear is up to about 1.1 %. CI runners vary by about a factor of two |
-| 7 | Installed and confirmed in REAPER | **Waiting for the user** |
+| 7 | Installed and confirmed in REAPER | Pass, confirmed by the user |
 
 EQ deviations from Figma:
 
