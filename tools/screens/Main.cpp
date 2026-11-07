@@ -25,6 +25,11 @@
  #include "CompProcessor.h"
 #endif
 
+#if FANCY_HAS_EQ
+ #include "EqEditor.h"
+ #include "EqProcessor.h"
+#endif
+
 namespace
 {
 
@@ -64,6 +69,27 @@ bool renderPlugin (const juce::String& slug, const juce::File& outputDir)
     editor->showPreview (true);
     return writeBothScales (*editor, slug + "-edit", outputDir) && mainOk;
 }
+
+#if FANCY_HAS_EQ
+bool renderEq (const juce::File& outputDir)
+{
+    EqProcessor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<EqEditor*> (base.get());
+
+    if (editor == nullptr)
+        return false;
+
+    editor->showPreview (false);
+    auto ok = writeBothScales (*editor, "eq", outputDir);
+
+    editor->showPreview (true);
+    ok = writeBothScales (*editor, "eq-edit", outputDir) && ok;
+
+    editor->showCompactPreview();
+    return writeBothScales (*editor, "eq-compact", outputDir) && ok;
+}
+#endif
 
 class Gallery final : public juce::Component
 {
@@ -143,6 +169,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_COMP
     ok = renderPlugin<CompProcessor, CompEditor> ("comp", outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_EQ
+    ok = renderEq (outputDir) && ok;
    #endif
 
     Gallery gallery;

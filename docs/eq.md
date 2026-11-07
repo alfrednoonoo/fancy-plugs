@@ -1,0 +1,139 @@
+# Fancy EQ: design note
+
+## Signal path
+
+```
+                 ┌─ Minimum: [ up ─ band 1 ─ band 2 ─ … ─ band 16 ─ down ] ─┐
+in ─ analyzer ───┤                                                          ├─ × Gain ─ × Output ─ bypass ─ analyzer ─ out
+(pre)            └─ Linear:  partitioned FIR built from the same bands ─────┘  (post)
+```
+
+Everything is double precision except the oversamplers and the FIR's FFTs, which only exist in single precision in JUCE. Biquads are transposed direct form II (§6).
+
+## Band filters (§5.1)
+
+Each band is an analog prototype, split into first- and second-order sections and matched to the digital domain, so the shape doesn't depend on the sample rate and doesn't cramp near Nyquist. It adds no latency.
+
+| Type | Prototype | Digital match |
+|---|---|---|
+| Band | `(s² + A/Q·w·s + w²) / (s² + w/(A·Q)·s + w²)`, `A = √gain` | Vicanek's matched peak. A cut is the inverse of the matching boost, so boosts and cuts mirror exactly |
+| Low pass, High pass | Butterworth cascade | Vicanek's matched low and high pass |
+| Band pass | `(w/Q·s) / (s² + w/Q·s + w²)` | Vicanek's matched band pass |
+| Notch | `(s² + w²) / (s² + w/Q·s + w²)` | Matched poles with zeros exactly on the unit circle |
+| All pass | `(s² - w/Q·s + w²) / (s² + w/Q·s + w²)` | Matched poles with the mirrored numerator |
+| Low shelf, High shelf | Butterworth shelf (below) | Poles from the exponential map; numerator matched at DC, `w` and Nyquist |
+| Tilt | High shelf scaled by `1/√gain` | As a shelf. Pivots at Freq, reaching -Gain/2 below and +Gain/2 above |
+
+**Slopes:** 6, 12, 18, 24, 36 and 48 dB/oct are orders 1, 2, 3, 4, 6 and 8, which is up to four sections. Pass filters use one prototype per section with Butterworth Q values. Q is a separate control (§5.1): `Q / 0.7071` scales the section with the highest Q, so 0.707 is plain Butterworth and higher values add a resonant peak without changing the slope. At 6 dB/oct Q has no effect.
+
+**Butterworth shelf of order N:** for gain `G` and `r = G^(1/2N)`, the poles are the Butterworth poles scaled by `r` and the zeros are scaled by `1/r`. The gain at Freq is exactly half the shelf gain in dB. Whichever of the two has the lower radius becomes the digital poles, and the result is inverted if needed, because mapping a pole above Nyquist isn't possible.
+
+**Limits:** Freq is held to 0.48 × the processing rate. A 24 kHz band at 44.1 kHz therefore sits at 21.2 kHz.
+
+Prototyped against the analog response before coding, ignoring anything more than 60 dB down. The largest errors below 20 kHz were 1.8 dB for a 20 kHz ±18 dB bell at 44.1 kHz and 1.2 dB for an 18 kHz ±18 dB shelf at 44.1 kHz, and under 0.1 dB in general at 96 kHz. An 18 kHz +6 dB bell at 44.1 kHz is the §5.1 test case.
+
+## Parameters
+
+The 16 bands each have these, with `N` from 1 to 16:
+
+| ID | Name | Range | Default | Unit | Skew | Source |
+|---|---|---|---|---|---|---|
+| `bNused` | Band N Used | off/on | on for 1–4 | | | §3.4 |
+| `bNon` | Band N On | off/on | on | | | §3.4 |
+| `bNtype` | Band N Type | Low shelf, High shelf, Band, Notch, Low pass, High pass, Band pass, All pass, Tilt | Low shelf, Band, Band, High shelf; Band from 5 up | | | §3.4 |
+| `bNfreq` | Band N Freq | 20–24000 | 80, 500, 2000, 8000; 1000 from 5 up | Hz | log or linear, see below | chosen here |
+| `bNgain` | Band N Gain | -24–+24 | 0.0 | dB | linear | matches the largest graph range |
+| `bNq` | Band N Q | 0.1–30 | 0.707 on bands 1 and 4, 1.0 otherwise | | log | chosen here |
+| `bNslope` | Band N Slope | 6, 12, 18, 24, 36, 48 dB/oct | 12 dB/oct | | | §3.4 |
+
+Global parameters:
+
+| ID | Name | Range | Default | Unit | Automatable | Source |
+|---|---|---|---|---|---|---|
+| `gain` | Gain | -60–+12, bottom = -inf | 0.0 | dB | yes | range matches Comp's faders |
+| `output` | Output | -24–+12 | 0.0 | dB | yes | as the other plugins |
+| `bypass` | Bypass | off/on | off | | yes | §4.6 |
+| `phase` | Phase | Minimum, Linear | Minimum | | yes | §5.1 |
+| `firLength` | FIR length | 2048, 4096, 8192, 16384 | 8192 | samples at 48 kHz | yes | §5.1 |
+| `oversampling` | Oversampling | Off, 2x, 4x | Off | | yes | §5.1 |
+| `logFreq` | Log-scale automated freq. | off/on | on | | no | §3.4 |
+| `showGrid` | Show grid | off/on | on | | no | §3.4 |
+| `showPhase` | Show phase | off/on | off | | no | §3.4 |
+| `compact` | Compact mode | off/on | off | | no | §3.4 |
+| `range` | Graph range | Auto, ±6, ±12, ±18, ±24 dB | Auto | | no | §3.4 |
+| `analyzer` | Analyzer | Off, Pre, Post | Post | | no | §3.4 |
+| `anaFft` | Analyzer size | 4096, 8192, 16384 | 8192 | | no | §5.1 |
+| `anaWindow` | Analyzer window | Hann, Blackman-Harris | Blackman-Harris | | no | §5.1 |
+| `anaOverlap` | Analyzer overlap | 50 %, 75 % | 75 % | | no | §5.1 |
+| `anaTilt` | Pink tilt | off/on | off | | no | §5.1 |
+| `anaPeak` | Peak hold | off/on | off | | no | §5.1 |
+| `anaSmooth` | Smoothing | 0–100 | 50 | % | no | §5.1 |
+
+**Auto range** matches the two Figma frames: ±12 dB in the normal layout and ±18 dB in Compact mode.
+
+**Log-scale automated freq.** changes how a Freq parameter's 0–1 host value maps to Hz, so it changes what an automation envelope's height means. Ticking it doesn't move any band. Freq's Hz value is kept, and the host is told the new 0–1 position.
+
+## Smoothing and changes (§4.2)
+
+Freq (in log Hz), Gain and Q are smoothed over 20 ms and sections are redesigned every 16 samples, with the coefficients interpolated linearly between. A settled band skips all of this.
+
+Type, slope, band power and removing a band can't be smoothed, because the filter's shape jumps. Each band therefore has a dry/filtered mix. It fades to dry over 10 ms, switches, and fades back.
+
+## Linear phase (§5.1)
+
+A worker thread reads the parameters at up to 100 Hz and, when they've changed, multiplies every band's matched magnitude at each FFT bin, so both modes share one magnitude response. An inverse FFT gives the zero-phase impulse response, which is centred and Blackman-windowed.
+
+The convolver is a uniformly partitioned overlap-save with 16 partitions, so the partition is `length / 16`. The FIR swaps at a partition boundary with a one-partition crossfade, and the audio thread only ever exchanges an atomic slot index. In an offline render the audio thread designs the FIR itself, so renders are repeatable.
+
+The length is multiplied by 2, 4 or 8 at higher sample rates, so the frequency resolution doesn't change. Latency is `length / 2 + length / 16`:
+
+| FIR length | Samples at 44.1–48 kHz | At 48 kHz |
+|---|---|---|
+| 2048 | 1152 | 24.0 ms |
+| 4096 | 2304 | 48.0 ms |
+| 8192 | 4608 | 96.0 ms |
+| 16384 | 9216 | 192.0 ms |
+
+Oversampling does nothing in Linear mode, because the FIR is designed directly from the matched magnitude.
+
+## Latency (§4.4)
+
+Minimum phase has no latency without oversampling, and the oversampler's reported latency otherwise. Phase, FIR length and Oversampling change the latency, so they use the Comp's approach: wait for 50 ms of stability, fade out, reconfigure, report the new latency, stay silent until the delays have refilled, fade in. Bypass crossfades against a dry path delayed by the same amount.
+
+## Analyzer (§5.1)
+
+The audio thread pushes the mono sum into a lock-free FIFO, only while an editor is open. A background thread owned by the editor runs the FFT. With zero padding to twice the window length, scalloping stays small, and amplitude is scaled by the window's sum, so a -12 dBFS sine reads -12 dB. The sum is `(L + R) / 2`, so a signal in one channel only reads 6 dB low.
+
+The graph's corner shows "pre" or "post". Pink tilt adds 4.5 dB per octave about 1 kHz, and is off by default.
+
+## State
+
+The same format as the other plugins: XML with `stateVersion` 1, `uiScale` and `presetName`. The EQ adds `uiWidth`, `uiHeight` and `selectedBand`. A corrupted value falls back to its default.
+
+## §5.1 fixes
+
+| Requirement | How it is met | Test |
+|---|---|---|
+| Cramping | Matched design, optional 2×/4× | `18 kHz bell matches the analog prototype` |
+| Response changes with sample rate | Same | `responses agree across sample rates` |
+| Linear phase | Worker-designed FIR, reported latency, length setting | `linear phase is symmetric and matches minimum phase` |
+| Slope only by stacking | Slope selector, separate Q | `slopes are as labelled`, `Q adds resonance without changing the slope` |
+| Analyzer disagrees | Calibrated amplitude, window and size options, pre/post, peak hold, smoothing, optional tilt | `analyzer reads a -12 dBFS sine correctly` |
+| Notch replacing a bell | Separate types | `a deep bell stays a bell` |
+| Automation clicks | Interpolated coefficients and FIR crossfades | `automation sweeps are click-free` |
+
+## Layout
+
+The Figma frames are 802 × 625 without the host title bar. The graph is 734 wide; the Details panel is 178 high and the Options row 50, with the Gain fader in a 68 px column. Compact mode hides Details and floats a 437 × 122 card over the graph.
+
+**Resizing:** §2.4 asks for a resizable window with a 480 × 320 minimum on a 560 × 380 base. Figma is about 1.45× that scale, so the minimum here is 696 × 464, which also keeps the four footer checkboxes on one row. The host's window border does the resizing, so nothing new appears in the design. The graph takes all spare space.
+
+**Axes:** Figma's frequency axis isn't a pure log scale. Its gridlines fit `log2(f + 40)` to within a pixel from 20 Hz to 24 kHz, so the build uses that formula and its gridlines match. The right axis is the analyzer's scale, as Figma draws it, with 0 dBFS on the +12 line and 5 analyzer dB to each EQ dB. §3.4 calls it the gain fader's scale, but Figma takes priority.
+
+**Musical note:** §3.4's text says it goes on the frequency display, but its own example and both mockups put it after the gain. The build follows the mockups: it's the note nearest Freq, in white, after the Gain value.
+
+**EDIT link:** sits in the header's empty space, left of the Output knob, so both layouts get it without moving anything. The drawer holds Phase, FIR length, Oversampling, the selected band's Slope, Graph range and the analyzer settings. Slope is also on the band's right-click menu.
+
+**Knob arcs:** Gain lights from the centre as §2.3 says. Figma draws it from the minimum.
+
+**Band colours:** Figma's EQ Graph uses #E74D3D, #9A59B5, #3598DB and #1BBC9C, and these replace the §2.1 band colours. Bands 5 and up continue with green, yellow, orange, and then repeat.

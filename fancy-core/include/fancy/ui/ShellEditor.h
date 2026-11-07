@@ -63,6 +63,21 @@ public:
     void resized() override;
 
 protected:
+    // Lets the host resize the window between these sizes, in 100 % units. Call this at the
+    // end of the subclass's constructor. The size is saved with the plugin's state.
+    void enableResizing (int minWidth, int minHeight, int maxWidth, int maxHeight);
+
+    int getBaseWidth() const noexcept { return width; }
+    int getBaseHeight() const noexcept { return height; }
+
+    // The window's root, for controls that sit in the header row.
+    juce::Component& getRoot() noexcept { return root; }
+
+    virtual void bodyResized() {}
+
+    // Lets a plugin leave parameters out of the Parameter menu.
+    virtual bool listsParameter (const juce::AudioProcessorParameter&) { return true; }
+
     juce::Component& getBody() noexcept { return body; }
     FancyProcessor& getFancyProcessor() noexcept { return fancyProcessor; }
     juce::RangedAudioParameter& parameter (const juce::String& id);
@@ -91,7 +106,9 @@ private:
     juce::SharedResourcePointer<FancyLookAndFeel> lookAndFeel;
 
     FancyProcessor& fancyProcessor;
-    const int width, height;
+    int width, height;
+    int minimumWidth = 0, minimumHeight = 0, maximumWidth = 0, maximumHeight = 0;
+    bool resizable = false;
     const HeaderStyle headerStyle;
     float uiScale = 1.0f;
 

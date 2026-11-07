@@ -193,6 +193,21 @@ void Knob::setValueColour (juce::Colour colour)
     repaint();
 }
 
+void Knob::setValueSuffix (const juce::String& suffix)
+{
+    if (suffix != valueSuffix)
+    {
+        valueSuffix = suffix;
+        repaint();
+    }
+}
+
+void Knob::setStyle (const Style& style)
+{
+    knobStyle = style;
+    repaint();
+}
+
 void Knob::paint (juce::Graphics& g)
 {
     const auto bounds = getLocalBounds().toFloat();
@@ -210,12 +225,39 @@ void Knob::paint (juce::Graphics& g)
 
         g.setFont (font (weight, style.fontSize));
         g.setColour (colours::textPrimary);
-        g.drawText (labelText, bounds.withHeight (style.labelHeight), juce::Justification::centred, false);
 
-        g.setColour (valueColour);
-        g.drawText (getValueText(),
-                    bounds.withTop (knobTop + style.outerDiameter + style.valueGap).withHeight (style.valueHeight),
-                    juce::Justification::centred, false);
+        if (style.labelHeight > 0.0f)
+            g.drawText (labelText, bounds.withHeight (style.labelHeight), juce::Justification::centred, false);
+
+        const auto valueArea = bounds.withTop (knobTop + style.outerDiameter + style.valueGap).withHeight (style.valueHeight);
+
+        if (valueSuffix.isEmpty())
+        {
+            g.setColour (valueColour);
+            g.drawText (getValueText(), valueArea, juce::Justification::centred, false);
+        }
+        else
+        {
+            const auto textWidth = [&] (const juce::String& text)
+            {
+                juce::GlyphArrangement glyphs;
+                glyphs.addLineOfText (g.getCurrentFont(), text, 0.0f, 0.0f);
+                return glyphs.getBoundingBox (0, -1, true).getWidth();
+            };
+
+            const auto value = getValueText() + " ";
+            const auto valueWidth = textWidth (value + "|") - textWidth ("|");
+            const auto suffixWidth = textWidth (valueSuffix);
+            auto x = valueArea.getCentreX() - 0.5f * (valueWidth + suffixWidth);
+
+            g.setColour (valueColour);
+            g.drawText (value, valueArea.withX (x).withWidth (valueWidth + 1.0f), juce::Justification::centredLeft, false);
+
+            x += valueWidth;
+
+            g.setColour (colours::textPrimary);
+            g.drawText (valueSuffix, valueArea.withX (x).withWidth (suffixWidth + 1.0f), juce::Justification::centredLeft, false);
+        }
     }
 
     if (showDefaultMark)

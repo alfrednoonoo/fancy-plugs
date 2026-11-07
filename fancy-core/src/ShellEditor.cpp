@@ -9,6 +9,8 @@ namespace fancy::ui
 namespace
 {
 const juce::Identifier uiScaleProperty ("uiScale");
+const juce::Identifier uiWidthProperty ("uiWidth");
+const juce::Identifier uiHeightProperty ("uiHeight");
 constexpr int timerHz = 30;
 constexpr float scales[] { 1.0f, 1.25f, 1.5f, 2.0f };
 constexpr int scaleItemBase = 1000;
@@ -139,18 +141,53 @@ juce::RangedAudioParameter& ShellEditor::parameter (const juce::String& id)
     return *fancyProcessor.getApvts().getParameter (id);
 }
 
+void ShellEditor::enableResizing (int minWidth, int minHeight, int maxWidth, int maxHeight)
+{
+    minimumWidth = minWidth;
+    minimumHeight = minHeight;
+    maximumWidth = maxWidth;
+    maximumHeight = maxHeight;
+
+    const auto& state = fancyProcessor.getApvts().state;
+
+    width = juce::jlimit (minWidth, maxWidth, (int) state.getProperty (uiWidthProperty, width));
+    height = juce::jlimit (minHeight, maxHeight, (int) state.getProperty (uiHeightProperty, height));
+
+    resizable = true;
+    setResizable (true, false);
+    applyScale (uiScale);
+}
+
 void ShellEditor::applyScale (float scale)
 {
+    const auto baseWidth = width, baseHeight = height;
+
     uiScale = scale;
     root.setTransform (juce::AffineTransform::scale (scale));
-    setSize (juce::roundToInt ((float) width * scale), juce::roundToInt ((float) height * scale));
+
+    if (resizable)
+        setResizeLimits (juce::roundToInt ((float) minimumWidth * scale), juce::roundToInt ((float) minimumHeight * scale),
+                         juce::roundToInt ((float) maximumWidth * scale), juce::roundToInt ((float) maximumHeight * scale));
+
+    setSize (juce::roundToInt ((float) baseWidth * scale), juce::roundToInt ((float) baseHeight * scale));
 }
 
 void ShellEditor::resized()
 {
+    if (resizable)
+    {
+        width = juce::roundToInt ((float) getWidth() / uiScale);
+        height = juce::roundToInt ((float) getHeight() / uiScale);
+
+        auto& state = fancyProcessor.getApvts().state;
+        state.setProperty (uiWidthProperty, width, nullptr);
+        state.setProperty (uiHeightProperty, height, nullptr);
+    }
+
     root.setBounds (0, 0, width, height);
     body.setBounds (0, headerHeight, width, height - headerHeight);
     layoutHeader();
+    bodyResized();
 }
 
 void ShellEditor::layoutHeader()
@@ -237,7 +274,9 @@ void ShellEditor::showParameterMenu()
     for (int i = 0; i < parameters.size(); ++i)
     {
         const auto* item = parameters[i];
-        menu.addItem (i + 1, item->getName (64) + ":  " + item->getCurrentValueAsText(), getHostContext() != nullptr);
+
+        if (listsParameter (*item))
+            menu.addItem (i + 1, item->getName (64) + ":  " + item->getCurrentValueAsText(), getHostContext() != nullptr);
     }
 
     menu.addSeparator();
