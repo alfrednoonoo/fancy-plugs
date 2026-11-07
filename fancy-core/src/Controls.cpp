@@ -109,11 +109,45 @@ void ParamControl::setDenormalised (float newValue)
     attachment.setValueAsCompleteGesture (newValue);
 }
 
+void ParamControl::setLocked (bool shouldLock, const juce::String& hint)
+{
+    if (shouldLock == locked)
+    {
+        if (locked)
+            setTooltip (hint);
+
+        return;
+    }
+
+    locked = shouldLock;
+
+    if (locked)
+    {
+        unlockedTooltip = getTooltip();
+        setTooltip (hint);
+    }
+    else
+    {
+        setTooltip (unlockedTooltip);
+    }
+
+    dragging = false;
+    repaint();
+}
+
 void ParamControl::mouseDown (const juce::MouseEvent& event)
 {
     if (event.mods.isPopupMenu())
     {
         showHostMenu();
+        return;
+    }
+
+    if (locked)
+    {
+        if (onLockedClick != nullptr)
+            onLockedClick();
+
         return;
     }
 
@@ -157,12 +191,15 @@ void ParamControl::mouseUp (const juce::MouseEvent& event)
 
 void ParamControl::mouseDoubleClick (const juce::MouseEvent& event)
 {
-    if (! event.mods.isPopupMenu())
+    if (! event.mods.isPopupMenu() && ! locked)
         setDenormalised (param.convertFrom0to1 (param.getDefaultValue()));
 }
 
 void ParamControl::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
 {
+    if (locked)
+        return;
+
     const auto step = wheel.deltaY * (event.mods.isShiftDown() ? wheelStep / fineDragDivisor : wheelStep);
     const auto normalised = juce::jlimit (0.0f, 1.0f, getNormalised() + step);
     setDenormalised (param.convertFrom0to1 (normalised));
@@ -182,7 +219,7 @@ void ParamControl::showHostMenu()
 
 void ParamControl::showValueEditor()
 {
-    if (valueEditor != nullptr)
+    if (valueEditor != nullptr || locked)
         return;
 
     auto& holder = valueEditorParent (*this);
@@ -291,6 +328,15 @@ void Knob::setValueColour (juce::Colour colour)
     repaint();
 }
 
+void Knob::setValueTextOverride (const juce::String& text)
+{
+    if (text != valueOverride)
+    {
+        valueOverride = text;
+        repaint();
+    }
+}
+
 void Knob::setValueSuffix (const juce::String& suffix, juce::Colour colour)
 {
     if (suffix != valueSuffix || colour != suffixColour)
@@ -330,10 +376,10 @@ void Knob::paint (juce::Graphics& g)
 
         const auto valueArea = bounds.withTop (knobTop + style.outerDiameter + style.valueGap).withHeight (style.valueHeight);
 
-        if (valueSuffix.isEmpty())
+        if (valueSuffix.isEmpty() || valueOverride.isNotEmpty())
         {
             g.setColour (valueColour);
-            g.drawText (getValueText(), valueArea, juce::Justification::centred, false);
+            g.drawText (valueOverride.isNotEmpty() ? valueOverride : getValueText(), valueArea, juce::Justification::centred, false);
         }
         else
         {
@@ -720,6 +766,33 @@ void ParamCheckbox::setLabelHeight (float height)
     repaint();
 }
 
+void ParamCheckbox::pulse (juce::Colour colour, int milliseconds)
+{
+    pulseColour = colour;
+    pulseLength = (float) juce::jmax (1, milliseconds);
+    pulseLeft = pulseLength;
+    startTimerHz (60);
+    repaint();
+}
+
+void ParamCheckbox::timerCallback()
+{
+    pulseLeft -= 1000.0f / 60.0f;
+
+    if (pulseLeft <= 0.0f)
+    {
+        pulseLeft = 0.0f;
+        stopTimer();
+    }
+
+    repaint();
+}
+
+void paintDropdownBox (juce::Graphics& g, juce::Rectangle<float> bounds, const juce::String& text, float textHeight)
+{
+    paintDropdown (g, bounds, text, textHeight);
+}
+
 void ParamCheckbox::paint (juce::Graphics& g)
 {
     constexpr float size = 14.0f;
@@ -745,6 +818,12 @@ void ParamCheckbox::paint (juce::Graphics& g)
         g.fillRoundedRectangle (box, 3.0f);
         g.setColour (colours::textSecondary);
         g.drawRoundedRectangle (box.reduced (0.25f), 3.0f, 0.5f);
+    }
+
+    if (pulseLeft > 0.0f)
+    {
+        g.setColour (pulseColour.withAlpha (pulseLeft / pulseLength));
+        g.drawRoundedRectangle (bounds.reduced (0.5f), 3.0f, 1.5f);
     }
 
     g.setFont (font (Weight::regular, labelHeight));

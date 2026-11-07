@@ -72,6 +72,9 @@ protected:
     int getBaseWidth() const noexcept { return width; }
     int getBaseHeight() const noexcept { return height; }
 
+    // Shows a tooltip at once, beside a control, without waiting for the mouse to hover.
+    void showTip (juce::Component& near, const juce::String& text);
+
     // Narrows the preset dropdown, to make room for controls in the header row.
     void setPresetDropdownWidth (int newWidth);
 

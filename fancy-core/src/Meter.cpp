@@ -210,6 +210,143 @@ void OutMeter::paint (juce::Graphics& g)
                 juce::Rectangle<float> (wellX + wellWidth * 0.5f - 20.0f, layout.readoutY, 40.0f, 23.0f), juce::Justification::centred, false);
 }
 
+// ThresholdMeter --------------------------------------------------------------
+
+ThresholdMeter::ThresholdMeter (juce::RangedAudioParameter& threshold)
+    : ThresholdMeter (threshold, Style {})
+{
+}
+
+ThresholdMeter::ThresholdMeter (juce::RangedAudioParameter& threshold, const Style& style)
+    : ParamControl (threshold), meterStyle (style)
+{
+}
+
+float ThresholdMeter::wellLeft() const noexcept
+{
+    return meterStyle.wellX < 0.0f ? (float) getWidth() * 0.5f - wellWidth * 0.5f : meterStyle.wellX;
+}
+
+juce::Rectangle<int> ThresholdMeter::getValueArea() const
+{
+    if (meterStyle.gateReadouts)
+        return { 0, (int) (meterStyle.wellTop + meterStyle.wellHeight) + 1, getWidth(), 14 };
+
+    return getLocalBounds().removeFromBottom (23);
+}
+
+void ThresholdMeter::update (dsp::MeterTap& input, bool compressing, float seconds)
+{
+    channels[0].update (input.take (0), seconds);
+    channels[1].update (input.take (1), seconds);
+    isCompressing = compressing;
+    repaint();
+}
+
+void ThresholdMeter::show (float left, float right, bool compressing)
+{
+    channels[0].show (left);
+    channels[1].show (right);
+    isCompressing = compressing;
+    repaint();
+}
+
+void ThresholdMeter::setCloseDb (float db)
+{
+    if (db != closeDb)
+    {
+        closeDb = db;
+        repaint();
+    }
+}
+
+void ThresholdMeter::paint (juce::Graphics& g)
+{
+    constexpr float compressionHeight = 20.0f;
+
+    const auto& style = meterStyle;
+    const auto bounds = getLocalBounds().toFloat();
+    const auto wellX = wellLeft();
+    const auto wellTop = style.wellTop, wellHeight = style.wellHeight;
+    const juce::Rectangle<float> well (wellX, wellTop, wellWidth, wellHeight);
+
+    const auto yFor = [&] (float db) { return wellTop + juce::jlimit (0.0f, 1.0f, db / style.lowestDb) * wellHeight; };
+
+    g.setFont (font (Weight::regular, style.labelHeight));
+    g.setColour (style.secondaryLabel ? colours::textSecondary : colours::textPrimary);
+    g.drawText ("Threshold", bounds.withHeight (17.0f), juce::Justification::centred, false);
+
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (well, 2.0f);
+
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        const auto x = wellX + (float) ch * (barWidth + barGap);
+        const juce::Rectangle<float> bar (x, wellTop, barWidth, wellHeight);
+
+        juce::ColourGradient gradient (juce::Colour (0xffff5107), 0.0f, wellTop, juce::Colour (0xff00ff96), 0.0f, wellTop + wellHeight, false);
+        gradient.addColour (0.158, juce::Colour (0xffffcf07));
+
+        g.setGradientFill (gradient);
+        g.fillRect (bar.withTop (yFor (channels[ch].level)));
+
+        if (isCompressing)
+        {
+            g.setColour (colours::accentRed);
+            g.fillRect (bar.withHeight (compressionHeight));
+        }
+    }
+
+    if (style.scale)
+    {
+        g.setFont (font (Weight::medium, 11.0f));
+        g.setColour (colours::textSecondary);
+
+        for (auto db = 0.0f; db >= style.lowestDb - 0.01f; db -= style.scaleStepDb)
+            g.drawText (juce::String (juce::roundToInt (db)), juce::Rectangle<float> (wellX + wellWidth + 2.0f, yFor (db) - 6.0f, bounds.getWidth() - wellX - wellWidth - 2.0f, 12.0f),
+                        juce::Justification::centredRight, false);
+    }
+
+    if (style.gateReadouts && closeDb > style.lowestDb - 1.0f)
+    {
+        // The close threshold, dashed across the well.
+        const auto y = yFor (closeDb);
+
+        g.setColour (style.accent);
+
+        for (auto x = wellX - 3.0f; x < wellX + wellWidth + 3.0f; x += 4.0f)
+            g.fillRect (x, y - 1.0f, 2.0f, 2.0f);
+    }
+
+    const auto handleY = wellTop + (1.0f - getNormalised()) * wellHeight;
+    const auto handle = juce::Rectangle<float> (style.gateReadouts ? 24.0f : 34.0f, style.gateReadouts ? 10.0f : 12.0f)
+                            .withCentre ({ wellX + wellWidth * 0.5f, handleY });
+
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (handle, 2.0f);
+    g.setColour (style.accent);
+    g.drawRoundedRectangle (handle.reduced (0.5f), 2.0f, 1.0f);
+    g.fillRoundedRectangle (handle.withSizeKeepingCentre (style.gateReadouts ? 16.0f : 20.0f, 2.0f), 1.0f);
+
+    if (style.gateReadouts)
+    {
+        const auto readoutTop = wellTop + wellHeight + 1.0f;
+
+        g.setFont (font (Weight::regular, 12.0f));
+        g.setColour (style.accent);
+        g.drawText (getValueText(), juce::Rectangle<float> (0.0f, readoutTop, bounds.getWidth(), 14.0f), juce::Justification::centred, false);
+
+        g.setColour (colours::textSecondary);
+        g.drawText ("close " + formatFixed (closeDb, 1), juce::Rectangle<float> (0.0f, readoutTop + 14.0f, bounds.getWidth(), 14.0f),
+                    juce::Justification::centred, false);
+        return;
+    }
+
+    g.setFont (font (Weight::regular, 14.0f));
+    g.setColour (colours::textPrimary);
+    g.drawText (getValueText(), bounds.withTop (bounds.getBottom() - 23.0f), juce::Justification::centred, false);
+}
+
 // GainReductionMeter ----------------------------------------------------------
 
 GainReductionMeter::GainReductionMeter (const Geometry& geometry)
@@ -247,7 +384,7 @@ void GainReductionMeter::paint (juce::Graphics& g)
 
     g.setFont (font (Weight::regular, layout.singleBar ? 12.0f : 14.0f));
     g.setColour (layout.singleBar ? colours::textSecondary : colours::textPrimary);
-    g.drawText ("GR", bounds.withHeight (17.0f), juce::Justification::centred, false);
+    g.drawText (layout.label, bounds.withHeight (17.0f), juce::Justification::centred, false);
 
     if (! layout.singleBar)
     {

@@ -60,7 +60,7 @@ The brief says to reuse these from `fancy-core` and not fork them. Two of them a
   - Attack and Release are therefore the times of a complete open or close.
 - **Shape:** raised cosine, in dB. `gainDb = Range × (1 - s)` in Gate mode and `Range × s` in Duck mode, where `s = (1 - cos (π p)) / 2`.
 - **Range at -inf:** the dB curve runs down to -120 dB, and a fully closed gate (`p = 0`) outputs exactly 0. So -inf really is silence, and the last part of the fade is inaudible.
-- **Attack at 0 ms:** still fades over 32 samples or 0.5 ms, whichever is shorter. 32 samples is 0.67 ms at 48 kHz, so at 48 kHz and below the fade is 32 samples. This is what stops a click on opening, and it's documented in the manual.
+- **Attack at 0 ms:** still fades over 32 samples or 0.5 ms, whichever is shorter. At 48 kHz, 0.5 ms is 24 samples, so the fade is 24 samples. The 32-sample cap only applies above 64 kHz. This is what stops a click on opening, and it's documented in the manual. Release has the same minimum.
 
 ## Lookahead
 
@@ -131,7 +131,7 @@ This needs a "locked" state on the shared `ParamControl`: ignore changes, report
 
 ## Sidechain warning
 
-The warning is set when a Sidechain source is selected and the sidechain's peak stays below -90 dBFS for 2 s while the main input is above -60 dBFS. It clears within 0.5 s of sidechain signal arriving. The editor shows "No sidechain signal: check track routing (REAPER: pins 3/4)" next to the dropdown.
+The warning is set when a Sidechain source is selected and the sidechain's peak stays below -90 dBFS for 2 s while the main input is above -60 dBFS. It clears within 0.5 s of sidechain signal arriving. The editor shows "No sidechain signal: check track routing (REAPER: pins 3/4)" in red across the top of the history display. The row beside the dropdown has no room for it, and the history is where the missing gating shows.
 
 ## Parameters
 
@@ -239,9 +239,13 @@ The Pre-open lock gets its own tests: with Lookahead off, the knob reports the h
 - **Velocity** comes from the velocity window after opening, not the level at the opening. With Lookahead off, the note is one window late. The user decided this on 7 November 2026.
 - **CPU** is measured 5 times in one build, with the median taken and Fancy Comp as a same-run reference. The user decided this on 7 November 2026.
 
-## Still to confirm
+## Velocity test (1) and the mapping
 
-**Velocity timing with Lookahead on.** The brief's §4 says the note is on time when Pre-open is at least the window, and late by `window - Pre-open` otherwise. That treats Pre-open as the whole lookahead. In fact the audio is always delayed by 50 ms, and Pre-open only sets how early the gate opens within that. So:
+The brief's test (1) asks for hits at -24, -12 and -3 dBFS to give velocities at least 20 apart. Its own mapping, -60 to 0 dBFS onto 1 to 127, gives 21.0 steps per 10 dB, so the 9 dB from -12 to -3 is only 18.9 steps: 102 against 121. The test checks the mapping within ±2 as the brief says, at least 20 between -24 and -12, and at least 17 between -12 and -3. A steeper mapping would meet the 20, but it would change the range the brief sets, so that waits for the user.
+
+## Velocity timing with Lookahead on
+
+The user chose this note's rule on 7 November 2026 ("Keep the physical rule"). For the record, the brief's §4 says the note is on time when Pre-open is at least the window, and late by `window - Pre-open` otherwise. That treats Pre-open as the whole lookahead. In fact the audio is always delayed by 50 ms, and Pre-open only sets how early the gate opens within that. So:
 
 | Lookahead on | The brief's rule | This note's rule, `max (0, window - (50 ms - Pre-open))` |
 |---|---|---|
@@ -249,4 +253,4 @@ The Pre-open lock gets its own tests: with Lookahead off, the knob reports the h
 | Pre-open 5 ms (default), window 2 ms | On time | On time |
 | Pre-open 49 ms, window 2 ms | On time, which can't be done: the window isn't over until 1 ms after the note is due | 1 ms late |
 
-This note's rule is never later than the brief's, and is on time for every Pre-open up to 48 ms with the default window. Test (2) checks the range where both agree, Pre-open from the window to 50 ms minus the window. If the user prefers the brief's rule, it's a one-line change.
+This note's rule is never later than the brief's, and is on time for every Pre-open up to 48 ms with the default window. Test (2) checks Pre-open at 2, 5, 25 and 48 ms with the default window.

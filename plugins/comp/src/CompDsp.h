@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fancy/dsp/Compression.h>
+#include <fancy/dsp/Detector.h>
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/Svf.h>
 #include <fancy/dsp/TruePeakLimiter.h>
@@ -91,9 +92,8 @@ private:
 
     struct ChannelState
     {
-        fancy::dsp::Svf highPass, lowPass;
+        fancy::dsp::DetectorFilter detector;
         std::vector<float> dryDelay, preCompDelay;
-        double meanSquare = 0.0;
         fancy::dsp::EnvelopeFollower follower;
         double previousOutput = 0.0;
     };

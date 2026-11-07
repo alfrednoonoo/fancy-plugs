@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Controls.h"
 #include "Style.h"
 
 #include <fancy/dsp/MeterTap.h>
@@ -78,6 +79,46 @@ private:
     MeterChannel channels[2];
 };
 
+// The Threshold fader drawn over a stereo input meter. Fancy Comp's look by default. Fancy
+// Gate's adds a dB scale, a dashed close threshold and two read-outs.
+class ThresholdMeter final : public ParamControl
+{
+public:
+    // Positions are relative to the component. A negative wellX centres the well.
+    struct Style
+    {
+        float wellX = -1.0f, wellTop = 25.0f, wellHeight = 270.0f;
+        float lowestDb = -60.0f;
+        juce::Colour accent = colours::uiTeal;
+        float labelHeight = 14.0f;
+        bool secondaryLabel = false, scale = false, gateReadouts = false;
+        float scaleStepDb = 12.0f;
+    };
+
+    explicit ThresholdMeter (juce::RangedAudioParameter& threshold);
+    ThresholdMeter (juce::RangedAudioParameter& threshold, const Style& style);
+
+    void update (dsp::MeterTap& input, bool compressing, float seconds);
+
+    // Sets levels directly, for rendered screenshots.
+    void show (float left, float right, bool compressing);
+
+    // The close threshold drawn dashed, and read out below. Only in the gate style.
+    void setCloseDb (float db);
+
+    void paint (juce::Graphics&) override;
+
+private:
+    float getDragPixels() const override { return meterStyle.wellHeight; }
+    juce::Rectangle<int> getValueArea() const override;
+    float wellLeft() const noexcept;
+
+    Style meterStyle;
+    MeterChannel channels[2];
+    bool isCompressing = false;
+    float closeDb = -200.0f;
+};
+
 // Gain reduction falling from the top: a stereo pair with a scale and one readout per channel,
 // or a single bar with one readout.
 class GainReductionMeter final : public juce::Component
@@ -88,10 +129,11 @@ public:
     {
         float wellX, wellTop, wellHeight;
         bool singleBar;
+        const char* label;
     };
 
     // From Fancy Comp's Figma frame.
-    static constexpr Geometry stereoWithScale { 44.0f, 25.0f, 270.0f, false };
+    static constexpr Geometry stereoWithScale { 44.0f, 25.0f, 270.0f, false, "GR" };
 
     explicit GainReductionMeter (const Geometry& geometry = stereoWithScale);
 

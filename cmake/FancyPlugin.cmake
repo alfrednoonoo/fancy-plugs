@@ -11,7 +11,13 @@
 # ENTRY holds createPluginFilter() and goes into the plugin only, because each
 # plugin defines that same symbol.
 function(fancy_add_plugin target)
-    cmake_parse_arguments(ARG "" "PRODUCT_NAME;PLUGIN_CODE;BUNDLE_ID;SCREEN_MACRO;ENTRY" "SOURCES" ${ARGN})
+    cmake_parse_arguments(ARG "PRODUCES_MIDI" "PRODUCT_NAME;PLUGIN_CODE;BUNDLE_ID;SCREEN_MACRO;ENTRY" "SOURCES" ${ARGN})
+
+    if(ARG_PRODUCES_MIDI)
+        set(needs_midi_output TRUE)
+    else()
+        set(needs_midi_output FALSE)
+    endif()
 
     juce_add_plugin(${target}
         PRODUCT_NAME "${ARG_PRODUCT_NAME}"
@@ -23,7 +29,7 @@ function(fancy_add_plugin target)
         VST3_CATEGORIES Fx
         IS_SYNTH FALSE
         NEEDS_MIDI_INPUT FALSE
-        NEEDS_MIDI_OUTPUT FALSE
+        NEEDS_MIDI_OUTPUT ${needs_midi_output}
         IS_MIDI_EFFECT FALSE
         EDITOR_WANTS_KEYBOARD_FOCUS FALSE
         COPY_PLUGIN_AFTER_BUILD FALSE)

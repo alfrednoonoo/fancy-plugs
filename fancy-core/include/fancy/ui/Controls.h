@@ -25,6 +25,13 @@ public:
     void mouseDoubleClick (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 
+    // A locked control ignores drags, the wheel, double-clicks and typed values, and shows the
+    // hint as its tooltip. A click calls onLockedClick, so the editor can explain why.
+    void setLocked (bool shouldLock, const juce::String& hint = {});
+    bool isLocked() const noexcept { return locked; }
+
+    std::function<void()> onLockedClick;
+
 protected:
     float getNormalised() const { return param.convertTo0to1 (value); }
     bool isOn() const { return value >= 0.5f; }
@@ -49,7 +56,8 @@ private:
     bool dragging = false;
     bool clickOpensEditor = false;
     bool valueEditorClosing = false;
-    juce::String textBeforeEditing;
+    bool locked = false;
+    juce::String textBeforeEditing, unlockedTooltip;
     juce::ParameterAttachment attachment;
     std::unique_ptr<juce::TextEditor> valueEditor;
 };
@@ -97,6 +105,9 @@ public:
     // Figma colours some value text differently from the arc.
     void setValueColour (juce::Colour colour);
 
+    // Replaces the value text, such as "off" for a control that's locked out.
+    void setValueTextOverride (const juce::String& text);
+
     // Text after the value, such as a note name. White unless a colour is given.
     void setValueSuffix (const juce::String& suffix, juce::Colour colour = juce::Colours::white);
 
@@ -109,7 +120,7 @@ private:
 
     juce::String labelText;
     juce::Colour accentColour, valueColour;
-    juce::String valueSuffix;
+    juce::String valueSuffix, valueOverride;
     juce::Colour suffixColour { juce::Colours::white };
     Style knobStyle;
     bool isBipolar;
@@ -231,7 +242,7 @@ private:
     int selected = 0;
 };
 
-class ParamCheckbox final : public ParamClickControl
+class ParamCheckbox final : public ParamClickControl, private juce::Timer
 {
 public:
     ParamCheckbox (juce::RangedAudioParameter& parameter, const juce::String& label, juce::Colour accent = colours::uiTeal);
@@ -239,13 +250,23 @@ public:
     // For a row of long labels. The default is the Figma body size.
     void setLabelHeight (float height);
 
+    // Draws an outline that fades over the given time, to show where the checkbox is.
+    void pulse (juce::Colour colour, int milliseconds);
+    bool isPulsing() const noexcept { return pulseLeft > 0.0f; }
+
     void paint (juce::Graphics&) override;
 
 private:
+    void timerCallback() override;
+
     juce::String labelText;
-    juce::Colour accentColour;
+    juce::Colour accentColour, pulseColour;
     float labelHeight = 14.0f;
+    float pulseLeft = 0.0f, pulseLength = 1.0f;
 };
+
+// Draws the shared dropdown look, for a control that isn't a ParamDropdown.
+void paintDropdownBox (juce::Graphics&, juce::Rectangle<float> bounds, const juce::String& text, float textHeight);
 
 // The header's power pill: lit while the plugin is active, grey while bypassed.
 class PowerPill final : public ParamClickControl

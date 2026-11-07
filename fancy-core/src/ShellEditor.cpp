@@ -215,6 +215,11 @@ void ShellEditor::layoutHeader()
     outputKnob.setBounds (powerPill.getX() - 36, 11, 28, 28);
 }
 
+void ShellEditor::showTip (juce::Component& near, const juce::String& text)
+{
+    tooltips.displayTip (near.getScreenBounds().getBottomLeft().translated (0, 4), text);
+}
+
 void ShellEditor::setPresetDropdownWidth (int newWidth)
 {
     presetWidth = newWidth;

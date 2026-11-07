@@ -11,7 +11,6 @@ constexpr double switchSettleSeconds = 0.003;
 constexpr double configDebounceSeconds = 0.05;
 constexpr double highPassOffHz = 20.5;
 constexpr double lowPassOffHz = 23900.0;
-constexpr double silenceFloor = 1.0e-30;
 constexpr double minDetectorAverageMs = 0.1;
 
 using fancy::dsp::timeCoefficient;
@@ -148,9 +147,7 @@ void CompDsp::resetCore()
 
     for (auto& state : channels)
     {
-        state.highPass.reset();
-        state.lowPass.reset();
-        state.meanSquare = 0.0;
+        state.detector.reset();
         state.follower.reset();
         state.previousOutput = 0.0;
         std::fill (state.dryDelay.begin(), state.dryDelay.end(), 0.0f);
@@ -335,14 +332,8 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
         {
             auto& state = channels[(size_t) ch];
 
-            const auto highPassed = state.highPass.tick (highPassCoefficients, detector[ch]).high;
-            const auto afterHighPass = detector[ch] + (highPassed - detector[ch]) * highPassBlend;
-            const auto lowPassed = state.lowPass.tick (lowPassCoefficients, afterHighPass).low;
-
-            filtered[ch] = afterHighPass + (lowPassed - afterHighPass) * lowPassBlend;
-
-            state.meanSquare += std::min (rmsCoefficient, maxDetectorCoefficient) * (filtered[ch] * filtered[ch] - state.meanSquare);
-            level[ch] = 10.0 * std::log10 (std::max (state.meanSquare, silenceFloor));
+            filtered[ch] = state.detector.filter (detector[ch], highPassCoefficients, lowPassCoefficients, highPassBlend, lowPassBlend);
+            level[ch] = state.detector.levelDb (filtered[ch], std::min (rmsCoefficient, maxDetectorCoefficient));
         }
 
         if (current.linkChannels)

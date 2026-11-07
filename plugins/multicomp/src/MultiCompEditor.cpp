@@ -26,7 +26,7 @@ constexpr float labelHeight = 12.0f;
 
 constexpr OutMeter::Geometry inputGeometry { 9.5f, 17.0f, 108.0f, 20.0f, 1.45f, 0.0f, false, false };
 constexpr OutMeter::Geometry outGeometry { 14.5f, 16.0f, 316.0f, 26.0f, 4.9f, 324.0f, false, true };
-constexpr GainReductionMeter::Geometry reductionGeometry { 15.0f, 17.0f, 80.0f, true };
+constexpr GainReductionMeter::Geometry reductionGeometry { 15.0f, 17.0f, 80.0f, true, "GR" };
 
 const juce::Identifier selectedBandProperty ("selectedBand");
 

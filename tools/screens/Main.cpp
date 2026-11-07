@@ -50,6 +50,11 @@
  #include "FirProcessor.h"
 #endif
 
+#if FANCY_HAS_GATE
+ #include "GateEditor.h"
+ #include "GateProcessor.h"
+#endif
+
 namespace
 {
 
@@ -257,6 +262,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_FIR
     ok = renderFir (outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_GATE
+    ok = renderPlugin<GateProcessor, GateEditor> ("gate", outputDir) && ok;
    #endif
 
     Gallery gallery;

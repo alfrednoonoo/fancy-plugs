@@ -1,8 +1,8 @@
 #pragma once
 
-#include "CompMeters.h"
 #include "CompProcessor.h"
 
+#include <fancy/ui/Meter.h>
 #include <fancy/ui/ShellEditor.h>
 
 class CompEditor final : public fancy::ui::ShellEditor
@@ -28,7 +28,7 @@ private:
     fancy::ui::ParamDropdown detectorDropdown;
     fancy::ui::EditLink editLink;
 
-    ThresholdMeter thresholdMeter;
+    fancy::ui::ThresholdMeter thresholdMeter;
     fancy::ui::GainReductionMeter gainReductionMeter;
 
     fancy::ui::Knob ratioKnob, kneeKnob, attackKnob, releaseKnob;
