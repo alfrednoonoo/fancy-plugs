@@ -504,7 +504,9 @@ TEST_CASE ("band gain applies to its band", "[multicomp]")
 
     targets.bands[1].gainDb = -6.0;
 
-    CHECK (gainAt (targets, 400.0) == Approx (-6.0).margin (0.1));
+    // The neighbouring bands, which stay at 0 dB, still reach 400 Hz at about -39 dB, and that
+    // adds 0.17 dB to a band turned down by 6.
+    CHECK (gainAt (targets, 400.0) == Approx (-6.0).margin (0.25));
     CHECK (std::abs (gainAt (targets, 12000.0)) < 0.1);
 }
 
