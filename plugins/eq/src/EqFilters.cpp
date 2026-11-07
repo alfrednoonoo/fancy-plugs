@@ -96,7 +96,8 @@ Section matchedBoost (double w, double gain, double q) noexcept
     return factor (a0, b1, b2, poles);
 }
 
-// Vicanek's poles, with the numerator matched at DC, at w and near Nyquist. Matching at Nyquist
+// Vicanek's poles, with the numerator matched at DC and at two points high in the band, so the
+// error stays small where a cascade would add it up. Matching at Nyquist
 // itself leaves 1 to 2 dB of error around 20 kHz at 44.1 kHz.
 Section matchedLowPass (double w, double q) noexcept
 {
@@ -110,7 +111,7 @@ Section matchedLowPass (double w, double q) noexcept
         return (a0 * phi.phi0 + a1 * phi.phi1 + a2 * phi.phi2) * analog.powerAt (wMatch) - a0 * phi.phi0;
     };
 
-    const auto wLow = std::min (w, 0.7 * pi);
+    const auto wLow = std::clamp (w, 0.6 * pi, 0.7 * pi);
     const auto wHigh = 0.9 * pi;
     const Phi low (wLow), high (wHigh);
 
