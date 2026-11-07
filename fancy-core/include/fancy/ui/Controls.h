@@ -6,6 +6,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 namespace fancy::ui
 {
@@ -44,6 +45,7 @@ private:
 
     float value = 0.0f;
     float lastDragY = 0.0f;
+    float dragPosition = 0.0f;
     bool dragging = false;
     bool clickOpensEditor = false;
     bool valueEditorClosing = false;
@@ -94,8 +96,8 @@ public:
     // Figma colours some value text differently from the arc.
     void setValueColour (juce::Colour colour);
 
-    // White text after the value, such as a note name.
-    void setValueSuffix (const juce::String& suffix);
+    // Text after the value, such as a note name. White unless a colour is given.
+    void setValueSuffix (const juce::String& suffix, juce::Colour colour = juce::Colours::white);
 
     void setStyle (const Style& style);
 
@@ -107,6 +109,7 @@ private:
     juce::String labelText;
     juce::Colour accentColour, valueColour;
     juce::String valueSuffix;
+    juce::Colour suffixColour { juce::Colours::white };
     Style knobStyle;
     bool isBipolar;
     bool showDefaultMark = false;
@@ -124,6 +127,86 @@ private:
     float getDragPixels() const override { return (float) getHeight(); }
 
     juce::Colour accentColour;
+};
+
+// One button per choice of a choice parameter. The selected segment is filled.
+class ParamSegments : public ParamClickControl
+{
+public:
+    ParamSegments (juce::RangedAudioParameter& parameter, juce::Colour selectedFill, juce::Colour selectedText);
+
+    void mouseDown (const juce::MouseEvent&) override;
+    void paint (juce::Graphics&) override;
+
+protected:
+    // Draws one segment's label. By default it's the parameter's text for that choice.
+    virtual void paintSegment (juce::Graphics&, int index, juce::Rectangle<float> area, juce::Colour ink);
+
+private:
+    int getSelected() const;
+    juce::Rectangle<float> segmentBounds (int index) const;
+
+    int numSegments;
+    juce::Colour fillColour, textColour;
+};
+
+// A power glyph with no pill, lit in the accent colour while the parameter is on.
+class ParamPowerIcon final : public ParamClickControl
+{
+public:
+    ParamPowerIcon (juce::RangedAudioParameter& parameter, juce::Colour accent);
+
+    void paint (juce::Graphics&) override;
+
+private:
+    juce::Colour colour;
+};
+
+// A plus or a cross that fires on mouse up.
+class IconButton final : public juce::Component
+{
+public:
+    enum class Glyph { plus, cross };
+
+    explicit IconButton (Glyph glyph);
+
+    void paint (juce::Graphics&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+
+    std::function<void()> onClick;
+
+private:
+    Glyph iconGlyph;
+};
+
+// Numbered tabs in their own colours, with a + at the end.
+class ColourTabs final : public juce::Component
+{
+public:
+    struct Tab
+    {
+        int id;
+        juce::Colour colour;
+    };
+
+    void setTabs (std::vector<Tab> newTabs, int selectedId);
+
+    // Where the strip ends, for whatever sits to its right.
+    int getEndX() const;
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+    std::function<void (int)> onSelect;
+    std::function<void()> onAdd;
+
+    bool showAddButton = true;
+
+private:
+    juce::Rectangle<int> tabBounds (int index) const;
+
+    std::vector<Tab> tabs;
+    int selected = 0;
 };
 
 class ParamCheckbox final : public ParamClickControl

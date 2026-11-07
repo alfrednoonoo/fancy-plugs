@@ -120,6 +120,7 @@ void ParamControl::mouseDown (const juce::MouseEvent& event)
     dragging = true;
     clickOpensEditor = event.mods.isCtrlDown() || event.mods.isCommandDown() || getValueArea().contains (event.getPosition());
     lastDragY = event.position.y;
+    dragPosition = getNormalised();
     attachment.beginGesture();
 }
 
@@ -136,8 +137,10 @@ void ParamControl::mouseDrag (const juce::MouseEvent& event)
     const auto delta = (lastDragY - event.position.y) / divisor;
     lastDragY = event.position.y;
 
-    const auto normalised = juce::jlimit (0.0f, 1.0f, getNormalised() + delta);
-    attachment.setValueAsPartOfGesture (param.convertFrom0to1 (normalised));
+    // Kept apart from the value, which snaps to the parameter's steps. Adding to that instead
+    // would round every small move away on a control with coarse steps.
+    dragPosition = juce::jlimit (0.0f, 1.0f, dragPosition + delta);
+    attachment.setValueAsPartOfGesture (param.convertFrom0to1 (dragPosition));
 }
 
 void ParamControl::mouseUp (const juce::MouseEvent& event)
@@ -288,11 +291,12 @@ void Knob::setValueColour (juce::Colour colour)
     repaint();
 }
 
-void Knob::setValueSuffix (const juce::String& suffix)
+void Knob::setValueSuffix (const juce::String& suffix, juce::Colour colour)
 {
-    if (suffix != valueSuffix)
+    if (suffix != valueSuffix || colour != suffixColour)
     {
         valueSuffix = suffix;
+        suffixColour = colour;
         repaint();
     }
 }
@@ -350,7 +354,7 @@ void Knob::paint (juce::Graphics& g)
 
             x += valueWidth;
 
-            g.setColour (colours::textPrimary);
+            g.setColour (suffixColour);
             g.drawText (valueSuffix, valueArea.withX (x).withWidth (suffixWidth + 1.0f), juce::Justification::centredLeft, false);
         }
     }
@@ -446,6 +450,194 @@ void Fader::paint (juce::Graphics& g)
     g.setFont (font (Weight::regular, bodyFontSize));
     g.setColour (colours::textPrimary);
     g.drawText (getValueText().upToFirstOccurrenceOf (" ", false, false), readout, juce::Justification::centred, false);
+}
+
+// ParamSegments ---------------------------------------------------------------
+
+ParamSegments::ParamSegments (juce::RangedAudioParameter& parameter, juce::Colour selectedFill, juce::Colour selectedText)
+    : ParamClickControl (parameter),
+      numSegments (juce::jmax (1, parameter.getAllValueStrings().size())),
+      fillColour (selectedFill),
+      textColour (selectedText)
+{
+}
+
+int ParamSegments::getSelected() const
+{
+    return juce::jlimit (0, numSegments - 1, juce::roundToInt (getNormalised() * (float) (numSegments - 1)));
+}
+
+juce::Rectangle<float> ParamSegments::segmentBounds (int index) const
+{
+    const auto area = getLocalBounds().toFloat().reduced (3.0f);
+    const auto width = area.getWidth() / (float) numSegments;
+
+    return area.withX (area.getX() + (float) index * width).withWidth (width);
+}
+
+void ParamSegments::mouseDown (const juce::MouseEvent& event)
+{
+    if (event.mods.isPopupMenu())
+    {
+        ParamClickControl::mouseDown (event);
+        return;
+    }
+
+    for (int i = 0; i < numSegments; ++i)
+        if (segmentBounds (i).contains (event.position))
+            setDenormalised (param.convertFrom0to1 ((float) i / (float) juce::jmax (1, numSegments - 1)));
+}
+
+void ParamSegments::paint (juce::Graphics& g)
+{
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);
+
+    const auto selected = getSelected();
+
+    for (int i = 0; i < numSegments; ++i)
+    {
+        const auto area = segmentBounds (i);
+
+        if (i == selected)
+        {
+            g.setColour (fillColour);
+            g.fillRoundedRectangle (area, 3.0f);
+        }
+
+        paintSegment (g, i, area, i == selected ? textColour : colours::textSecondary);
+    }
+}
+
+void ParamSegments::paintSegment (juce::Graphics& g, int index, juce::Rectangle<float> area, juce::Colour ink)
+{
+    g.setFont (font (Weight::regular, bodyFontSize));
+    g.setColour (ink);
+    g.drawText (param.getAllValueStrings()[index], area, juce::Justification::centred, false);
+}
+
+// ParamPowerIcon --------------------------------------------------------------
+
+ParamPowerIcon::ParamPowerIcon (juce::RangedAudioParameter& parameter, juce::Colour accent)
+    : ParamClickControl (parameter), colour (accent)
+{
+}
+
+void ParamPowerIcon::paint (juce::Graphics& g)
+{
+    g.setColour (isOn() ? colour : colours::textSecondary);
+    g.strokePath (icons::power (getLocalBounds().toFloat()), juce::PathStrokeType (2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+}
+
+// IconButton ------------------------------------------------------------------
+
+IconButton::IconButton (Glyph glyph)
+    : iconGlyph (glyph)
+{
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+}
+
+void IconButton::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    const auto plus = iconGlyph == Glyph::plus;
+
+    juce::Path path;
+
+    if (plus)
+    {
+        path.startNewSubPath (bounds.getCentreX(), bounds.getY());
+        path.lineTo (bounds.getCentreX(), bounds.getBottom());
+        path.startNewSubPath (bounds.getX(), bounds.getCentreY());
+        path.lineTo (bounds.getRight(), bounds.getCentreY());
+    }
+    else
+    {
+        path.startNewSubPath (bounds.getTopLeft());
+        path.lineTo (bounds.getBottomRight());
+        path.startNewSubPath (bounds.getTopRight());
+        path.lineTo (bounds.getBottomLeft());
+    }
+
+    g.setColour (plus ? colours::textPrimary : colours::textSecondary);
+    g.strokePath (path, juce::PathStrokeType (2.0f));
+}
+
+void IconButton::mouseUp (const juce::MouseEvent& event)
+{
+    if (onClick != nullptr && contains (event.getPosition()))
+        onClick();
+}
+
+// ColourTabs ------------------------------------------------------------------
+
+namespace
+{
+constexpr int colourTabWidth = 22, colourTabGap = 6;
+}
+
+void ColourTabs::setTabs (std::vector<Tab> newTabs, int selectedId)
+{
+    tabs = std::move (newTabs);
+    selected = selectedId;
+    repaint();
+}
+
+juce::Rectangle<int> ColourTabs::tabBounds (int index) const
+{
+    return { index * (colourTabWidth + colourTabGap), 0, colourTabWidth, getHeight() };
+}
+
+int ColourTabs::getEndX() const
+{
+    return getX() + tabBounds ((int) tabs.size() + (showAddButton ? 1 : 0)).getX() - colourTabGap;
+}
+
+void ColourTabs::paint (juce::Graphics& g)
+{
+    g.setFont (font (Weight::regular, bodyFontSize));
+
+    for (int i = 0; i < (int) tabs.size(); ++i)
+    {
+        const auto& tab = tabs[(size_t) i];
+        const auto area = tabBounds (i).toFloat();
+        const auto isSelected = tab.id == selected;
+
+        if (isSelected)
+        {
+            g.setColour (tab.colour);
+            g.fillRoundedRectangle (area, 3.0f);
+        }
+        else
+        {
+            g.setColour (tab.colour);
+            g.drawRoundedRectangle (area.reduced (0.5f), 3.0f, 1.0f);
+        }
+
+        g.setColour (isSelected && tab.colour.getPerceivedBrightness() > 0.7f ? juce::Colours::black : colours::textPrimary);
+        g.drawText (juce::String (tab.id + 1), area, juce::Justification::centred, false);
+    }
+
+    if (showAddButton)
+    {
+        const auto area = tabBounds ((int) tabs.size()).toFloat();
+
+        g.setColour (colours::bgBody);
+        g.fillRoundedRectangle (area, 3.0f);
+
+        g.setColour (colours::textPrimary);
+        g.strokePath (icons::plus (juce::Rectangle<float> (9.0f, 9.0f).withCentre (area.getCentre())), juce::PathStrokeType (1.5f));
+    }
+}
+
+void ColourTabs::mouseDown (const juce::MouseEvent& event)
+{
+    for (int i = 0; i < (int) tabs.size(); ++i)
+        if (tabBounds (i).contains (event.getPosition()) && onSelect != nullptr)
+            onSelect (tabs[(size_t) i].id);
+
+    if (showAddButton && tabBounds ((int) tabs.size()).contains (event.getPosition()) && onAdd != nullptr)
+        onAdd();
 }
 
 // ParamCheckbox ---------------------------------------------------------------

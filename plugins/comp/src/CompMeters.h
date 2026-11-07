@@ -34,16 +34,3 @@ public:
 private:
     float reduction[2] { 0.0f, 0.0f };
 };
-
-// The output meter with its dB scale and one readout.
-class OutMeter final : public juce::Component
-{
-public:
-    void update (fancy::dsp::MeterTap& output, float seconds);
-    void show (float left, float right);
-
-    void paint (juce::Graphics&) override;
-
-private:
-    fancy::ui::MeterChannel channels[2];
-};

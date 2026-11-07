@@ -396,6 +396,26 @@ TEST_CASE ("Other gestures keep working beside the value box", "[entry]")
         CHECK (rig.freq->get() == before);
     }
 
+    SECTION ("Slow drags add up on a control with coarse steps")
+    {
+        juce::AudioParameterFloat steps { juce::ParameterID { "steps", 1 }, "Steps", juce::NormalisableRange<float> (4.0f, 24.0f, 1.0f), 10.0f };
+        Knob stepsKnob { steps, "Steps", juce::Colours::teal, Knob::mediumStyle };
+
+        stepsKnob.setBounds (240, 10, 100, 130);
+        rig.window.addAndMakeVisible (stepsKnob);
+
+        const juce::Point<int> start { 290, 70 };
+
+        rig.send (stepsKnob, Rig::Phase::down, start, start, {}, false);
+
+        for (int pixel = 1; pixel <= 20; ++pixel)
+            rig.send (stepsKnob, Rig::Phase::drag, start, start.translated (0, -pixel), {}, true);
+
+        rig.send (stepsKnob, Rig::Phase::up, start, start.translated (0, -20), {}, true);
+
+        CHECK (steps.get() == 12.0f);
+    }
+
     SECTION ("Ctrl-click opens the box from the knob's face")
     {
         rig.click (rig.knobFace, juce::ModifierKeys { juce::ModifierKeys::ctrlModifier });

@@ -66,39 +66,14 @@ private:
             void clicked() override;
         };
 
-        class PowerIcon final : public fancy::ui::ParamClickControl
-        {
-        public:
-            PowerIcon (juce::RangedAudioParameter& parameter, juce::Colour accent);
-
-            void paint (juce::Graphics&) override;
-
-        private:
-            juce::Colour colour;
-        };
-
-        class IconButton final : public juce::Component
-        {
-        public:
-            IconButton (bool isPlus);
-
-            void paint (juce::Graphics&) override;
-            void mouseUp (const juce::MouseEvent&) override;
-
-            std::function<void()> onClick;
-
-        private:
-            bool plus;
-        };
-
         EqProcessor& eqProcessor;
         const int band;
         bool isCompact = false;
 
         TypeDropdown typeDropdown;
         fancy::ui::Knob frequencyKnob, gainKnob, qKnob;
-        PowerIcon powerIcon;
-        IconButton plusButton, closeButton;
+        fancy::ui::ParamPowerIcon powerIcon;
+        fancy::ui::IconButton plusButton, closeButton;
     };
 
     void bodyResized() override;

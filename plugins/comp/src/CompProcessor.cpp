@@ -24,22 +24,13 @@ std::unique_ptr<juce::AudioParameterFloat> timeParameter (const juce::String& id
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
 }
 
-juce::String filterText (float hz)
-{
-    if (hz < 1000.0f)
-        return juce::String (juce::roundToInt (hz)) + " Hz";
-
-    const auto kilohertz = hz / 1000.0f;
-    return (kilohertz >= 10.0f ? juce::String (juce::roundToInt (kilohertz)) : fancy::formatFixed (kilohertz, 1)) + " kHz";
-}
-
 std::unique_ptr<juce::AudioParameterFloat> filterParameter (const juce::String& id, const juce::String& name, float defaultHz)
 {
     return fancy::floatParameter (
         id, name, fancy::logRange (20.0f, 24000.0f, 1.0f), defaultHz,
         juce::AudioParameterFloatAttributes {}
             .withLabel ("Hz")
-            .withStringFromValueFunction ([] (float value, int) { return filterText (value); })
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFilterHz (value); })
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); }));
 }
 

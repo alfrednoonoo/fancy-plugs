@@ -13,7 +13,7 @@ on:
         description: Plugin to build
         type: choice
         default: all
-        options: [all, kicker, exciter, comp, eq, verb]
+        options: [all, kicker, exciter, comp, eq, verb, delay]
 
 concurrency:
   group: build-${{ github.ref }}

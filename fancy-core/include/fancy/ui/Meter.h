@@ -48,4 +48,33 @@ private:
     MeterChannel channels[4];
 };
 
+// A stereo output meter with one readout, and optionally a dB scale.
+class OutMeter final : public juce::Component
+{
+public:
+    // Positions are relative to the component.
+    struct Geometry
+    {
+        float wellX, top, bottom, zeroDbY, pixelsPerDb, readoutY;
+        bool showScale;
+    };
+
+    // Geometry from the Figma LevelController/Out component. The scale area is wider than
+    // Figma's, because Inter's digits don't fit its 13 px.
+    static constexpr Geometry withScale { 32.5f, 25.0f, 395.0f, 60.07f, 5.545f, 403.0f, true };
+
+    explicit OutMeter (const Geometry& geometry = withScale);
+
+    void update (dsp::MeterTap& output, float seconds);
+
+    // Sets levels directly, for rendered screenshots.
+    void show (float left, float right);
+
+    void paint (juce::Graphics&) override;
+
+private:
+    Geometry layout;
+    MeterChannel channels[2];
+};
+
 } // namespace fancy::ui

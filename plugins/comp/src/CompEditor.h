@@ -36,7 +36,7 @@ private:
     fancy::ui::Knob preCompKnob, rmsKnob, lowpassKnob, highpassKnob;
     fancy::ui::ParamCheckbox linkCheckbox, makeupCheckbox, previewCheckbox, limitCheckbox;
 
-    OutMeter outMeter;
+    fancy::ui::OutMeter outMeter;
     juce::Label wetLabel, dryLabel;
     fancy::ui::Fader wetFader, dryFader;
 

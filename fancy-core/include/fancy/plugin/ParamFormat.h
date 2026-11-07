@@ -22,6 +22,16 @@ inline juce::String formatHz (float hz)
                          : formatFixed (hz, 1) + " Hz";
 }
 
+// Whole Hz, then one decimal of kHz, then whole kHz: for knobs that only need a rough reading.
+inline juce::String formatFilterHz (float hz)
+{
+    if (hz < 1000.0f)
+        return juce::String (juce::roundToInt (hz)) + " Hz";
+
+    const auto kilohertz = hz / 1000.0f;
+    return (kilohertz >= 10.0f ? juce::String (juce::roundToInt (kilohertz)) : formatFixed (kilohertz, 1)) + " kHz";
+}
+
 // Reads the first number in typed text, ignoring any unit around it. Accepts a typographic
 // minus and a comma as either decimal point (2,5) or thousands separator (2,500).
 inline float parseNumber (const juce::String& text)

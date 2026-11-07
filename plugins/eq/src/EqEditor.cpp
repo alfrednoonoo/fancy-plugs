@@ -211,54 +211,6 @@ void EqEditor::BandEditor::TypeDropdown::clicked()
                         });
 }
 
-EqEditor::BandEditor::PowerIcon::PowerIcon (juce::RangedAudioParameter& parameter, juce::Colour accent)
-    : ParamClickControl (parameter), colour (accent)
-{
-}
-
-void EqEditor::BandEditor::PowerIcon::paint (juce::Graphics& g)
-{
-    g.setColour (isOn() ? colour : colours::textSecondary);
-    g.strokePath (icons::power (getLocalBounds().toFloat()), juce::PathStrokeType (2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-}
-
-EqEditor::BandEditor::IconButton::IconButton (bool isPlus)
-    : plus (isPlus)
-{
-    setMouseCursor (juce::MouseCursor::PointingHandCursor);
-}
-
-void EqEditor::BandEditor::IconButton::paint (juce::Graphics& g)
-{
-    const auto bounds = getLocalBounds().toFloat();
-
-    juce::Path path;
-
-    if (plus)
-    {
-        path.startNewSubPath (bounds.getCentreX(), bounds.getY());
-        path.lineTo (bounds.getCentreX(), bounds.getBottom());
-        path.startNewSubPath (bounds.getX(), bounds.getCentreY());
-        path.lineTo (bounds.getRight(), bounds.getCentreY());
-    }
-    else
-    {
-        path.startNewSubPath (bounds.getTopLeft());
-        path.lineTo (bounds.getBottomRight());
-        path.startNewSubPath (bounds.getTopRight());
-        path.lineTo (bounds.getBottomLeft());
-    }
-
-    g.setColour (plus ? colours::textPrimary : colours::textSecondary);
-    g.strokePath (path, juce::PathStrokeType (2.0f));
-}
-
-void EqEditor::BandEditor::IconButton::mouseUp (const juce::MouseEvent& event)
-{
-    if (onClick != nullptr && contains (event.getPosition()))
-        onClick();
-}
-
 // BandEditor ------------------------------------------------------------------
 
 EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEditor& owner)
@@ -269,8 +221,8 @@ EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEdito
       gainKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "gain")), "Gain", bandColour (bandIndex), Knob::mediumStyle, true),
       qKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "q")), "Q", bandColour (bandIndex), Knob::mediumStyle),
       powerIcon (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "on")), bandColour (bandIndex)),
-      plusButton (true),
-      closeButton (false)
+      plusButton (IconButton::Glyph::plus),
+      closeButton (IconButton::Glyph::cross)
 {
     for (juce::Component* item : std::initializer_list<juce::Component*> { &typeDropdown, &frequencyKnob, &gainKnob, &qKnob, &powerIcon, &plusButton, &closeButton })
         addAndMakeVisible (item);

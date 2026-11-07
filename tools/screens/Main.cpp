@@ -35,6 +35,11 @@
  #include "VerbProcessor.h"
 #endif
 
+#if FANCY_HAS_DELAY
+ #include "DelayEditor.h"
+ #include "DelayProcessor.h"
+#endif
+
 namespace
 {
 
@@ -209,6 +214,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_VERB
     ok = renderVerb (outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_DELAY
+    ok = renderPlugin<DelayProcessor, DelayEditor> ("delay", outputDir) && ok;
    #endif
 
     Gallery gallery;
