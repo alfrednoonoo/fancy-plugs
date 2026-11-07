@@ -1,0 +1,21 @@
+Fancy Verb measurements, CI run 42356997609 (commit e76ebce), on a GitHub windows-latest runner.
+
+CPU: 4 s stereo IR at 48 kHz, 128-sample blocks, stereo, paced at real time for 20 s. Target < 5 % (§4.11).
+The first two lines run the audio thread at time-critical priority, as a host does. The third is the
+control, at normal priority, where the worker can preempt it for one whole FFT job.
+
+verb 4 s stereo IR, Zero latency (target < 5 %): 1.66 % of one core (audio thread 0.64 %, worker 1.02 %), worst block 97 us of 2667 us, 0 of 7500 blocks over budget, 0 jobs taken over, late blocks 0
+verb 4 s stereo IR, Low CPU: 1.48 % of one core (audio thread 0.07 %, worker 1.41 %), worst block 75 us of 2667 us, 0 of 7500 blocks over budget, 0 jobs taken over, late blocks 0
+verb 4 s stereo IR, Zero latency, below the worker's priority: 2.25 % of one core (audio thread 0.76 %, worker 1.48 %), worst block 5095 us of 2667 us, 1 of 7500 blocks over budget, 0 jobs taken over, late blocks 0
+  over budget at block 7423
+
+Earlier runs, Zero latency: 2.75-3.76 % at normal priority, always with 0 late blocks and 0 jobs taken over.
+CI runners vary by about a factor of two.
+
+Convolver against direct convolution (§5.3): passes for both modes, IR lengths 1 to 130000, block sizes
+1 to 8192, Max FFT 16384 and 65536. Worst sample error under 0.02.
+Latency: 0 in Zero latency and 4096 in Low CPU, at 44.1, 48 and 192 kHz, measured on the impulse, the same on every load.
+Resampler: error below -60 dB up to 0.85 x the lower Nyquist at ratios 0.5 to 4; a tone 10 % above the new
+Nyquist comes out below -100 dBFS.
+Reverb generator: 30 +/- 3 dB of decay over half its RT60.
+SRC gain: keeps the sum of an impulse's samples within 1 % across a 2x rate change.

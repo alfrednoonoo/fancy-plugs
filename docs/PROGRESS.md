@@ -3,14 +3,14 @@
 ## Status
 
 - Skeleton workflow: done.
-- `fancy-core`: done, except the Verb module card, which is deferred until Verb needs it.
+- `fancy-core`: done. The Verb module card lives in `plugins/verb/src/ModuleRack.cpp`, because only the Verb uses it.
 - Fancy Kicker: done, signed off in REAPER by the user.
 - Fancy Exciter: done, signed off in REAPER by the user.
 - Fancy Comp: done, signed off in REAPER by the user.
 - Fancy EQ: done, signed off in REAPER by the user.
-- Next: Fancy Verb.
+- Fancy Verb: built and green in CI, **waiting for the REAPER check** in `docs/verb-checklist.md` (§7 checks 3 and 7). It's the last plugin.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42331021480 (commit `aacb525`).
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42356997609 (commit `e76ebce`).
 
 ## Kicker acceptance (§7)
 
@@ -94,6 +94,45 @@ Lessons from the EQ build, which apply to the Verb:
 - **A ramp needs an end.** Coefficient increments must stop when the code that refreshes them is skipped.
 - **Prototype DSP in Python first.** With no local compiler, it costs seconds rather than a CI run. The Vicanek formulas were checked this way, and a five-point rational fit was rejected before any C++ was written.
 
+## Verb acceptance (§7)
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Actions run green, artifact contains the plugin | Pass, run above |
+| 2 | pluginval strictness 10 | Pass for all five plugins, GUI tests on |
+| 3 | State survives a REAPER project reload | **Waiting for the user**; state round-trip, corrupted-state, embedded-IR and missing-IR tests pass in CI |
+| 4 | §5.3 tests | Pass, 121 test cases across the suite. Numbers in `docs/measurements/verb.txt` |
+| 5 | Screenshots compared with the reference | Done against the Figma frames; `docs/screens/verb-vs-reference.png` shows Figma on the left and the build on the right |
+| 6 | CPU against the §4.11 target | Pass: 1.66 % in Zero latency with the audio thread at host priority, against < 5 %. 2.25-3.76 % with it at normal priority. No late blocks |
+| 7 | Installed and confirmed in REAPER | **Waiting for the user** |
+
+Verb deviations from Figma:
+
+- **Info string:** says 1ch, because Mix to mono is ticked in the same mockup that says 2ch.
+- **Time axis:** follows the IR's length. Figma draws 0.2 to 1.4 s beside a 4.5 s IR, so its waveform and axis disagree. The empty state uses Figma's axis.
+- **Waveform:** the comparison render uses a made-up 4.5 s IR through the real file path, because CI has no IR files. It also starts at the left edge, where Figma leaves a 26 px gap, so that time 0 sits on the axis.
+- **Echo lines:** follow the echoes, so at a 4.5 s scale they bunch up at the start. Figma varies their height for looks.
+- **Trim handles:** added at the display's top corners, as §5.3 requires. Figma doesn't show them.
+- **Echo generator label:** one spelling in both the add panel and the empty state. Figma writes "Echo generator" in the first and "Echo Generator" in the second.
+- **Pre-delay:** 3.0 ms where Figma draws -3.0 dB, which the brief calls a mistake.
+- **Knob arrows, Dry dot:** follow the values, as on the other plugins.
+- **Cards Figma doesn't have:** Trim and Reverb Generator use Echo's grid and width. Reverse uses Normalize's width, with a one-line caption so the card isn't blank.
+
+Decisions the brief left open, in `docs/verb.md`:
+
+- **Module settings aren't host parameters.** The chain changes length at runtime and VST3's parameter list is fixed.
+- **No project-relative paths.** VST3 gives a plugin no project path. The embedded copy covers a moved project.
+- **New instances start empty,** matching Figma's empty state, so audio passes unchanged.
+- **The convolver worker runs at JUCE `highest`.** A host's audio thread runs above that. If a host ran its audio below it, the worker could preempt audio for one FFT job, which would show as a dropout in a CPU spike rather than in the late-block counter.
+
+Lessons from the Verb build:
+
+- **Pace a threaded benchmark at real time, at host priority.** Run flat out, the worker can't keep up and the late counts mean nothing. At normal priority the worker preempts the benchmark for a whole FFT job, which looks like a 5-8 ms spike. Logging which blocks went over showed they were exactly 131,072 samples apart, and a time-critical run with a normal-priority control proved the cause.
+- **Test level through the convolution, not the IR's peak.** The SRC gain was inverted in both the code and the design note, and only a test of the sum of the samples caught it.
+- **Delete an editor as the host does.** Call `editorBeingDeleted` first, or the next `createEditorAndMakeActive` returns null.
+- **Don't pass long patch scripts through a bash heredoc here.** Two failed on quoting before running. Write the script to the scratchpad and run the file.
+- **Shared icons are open paths.** They have to be stroked; filled they show as blobs or nothing.
+
 ## Figma
 
 File `v9yFzkjuAzh1qzjEweURsh`, "ReaPlugs (vst GUI) (Community)". `design/figma-spec.json` holds every frame, position, fill, radius and font; `design/` has 2× renders of the frames and main components; `design/icons/` has the glyph SVGs. Commit the data, never the token.
@@ -132,7 +171,7 @@ Figma uses SF Compact Display for the scale numbers. That font can't be bundled,
 
 Tested in CI: DSP, state, presets, automation, bypass and layouts through pluginval, editor opening, rendered screenshots.
 
-Not tested by anything yet, because CI can't click: graph handles and their gestures, window resizing, drag, shift-drag, double-click, ctrl-click typing, mouse wheel, right-click menus, the preset and save dialogs, the UI size menu, opening and closing the EDIT drawer, and the bypass dimming. All of these are on the REAPER checklist.
+Not tested by anything yet, because CI can't click: graph handles and their gestures, IR trim handles, dragging modules, the add panel, the chain strip, file dialogs, window resizing, drag, shift-drag, double-click, ctrl-click typing, mouse wheel, right-click menus, the preset and save dialogs, the UI size menu, opening and closing the EDIT drawer, and the bypass dimming. All of these are on the REAPER checklist.
 
 `scripts/get-latest.ps1` and `scripts/install.ps1` were run end to end, with `USERPROFILE` pointed at a scratch folder. They have not yet installed into the real `%USERPROFILE%\VST3-Dev`.
 
@@ -146,6 +185,7 @@ Not tested by anything yet, because CI can't click: graph handles and their gest
 | Kicker, small change to shared code | 3m19s–4m11s | | |
 | Three plugins, code change | 4m59s–5m11s | | |
 | Four plugins, code change | 4m48s–5m30s | | |
+| Five plugins, code change | about 6m | | |
 
 Target: warm one-plugin build under about 6 minutes (met). The full-suite target of 15 minutes is on track, at about 5 minutes for four plugins with a warm cache. The runner image changes about weekly, which refreshes the dependency cache and adds about 4 minutes of configure time to the next run.
 

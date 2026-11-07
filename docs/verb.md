@@ -169,6 +169,10 @@ Cards are 296 (File), 147 (LP/HP), 356 (Echo) and 163 (Normalize) wide with 4 px
 
 SETUP opens a drawer with dropdowns for Latency mode, Max FFT and IR storage, a button for the IR folder, and the late-block counter.
 
+## Thread priority
+
+The convolver's worker runs at JUCE `highest`, which is below the audio thread in a host. On a machine with a free core it only ever costs that worker time. The benchmark in `tests/VerbTests.cpp` runs its audio thread at time-critical priority for that reason, and keeps a normal-priority run as a control.
+
 ## Testing plan
 
 1. Convolver output against a direct time-domain convolution, for both modes, stereo and mono, at block sizes 1, 7, 128, 1000 and 8192.
