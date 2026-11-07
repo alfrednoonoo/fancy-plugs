@@ -25,6 +25,8 @@ Modules run left to right.
 
 Scroll with the mouse wheel, or drag in the chain strip at the bottom. The outline there shows the part of the rack you can see, and the power icons on its chips work too.
 
+To type a value, click it, or Ctrl-click anywhere on a knob or fader. Enter or clicking away applies it, and Esc cancels. Units are optional, and frequencies can be typed as `2500` or `2.5k`. A number past the limits stops at the limit, and text with no number in it changes nothing.
+
 ## Modules
 
 File, Echo generator and Reverb Generator add to whatever is already in the chain. The others change it.

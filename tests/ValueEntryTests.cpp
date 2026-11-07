@@ -154,11 +154,12 @@ TEST_CASE ("Text without a value is told apart from text with one", "[entry]")
 
 TEST_CASE ("Frequencies outside a log range stop at its limits", "[entry]")
 {
-    const auto parameter = frequencyParameter();
+    const auto owned = frequencyParameter();
+    const juce::RangedAudioParameter& parameter = *owned;
 
     for (const auto* text : { "-100", "0", "1", "50k", "99999999999999999999" })
     {
-        const auto normalised = parameter->getValueForText (text);
+        const auto normalised = parameter.getValueForText (text);
 
         REQUIRE (std::isfinite (normalised));
         CHECK ((normalised == 0.0f || normalised == 1.0f));

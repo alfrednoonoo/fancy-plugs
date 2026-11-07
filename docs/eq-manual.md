@@ -14,6 +14,8 @@ Fancy EQ is a parametric equalizer with up to 16 bands, a spectrum analyzer and 
 
 The white line is the total response. The filled shapes are the individual bands, and the orange line is the analyzer. The left scale is EQ gain in dB. The right scale is for the analyzer, in dBFS.
 
+To type a value, click it, or Ctrl-click anywhere on a knob or fader. Enter or clicking away applies it, and Esc cancels. Units are optional, and frequencies can be typed as `2500` or `2.5k`. A number past the limits stops at the limit, and text with no number in it changes nothing.
+
 ## Band controls
 
 Click a tab or a handle to choose a band. In Compact mode these controls float over the graph, and handles do the choosing.
