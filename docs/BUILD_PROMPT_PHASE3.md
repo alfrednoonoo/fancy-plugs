@@ -17,7 +17,7 @@ Ask these together, once, before writing any code. Record the answers in `docs/P
 **Answers so far (7 November 2026):**
 
 - **Platform:** Windows first, until it's a concrete, finished version. Mac is wanted after that, as a later phase.
-- **New plugins:** wanted. Which ones isn't decided yet. The user's main concern is that their design matches the suite, so every new plugin goes through Q5 first.
+- **New plugins:** a limiter, a de-esser and a saturator. The user's main concern is that their design matches the suite, so every new plugin goes through Q5 first. The others (transient shaper, chorus or modulation, algorithmic reverb) are for Phase 4.
 - **Release:** v1.1.0 comes first, once Fancy FIR has passed its REAPER check.
 - **Order:** the user approved the order in Q2's preamble. They use the EQ, Comp and Verb most, so those are improved first.
 
@@ -57,7 +57,7 @@ Order, approved by the user:
    2. Comp (Q2.5)
    3. Verb (Q2.8)
    4. then MultiComp (Q2.6), Delay (Q2.3), FIR (Q2.7) and Kicker (Q2.2). Confirm this part with the user when the first three are done.
-4. New plugin types, each designed through Q5 before any code. Which ones is still the user's decision.
+4. New plugin types, each designed through Q5 before any code: Fancy Limiter, Fancy De-esser and Fancy Saturator. Before the first, write a P2-style section for each, with its DSP, parameters, known problems with existing tools and their tests, and get it approved.
 5. Mac, as its own phase.
 
 The sections below keep their numbers. Follow the order above, not the numbering.

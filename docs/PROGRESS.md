@@ -23,11 +23,11 @@ Brief: `docs/BUILD_PROMPT_PHASE2.md`. Mockups: `reference/phase2/`. Each plugin 
 
 - Fancy Delay: done. The user reported it works well in REAPER.
 - Fancy MultiComp: the user renamed Fancy XComp to this, and the mockup and its source keep their `xcomp` file names. Done. The user reported it works well in REAPER.
-- Fancy FIR: built and green in CI. Waiting for the user's check in REAPER, with `docs/fir-checklist.md`.
+- Fancy FIR: done. The user reported it works in REAPER.
 
 All three use the shared controls, so every knob and fader gets the typed values added in v1.0.1.
 
-All three Phase 2 plugins are built, and the Delay and MultiComp work in REAPER. Once FIR passes its REAPER check, ask the user whether to release Phase 2 as v1.1.0.
+Phase 2 is finished: all three plugins work in REAPER, and the user asked for v1.1.0.
 
 Changes to shared code since v1.0.1, which the next release should include:
 
@@ -81,7 +81,7 @@ Lessons from the Delay build:
 ## Market research and Phase 3 draft
 
 - **Reports:** `docs/research/2026-11-market-report-summary.md` and `2026-11-market-report-detailed.md` compare the suite with the 2026 leaders in each category. They use our CI measurements and the leaders' published documentation. No competitor was run.
-- **User's answers, 7 November 2026:** Windows first, and Mac later. New plugin types are wanted, but which ones isn't decided. Release v1.1.0 once FIR passes in REAPER. Order approved: benchmark host, shared features and design rules, then EQ, Comp and Verb first, as the plugins the user uses most, then new types, then Mac. Still to decide: which new plugin types.
+- **User's answers, 7 November 2026:** Windows first, and Mac later. New plugin types are wanted, but which ones isn't decided. Release v1.1.0 once FIR passes in REAPER. Order approved: benchmark host, shared features and design rules, then EQ, Comp and Verb first, as the plugins the user uses most, then new types, then Mac. New plugin types for Phase 3: limiter, de-esser and saturator. The others (transient shaper, chorus or modulation, algorithmic reverb) move to Phase 4.
 - **Phase 3.0:** `docs/BUILD_PROMPT_PHASE3.md` is a draft. Its section Q0 lists the decisions the user makes before any work starts, and it isn't in `AGENTS.md` or `CLAUDE.md` until they approve it.
 
 ## FIR acceptance (§7, P5)
@@ -92,11 +92,11 @@ Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42417161407 (commi
 |---|---|---|
 | 1 | Actions run green, artifact contains the plugin | Pass, run above |
 | 2 | pluginval strictness 10 | Pass for all eight plugins, GUI tests on |
-| 3 | State survives a REAPER project reload | Not yet. A save and load test passes in CI, with curves and the noise profile bit-identical, and the REAPER check is the user's |
+| 3 | State survives a REAPER project reload | Pass. A save and load test passes in CI, with curves and the noise profile bit-identical, and the user reported it works in REAPER |
 | 4 | P4.3 tests | Pass, 230 test cases across the suite. Numbers in `docs/measurements/fir.txt` |
 | 5 | Screenshots compared with the mockup | Done; `docs/screens/fir-vs-reference.png` shows the mockup on the left and the build on the right |
 | 6 | CPU | No §4.11 target. At 4096 points, 0.5-1.4 % across the modes in one run and 0.9-3.8 % in the next, against the design note's < 3 %. The second run also had one block per test take 17-19 times its time, where the first run's worst was 29 %. That looks like the runner being preempted, but CI can't prove it |
-| 7 | Installed and confirmed in REAPER | Not yet, waiting for the user |
+| 7 | Installed and confirmed in REAPER | Pass, the user reported it works |
 
 P4.3 results:
 
