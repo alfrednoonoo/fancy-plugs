@@ -1199,8 +1199,12 @@ TEST_CASE ("verb measurements", "[.measure]")
 
     // Paced at real time, because running flat out starves the worker of the head start it
     // has in a host. CPU is everything the process used, except this thread's own waiting.
-    const auto measure = [] (bool lowCpu, const char* name)
+    // A host's audio thread runs above the worker, so this one is raised to match. At normal
+    // priority the worker preempts it for a whole FFT job, which no host would see.
+    const auto measure = [] (bool lowCpu, const char* name, int priority)
     {
+        SetThreadPriority (GetCurrentThread(), priority);
+
         const auto left = noise (192000, 20, 40000.0);
         const auto right = noise (192000, 21, 40000.0);
 
@@ -1249,9 +1253,11 @@ TEST_CASE ("verb measurements", "[.measure]")
 
         for (const auto block : overBudget)
             std::printf ("  over budget at block %d\n", block);
+
+        SetThreadPriority (GetCurrentThread(), THREAD_PRIORITY_NORMAL);
     };
 
-    measure (false, "Zero latency (target < 5 %)");
-    measure (true, "Low CPU");
-    measure (false, "Zero latency, second run");
+    measure (false, "Zero latency (target < 5 %)", THREAD_PRIORITY_TIME_CRITICAL);
+    measure (true, "Low CPU", THREAD_PRIORITY_TIME_CRITICAL);
+    measure (false, "Zero latency, below the worker's priority", THREAD_PRIORITY_NORMAL);
 }
