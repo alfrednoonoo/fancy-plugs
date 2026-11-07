@@ -1,0 +1,14 @@
+﻿fir cpu: mode 0, size 128: 2.29 %, worst block 56 % of its time
+fir cpu: mode 0, size 4096: 1.92 %, worst block 54 % of its time
+fir cpu: mode 1, size 4096: 3.60 %, worst block 1878 % of its time
+fir cpu: mode 2, size 4096: 3.76 %, worst block 1676 % of its time
+fir cpu: mode 3, size 32768: 3.32 %, worst block 1673 % of its time
+fir cpu: mode 3, size 4096 low latency: 3.02 %, worst block 1801 % of its time
+fir cpu: mode 3, size 4096: 2.08 %, worst block 236 % of its time
+fir cpu: mode 4, size 4096: 0.92 %, worst block 134 % of its time
+fir release: size 1024, 63 % after 1963 ms, set to 2000 ms
+fir release: size 8192, 63 % after 1963 ms, set to 2000 ms
+fir sidechain: 980-1020 Hz -28.5 dB, 200-400 Hz -0.00 dB, 4-6 kHz -0.00 dB
+fir subtract: residual variance, plain subtraction 98.4 dB^2, Fancy FIR 37.4 dB^2
+fir subtract: sine change -0.03 dB
+fir cpu, previous run (2a53378): EQ 1.29 %, Gate 1.38 %, Compressor 1.28 %, Subtract 1.02 %, Subtract low latency 1.19 %, Subtract 32768 1.33 %, Convolve 0.52 %, EQ at 128 1.03 %; worst block 29 % of its time

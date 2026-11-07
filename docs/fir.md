@@ -139,7 +139,7 @@ A state with no profile, or one of the wrong size, loads as having none.
 
 ## CPU
 
-§4.11 sets no target. Target here: under 3 % at 48 kHz/128 samples for 4096 points in each mode, which is two forward and two inverse FFTs per 1024 samples plus the mask. Measured with a CI benchmark, in `docs/measurements/fir.txt`.
+§4.11 sets no target. Target here: under 3 % at 48 kHz/128 samples for 4096 points in each mode, which is two forward and two inverse FFTs per 1024 samples plus the mask. Measured with a CI benchmark, in `docs/measurements/fir.txt`: 0.5-1.4 % across the modes in one run and 0.9-3.8 % in the next, on the same code. The busiest block was 29 % of its time in the first run, with 32768 points included, so the staging works. The second run had stalls of about 50 ms that the first didn't.
 
 ## How each P4.3 issue is handled
 

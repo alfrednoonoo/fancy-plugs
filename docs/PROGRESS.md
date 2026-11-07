@@ -15,7 +15,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42397458861 (commit `3f8e9b8`, version 1.0.1): 129 test cases passed, and all five plugins passed pluginval at strictness 10. Typing values confirmed in REAPER by the user.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42410913133 (commit `e5a582d`): 203 test cases passed, and all seven plugins passed pluginval at strictness 10.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42417161407 (commit `45b616b`): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
 ## Phase 2
 
@@ -23,11 +23,11 @@ Brief: `docs/BUILD_PROMPT_PHASE2.md`. Mockups: `reference/phase2/`. Each plugin 
 
 - Fancy Delay: built and green in CI. The user asked to move on to the next plugin without saying whether the REAPER checklist passed, so §7 checks 3 and 7 are still unconfirmed.
 - Fancy MultiComp: the user renamed Fancy XComp to this, and the mockup and its source keep their `xcomp` file names. Built and green in CI. Waiting for the user's check in REAPER, with `docs/multicomp-checklist.md`.
-- Fancy FIR: in progress. The user asked to start it while they check the Delay and MultiComp in REAPER.
+- Fancy FIR: built and green in CI. Waiting for the user's check in REAPER, with `docs/fir-checklist.md`.
 
 All three use the shared controls, so every knob and fader gets the typed values added in v1.0.1.
 
-The user is checking the Delay and MultiComp in REAPER while FIR is built. Ask for their results.
+All three Phase 2 plugins are built. The user was checking the Delay and MultiComp in REAPER while FIR was built. Ask for their results on all three, then decide with them whether to release Phase 2.
 
 Changes to shared code since v1.0.1, which the next release should include:
 
@@ -36,7 +36,7 @@ Changes to shared code since v1.0.1, which the next release should include:
 - **New in `fancy-core`:** `ParamSegments`, `ColourTabs`, `formatFilterHz`, `ParamCheckbox::setLabelHeight`, and a colour for `Knob::setValueSuffix`.
 - **Moved to `fancy-core` for MultiComp:** the analyzer, `TruePeakLimiter`, the gain computer and ballistics (`fancy/dsp/Compression.h`), `GainReductionMeter` and `SwitchableFrequencyParameter`. All nine Phase 1 screenshots compared after the move were byte-identical, and every Comp and EQ test passes.
 - **New for MultiComp:** `ParamTextToggle`, `parseExpansionRatio`, `ShellEditor::setPresetDropdownWidth` and `getShownInputs`, `ParamDropdown::setTextHeight`, and `MeterTap::report`.
-- **FIR can reuse:** `fancy/dsp/Analyzer.h`, `ParamSegments` and `parseExpansionRatio`.
+- **New for FIR:** `FancyProcessor::addToState`, a hook for state the audio thread writes, used by user presets too. `ParamSegments` gains a text size, widths that follow the text, and a selected colour that can change.
 
 The mockups' HTML source is in `design/phase2-mockup-src/`, with exact layout formulas. Read it before building FIR. The page is #303030 and the cards are #262626.
 
@@ -77,6 +77,55 @@ Lessons from the Delay build:
 - **Look at the render, not the layout maths.** All 166 tests passed with four labels clipped, and my width estimates were wrong twice.
 - **Keep test levels below any safety curve,** unless the test is about the curve. A full-scale impulse was the cause of two false failures.
 - **PIL isn't installed here.** `System.Drawing` in PowerShell makes the comparison images with nothing to install.
+
+## FIR acceptance (§7, P5)
+
+Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42417161407 (commit `45b616b`).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Actions run green, artifact contains the plugin | Pass, run above |
+| 2 | pluginval strictness 10 | Pass for all eight plugins, GUI tests on |
+| 3 | State survives a REAPER project reload | Not yet. A save and load test passes in CI, with curves and the noise profile bit-identical, and the REAPER check is the user's |
+| 4 | P4.3 tests | Pass, 230 test cases across the suite. Numbers in `docs/measurements/fir.txt` |
+| 5 | Screenshots compared with the mockup | Done; `docs/screens/fir-vs-reference.png` shows the mockup on the left and the build on the right |
+| 6 | CPU | No §4.11 target. At 4096 points, 0.5-1.4 % across the modes in one run and 0.9-3.8 % in the next, against the design note's < 3 %. The second run also had one block per test take 17-19 times its time, where the first run's worst was 29 %. That looks like the runner being preempted, but CI can't prove it |
+| 7 | Installed and confirmed in REAPER | Not yet, waiting for the user |
+
+P4.3 results:
+
+- **Latency:** the reported latency equals the measured impulse delay at all nine sizes, both ways, in all five modes. That's 90 cases.
+- **Reconstruction:** a flat EQ nulls against the delayed input below -100 dB, with and without Low latency.
+- **Subtract:** with white noise plus a sine at -18 dB, the residual's frame-to-frame variance is 37.4 dB², against 98.4 dB² for plain subtraction, and the sine changes by -0.03 dB.
+- **Learning:** stops by itself at the set length, doesn't go on learning the music, and reloads bit-identical.
+- **Release:** the 63 % point is 1963 ms against 2000 ms set, at both 1024 and 8192 points.
+- **Sidechain:** a 1 kHz sidechain reduces 980-1020 Hz by 28.5 dB, and moves 200-400 Hz and 4-6 kHz by under 0.01 dB.
+- **Analysis:** a -12 dBFS sine reads -12 dB ± 0.5.
+- **Size change mid-stream:** ends on the new latency, the output then equals the delayed input, and there's no step beyond the input's own slope with a 20 % margin.
+
+FIR deviations from the mockup:
+
+- **Window:** 760 x 445, not about 430, because the shared header is 53 px and the mockup draws 37.
+- **I/O pill:** should read "4 in 2 out" live, as on MultiComp. The render can't show it, and it's on the checklist.
+- **Edit dropdown:** 16 px wider, so that "Points (smooth)" fits at 12 px.
+- **Learn hint:** wraps to three lines where the mockup has two, because 12 px is wider than the mockup's text.
+- **Release:** reads "80.0 ms" where the mockup draws "80 ms", from the shared time format below 100 ms.
+- **EDIT link:** added at the right of the footer, for Learn length, which P4.2 asks for and the mockup doesn't show, plus Output.
+- **Cards for other modes:** the mockup only shows Subtract. EQ has Reset curve, Flat, Tilt and De-mud, Gate and Compressor have Reset curve, and Convolve L/R has its explanation, as P4.1 describes.
+
+Decisions the brief left open, in `docs/fir.md`:
+
+- **Staged frames:** at 8192 points and above, each frame's work spreads over half a hop, which adds N/8 to the latency.
+- **Detector reach:** Gate and Compressor give each bin the loudest level within two bins either side, so a sine opens or ducks as one.
+- **Convolve L/R:** the right channel is the impulse response, renewed every N samples, with no normalisation.
+- **Points (flat):** straight lines between points, in log frequency.
+- **One curve per mode:** EQ, Gate and Compressor keep their own.
+
+Lessons from the FIR build:
+
+- **A spectral detector sees a sine as five bins.** The first gate shut a sine's outer bins and lost 2.3 dB of a sine above its threshold.
+- **Print the numbers a test checks.** INFO only shows on failure, so `docs/measurements` had nothing to record until the tests printed them.
+- **CI timing varies widely between runs.** The same code measured a factor of two apart, and one run showed 50 ms stalls the other didn't.
 
 ## MultiComp acceptance (§7, P5)
 
