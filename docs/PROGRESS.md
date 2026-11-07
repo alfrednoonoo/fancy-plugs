@@ -78,6 +78,11 @@ Lessons from the Delay build:
 - **Keep test levels below any safety curve,** unless the test is about the curve. A full-scale impulse was the cause of two false failures.
 - **PIL isn't installed here.** `System.Drawing` in PowerShell makes the comparison images with nothing to install.
 
+## Market research and Phase 3 draft
+
+- **Reports:** `docs/research/2026-11-market-report-summary.md` and `2026-11-market-report-detailed.md` compare the suite with the 2026 leaders in each category. They use our CI measurements and the leaders' published documentation. No competitor was run.
+- **Phase 3.0:** `docs/BUILD_PROMPT_PHASE3.md` is a draft. Its section Q0 lists the decisions the user makes before any work starts, and it isn't in `AGENTS.md` or `CLAUDE.md` until they approve it.
+
 ## FIR acceptance (§7, P5)
 
 Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42417161407 (commit `45b616b`).
