@@ -6,7 +6,7 @@ Source: `docs/2026-11-market-report-detailed.md` (sections 5, 8, 9 and 10). This
 
 | # | Item | Plugin(s) | Report reference |
 |---|---|---|---|
-| W | Workflow: undo/redo, A/B, level-matched Compare | All nine, including Fancy Gate (Phase 2.0.1), via `fancy-core` | §10 |
+| W | Workflow: undo/redo, A/B, level-matched Compare | All eight, via `fancy-core` | §10 |
 | D | Dynamic EQ | Fancy EQ | §5 |
 | U | Upward compression, plus Depth and Time | Fancy MultiComp | §8 |
 | A | Adaptive noise tracking | Fancy FIR | §9 |
@@ -15,7 +15,7 @@ Out of scope for 2.1 (don't start these): mid/side per band, EQ Match, character
 
 ## 0. How to work
 
-1. **Start only after Phase 2.0.1 (Fancy Gate) passes.** Then **order: W → D → U → A.** W touches every plugin, so do it first while nothing else is changing. Each item is its own milestone with its own commit, a green CI run and a `docs/PROGRESS.md` entry.
+1. **Order: W → D → U → A.** W touches every plugin, so do it first while nothing else is changing. Each item is its own milestone with its own commit, a green CI run and a `docs/PROGRESS.md` entry.
 2. Before each item, write a short design note in `docs/phase2_1-<item>.md`: algorithm, new parameters (with IDs), state-version change and migration, latency impact, CPU impact, and how each test below will be done.
 3. **Don't break saved projects.** Every new parameter is appended (never renumber or reorder existing parameter IDs), gets a default that reproduces the old sound exactly, and bumps `stateVersion` with a migration. Test: a state saved by the current release loads and renders **bit-identical** audio after this phase.
 4. **No CPU cost when unused.** A plugin with the new feature switched off must not use measurably more CPU than before (allowing for CI noise; compare medians of 5 runs).
@@ -28,7 +28,7 @@ Out of scope for 2.1 (don't start these): mid/side per band, EQ Match, character
 ## W. Workflow (all plugins, built once in `fancy-core`)
 
 ### W.1 Placement
-- **Large plugins** (EQ, Comp, Verb, Delay, MultiComp, FIR, Gate): in the header, between the I/O pill and the right-hand group, in this order: Undo `↶`, Redo `↷` | `A | B` segmented switch, copy `→` | `≈ Compare`. Thin separators as in the mockup. Disabled icons use `--text-disabled`.
+- **Large plugins** (EQ, Comp, Verb, Delay, MultiComp, FIR): in the header, between the I/O pill and the right-hand group, in this order: Undo `↶`, Redo `↷` | `A | B` segmented switch, copy `→` | `≈ Compare`. Thin separators as in the mockup. Disabled icons use `--text-disabled`.
 - **Compact plugins** (Kicker, Exciter): keep only `A | B` in the header. Undo, Redo, Copy A→B, Compare and the I/O info ("2/2") move into the **Prm** menu. The visible header becomes: preset ▾ · `+` · `Prm` · `A | B` · output knob · ON.
 
 ### W.2 Undo / Redo

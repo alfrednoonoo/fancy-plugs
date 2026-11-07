@@ -1,0 +1,80 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><script src="lib.js"></script>
+<style>.sheet{background:#121212;padding:8px 4px;width:800px;display:flex;flex-direction:column;gap:14px}.h{font-size:13px;font-weight:700;color:#fff;margin:6px 0 2px}.n{font-size:11px;color:#909090;margin-bottom:6px;line-height:1.45}.ic{width:24px;height:22px;border-radius:4px;background:#282828;display:flex;align-items:center;justify-content:center;font-size:12px;color:#EDEDED}.ic.d{color:#5A5A5A}.ab{display:flex;background:#1E1E1E;border-radius:4px;padding:2px;gap:2px;font-size:10.5px}.ab span{padding:3px 7px;border-radius:3px;color:#909090}.ab span.a{background:#434343;color:#fff}.chip{border-radius:4px;padding:4px 8px;font-size:10.5px;font-weight:600}.vline{width:1px;align-self:stretch;background:#434343;margin:0 6px}</style></head><body>
+<div class="sheet win" style="background:#121212;border:none;box-shadow:none">
+
+<div><div class="h">1 · Header with workflow controls (all large plugins)</div><div class="n">Undo / Redo, A | B with copy (→), and Compare (level-matched bypass) sit between the I/O pill and the right-hand group. Everything else stays as designed.</div>
+<div class="win" style="width:780px"><div class="hdr"><div class="dd" style="width:140px">No preset</div><div class="btn">+ New</div><div class="btn">Parameter</div><div class="btn">2 in 2 out</div>
+<div class="vline"></div><div class="ic">↶</div><div class="ic d">↷</div><div class="vline"></div><div class="ab"><span class="a">A</span><span>B</span></div><div class="ic" title="copy">→</div><div class="vline"></div><div class="btn" style="color:#EDEDED">≈ Compare</div>
+<div class="sp"></div><div data-k data-v=".5" data-c="#00A884" data-s="16" style="width:26px"></div><div class="on">⏻ ON</div></div></div></div>
+
+<div><div class="h">2 · Compact header (Kicker, Exciter)</div><div class="n">No room for everything: A | B stays visible; Undo, Redo, Compare and the I/O info ("2/2") move into the Prm menu, shown open here.</div>
+<div style="display:flex;gap:16px;align-items:flex-start">
+<div class="win" style="width:300px"><div class="hdr" style="gap:5px;white-space:nowrap"><div class="dd" style="width:92px;white-space:nowrap">No preset</div><div class="btn">+</div><div class="btn" style="background:#434343">Prm</div><div class="ab"><span class="a">A</span><span>B</span></div><div class="sp"></div><div data-k data-v=".5" data-c="#00A884" data-s="14" style="width:22px"></div><div class="on" style="padding:5px 7px;white-space:nowrap">⏻ ON</div></div><div style="height:46px;background:#303030"></div></div>
+<div style="background:#282828;border:1px solid #434343;border-radius:6px;padding:6px 0;width:200px;font-size:11px;margin-top:30px;box-shadow:0 8px 24px rgba(0,0,0,.5)">
+<div style="padding:5px 12px;display:flex;justify-content:space-between">Undo<span class="cap">Ctrl+Z</span></div><div style="padding:5px 12px;display:flex;justify-content:space-between;color:#5A5A5A">Redo<span>Ctrl+Shift+Z</span></div><div style="padding:5px 12px">Copy A → B</div><div style="padding:5px 12px">≈ Compare (level-matched)</div><div style="height:1px;background:#434343;margin:4px 0"></div><div style="padding:5px 12px">Parameters…</div><div style="padding:5px 12px;color:#909090">I/O: 2 in / 2 out</div></div></div></div>
+
+<div><div class="h">3 · Fancy EQ: dynamic band (band editor, Compact-mode card)</div><div class="n">Left half unchanged (type, Freq, Gain, Q). Turning on DYN reveals the dynamic half in the band colour. On the graph the band shows its static curve (solid fill) and its dynamic reach (lighter fill, dashed edge); the white live curve moves inside it.</div>
+<div style="display:flex;gap:12px;align-items:flex-start">
+<svg id="eqg" width="170" height="150" style="background:#262626;border-radius:6px;flex:none"></svg>
+<div style="background:#262626;border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:2px;border:1px solid #3a3a3a">
+ <div style="display:flex;flex-direction:column;gap:8px;margin:18px 6px 0 0"><div class="dd" style="font-size:10.5px;padding:3px 7px">∩ Bell</div><div class="chip" style="background:#9648BA;color:#fff;text-align:center">DYN</div></div>
+ <div class="knob" data-k data-v=".55" data-c="#9648BA" data-l="Freq" data-t="3.20 kHz" style="width:56px"></div>
+ <div class="knob" data-k data-v=".5" data-c="#9648BA" data-bi data-l="Gain" data-t="0.0 dB" style="width:56px"></div>
+ <div class="knob" data-k data-v=".35" data-c="#9648BA" data-l="Q" data-t="2.0" style="width:56px"></div>
+ <div class="vline"></div>
+ <div class="knob" data-k data-v=".55" data-c="#9648BA" data-l="Threshold" data-t="-24 dB" style="width:58px"></div>
+ <div class="knob" data-k data-v=".3" data-c="#9648BA" data-bi data-l="Range" data-t="-6.0 dB" style="width:56px"></div>
+ <div class="knob" data-k data-v=".15" data-c="#9648BA" data-l="Attack" data-t="5 ms" data-s="34" style="width:46px"></div>
+ <div class="knob" data-k data-v=".3" data-c="#9648BA" data-l="Release" data-t="80 ms" data-s="34" style="width:48px"></div>
+ <div style="display:flex;flex-direction:column;gap:7px;margin:16px 0 0 6px"><div class="seg" style="font-size:9.5px"><span class="a" style="padding:3px 6px">Above</span><span style="padding:3px 6px">Below</span></div><div class="cb"><i></i>Sidechain</div></div>
+</div></div></div>
+
+<div><div class="h">4 · Fancy MultiComp: upward section (band editor) + Depth / Time</div><div class="n">The existing downward row is unchanged. An UPWARD row is added under it, plus a small transfer curve showing both thresholds. Depth and Time are global, small teal knobs in the right column above Wet/Dry.</div>
+<div style="display:flex;gap:12px;align-items:flex-start">
+<div class="sec" style="padding:10px 12px;flex:1">
+ <div style="display:flex;align-items:center;gap:10px"><span class="title" style="font-size:10px;color:#909090;width:70px">Downward</span><span class="cap">Threshold fader · Ratio · Knee · Attack · Release · RMS · Gain  (unchanged)</span></div>
+ <div style="height:1px;background:#3a3a3a;margin:8px 0"></div>
+ <div style="display:flex;align-items:flex-start">
+  <span class="title" style="font-size:10px;color:#9648BA;width:70px;margin-top:26px">Upward</span>
+  <div class="knob" data-k data-v=".35" data-c="#9648BA" data-l="Up thresh" data-t="-42 dB"></div>
+  <div class="knob" data-k data-v=".45" data-c="#9648BA" data-l="Up ratio" data-t="1:3.0"></div>
+  <div class="knob" data-k data-v=".5" data-c="#9648BA" data-l="Max lift" data-t="+12 dB"></div>
+  <div class="knob" data-k data-v=".2" data-c="#9648BA" data-l="Floor" data-t="-70 dB"></div>
+  <div class="cb" style="margin:26px 0 0 10px"><i class="x"></i>Upward on</div>
+ </div></div>
+<svg id="tc" width="150" height="150" style="background:#262626;border-radius:6px;flex:none"></svg>
+<div style="background:#262626;border-radius:6px;padding:10px;display:flex;gap:4px;flex:none">
+ <div class="knob" data-k data-v=".75" data-c="#00A884" data-s="34" data-l="Depth" data-t="75 %" style="width:52px"></div>
+ <div class="knob" data-k data-v=".5" data-c="#00A884" data-s="34" data-l="Time" data-t="100 %" style="width:52px"></div></div>
+</div></div>
+
+<div><div class="h">5 · Fancy FIR: adaptive noise tracking (Subtract mode, left card)</div><div class="n">A Learned | Adaptive | Both switch. Learned works as before. Adaptive hides Learn and shows a live status and an Adapt speed knob; on the graph the tracked profile is drawn dashed.</div>
+<div style="display:flex;gap:12px">
+<div class="sec" style="padding:10px 12px;width:250px;display:flex;flex-direction:column;gap:8px">
+ <div style="display:flex;justify-content:space-between;align-items:center"><span class="title" style="font-size:10px;color:#909090">Noise profile</span><div class="seg" style="font-size:9.5px"><span style="padding:3px 6px">Learned</span><span class="a" style="padding:3px 6px;background:#E84E3C">Adaptive</span><span style="padding:3px 6px">Both</span></div></div>
+ <div style="display:flex;align-items:center;gap:10px"><div class="knob" data-k data-v=".3" data-c="#E84E3C" data-l="Adapt speed" data-t="2.0 s" data-s="38" style="width:70px"></div>
+ <div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;align-items:center;gap:6px;font-size:10.5px"><span style="width:7px;height:7px;border-radius:50%;background:#0DFC90;display:inline-block"></span>Tracking</div><span class="cap">Noise floor ≈ −52 dB<br>Speech/music held, not learned</span></div></div>
+</div>
+<svg id="fg" width="300" height="130" style="background:#262626;border-radius:6px"></svg>
+</div></div>
+</div>
+<script>
+// EQ mini graph
+(()=>{const W=170,H=150,x=f=>8+(W-16)*Math.log10(f/20)/3,y=d=>50-d*9;let s=`<line x1="10" y1="${y(0)}" x2="${W-10}" y2="${y(0)}" stroke="#434343"/>`;
+const bell=(f,g,q)=>{let p=[];for(let ff=20;ff<20000;ff*=1.04){const o=Math.log2(ff/f);p.push([x(ff),y(g*Math.exp(-(o*o)*q*q*0.9))])}return p};
+const pts=a=>a.map(p=>p.join(',')).join(' ');
+const rng=bell(3200,-6,1),live=bell(3200,-3.6,1);
+s+=`<polygon points="${x(20)},${y(0)} ${pts(rng)} ${x(19900)},${y(0)}" fill="#9648BA" opacity=".18"/><polyline points="${pts(rng)}" fill="none" stroke="#9648BA" stroke-dasharray="3 3"/>`;
+s+=`<polyline points="${pts(live)}" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="${x(3200)}" cy="${y(0)}" r="7" fill="#9648BA"/><text x="${x(3200)}" y="${y(0)+3.5}" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">2</text>`;
+s+=`<text x="10" y="16" font-size="8.5" fill="#909090">reach −6 dB · now −3.6 dB</text>`;document.getElementById('eqg').innerHTML=s})();
+// transfer curve
+(()=>{const S=150,m=14,x=d=>m+(S-2*m)*(d+80)/80,y=d=>S-m-(S-2*m)*(d+80)/80;let s=`<line x1="${x(-80)}" y1="${y(-80)}" x2="${x(0)}" y2="${y(0)}" stroke="#434343" stroke-dasharray="3 3"/>`;
+let p=[];for(let i=-80;i<=0;i+=1){let o=i;if(i<-42){let lift=Math.min(12,(-42-i)*(1-1/3));lift*=Math.max(0,Math.min(1,(i+70)/8));o=i+lift}if(i>-18)o=-18+(i+18)/3;p.push(`${x(i)},${y(o)}`)}
+s+=`<polyline points="${p.join(' ')}" fill="none" stroke="#9648BA" stroke-width="2"/>`;
+[-70,-42,-18].forEach((t,i)=>s+=`<line x1="${x(t)}" y1="${m}" x2="${x(t)}" y2="${S-m}" stroke-dasharray="${i==2?'':'2 3'}" stroke="${i==0?'#909090':'#9648BA'}" opacity=".6"/>`);
+s+=`<text x="${m}" y="11" font-size="8.5" fill="#909090">out</text><text x="${S-m}" y="${S-3}" font-size="8.5" fill="#909090" text-anchor="end">in</text>`;document.getElementById('tc').innerHTML=s})();
+// FIR mini
+(()=>{const W=300,H=130,x=f=>10+(W-20)*Math.log10(f/20)/3,y=d=>8+(H-16)*(-d-20)/75;let seed=3,r=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};let a=[],b=[],c=[];
+for(let f=22;f<20000;f*=1.04){const L=Math.log10(f);const n=-60-5*(L-1.5);a.push([x(f),y(Math.max(-95,10*Math.log10(10**((-34-12*Math.abs(L-2.7)**1.5-3*r())/10)+10**(n/10))))]);b.push([x(f),y(n+3+1.5*r())])}
+const P=v=>v.map(p=>p.join(',')).join(' ');let s=`<polygon points="${x(22)},${H} ${P(a)} ${x(19900)},${H}" fill="#909090" opacity=".22"/><polyline points="${P(b)}" fill="none" stroke="#E84E3C" stroke-width="1.8" stroke-dasharray="4 3"/><text x="${W-8}" y="16" font-size="9" fill="#909090" text-anchor="end">tracked profile (dashed)</text>`;document.getElementById('fg').innerHTML=s})();
+</script></body></html>

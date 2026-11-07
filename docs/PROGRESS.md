@@ -40,7 +40,7 @@ The user set this order on 7 November 2026:
    - U: upward compression in MultiComp.
    - A: adaptive noise tracking in FIR.
 
-   Two problems to sort out before it starts. Its mockup, `reference/phase2_1/14__phase2_1_controls.png` with its source in `design/phase2_1-mockup-src/`, isn't in the repo yet. It also cites `docs/2026-11-market-report-detailed.md`, where the report is actually `docs/research/2026-11-market-report-detailed.md`.
+   Its mockup is `reference/phase2_1/14__phase2_1_controls.png`, with its source in `design/phase2_1-mockup-src/`. The brief cites `docs/2026-11-market-report-detailed.md`, where the report is actually `docs/research/2026-11-market-report-detailed.md`.
 3. **Phase 3:** from `docs/BUILD_PROMPT_PHASE3.md`, a draft. Phase 2.1 now covers four of its items, so it keeps what's left:
    - the benchmark host;
    - the preset browser and free resizing;
