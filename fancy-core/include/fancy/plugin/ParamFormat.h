@@ -109,6 +109,18 @@ inline float parseRatio (const juce::String& text, float infiniteRatio)
                                            : std::max (first, second);
 }
 
+// For a ratio that can go below 1:1, where the order matters: a:b is a / b.
+inline float parseExpansionRatio (const juce::String& text, float infiniteRatio)
+{
+    if (isInfinityText (text))
+        return infiniteRatio;
+
+    const auto first = parseNumber (text.upToFirstOccurrenceOf (":", false, false));
+    const auto second = text.containsChar (':') ? parseNumber (text.fromFirstOccurrenceOf (":", false, false)) : 1.0f;
+
+    return second > 0.0f ? first / second : first;
+}
+
 // Values at or below floorDb display as -inf.
 inline juce::String formatDb (float db, float floorDb)
 {

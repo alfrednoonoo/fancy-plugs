@@ -1,6 +1,6 @@
 # Fancy Plugs
 
-VST3 effects for personal use on Windows. Fancy Kicker, Fancy Exciter, Fancy Comp, Fancy EQ and Fancy Verb are built and signed off in REAPER. Phase 2 adds Fancy Delay, then Fancy XComp and Fancy FIR; see `docs/PROGRESS.md` for status.
+VST3 effects for personal use on Windows. Fancy Kicker, Fancy Exciter, Fancy Comp, Fancy EQ and Fancy Verb are built and signed off in REAPER. Phase 2 adds Fancy Delay, then Fancy MultiComp and Fancy FIR; see `docs/PROGRESS.md` for status.
 
 ## How builds work
 

@@ -9,19 +9,12 @@ constexpr double butterworthQ = 0.70710678118654752;
 constexpr double switchFadeMs = 2.0;
 constexpr double switchSettleSeconds = 0.003;
 constexpr double configDebounceSeconds = 0.05;
-constexpr double autoReleaseRatio = 0.1;
-constexpr double attack90Divisor = 2.302585;
-constexpr double decibelsPerNeper = 8.685889638;
 constexpr double highPassOffHz = 20.5;
 constexpr double lowPassOffHz = 23900.0;
 constexpr double silenceFloor = 1.0e-30;
 constexpr double minDetectorAverageMs = 0.1;
 
-double coefficientFor (double milliseconds, double sampleRate) noexcept
-{
-    const auto samples = milliseconds * 0.001 * sampleRate;
-    return samples > 0.0 ? 1.0 - std::exp (-1.0 / samples) : 1.0;
-}
+using fancy::dsp::timeCoefficient;
 
 double slopeFor (double ratio) noexcept
 {
@@ -39,30 +32,7 @@ CompDsp::~CompDsp() = default;
 
 double CompDsp::computeReduction (double levelDb, double thresholdDb, double slope, double kneeDb, bool weird) noexcept
 {
-    const auto over = levelDb - thresholdDb;
-
-    if (kneeDb <= 0.0)
-        return over > 0.0 ? slope * over : 0.0;
-
-    if (weird)
-    {
-        if (over <= 0.0)
-            return 0.0;
-
-        return over >= kneeDb ? slope * (over - 0.5 * kneeDb)
-                              : slope * over * over / (2.0 * kneeDb);
-    }
-
-    const auto halfKnee = 0.5 * kneeDb;
-
-    if (over <= -halfKnee)
-        return 0.0;
-
-    if (over >= halfKnee)
-        return slope * over;
-
-    const auto x = over + halfKnee;
-    return slope * x * x / (2.0 * kneeDb);
+    return fancy::dsp::computeReduction (levelDb, thresholdDb, slope, kneeDb, weird);
 }
 
 CompDsp::Oversampler* CompDsp::oversamplerFor (const Config& config, bool sidechainPath) const noexcept
@@ -181,8 +151,7 @@ void CompDsp::resetCore()
         state.highPass.reset();
         state.lowPass.reset();
         state.meanSquare = 0.0;
-        state.envelope = 0.0;
-        state.slowEnvelope = 0.0;
+        state.follower.reset();
         state.previousOutput = 0.0;
         std::fill (state.dryDelay.begin(), state.dryDelay.end(), 0.0f);
         std::fill (state.preCompDelay.begin(), state.preCompDelay.end(), 0.0f);
@@ -200,15 +169,7 @@ void CompDsp::reset()
 
 void CompDsp::updateBallistics() noexcept
 {
-    const auto attackMs = current.attack90 ? current.attackMs / attack90Divisor : current.attackMs;
-
-    attackCoefficient = coefficientFor (attackMs, internalRate);
-    releaseCoefficient = coefficientFor (current.releaseMs, internalRate);
-    fastReleaseCoefficient = coefficientFor (current.releaseMs * autoReleaseRatio, internalRate);
-
-    // A constant rate of one neper per time constant.
-    const auto releaseSamples = current.releaseMs * 0.001 * internalRate;
-    linearReleaseStep = releaseSamples > 0.0 ? decibelsPerNeper / releaseSamples : 1.0e9;
+    ballistics.set (current.attackMs, current.releaseMs, current.attack90, current.autoRelease, current.linearRelease, internalRate);
 }
 
 void CompDsp::setTargets (const Targets& targets)
@@ -250,14 +211,14 @@ void CompDsp::applyConfig (const Config& config)
     // At high frequencies an instantaneous level swings the envelope follower through a sharp
     // sawtooth on every half cycle. Its harmonics pass the oversampled Nyquist and fold into
     // the gain, where no later filter can reach them. A short average keeps the level steady.
-    maxDetectorCoefficient = config.oversampling == off ? 1.0 : coefficientFor (minDetectorAverageMs, internalRate);
+    maxDetectorCoefficient = config.oversampling == off ? 1.0 : timeCoefficient (minDetectorAverageMs, internalRate);
 
     resetCore();
     setTargets (current);
 
     lowPassCoefficients.set (std::exp (logLowPass.getCurrent()), butterworthQ, internalRate);
     highPassCoefficients.set (std::exp (logHighPass.getCurrent()), butterworthQ, internalRate);
-    rmsCoefficient = coefficientFor (rms.getCurrent(), internalRate);
+    rmsCoefficient = timeCoefficient (rms.getCurrent(), internalRate);
 }
 
 void CompDsp::snapToTargets (const Targets& targets)
@@ -274,7 +235,7 @@ void CompDsp::snapToTargets (const Targets& targets)
                             &wet, &dry, &output, &bypass, &limiterAmount })
         smoother->snapToTarget();
 
-    rmsCoefficient = coefficientFor (targets.rmsMs, internalRate);
+    rmsCoefficient = timeCoefficient (targets.rmsMs, internalRate);
 
     switchGain.snapTo (1.0);
 
@@ -320,33 +281,6 @@ void CompDsp::updateConfig (int numSamples)
     }
 }
 
-double CompDsp::follow (ChannelState& state, double target) noexcept
-{
-    auto& envelope = state.envelope;
-
-    if (target > envelope)
-    {
-        envelope += attackCoefficient * (target - envelope);
-    }
-    else if (current.autoRelease)
-    {
-        envelope += fastReleaseCoefficient * (std::max (target, state.slowEnvelope) - envelope);
-    }
-    else if (current.linearRelease)
-    {
-        envelope = std::max (target, envelope - linearReleaseStep);
-    }
-    else
-    {
-        envelope += releaseCoefficient * (target - envelope);
-    }
-
-    if (current.autoRelease)
-        state.slowEnvelope += releaseCoefficient * (target - state.slowEnvelope);
-
-    return envelope;
-}
-
 void CompDsp::compress (float* const* signal, const float* const* key, int numSamples)
 {
     const auto factor = factorOf (activeConfig);
@@ -372,7 +306,7 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
         const auto highPassBlend = highPassAmount.next();
 
         if (! rms.isSettled())
-            rmsCoefficient = coefficientFor (rms.next(), internalRate);
+            rmsCoefficient = timeCoefficient (rms.next(), internalRate);
 
         const auto mainLeft = current.feedback ? channels[0].previousOutput : (double) signal[0][i];
         const auto mainRight = current.feedback ? channels[1].previousOutput : (double) signal[1][i];
@@ -434,13 +368,13 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
                 // bottom of the knee, because smoothing in dB from silence would add a long
                 // delay before the level even reached the threshold.
                 const auto floorDb = thresholdDb - kneeDb;
-                const auto smoothed = follow (state, std::max (level[ch], floorDb) - floorDb) + floorDb;
+                const auto smoothed = state.follower.follow (ballistics, std::max (level[ch], floorDb) - floorDb) + floorDb;
 
                 reduction = computeReduction (smoothed, thresholdDb, slopeNow, kneeDb, current.weirdKnee);
             }
             else
             {
-                reduction = follow (state, computeReduction (level[ch], thresholdDb, slopeNow, kneeDb, current.weirdKnee));
+                reduction = state.follower.follow (ballistics, computeReduction (level[ch], thresholdDb, slopeNow, kneeDb, current.weirdKnee));
             }
 
             peakReduction[ch] = std::max (peakReduction[ch], reduction);

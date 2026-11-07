@@ -25,9 +25,9 @@ constexpr int faderTop = 26, faderHeight = 321;
 // the 14 px of the larger Figma frames.
 constexpr float labelHeight = 12.0f;
 constexpr Knob::Style lengthStyle { 60.0f, 52.0f, 4.0f, 14.0f, 14.0f, 17.0f, 6.0f, 3.0f, 23.0f, labelHeight, false, true };
-constexpr Knob::Style tapKnobStyle { 50.0f, 42.0f, 3.0f, 13.5f, 10.0f, 17.0f, 6.0f, 3.0f, 23.0f, labelHeight, false, true };
+constexpr Knob::Style tapKnobStyle = Knob::tightStyle;
 
-constexpr OutMeter::Geometry meterGeometry { 14.5f, 15.0f, 306.0f, 25.0f, 4.75f, 314.0f, false };
+constexpr OutMeter::Geometry meterGeometry { 14.5f, 15.0f, 306.0f, 25.0f, 4.75f, 314.0f, false, true };
 
 const juce::Identifier selectedTapProperty ("selectedTap");
 
@@ -70,12 +70,10 @@ juce::String noteText (const delay::NoteLength& length, juce::RangedAudioParamet
 
 void DelayEditor::Panels::paint (juce::Graphics& g)
 {
-    g.fillAll (colours::bgSection);
+    g.fillAll (colours::bgBody);
 
-    g.setColour (colours::bgHeader);
+    g.setColour (colours::bgSection);
     g.fillRect (rightColumnX, 0, baseWidth - rightColumnX, bodyHeight);
-
-    g.setColour (colours::bgBody);
     g.fillRoundedRectangle ((float) timeCardX, (float) cardY, (float) timeCardWidth, (float) cardHeight, 6.0f);
     g.fillRoundedRectangle ((float) controlsCardX, (float) cardY, (float) controlsCardWidth, (float) cardHeight, 6.0f);
 
@@ -113,25 +111,6 @@ void DelayEditor::FeelSwitch::paintSegment (juce::Graphics& g, int index, juce::
     }
 }
 
-// SoloButton ------------------------------------------------------------------
-
-DelayEditor::SoloButton::SoloButton (juce::RangedAudioParameter& parameter, juce::Colour accent)
-    : ParamClickControl (parameter), colour (accent)
-{
-}
-
-void DelayEditor::SoloButton::paint (juce::Graphics& g)
-{
-    const auto bounds = getLocalBounds().toFloat();
-
-    g.setColour (isOn() ? colour : colours::bgBody);
-    g.fillRoundedRectangle (bounds, 3.0f);
-
-    g.setColour (isOn() ? colours::bgWell : colours::textPrimary);
-    g.setFont (font (Weight::regular, 14.0f));
-    g.drawText ("S", bounds, juce::Justification::centred, false);
-}
-
 // TapEditor -------------------------------------------------------------------
 
 namespace
@@ -157,7 +136,7 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
       widthKnob (tapParameter (processor, tapIndex, "width"), "Width", tapColour (tapIndex), tapKnobStyle),
       panKnob (tapParameter (processor, tapIndex, "pan"), "Pan", tapColour (tapIndex), tapKnobStyle, true),
       volumeFader (tapParameter (processor, tapIndex, "vol"), tapColour (tapIndex)),
-      soloButton (tapParameter (processor, tapIndex, "solo"), tapColour (tapIndex)),
+      soloButton (tapParameter (processor, tapIndex, "solo"), "S", tapColour (tapIndex)),
       powerIcon (tapParameter (processor, tapIndex, "on"), tapColour (tapIndex)),
       closeButton (IconButton::Glyph::cross),
       loopCheckbox (tapParameter (processor, tapIndex, "inloop"), "Filters inside feedback loop"),
@@ -267,7 +246,7 @@ void DelayEditor::TapEditor::paint (juce::Graphics& g)
     g.setColour (colours::textSecondary);
     g.drawText (detailText(), row.withTrimmedLeft (46), juce::Justification::centredLeft, true);
 
-    g.setColour (colours::bgBody);
+    g.setColour (colours::bgSection);
     g.fillRoundedRectangle (592.0f, (float) tabRowY, 23.0f, (float) tabRowHeight, 3.0f);
     g.fillRoundedRectangle (622.0f, (float) tabRowY, 24.0f, (float) tabRowHeight, 3.0f);
 }

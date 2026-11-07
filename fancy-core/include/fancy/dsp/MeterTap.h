@@ -28,6 +28,12 @@ public:
         }
     }
 
+    // For a signal that isn't in float buffers.
+    void report (int channel, float peak) noexcept
+    {
+        raise (levels[channel], peak);
+    }
+
     // Returns the peak since the last call and clears it.
     float take (int channel) noexcept
     {

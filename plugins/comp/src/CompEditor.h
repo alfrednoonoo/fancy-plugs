@@ -29,7 +29,7 @@ private:
     fancy::ui::EditLink editLink;
 
     ThresholdMeter thresholdMeter;
-    GainReductionMeter gainReductionMeter;
+    fancy::ui::GainReductionMeter gainReductionMeter;
 
     fancy::ui::Knob ratioKnob, kneeKnob, attackKnob, releaseKnob;
     fancy::ui::ParamCheckbox weirdCheckbox, classicCheckbox, autoCheckbox;

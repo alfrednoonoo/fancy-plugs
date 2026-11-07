@@ -66,8 +66,8 @@ EqGraph::~EqGraph()
 
 void EqGraph::AnalyzerThread::run()
 {
-    eq::SpectrumAnalyzer analyzer;
-    std::vector<float> scratch ((size_t) eq::SampleFifo::capacity);
+    fancy::dsp::SpectrumAnalyzer analyzer;
+    std::vector<float> scratch ((size_t) fancy::dsp::SampleFifo::capacity);
 
     while (! threadShouldExit())
     {
@@ -76,7 +76,7 @@ void EqGraph::AnalyzerThread::run()
     }
 }
 
-void EqGraph::analyse (eq::SpectrumAnalyzer& analyzer, std::vector<float>& scratch)
+void EqGraph::analyse (fancy::dsp::SpectrumAnalyzer& analyzer, std::vector<float>& scratch)
 {
     auto& apvts = processor.getApvts();
 
@@ -86,9 +86,9 @@ void EqGraph::analyse (eq::SpectrumAnalyzer& analyzer, std::vector<float>& scrat
 
     const auto rate = processor.getSampleRate() > 0.0 ? processor.getSampleRate() : 48000.0;
 
-    eq::SpectrumAnalyzer::Settings settings;
+    fancy::dsp::SpectrumAnalyzer::Settings settings;
     settings.size = sizes[juce::jlimit (0, 2, juce::roundToInt (read ("anaFft")))];
-    settings.window = read ("anaWindow") >= 0.5f ? eq::SpectrumAnalyzer::Window::blackmanHarris : eq::SpectrumAnalyzer::Window::hann;
+    settings.window = read ("anaWindow") >= 0.5f ? fancy::dsp::SpectrumAnalyzer::Window::blackmanHarris : fancy::dsp::SpectrumAnalyzer::Window::hann;
     settings.hopDivisor = read ("anaOverlap") >= 0.5f ? 4 : 2;
     settings.smoothing = (double) read ("anaSmooth") * 0.01;
     settings.pinkTilt = read ("anaTilt") >= 0.5f;

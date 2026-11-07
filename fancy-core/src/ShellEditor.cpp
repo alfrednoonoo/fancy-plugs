@@ -204,7 +204,7 @@ void ShellEditor::layoutHeader()
         x += itemWidth + gap;
     };
 
-    place (presetDropdown, compact ? 110 : 246);
+    place (presetDropdown, presetWidth > 0 ? presetWidth : (compact ? 110 : 246));
     place (saveButton, compact ? 28 : 63);
     place (parameterButton, compact ? 43 : 86);
     place (ioPill, compact ? 39 : 80);
@@ -215,6 +215,12 @@ void ShellEditor::layoutHeader()
     outputKnob.setBounds (powerPill.getX() - 36, 11, 28, 28);
 }
 
+void ShellEditor::setPresetDropdownWidth (int newWidth)
+{
+    presetWidth = newWidth;
+    layoutHeader();
+}
+
 void ShellEditor::timerCallback()
 {
     const auto bypassed = fancyProcessor.getBypassParameter()->getValue() >= 0.5f;
@@ -222,7 +228,7 @@ void ShellEditor::timerCallback()
 
     presetDropdown.setText (fancyProcessor.getPresets().getCurrentName());
 
-    const auto inputs = juce::String (fancyProcessor.getMainBusNumInputChannels());
+    const auto inputs = juce::String (getShownInputs());
     const auto outputs = juce::String (fancyProcessor.getMainBusNumOutputChannels());
 
     ioPill.setText (headerStyle == HeaderStyle::compact ? inputs + "/" + outputs

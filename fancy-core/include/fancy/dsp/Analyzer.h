@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-namespace eq
+namespace fancy::dsp
 {
 
 // Single-producer, single-consumer samples from the audio thread to the analyzer thread.
@@ -110,4 +110,4 @@ private:
     double smoothingCoefficient = 0.0;
 };
 
-} // namespace eq
+} // namespace fancy::dsp

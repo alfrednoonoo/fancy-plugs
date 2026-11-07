@@ -72,6 +72,12 @@ protected:
     int getBaseWidth() const noexcept { return width; }
     int getBaseHeight() const noexcept { return height; }
 
+    // Narrows the preset dropdown, to make room for controls in the header row.
+    void setPresetDropdownWidth (int newWidth);
+
+    // The number the I/O pill shows. A plugin can count its sidechain here.
+    virtual int getShownInputs() { return fancyProcessor.getMainBusNumInputChannels(); }
+
     // The window's root, for controls that sit in the header row.
     juce::Component& getRoot() noexcept { return root; }
 
@@ -113,6 +119,7 @@ private:
     bool resizable = false;
     const HeaderStyle headerStyle;
     float uiScale = 1.0f;
+    int presetWidth = 0;
 
     Root root;
     juce::Component body;

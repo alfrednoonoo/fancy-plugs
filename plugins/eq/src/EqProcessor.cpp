@@ -14,47 +14,6 @@ constexpr int designIntervalMs = 10;
 
 using Flag = std::shared_ptr<std::atomic<bool>>;
 
-// The Hz value doesn't change when the flag does, only its 0-1 position for the host. JUCE
-// caches the default as a 0-1 value, so it's recalculated here for the current mapping.
-class FrequencyParameter final : public juce::AudioParameterFloat
-{
-public:
-    FrequencyParameter (const juce::String& id, const juce::String& name, const Flag& logScale, float defaultHz)
-        : AudioParameterFloat (
-              juce::ParameterID { id, 1 }, name, makeRange (logScale), defaultHz,
-              juce::AudioParameterFloatAttributes {}
-                  .withLabel ("Hz")
-                  .withStringFromValueFunction ([] (float value, int) { return fancy::formatHz (value); })
-                  .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); })),
-          defaultValue (defaultHz)
-    {
-    }
-
-    float getDefaultValue() const override { return convertTo0to1 (defaultValue); }
-
-private:
-    static juce::NormalisableRange<float> makeRange (const Flag& logScale)
-    {
-        return { minHz, maxHz,
-                 [logScale] (float start, float end, float normalised)
-                 {
-                     return logScale->load (std::memory_order_relaxed) ? start * std::pow (end / start, normalised)
-                                                                       : start + (end - start) * normalised;
-                 },
-                 [logScale] (float start, float end, float value)
-                 {
-                     return logScale->load (std::memory_order_relaxed) ? std::log (juce::jlimit (start, end, value) / start) / std::log (end / start)
-                                                                       : (value - start) / (end - start);
-                 },
-                 [] (float start, float end, float value)
-                 {
-                     return juce::jlimit (start, end, std::round (value * 10.0f) / 10.0f);
-                 } };
-    }
-
-    float defaultValue;
-};
-
 juce::String qText (float q)
 {
     return fancy::formatFixed (q, q < 10.0f ? (q < 1.0f ? 2 : 1) : 0);
@@ -99,8 +58,8 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
         layout.add (toggle (EqProcessor::id (band, "on"), prefix + "On", true));
         layout.add (std::make_unique<Choice> (juce::ParameterID { EqProcessor::id (band, "type"), 1 }, prefix + "Type", types,
                                               firstFour ? defaultTypes[band] : 2));
-        layout.add (std::make_unique<FrequencyParameter> (EqProcessor::id (band, "freq"), prefix + "Freq", logScale,
-                                                          firstFour ? defaultHz[band] : 1000.0f));
+        layout.add (std::make_unique<fancy::SwitchableFrequencyParameter> (EqProcessor::id (band, "freq"), prefix + "Freq", logScale, minHz, maxHz,
+                                                                            firstFour ? defaultHz[band] : 1000.0f));
         layout.add (fancy::levelParameter (EqProcessor::id (band, "gain"), prefix + "Gain", -24.0f, 24.0f, 0.0f, -100.0f));
         layout.add (fancy::floatParameter (
             EqProcessor::id (band, "q"), prefix + "Q", fancy::logRange (0.1f, 30.0f, 0.001f),

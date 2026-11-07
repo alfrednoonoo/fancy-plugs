@@ -6,6 +6,9 @@
 #include <numbers>
 #include <vector>
 
+namespace fancy::dsp
+{
+
 // Stereo-linked lookahead brickwall limiter with a fixed ceiling of 1.0. See docs/comp.md.
 class TruePeakLimiter
 {
@@ -171,3 +174,5 @@ private:
     int queueHead = 0, queueTail = 0;
     long long sampleIndex = 0;
 };
+
+} // namespace fancy::dsp

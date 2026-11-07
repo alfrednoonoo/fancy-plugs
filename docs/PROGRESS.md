@@ -21,13 +21,11 @@ Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42405723460
 
 Brief: `docs/BUILD_PROMPT_PHASE2.md`. Mockups: `reference/phase2/`. Each plugin passes §7 and P5 before the next starts, which includes the user's check in REAPER. P5 adds a comparison of each CI screenshot with its mockup, and every P2.3, P3.3 and P4.3 test in the Catch2 suite.
 
-- Fancy Delay: built and green in CI. Waiting for the user's check in REAPER, with `docs/delay-checklist.md`.
-- Fancy XComp: not started.
+- Fancy Delay: built and green in CI. The user asked to move on to the next plugin without saying whether the REAPER checklist passed, so §7 checks 3 and 7 are still unconfirmed.
+- Fancy MultiComp: the user renamed Fancy XComp to this. In progress. The mockup and its source keep their `xcomp` file names.
 - Fancy FIR: not started.
 
 All three use the shared controls, so every knob and fader gets the typed values added in v1.0.1.
-
-Do not start Fancy XComp until the user has signed off the Delay.
 
 Changes to shared code since v1.0.1, which the next release should include:
 

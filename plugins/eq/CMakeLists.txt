@@ -7,7 +7,6 @@ fancy_add_plugin(FancyEq
         src/EqFilters.cpp
         src/LinearPhase.cpp
         src/EqDsp.cpp
-        src/Analyzer.cpp
         src/EqProcessor.cpp
         src/EqGraph.cpp
         src/EqEditor.cpp

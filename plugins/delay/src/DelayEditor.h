@@ -34,17 +34,6 @@ private:
         void paintSegment (juce::Graphics&, int index, juce::Rectangle<float> area, juce::Colour ink) override;
     };
 
-    class SoloButton final : public fancy::ui::ParamClickControl
-    {
-    public:
-        SoloButton (juce::RangedAudioParameter& parameter, juce::Colour accent);
-
-        void paint (juce::Graphics&) override;
-
-    private:
-        juce::Colour colour;
-    };
-
     // The controls for one tap. All 16 exist, and only the selected one is shown.
     class TapEditor final : public juce::Component
     {
@@ -71,7 +60,7 @@ private:
         juce::Label volumeLabel;
         fancy::ui::Fader volumeFader;
 
-        SoloButton soloButton;
+        fancy::ui::ParamTextToggle soloButton;
         fancy::ui::ParamPowerIcon powerIcon;
         fancy::ui::IconButton closeButton;
 

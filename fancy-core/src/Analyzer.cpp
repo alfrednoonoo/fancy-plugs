@@ -1,10 +1,10 @@
-#include "Analyzer.h"
+#include <fancy/dsp/Analyzer.h>
 
 #include <algorithm>
 #include <cmath>
 #include <numbers>
 
-namespace eq
+namespace fancy::dsp
 {
 
 namespace
@@ -172,4 +172,4 @@ void SpectrumAnalyzer::resetPeaks() noexcept
     std::fill (peaks.begin(), peaks.end(), floorDb);
 }
 
-} // namespace eq
+} // namespace fancy::dsp

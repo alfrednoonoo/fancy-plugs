@@ -27,11 +27,11 @@ void paintPill (juce::Graphics& g, juce::Rectangle<float> area, juce::Colour fil
     g.fillRoundedRectangle (area, 3.0f);
 }
 
-void paintDropdown (juce::Graphics& g, juce::Rectangle<float> bounds, const juce::String& text)
+void paintDropdown (juce::Graphics& g, juce::Rectangle<float> bounds, const juce::String& text, float textHeight = bodyFontSize)
 {
     paintPill (g, bounds, colours::bgBody);
 
-    g.setFont (font (Weight::regular, bodyFontSize));
+    g.setFont (font (Weight::regular, textHeight));
     g.setColour (colours::textPrimary);
     g.drawText (text, bounds.withTrimmedLeft (8.0f).withTrimmedRight (18.0f), juce::Justification::centredLeft, true);
 
@@ -516,6 +516,25 @@ void ParamSegments::paintSegment (juce::Graphics& g, int index, juce::Rectangle<
     g.drawText (param.getAllValueStrings()[index], area, juce::Justification::centred, false);
 }
 
+// ParamTextToggle -------------------------------------------------------------
+
+ParamTextToggle::ParamTextToggle (juce::RangedAudioParameter& parameter, const juce::String& text, juce::Colour accent)
+    : ParamClickControl (parameter), buttonText (text), colour (accent)
+{
+}
+
+void ParamTextToggle::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+
+    g.setColour (isOn() ? colour : colours::bgSection);
+    g.fillRoundedRectangle (bounds, 3.0f);
+
+    g.setColour (isOn() ? colours::bgWell : colours::textPrimary);
+    g.setFont (font (Weight::regular, bodyFontSize));
+    g.drawText (buttonText, bounds, juce::Justification::centred, false);
+}
+
 // ParamPowerIcon --------------------------------------------------------------
 
 ParamPowerIcon::ParamPowerIcon (juce::RangedAudioParameter& parameter, juce::Colour accent)
@@ -622,7 +641,7 @@ void ColourTabs::paint (juce::Graphics& g)
     {
         const auto area = tabBounds ((int) tabs.size()).toFloat();
 
-        g.setColour (colours::bgBody);
+        g.setColour (colours::bgSection);
         g.fillRoundedRectangle (area, 3.0f);
 
         g.setColour (colours::textPrimary);
@@ -708,9 +727,15 @@ void PowerPill::paint (juce::Graphics& g)
 
 // ParamDropdown ---------------------------------------------------------------
 
+void ParamDropdown::setTextHeight (float height)
+{
+    textHeight = height;
+    repaint();
+}
+
 void ParamDropdown::paint (juce::Graphics& g)
 {
-    paintDropdown (g, getLocalBounds().toFloat(), getValueText());
+    paintDropdown (g, getLocalBounds().toFloat(), getValueText(), textHeight);
 }
 
 void ParamDropdown::clicked()

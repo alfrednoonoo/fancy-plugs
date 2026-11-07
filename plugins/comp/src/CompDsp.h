@@ -1,9 +1,9 @@
 #pragma once
 
-#include "TruePeakLimiter.h"
-
+#include <fancy/dsp/Compression.h>
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/Svf.h>
+#include <fancy/dsp/TruePeakLimiter.h>
 
 #include <juce_dsp/juce_dsp.h>
 
@@ -94,8 +94,7 @@ private:
         fancy::dsp::Svf highPass, lowPass;
         std::vector<float> dryDelay, preCompDelay;
         double meanSquare = 0.0;
-        double envelope = 0.0;
-        double slowEnvelope = 0.0;
+        fancy::dsp::EnvelopeFollower follower;
         double previousOutput = 0.0;
     };
 
@@ -106,7 +105,6 @@ private:
     void updateConfig (int numSamples);
     void applyConfig (const Config& config);
     void updateBallistics() noexcept;
-    double follow (ChannelState& state, double target) noexcept;
     Config configFor (const Targets& targets) const noexcept;
     int latencyOf (const Config& config) const noexcept;
     int factorOf (const Config& config) const noexcept;
@@ -120,7 +118,7 @@ private:
 
     juce::AudioBuffer<float> mainBuffer, keyBuffer;
     std::array<ChannelState, 2> channels;
-    TruePeakLimiter limiter;
+    fancy::dsp::TruePeakLimiter limiter;
 
     fancy::dsp::SvfCoefficients highPassCoefficients, lowPassCoefficients;
 
@@ -132,7 +130,8 @@ private:
     int preCompLength = 1, dryLength = 1;
     int preCompPosition = 0, dryPosition = 0;
 
-    double attackCoefficient = 1.0, releaseCoefficient = 1.0, fastReleaseCoefficient = 1.0, linearReleaseStep = 1.0, rmsCoefficient = 1.0;
+    fancy::dsp::Ballistics ballistics;
+    double rmsCoefficient = 1.0;
     double maxDetectorCoefficient = 1.0;
 
     fancy::dsp::Smoother threshold, slope, knee, makeup, rms, previewAmount, lowPassAmount, highPassAmount;

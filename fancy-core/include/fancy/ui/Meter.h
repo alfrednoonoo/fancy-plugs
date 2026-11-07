@@ -56,14 +56,14 @@ public:
     struct Geometry
     {
         float wellX, top, bottom, zeroDbY, pixelsPerDb, readoutY;
-        bool showScale;
+        bool showScale, showReadout;
     };
 
     // Geometry from the Figma LevelController/Out component. The scale area is wider than
     // Figma's, because Inter's digits don't fit its 13 px.
-    static constexpr Geometry withScale { 32.5f, 25.0f, 395.0f, 60.07f, 5.545f, 403.0f, true };
+    static constexpr Geometry withScale { 32.5f, 25.0f, 395.0f, 60.07f, 5.545f, 403.0f, true, true };
 
-    explicit OutMeter (const Geometry& geometry = withScale);
+    explicit OutMeter (const Geometry& geometry = withScale, const juce::String& label = "Out");
 
     void update (dsp::MeterTap& output, float seconds);
 
@@ -74,7 +74,37 @@ public:
 
 private:
     Geometry layout;
+    juce::String labelText;
     MeterChannel channels[2];
+};
+
+// Gain reduction falling from the top: a stereo pair with a scale and one readout per channel,
+// or a single bar with one readout.
+class GainReductionMeter final : public juce::Component
+{
+public:
+    // Positions are relative to the component.
+    struct Geometry
+    {
+        float wellX, wellTop, wellHeight;
+        bool singleBar;
+    };
+
+    // From Fancy Comp's Figma frame.
+    static constexpr Geometry stereoWithScale { 44.0f, 25.0f, 270.0f, false };
+
+    explicit GainReductionMeter (const Geometry& geometry = stereoWithScale);
+
+    void update (float leftDb, float rightDb, float seconds);
+
+    // Sets levels directly, for rendered screenshots.
+    void show (float leftDb, float rightDb);
+
+    void paint (juce::Graphics&) override;
+
+private:
+    Geometry layout;
+    float reduction[2] { 0.0f, 0.0f };
 };
 
 } // namespace fancy::ui

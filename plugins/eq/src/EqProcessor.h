@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Analyzer.h"
+#include <fancy/dsp/Analyzer.h>
 #include "EqDsp.h"
 
 #include <fancy/plugin/FancyProcessor.h>
@@ -38,7 +38,7 @@ public:
     void removeBand (int band);
 
     // The analyzer's feed. The editor turns it on only while it's open.
-    eq::SampleFifo analyzerFifo;
+    fancy::dsp::SampleFifo analyzerFifo;
     std::atomic<bool> analyzerActive { false };
 
 private:

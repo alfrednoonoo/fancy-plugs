@@ -85,6 +85,7 @@ public:
     static constexpr Style largeStyle { 116.0f, 104.0f, 5.0f, 19.0f, 34.3f, 19.0f, 8.0f, 4.0f, 25.0f, 16.0f, true, true };
     static constexpr Style mediumStyle { 72.0f, 62.0f, 4.0f, 15.6f, 17.2f, 17.0f, 8.0f, 3.0f, 23.0f, 14.0f, false, true };
     static constexpr Style smallStyle { 50.0f, 42.0f, 3.0f, 13.5f, 10.0f, 17.0f, 6.0f, 3.0f, 23.0f, 14.0f, false, true };
+    static constexpr Style tightStyle { 50.0f, 42.0f, 3.0f, 13.5f, 10.0f, 17.0f, 6.0f, 3.0f, 23.0f, 12.0f, false, true };
     static constexpr Style compactStyle { 50.0f, 42.0f, 3.0f, 13.5f, 10.0f, 0.0f, 0.0f, 3.0f, 23.0f, 12.0f, false, true };
     static constexpr Style headerStyle { 28.0f, 24.0f, 2.0f, 6.1f, 6.1f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false };
 
@@ -148,6 +149,19 @@ private:
 
     int numSegments;
     juce::Colour fillColour, textColour;
+};
+
+// A small pill with text on it, filled in the accent colour while the parameter is on.
+class ParamTextToggle final : public ParamClickControl
+{
+public:
+    ParamTextToggle (juce::RangedAudioParameter& parameter, const juce::String& text, juce::Colour accent);
+
+    void paint (juce::Graphics&) override;
+
+private:
+    juce::String buttonText;
+    juce::Colour colour;
 };
 
 // A power glyph with no pill, lit in the accent colour while the parameter is on.
@@ -239,10 +253,15 @@ class ParamDropdown final : public ParamClickControl
 public:
     using ParamClickControl::ParamClickControl;
 
+    // For a long choice in a narrow space. The default is the Figma body size.
+    void setTextHeight (float height);
+
     void paint (juce::Graphics&) override;
 
 private:
     void clicked() override;
+
+    float textHeight = 14.0f;
 };
 
 class PillButton final : public juce::Component

@@ -1,4 +1,4 @@
-#include "Analyzer.h"
+#include <fancy/dsp/Analyzer.h>
 #include "EqDsp.h"
 #include "EqFilters.h"
 #include "EqGraph.h"
@@ -813,12 +813,12 @@ TEST_CASE ("changing phase mode while playing is safe", "[eq]")
 TEST_CASE ("analyzer reads a -12 dBFS sine correctly", "[eq]")
 {
     const auto size = GENERATE (4096, 8192, 16384);
-    const auto window = GENERATE (eq::SpectrumAnalyzer::Window::hann, eq::SpectrumAnalyzer::Window::blackmanHarris);
+    const auto window = GENERATE (fancy::dsp::SpectrumAnalyzer::Window::hann, fancy::dsp::SpectrumAnalyzer::Window::blackmanHarris);
     const auto hz = GENERATE (1000.0, 997.0, 1234.5, 8000.3);
 
-    eq::SpectrumAnalyzer analyzer;
+    fancy::dsp::SpectrumAnalyzer analyzer;
 
-    eq::SpectrumAnalyzer::Settings settings;
+    fancy::dsp::SpectrumAnalyzer::Settings settings;
     settings.size = size;
     settings.window = window;
     settings.smoothing = 0.0;
@@ -839,15 +839,15 @@ TEST_CASE ("analyzer reads a -12 dBFS sine correctly", "[eq]")
 
 TEST_CASE ("analyzer tilt, smoothing and peak hold", "[eq]")
 {
-    eq::SpectrumAnalyzer::Settings settings;
+    fancy::dsp::SpectrumAnalyzer::Settings settings;
     settings.smoothing = 0.0;
-    settings.window = eq::SpectrumAnalyzer::Window::hann;
+    settings.window = fancy::dsp::SpectrumAnalyzer::Window::hann;
 
     const auto tone = sine (2000.0, 0.5, rate, 32768);
 
     SECTION ("pink tilt adds 4.5 dB per octave about 1 kHz")
     {
-        eq::SpectrumAnalyzer plain, tilted;
+        fancy::dsp::SpectrumAnalyzer plain, tilted;
 
         plain.configure (rate, settings);
         settings.pinkTilt = true;
@@ -861,7 +861,7 @@ TEST_CASE ("analyzer tilt, smoothing and peak hold", "[eq]")
 
     SECTION ("peak hold keeps the highest reading")
     {
-        eq::SpectrumAnalyzer analyzer;
+        fancy::dsp::SpectrumAnalyzer analyzer;
         analyzer.configure (rate, settings);
         analyzer.addSamples (tone.left.data(), tone.size());
 
@@ -879,7 +879,7 @@ TEST_CASE ("analyzer tilt, smoothing and peak hold", "[eq]")
     {
         settings.smoothing = 1.0;
 
-        eq::SpectrumAnalyzer analyzer;
+        fancy::dsp::SpectrumAnalyzer analyzer;
         analyzer.configure (rate, settings);
 
         const Audio silence (8192);
@@ -894,7 +894,7 @@ TEST_CASE ("analyzer tilt, smoothing and peak hold", "[eq]")
 
 TEST_CASE ("analyzer FIFO sums to mono", "[eq]")
 {
-    auto fifo = std::make_unique<eq::SampleFifo>();
+    auto fifo = std::make_unique<fancy::dsp::SampleFifo>();
 
     const float left[] { 1.0f, 0.5f, 0.0f };
     const float right[] { 1.0f, -0.5f, 1.0f };
@@ -1198,9 +1198,9 @@ TEST_CASE ("eq measurements", "[.measure]")
 
     for (const auto hz : { 1000.0, 997.0, 1234.5 })
     {
-        eq::SpectrumAnalyzer analyzer;
+        fancy::dsp::SpectrumAnalyzer analyzer;
 
-        eq::SpectrumAnalyzer::Settings settings;
+        fancy::dsp::SpectrumAnalyzer::Settings settings;
         settings.smoothing = 0.0;
 
         analyzer.configure (rate, settings);

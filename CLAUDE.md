@@ -22,7 +22,7 @@ Phase 1, done and released:
 Phase 2, after Phase 1, from `docs/BUILD_PROMPT_PHASE2.md`:
 
 7. Fancy Delay
-8. Fancy XComp (reuses Fancy Comp's detector and gain computer)
+8. Fancy MultiComp (reuses Fancy Comp's detector and gain computer)
 9. Fancy FIR
 
 Write `docs/<plugin>.md` before coding each plugin: DSP algorithm, parameters (range, default, unit, skew), latency, state format, and how each §5 fix is handled.
@@ -54,7 +54,7 @@ Do not copy literally: host window title bars, the "[LOOSER]" tag (show just the
 
 ## Phase 2 reference mockups
 
-There are no Figma frames for Phase 2. `reference/phase2/` holds 2× mockups drawn in the same design system: `11__delay_mockup.png`, `12__xcomp_mockup.png`, `13__fir_mockup.png`. Divide their pixel sizes by 2. Target windows at 100 %: Delay about 760 × 410, XComp about 760 × 455, FIR about 760 × 430.
+There are no Figma frames for Phase 2. `reference/phase2/` holds 2× mockups drawn in the same design system: `11__delay_mockup.png`, `12__xcomp_mockup.png`, `13__fir_mockup.png`. Divide their pixel sizes by 2. Target windows at 100 %: Delay about 760 × 410, MultiComp about 760 × 455, FIR about 760 × 430.
 
 The mockups set each control's layout, grouping and type, the way §2.5 does for Phase 1. Exact styling comes from `fancy-core`: where a mockup pixel disagrees with it, `fancy-core` wins. Never fork a component to match a mockup. Defaults come from P2-P4 in the brief, not the sample values drawn in the mockups.
 

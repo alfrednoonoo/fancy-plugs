@@ -1,18 +1,20 @@
-# Phase 2: Fancy XComp, Fancy Delay, Fancy FIR
+# Phase 2: Fancy MultiComp, Fancy Delay, Fancy FIR
 
 This extends `docs/BUILD_PROMPT.md`. **Every rule there still applies**: cloud builds only, the design system (§2), real-time rules (§4), acceptance checks (§7), the CC BY attribution, and "ask before changing the parameter list or layout". This file only adds what is different for three new plugins.
+
+Fancy XComp was renamed Fancy MultiComp by the user. The mockup and its source keep their `xcomp` file names.
 
 ## P0. When and in what order
 
 - Start Phase 2 only after all five Phase 1 plugins pass §7, unless I tell you otherwise.
-- Order: **Fancy Delay** (simplest) → **Fancy XComp** (reuses Fancy Comp's detector and gain computer) → **Fancy FIR** (hardest: FFT engine and a drawable curve editor).
+- Order: **Fancy Delay** (simplest) → **Fancy MultiComp** (reuses Fancy Comp's detector and gain computer) → **Fancy FIR** (hardest: FFT engine and a drawable curve editor).
 - Write `docs/<plugin>.md` design notes first, exactly as in Phase 1.
 - Add these three to `AGENTS.md`/`CLAUDE.md` and `docs/PROGRESS.md`.
 
 | Product name | Inspired by | Main accent |
 |---|---|---|
 | **Fancy Delay** | ReaDelay (multi-tap delay) | Yellow `#F1C315`; filters blue |
-| **Fancy XComp** | ReaXcomp (multiband compressor) | Per-band colours (same as Fancy EQ); global controls teal |
+| **Fancy MultiComp** | ReaXcomp (multiband compressor) | Per-band colours (same as Fancy EQ); global controls teal |
 | **Fancy FIR** | ReaFIR (FFT EQ / gate / compressor / noise subtraction) | Colour follows the mode (see P3.3); global controls teal |
 
 ## P1. Reference mockups (IMPORTANT: read this before opening them)
@@ -22,13 +24,13 @@ There are no designer mockups for these three. The images in `reference/phase2/`
 | File | Plugin |
 |---|---|
 | `reference/phase2/11__delay_mockup.png` | Fancy Delay |
-| `reference/phase2/12__xcomp_mockup.png` | Fancy XComp |
+| `reference/phase2/12__xcomp_mockup.png` | Fancy MultiComp |
 | `reference/phase2/13__fir_mockup.png` | Fancy FIR |
 
 How to use them:
 - They define the **layout, the grouping and the control type of every control** (knob vs fader vs checkbox vs dropdown vs segmented switch). Follow them the way you follow the §2.5 control map.
 - Exact styling (colours, radii, font sizes, knob drawing, meter gradient, header bar) comes from the **shared `fancy-core` components you already built** and from the Figma data. Where a mockup pixel disagrees with `fancy-core`, `fancy-core` wins. Never fork a component to match a mockup; reuse it.
-- They are 2× renders. Divide pixel sizes by 2. Target window sizes at 100 %: Delay ≈ 760 × 410, XComp ≈ 760 × 455, FIR ≈ 760 × 430.
+- They are 2× renders. Divide pixel sizes by 2. Target window sizes at 100 %: Delay ≈ 760 × 410, MultiComp ≈ 760 × 455, FIR ≈ 760 × 430.
 - They show sample values. Defaults are in P2–P4.
 
 ## P2. Fancy Delay (ReaDelay-inspired)
@@ -80,7 +82,7 @@ Factory presets: Slapback, 1/8 dotted, 1/4 ping-pong, Triplet echo, Lo-fi tape (
 | **Clicks / zipper noise when delay time is automated.** | "Smooth time changes" on: crossfade between two read heads over 20–50 ms when time jumps. Off: tape-style smoothed read position (pitch bends, no clicks). Test: render a step change 375→500 ms; no sample-to-sample jump larger than the input's own. |
 | **ReaDelay as a standalone VST: no delay heard when Dry = −inf** (reported bug in another host). | Wet and Dry are fully independent gains after the delay network. Test: Dry −inf, Wet 0 dB → delayed signal present at the correct level. |
 
-## P3. Fancy XComp (ReaXcomp-inspired multiband compressor)
+## P3. Fancy MultiComp (ReaXcomp-inspired multiband compressor)
 
 ### P3.1 Layout (see `12__xcomp_mockup.png`)
 - **Header**: standard, plus a **Detector** dropdown (Main L+R, Main L, Main R, Sidechain L+R, Sidechain L, Sidechain R). I/O pill "4 in 2 out" (stereo main + stereo sidechain).

@@ -1,4 +1,4 @@
-# Phase 2 add-on: Fancy Delay, Fancy XComp, Fancy FIR
+# Phase 2 add-on: Fancy Delay, Fancy MultiComp, Fancy FIR
 
 ## Add it to your project
 

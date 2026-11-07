@@ -155,7 +155,7 @@ void TapMap::paint (juce::Graphics& g)
     const auto beats = juce::roundToInt (axisMs() / beat);
     const auto beatStep = juce::jmax (1, beats / 4);
 
-    g.setColour (colours::bgBody);
+    g.setColour (colours::bgSection);
     g.fillRoundedRectangle (bounds, 6.0f);
 
     g.setFont (font (Weight::regular, 11.0f));

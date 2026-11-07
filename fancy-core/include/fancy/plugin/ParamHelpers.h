@@ -6,6 +6,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <atomic>
 #include <cmath>
 #include <memory>
 
@@ -49,6 +50,50 @@ inline std::unique_ptr<juce::AudioParameterFloat> percentParameter (const juce::
             .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
             .withValueFromStringFunction ([] (const juce::String& text) { return parseNumber (text); }));
 }
+
+// A frequency whose 0-1 mapping for automation can switch between log and linear. The Hz
+// value doesn't change when the flag does, only its 0-1 position for the host. JUCE caches the
+// default as a 0-1 value, so it's recalculated here for the current mapping.
+class SwitchableFrequencyParameter final : public juce::AudioParameterFloat
+{
+public:
+    using Flag = std::shared_ptr<std::atomic<bool>>;
+
+    SwitchableFrequencyParameter (const juce::String& id, const juce::String& name, const Flag& logScale,
+                                  float lowHz, float highHz, float defaultHz)
+        : AudioParameterFloat (juce::ParameterID { id, 1 }, name, makeRange (logScale, lowHz, highHz), defaultHz,
+                               juce::AudioParameterFloatAttributes {}
+                                   .withLabel ("Hz")
+                                   .withStringFromValueFunction ([] (float value, int) { return formatHz (value); })
+                                   .withValueFromStringFunction ([] (const juce::String& text) { return parseHz (text); })),
+          defaultValue (defaultHz)
+    {
+    }
+
+    float getDefaultValue() const override { return convertTo0to1 (defaultValue); }
+
+private:
+    static juce::NormalisableRange<float> makeRange (const Flag& logScale, float lowHz, float highHz)
+    {
+        return { lowHz, highHz,
+                 [logScale] (float start, float end, float normalised)
+                 {
+                     return logScale->load (std::memory_order_relaxed) ? start * std::pow (end / start, normalised)
+                                                                       : start + (end - start) * normalised;
+                 },
+                 [logScale] (float start, float end, float value)
+                 {
+                     return logScale->load (std::memory_order_relaxed) ? std::log (juce::jlimit (start, end, value) / start) / std::log (end / start)
+                                                                       : (value - start) / (end - start);
+                 },
+                 [] (float start, float end, float value)
+                 {
+                     return juce::jlimit (start, end, std::round (value * 10.0f) / 10.0f);
+                 } };
+    }
+
+    float defaultValue;
+};
 
 // Silence at or below floorDb, otherwise the linear gain.
 inline double levelToGain (float db, float floorDb)

@@ -60,7 +60,7 @@ private:
     };
 
     void recalculate();
-    void analyse (eq::SpectrumAnalyzer& analyzer, std::vector<float>& scratch);
+    void analyse (fancy::dsp::SpectrumAnalyzer& analyzer, std::vector<float>& scratch);
 
     float yForDb (float db) const noexcept;
     float dbForY (float y) const noexcept;

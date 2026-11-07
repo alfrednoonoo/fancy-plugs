@@ -40,6 +40,11 @@
  #include "DelayProcessor.h"
 #endif
 
+#if FANCY_HAS_MULTICOMP
+ #include "MultiCompEditor.h"
+ #include "MultiCompProcessor.h"
+#endif
+
 namespace
 {
 
@@ -218,6 +223,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_DELAY
     ok = renderPlugin<DelayProcessor, DelayEditor> ("delay", outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_MULTICOMP
+    ok = renderPlugin<MultiCompProcessor, MultiCompEditor> ("multicomp", outputDir) && ok;
    #endif
 
     Gallery gallery;
