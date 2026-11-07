@@ -11,11 +11,11 @@
 - Fancy Verb: done, signed off in REAPER by the user. All five plugins are finished.
 
 - Phase 1 is finished. Phase 2 (below) is the work that comes after it.
-- Release: [v1.0.1](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.0.1), which adds typed values to v1.0.0. The repo is private, so the releases are too.
+- Release: [v1.1.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.1.0), with all eight plugins: the five from v1.0, with the slow-drag fix, and Fancy Delay, Fancy MultiComp and Fancy FIR. v1.0.1 added typed values. The repo is private, so the releases are too.
 
-Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42397458861 (commit `3f8e9b8`, version 1.0.1): 129 test cases passed, and all five plugins passed pluginval at strictness 10. Typing values confirmed in REAPER by the user.
+Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42417161407 (commit `45b616b`): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
+Latest run: the release run above.
 
 ## Phase 2
 
@@ -27,7 +27,7 @@ Brief: `docs/BUILD_PROMPT_PHASE2.md`. Mockups: `reference/phase2/`. Each plugin 
 
 All three use the shared controls, so every knob and fader gets the typed values added in v1.0.1.
 
-Phase 2 is finished: all three plugins work in REAPER, and the user asked for v1.1.0.
+Phase 2 is finished and released as v1.1.0. Next is Phase 3, from `docs/BUILD_PROMPT_PHASE3.md`, starting with the benchmark host. Add Phase 3 to `AGENTS.md` and `CLAUDE.md` when it starts.
 
 Changes to shared code since v1.0.1, which the next release should include:
 
