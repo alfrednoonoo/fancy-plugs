@@ -55,7 +55,10 @@ private:
 
     void onTick (float seconds) override;
     bool listsParameter (const juce::AudioProcessorParameter&) override;
-    int getShownInputs() override { return getFancyProcessor().getTotalNumInputChannels(); }
+
+    // The stereo sidechain counts even while the host leaves it off, as the plugin has it.
+    int getShownInputs() override { return juce::jmax (getFancyProcessor().getTotalNumInputChannels(), getFancyProcessor().getMainBusNumInputChannels() + 2); }
+
 
     MultiCompProcessor& multiProcessor() noexcept;
 

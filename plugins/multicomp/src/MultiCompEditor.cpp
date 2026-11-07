@@ -107,12 +107,15 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
     placeKnob (rmsKnob, 4);
     placeKnob (gainKnob, 5);
 
+    // Wider than the rest, for the make-up amount after its value.
+    gainKnob.setBounds (gainKnob.getBounds().withSizeKeepingCentre (108, knobHeight));
+
     constexpr int checkboxY = cardY + 110;
 
-    makeupCheckbox.setBounds (138, checkboxY, 100, 20);
-    autoReleaseCheckbox.setBounds (242, checkboxY, 94, 20);
-    feedbackCheckbox.setBounds (339, checkboxY, 112, 20);
-    sidechainCheckbox.setBounds (456, checkboxY, 84, 20);
+    makeupCheckbox.setBounds (138, checkboxY, 108, 20);
+    autoReleaseCheckbox.setBounds (248, checkboxY, 98, 20);
+    feedbackCheckbox.setBounds (348, checkboxY, 122, 20);
+    sidechainCheckbox.setBounds (472, checkboxY, 84, 20);
 
     for (auto* checkbox : { &makeupCheckbox, &autoReleaseCheckbox, &feedbackCheckbox, &sidechainCheckbox })
         checkbox->setLabelHeight (labelHeight);
@@ -168,7 +171,7 @@ void MultiCompEditor::BandEditor::paint (juce::Graphics& g)
 
     g.setFont (font (Weight::regular, 13.0f));
     g.setColour (colours::textSecondary);
-    g.drawText (range, row.withTrimmedLeft (58), juce::Justification::centredLeft, true);
+    g.drawText (range, row.withTrimmedLeft (66), juce::Justification::centredLeft, true);
 
     g.setColour (colours::bgSection);
     g.fillRoundedRectangle (569.0f, (float) tabRowY, 23.0f, (float) tabRowHeight, 3.0f);
@@ -227,9 +230,9 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
     getRoot().addAndMakeVisible (detectorLabel);
     getRoot().addAndMakeVisible (detectorDropdown);
 
-    spectrumCheckbox.setBounds (15, footerY, 108, 20);
-    linkCheckbox.setBounds (128, footerY, 86, 20);
-    gridCheckbox.setBounds (219, footerY, 82, 20);
+    spectrumCheckbox.setBounds (15, footerY, 116, 20);
+    linkCheckbox.setBounds (133, footerY, 86, 20);
+    gridCheckbox.setBounds (221, footerY, 82, 20);
     limitCheckbox.setBounds (305, footerY, 90, 20);
 
     for (auto* checkbox : { &spectrumCheckbox, &linkCheckbox, &gridCheckbox, &limitCheckbox })
