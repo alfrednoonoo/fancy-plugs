@@ -44,8 +44,8 @@ void CaptionPanels::paint (juce::Graphics& g)
 
 // EditLink --------------------------------------------------------------------
 
-EditLink::EditLink (juce::Colour accent, const juce::String& text) : accentColour (accent), linkText (text)
-    : accentColour (accent)
+EditLink::EditLink (juce::Colour accent, const juce::String& text)
+    : accentColour (accent), linkText (text)
 {
     setMouseCursor (juce::MouseCursor::PointingHandCursor);
 }
