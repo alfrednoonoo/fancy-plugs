@@ -14,6 +14,13 @@ The evidence behind this phase is in `docs/research/2026-11-market-report-summar
 
 Ask these together, once, before writing any code. Record the answers in `docs/PROGRESS.md`.
 
+**Answers so far (7 November 2026):**
+
+- **Platform:** Windows first, until it's a concrete, finished version. Mac is wanted after that, as a later phase.
+- **New plugins:** wanted. Which ones isn't decided yet. The user's main concern is that their design matches the suite, so every new plugin goes through Q5 first.
+- **Release:** v1.1.0 comes first, once Fancy FIR has passed its REAPER check.
+- **Order:** not decided yet. The options are explained to the user, and the recommendation is in Q2's preamble.
+
 1. **Platform.** Stay Windows VST3 only, as the original brief says, or add CLAP, macOS or AU? Anything beyond Windows VST3 matters only if other people will use the plugins. It changes the CI matrix, costs macOS runner minutes, which are about 10 times Windows ones, and brings signing and notarisation questions.
 2. **New plugins.** The suite has no limiter or maximiser, de-esser, saturator, transient shaper, chorus or other modulation effect, or algorithmic reverb. These are common in the "essential plugins" lists. Phase 3.0 doesn't add any unless the user picks some. If they do, each gets a P2-style section written and approved first.
 3. **Order.** The default order is in Q2. The user may reorder or drop items.
@@ -40,6 +47,14 @@ The research couldn't compare our plugins with the leaders head to head, because
 - **Docs:** `docs/bench.md`, a how-to with three ready-made comparison files: compressor, EQ and delay.
 
 ## Q2. Improvements, in order
+
+Recommended order, pending the user's choice:
+
+1. The benchmark host (Q1), which gives a baseline before anything changes.
+2. The shared features (Q2.1) and the design rules (Q5), so every later change is built on them once.
+3. Improvements to the plugins the user reaches for most, one plugin at a time, each signed off in REAPER.
+4. New plugin types, each designed through Q5 before any code.
+5. Mac, as its own phase.
 
 Each item needs its design-note section, in `docs/<plugin>.md`, written and approved first, because each changes the parameter list or layout. New controls go in EDIT drawers or popovers unless the user approves a layout change. Every new knob and fader uses the shared components, so typed values come with them.
 
@@ -119,6 +134,26 @@ The research found the category is bought for two things the Kicker can't do.
   - Shown in the FILE module's dropdown.
 - **True stereo:** load 4-channel or paired IRs, so left and right each go to both outputs.
 - **Modulation:** a slow, pitch-free modulation of the IR's tail, as an optional module.
+
+## Q5. Designing a new plugin so it matches the suite
+
+There's no designer mockup for a new plugin type. It's designed in three steps, and the user approves each before the next.
+
+1. **Design rules.** Before the first new plugin, write `docs/DESIGN_SYSTEM.md` from the eight finished plugins:
+   - the header;
+   - the page and card colours;
+   - card radius and spacing;
+   - the 12 px label size;
+   - the shared knob styles and the right-hand column of meter and faders;
+   - the tabs and segment switches;
+   - the footer row of checkboxes and the EDIT drawer for extras;
+   - the accent colour of each plugin.
+
+   It records which shared component to use for each kind of control, and what each window size is.
+2. **Mockup.** Draw the new plugin as HTML with the Phase 2 mockup kit in `design/phase2-mockup-src/` (`common.css`, `lib.js`), so it uses the same knobs, faders, meters and cards as the existing mockups. Save it as `design/phase3-mockup-src/<plugin>.html`. The user opens it in a browser to review it, and approves or changes the control list, types and layout. Nothing is coded until this is approved.
+3. **Build and compare.** Build it from the shared `fancy-core` components only. Compare the CI screenshot with the approved mockup, side by side, exactly as for Phase 2. Also compare it with one existing plugin of similar size, to check it reads as part of the same suite.
+
+A control that needs a component `fancy-core` doesn't have is added to `fancy-core` and the gallery, never drawn inside one plugin.
 
 ## Q3. Acceptance
 
