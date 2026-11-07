@@ -1,5 +1,14 @@
 # Phase 3.0: close the gaps to the market leaders
 
+> **Order changed, 7 November 2026.** Fancy Gate (Phase 2.0.1) and Phase 2.1 now come before this phase. Phase 2.1 covers four items from this draft:
+>
+> - undo and redo, A/B and level-matched Compare, from Q2.1;
+> - dynamic EQ, from Q2.4;
+> - MultiComp's upward compression, from Q2.6;
+> - FIR's adaptive profile, from Q2.7.
+>
+> Leave those out here. This draft is trimmed with the user before Phase 3 starts.
+
 This extends `docs/BUILD_PROMPT.md` and `docs/BUILD_PROMPT_PHASE2.md`. **Every rule in them still applies**, including:
 
 - cloud builds only, with nothing claimed until the Actions run is green;

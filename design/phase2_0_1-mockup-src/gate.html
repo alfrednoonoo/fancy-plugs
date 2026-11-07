@@ -1,0 +1,59 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><script src="lib.js"></script>
+<style>.box{background:#262626;border-radius:6px;padding:8px 6px 6px}</style></head><body>
+<div class="win" style="width:740px">
+ <div class="hdr"><div class="dd" style="width:150px">No preset</div><div class="btn">+ New</div><div class="btn">Parameter</div><div class="btn">4 in 2 out</div><div class="sp"></div><div data-k data-v=".5" data-c="#00A884" data-s="16" style="width:26px"></div><div class="on">⏻ ON</div></div>
+ <div style="display:flex">
+  <div style="flex:1;padding:10px 10px 8px 12px">
+   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="cap">Detector input</span><div class="dd" style="font-size:10.5px;padding:3px 7px">Main input L+R</div><div class="cb" style="margin-left:8px"><i></i>Lookahead <span class="cap">(+50 ms latency)</span></div><div class="sp"></div><span class="cap">Mode</span><div class="seg"><span class="a" style="background:#F1C315;color:#1E1E1E;font-weight:600">Gate</span><span>Duck</span></div></div>
+   <div style="display:flex;gap:10px">
+    <div style="display:flex;gap:6px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;align-items:center"><div class="cap">Threshold</div><svg id="thr" width="40" height="232"></svg><div class="val" style="color:#F1C315;margin:2px 0 0">-38.0 dB</div><div class="cap" style="margin-top:1px">close −44.0</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center"><div class="cap">Gain</div><svg width="10" height="232"><rect width="8" height="232" rx="1.5" fill="#141414"/><rect width="8" height="40" rx="1.5" fill="#F1C315"/></svg><div class="val" style="color:#EDEDED;margin:2px 0 0">-6.8</div><div style="display:flex;align-items:center;gap:4px;margin-top:3px"><span style="width:7px;height:7px;border-radius:50%;background:#F1C315;box-shadow:0 0 6px #F1C315"></span><span class="cap" style="color:#F1C315">open</span></div></div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+     <svg id="hist" width="456" height="70" style="background:#262626;border-radius:6px;display:block"></svg>
+     <div class="box" style="display:flex;justify-content:space-around">
+      <div class="knob" data-k data-v="0" data-c="#F1C315" data-l="Pre-open" data-t="off" style="opacity:.5"></div>
+      <div class="knob" data-k data-v=".12" data-c="#F1C315" data-l="Attack" data-t="0.5 ms"></div>
+      <div class="knob" data-k data-v=".25" data-c="#F1C315" data-l="Hold" data-t="40 ms"></div>
+      <div class="knob" data-k data-v=".38" data-c="#F1C315" data-l="Release" data-t="120 ms"></div>
+      <div class="knob" data-k data-v=".45" data-c="#F1C315" data-bi data-l="Hysteresis" data-t="-6.0 dB"></div>
+     </div>
+     <div style="display:flex;gap:8px">
+      <div class="box" style="display:flex;flex:1;justify-content:space-around">
+       <div class="knob" data-k data-v=".6" data-c="#F1C315" data-l="Range" data-t="-40 dB"></div>
+       <div class="knob" data-k data-v=".05" data-c="#F1C315" data-l="RMS size" data-t="0.0 ms"></div>
+      </div>
+      <div class="box" style="display:flex;flex:1;justify-content:space-around">
+       <div class="knob" data-k data-v=".8" data-c="#3690CC" data-l="Lowpass" data-t="12 kHz"></div>
+       <div class="knob" data-k data-v=".28" data-c="#3690CC" data-l="Highpass" data-t="120 Hz"></div>
+      </div>
+     </div>
+    </div>
+   </div>
+   <div style="display:flex;gap:16px;margin-top:10px;padding-left:2px;align-items:center"><div class="cb"><i></i>Preview filter</div><div class="cb"><i class="x"></i>Link channels</div><div class="cb"><i></i>MIDI on open/close</div><div class="dd" style="font-size:10px;padding:2px 6px;opacity:.55">A4 · ch 1</div><div class="cb" style="opacity:.55"><i></i>Velocity from level</div></div>
+  </div>
+  <div style="width:150px;background:#262626;display:flex;gap:9px;justify-content:center;padding:14px 8px 10px">
+    <div data-m data-h="300" data-v=".58,.6" data-l="Out" data-t="-8.1"></div>
+    <div data-f data-h="300" data-v=".8" data-l="Wet" data-t="+0.0"></div>
+    <div data-f data-h="300" data-v="0" data-l="Dry" data-t="-inf"></div>
+    <div data-f data-h="300" data-v="0" data-l="Noise" data-t="-inf" data-c="#909090"></div>
+  </div>
+ </div>
+</div>
+<script>
+// threshold fader over input meter, with open (solid) and close (dashed) marks
+(()=>{const H=232,y=d=>H*(-d/60);let s=`<defs><linearGradient id="mg2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#0DFC90"/><stop offset=".6" stop-color="#82E64D"/><stop offset="1" stop-color="#F7D10A"/></linearGradient></defs>`;
+[2,13].forEach((x,i)=>s+=`<rect x="${x}" y="0" width="8" height="${H}" rx="1.5" fill="#141414"/><rect x="${x}" y="${y(-26-i*2)}" width="8" height="${H-y(-26-i*2)}" rx="1.5" fill="url(#mg2)"/>`);
+s+=`<rect x="0" y="${y(-44)-1}" width="23" height="2" fill="#F1C315" opacity=".9" stroke-dasharray="2 2"/><line x1="0" y1="${y(-44)}" x2="23" y2="${y(-44)}" stroke="#262626" stroke-width="2" stroke-dasharray="3 3"/>`;
+s+=`<rect x="0" y="${y(-38)-5}" width="23" height="10" rx="2" fill="#4B4B4B"/><rect x="2" y="${y(-38)-0.75}" width="19" height="1.5" fill="#F1C315"/>`;
+for(const d of [0,-12,-24,-36,-48,-60]) s+=`<text x="40" y="${Math.max(8,Math.min(H-2,y(d)+3))}" font-size="8" fill="#909090" text-anchor="end">${d}</text>`;
+document.getElementById('thr').innerHTML=s})();
+// scrolling history: input level (grey fill) + gate gain (yellow line), threshold lines
+(()=>{const W=456,H=70,y=d=>6+(H-12)*(-d/60);let seed=5,r=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};let lv=[],g=[];let open=0,gain=-40;
+for(let x=0;x<=W;x+=2){const t=x%76;let d=t<4?-12:Math.max(-50+6*r(),-12-t*0.55)-2*r();lv.push([x,y(d)]);if(d>-38)open=1;if(d<-44)open=0;gain+= (open?0-gain:(-40-gain))*(open?0.9:0.12);g.push([x,y(Math.min(0,gain)*0.6-2)])}
+const P=a=>a.map(p=>p.join(',')).join(' ');let s=`<polygon points="0,${H} ${P(lv)} ${W},${H}" fill="#909090" opacity=".28"/>`;
+s+=`<line x1="0" y1="${y(-38)}" x2="${W}" y2="${y(-38)}" stroke="#F1C315" opacity=".7"/><line x1="0" y1="${y(-44)}" x2="${W}" y2="${y(-44)}" stroke="#F1C315" opacity=".6" stroke-dasharray="3 3"/>`;
+s+=`<polyline points="${P(g)}" fill="none" stroke="#F1C315" stroke-width="1.6"/>`;
+document.getElementById('hist').innerHTML=s})();
+</script></body></html>

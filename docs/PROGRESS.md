@@ -27,7 +27,30 @@ Brief: `docs/BUILD_PROMPT_PHASE2.md`. Mockups: `reference/phase2/`. Each plugin 
 
 All three use the shared controls, so every knob and fader gets the typed values added in v1.0.1.
 
-Phase 2 is finished and released as v1.1.0. Next is Phase 3, from `docs/BUILD_PROMPT_PHASE3.md`, starting with the benchmark host. Add Phase 3 to `AGENTS.md` and `CLAUDE.md` when it starts.
+Phase 2 is finished and released as v1.1.0.
+
+## What comes next
+
+The user set this order on 7 November 2026:
+
+1. **Phase 2.0.1, Fancy Gate:** from `docs/BUILD_PROMPT_PHASE2_0_1.md`, with the mockup `reference/phase2_0_1/15__gate_mockup.png` and its source in `design/phase2_0_1-mockup-src/`. The design note `docs/gate.md` is written, and its open questions need the user's answers before code.
+2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order W, D, U, A.
+   - W: undo and redo, A/B, and level-matched Compare, for all nine plugins.
+   - D: dynamic EQ.
+   - U: upward compression in MultiComp.
+   - A: adaptive noise tracking in FIR.
+
+   Two problems to sort out before it starts. Its mockup, `reference/phase2_1/14__phase2_1_controls.png` with its source in `design/phase2_1-mockup-src/`, isn't in the repo yet. It also cites `docs/2026-11-market-report-detailed.md`, where the report is actually `docs/research/2026-11-market-report-detailed.md`.
+3. **Phase 3:** from `docs/BUILD_PROMPT_PHASE3.md`, a draft. Phase 2.1 now covers four of its items, so it keeps what's left:
+   - the benchmark host;
+   - the preset browser and free resizing;
+   - EQ mid/side, 24 bands and Match;
+   - Comp, Verb, Kicker and Delay;
+   - MultiComp's lookahead, mid/side and CPU;
+   - FIR's resonance mode;
+   - Fancy Limiter, Fancy De-esser and Fancy Saturator.
+
+   Mac comes after Windows is finished. Trim the draft with the user before Phase 3 starts.
 
 Changes to shared code since v1.0.1, which the next release should include:
 
@@ -77,6 +100,10 @@ Lessons from the Delay build:
 - **Look at the render, not the layout maths.** All 166 tests passed with four labels clipped, and my width estimates were wrong twice.
 - **Keep test levels below any safety curve,** unless the test is about the curve. A full-scale impulse was the cause of two false failures.
 - **PIL isn't installed here.** `System.Drawing` in PowerShell makes the comparison images with nothing to install.
+
+## Fancy Gate (Phase 2.0.1)
+
+Not started. The design note, `docs/gate.md`, is waiting for the user's answers to its open questions.
 
 ## Market research and Phase 3 draft
 

@@ -1,10 +1,10 @@
 # Fancy Plugs: agent notes
 
-`CLAUDE.md` and `AGENTS.md` are identical; change both together. The full brief is `docs/BUILD_PROMPT.md`, and Phase 2 adds `docs/BUILD_PROMPT_PHASE2.md`; their rules override this summary. Session state is in `docs/PROGRESS.md`: read it first and update it at the end of each session.
+`CLAUDE.md` and `AGENTS.md` are identical; change both together. The full brief is `docs/BUILD_PROMPT.md`. Later phases add `docs/BUILD_PROMPT_PHASE2.md`, `docs/BUILD_PROMPT_PHASE2_0_1.md` (Fancy Gate) and `docs/BUILD_PROMPT_PHASE2_1.md`, and their rules override this summary. Session state is in `docs/PROGRESS.md`: read it first and update it at the end of each session.
 
 ## What this is
 
-Eight original VST3 effects with a shared UI library, for personal use on Windows 10/11 x64: five in Phase 1 and three in Phase 2. No installers, signing, licensing, updates or telemetry. Never copy or reference Cockos binaries or source. Bundle IDs are `com.fancyplugs.*`.
+Nine original VST3 effects with a shared UI library, for personal use on Windows 10/11 x64: five in Phase 1, three in Phase 2, and Fancy Gate in Phase 2.0.1. No installers, signing, licensing, updates or telemetry. Never copy or reference Cockos binaries or source. Bundle IDs are `com.fancyplugs.*`.
 
 ## Build order
 
@@ -19,18 +19,31 @@ Phase 1, done and released:
 5. Fancy EQ
 6. Fancy Verb
 
-Phase 2, after Phase 1, from `docs/BUILD_PROMPT_PHASE2.md`:
+Phase 2, from `docs/BUILD_PROMPT_PHASE2.md`, done and released as v1.1.0:
 
 7. Fancy Delay
 8. Fancy MultiComp (reuses Fancy Comp's detector and gain computer)
 9. Fancy FIR
+
+Phase 2.0.1, from `docs/BUILD_PROMPT_PHASE2_0_1.md`:
+
+10. Fancy Gate (reuses Fancy Comp's detector, detector filters, Threshold-over-meter fader and reduction meter)
+
+Phase 2.1, from `docs/BUILD_PROMPT_PHASE2_1.md`, after Fancy Gate passes, in the order W, D, U, A:
+
+11. W: undo and redo, A/B and level-matched Compare, for all nine plugins in `fancy-core`
+12. D: dynamic EQ in Fancy EQ
+13. U: upward compression, Depth and Time in Fancy MultiComp
+14. A: adaptive noise tracking in Fancy FIR
+
+Phase 3, from `docs/BUILD_PROMPT_PHASE3.md`, after Phase 2.1. It's a draft until the user approves it, and it drops whatever Phase 2.1 now covers.
 
 Write `docs/<plugin>.md` before coding each plugin: DSP algorithm, parameters (range, default, unit, skew), latency, state format, and how each §5 fix is handled.
 
 ## Working rules
 
 - Ask before changing the parameter list or visual layout, or adding a dependency not named in the brief.
-- Look at every image in `reference/` before building each plugin (index in §9). For Phase 2, look at the plugin's mockup in `reference/phase2/`.
+- Look at every image in `reference/` before building each plugin (index in §9). For Phase 2, look at the plugin's mockup in `reference/phase2/`, and for Fancy Gate at `reference/phase2_0_1/15__gate_mockup.png`.
 - Commit after each milestone.
 
 ## Cloud-build workflow
@@ -54,7 +67,7 @@ Do not copy literally: host window title bars, the "[LOOSER]" tag (show just the
 
 ## Phase 2 reference mockups
 
-There are no Figma frames for Phase 2. `reference/phase2/` holds 2× mockups drawn in the same design system: `11__delay_mockup.png`, `12__xcomp_mockup.png`, `13__fir_mockup.png`. Divide their pixel sizes by 2. Target windows at 100 %: Delay about 760 × 410, MultiComp about 760 × 455, FIR about 760 × 430.
+There are no Figma frames for Phase 2. `reference/phase2/` holds 2× mockups drawn in the same design system: `11__delay_mockup.png`, `12__xcomp_mockup.png`, `13__fir_mockup.png`. Fancy Gate's is `reference/phase2_0_1/15__gate_mockup.png`. Divide their pixel sizes by 2. Target windows at 100 %: Delay about 760 × 410, MultiComp about 760 × 455, FIR about 760 × 430, Gate about 740 × 405. Their HTML source, with exact layout formulas, is in `design/phase2-mockup-src/` and `design/phase2_0_1-mockup-src/`: read it before building.
 
 The mockups set each control's layout, grouping and type, the way §2.5 does for Phase 1. Exact styling comes from `fancy-core`: where a mockup pixel disagrees with it, `fancy-core` wins. Never fork a component to match a mockup. Defaults come from P2-P4 in the brief, not the sample values drawn in the mockups.
 
