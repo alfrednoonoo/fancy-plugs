@@ -55,7 +55,7 @@ If a job hasn't started when its deadline arrives, the audio thread takes it ove
 | Requirement | How it's handled |
 |---|---|
 | Sample-rate mismatch | Offline windowed-sinc resampling: double precision, Kaiser window (β 12), 64 zero crossings each side, cutoff 0.94 × the lower Nyquist |
-| SRC gain | Dropdown with no SRC-gain or SRC-gain, each with 0, -6, -12 or -18 dB of trim. SRC-gain multiplies by session rate ÷ file rate, which keeps the wet level the same as the file at its own rate |
+| SRC gain | Dropdown with no SRC-gain or SRC-gain, each with 0, -6, -12 or -18 dB of trim. SRC-gain multiplies by file rate ÷ session rate, because a resampled IR has more samples per second and would otherwise convolve louder. That keeps the wet level the same as the file at its own rate |
 | Multichannel files | The first two channels are used |
 | Formats | Everything `registerBasicFormats` reads: WAV, AIFF, FLAC, Ogg and others |
 

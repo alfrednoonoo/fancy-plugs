@@ -331,7 +331,10 @@ TEST_CASE ("file module applies SRC and trim gain", "[verb][modules]")
 
     SECTION ("SRC gain keeps the sum of the samples")
     {
-        left[100] = right[100] = 0.0f;
+        // Away from sample 0, so none of the resampling filter's response is cut off.
+        left[0] = right[0] = 0.0f;
+        left[1000] = right[1000] = 1.0f;
+        chain.modules[0].file = makeAudio (left, right, 48000.0);
         chain.modules[0].gainMode = 4;
 
         const auto built = verb::buildIr (chain, 96000.0);
@@ -341,8 +344,8 @@ TEST_CASE ("file module applies SRC and trim gain", "[verb][modules]")
         for (int i = 0; i < built.audio.getNumSamples(); ++i)
             sum += built.audio.getSample (0, i);
 
-        // Doubling the rate with gain 2 doubles the sum, so a convolution stays as loud.
-        CHECK (sum == Catch::Approx (2.0).margin (0.05));
+        // A convolution's level follows the sum, so this one is as loud as at 48 kHz.
+        CHECK (sum == Catch::Approx (1.0).margin (0.01));
     }
 }
 
@@ -1150,13 +1153,15 @@ TEST_CASE ("the editor opens with a full chain and an empty one", "[verb][ui]")
     {
         const std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditorAndMakeActive());
         REQUIRE (editor != nullptr);
+        processor.editorBeingDeleted (editor.get());
     }
 
     for (const auto type : verb::allModuleTypes)
         processor.addModule (type, 0);
 
     const std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditorAndMakeActive());
-    CHECK (editor != nullptr);
+    REQUIRE (editor != nullptr);
+    processor.editorBeingDeleted (editor.get());
 }
 
 // Measurements ------------------------------------------------------------------------------

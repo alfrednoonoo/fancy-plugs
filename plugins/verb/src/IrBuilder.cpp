@@ -85,7 +85,7 @@ void addFile (Channels& ir, const ModuleSpec& module, double sampleRate)
     auto gain = std::pow (10.0, gainModeTrimDb (module.gainMode) / 20.0);
 
     if (gainModeUsesSrc (module.gainMode))
-        gain *= ratio;
+        gain /= ratio; // more samples per second would otherwise make the convolution louder
 
     Channels converted;
 
