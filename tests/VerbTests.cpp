@@ -1,3 +1,8 @@
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <immintrin.h>
+
 #include "Convolver.h"
 #include "IrBuilder.h"
 #include "IrFiles.h"
@@ -153,6 +158,28 @@ bool allFinite (const juce::AudioBuffer<float>& buffer)
                 return false;
 
     return true;
+}
+
+double secondsOf (const FILETIME& time)
+{
+    ULARGE_INTEGER value;
+    value.LowPart = time.dwLowDateTime;
+    value.HighPart = time.dwHighDateTime;
+    return (double) value.QuadPart * 1.0e-7;
+}
+
+double processCpuSeconds()
+{
+    FILETIME created, exited, kernel, user;
+    GetProcessTimes (GetCurrentProcess(), &created, &exited, &kernel, &user);
+    return secondsOf (kernel) + secondsOf (user);
+}
+
+double threadCpuSeconds()
+{
+    FILETIME created, exited, kernel, user;
+    GetThreadTimes (GetCurrentThread(), &created, &exited, &kernel, &user);
+    return secondsOf (kernel) + secondsOf (user);
 }
 
 juce::File scratchFolder (const juce::String& name)
@@ -1170,6 +1197,8 @@ TEST_CASE ("verb measurements", "[.measure]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInitialiser;
 
+    // Paced at real time, because running flat out starves the worker of the head start it
+    // has in a host. CPU is everything the process used, except this thread's own waiting.
     const auto measure = [] (bool lowCpu, const char* name)
     {
         const auto left = noise (192000, 20, 40000.0);
@@ -1180,29 +1209,38 @@ TEST_CASE ("verb measurements", "[.measure]")
         const auto input = noise (128, 22);
         std::vector<float> outLeft (128), outRight (128);
 
-        constexpr int blocks = 15000; // 40 s
+        using Clock = std::chrono::steady_clock;
 
-        juce::Thread::sleep (10);
+        constexpr int blocks = 7500; // 20 s
+        const auto blockTime = std::chrono::duration_cast<Clock::duration> (std::chrono::duration<double> (128.0 / rate));
 
-        const auto start = std::chrono::steady_clock::now();
+        const auto cpuBefore = processCpuSeconds();
+        const auto threadBefore = threadCpuSeconds();
+        const auto start = Clock::now();
 
-        auto worstBlock = 0.0;
+        auto deadline = start;
+        auto active = 0.0, worst = 0.0;
 
         for (int block = 0; block < blocks; ++block)
         {
-            const auto blockStart = std::chrono::steady_clock::now();
+            const auto blockStart = Clock::now();
             convolver.process (input.data(), input.data(), outLeft.data(), outRight.data(), 128, false);
-            worstBlock = std::max (worstBlock, std::chrono::duration<double> (std::chrono::steady_clock::now() - blockStart).count());
 
-            // Gives the worker real time to run, as it would have in a host.
-            if (block % 64 == 0)
-                juce::Thread::yield();
+            const auto used = std::chrono::duration<double> (Clock::now() - blockStart).count();
+            active += used;
+            worst = std::max (worst, used);
+
+            deadline += blockTime;
+
+            while (Clock::now() < deadline)
+                _mm_pause();
         }
 
-        const auto seconds = std::chrono::duration<double> (std::chrono::steady_clock::now() - start).count();
+        const auto wall = std::chrono::duration<double> (Clock::now() - start).count();
+        const auto workers = (processCpuSeconds() - cpuBefore) - (threadCpuSeconds() - threadBefore);
 
-        std::printf ("verb 4 s stereo IR, %s: audio thread %.2f %% of real time, worst block %.1f us of 2667 us, late blocks %d\n",
-                     name, 100.0 * seconds / (blocks * 128.0 / rate), worstBlock * 1.0e6, convolver.getLateBlocks());
+        std::printf ("verb 4 s stereo IR, %s: %.2f %% of one core (audio thread %.2f %%, worker %.2f %%), worst block %.0f us of 2667 us, late blocks %d\n",
+                     name, 100.0 * (active + workers) / wall, 100.0 * active / wall, 100.0 * workers / wall, worst * 1.0e6, convolver.getLateBlocks());
     };
 
     measure (false, "Zero latency (target < 5 %)");

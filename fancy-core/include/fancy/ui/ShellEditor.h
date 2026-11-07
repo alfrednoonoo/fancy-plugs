@@ -24,7 +24,7 @@ private:
 class EditLink final : public juce::Component
 {
 public:
-    explicit EditLink (juce::Colour accent);
+    explicit EditLink (juce::Colour accent, const juce::String& text = "EDIT");
 
     void paint (juce::Graphics&) override;
     void mouseUp (const juce::MouseEvent&) override;
@@ -33,6 +33,7 @@ public:
 
 private:
     juce::Colour accentColour;
+    juce::String linkText;
 };
 
 // Overlay holding settings that aren't part of the main layout.

@@ -44,7 +44,7 @@ void CaptionPanels::paint (juce::Graphics& g)
 
 // EditLink --------------------------------------------------------------------
 
-EditLink::EditLink (juce::Colour accent)
+EditLink::EditLink (juce::Colour accent, const juce::String& text) : accentColour (accent), linkText (text)
     : accentColour (accent)
 {
     setMouseCursor (juce::MouseCursor::PointingHandCursor);
@@ -58,7 +58,7 @@ void EditLink::paint (juce::Graphics& g)
     g.fillPath (icons::gear (juce::Rectangle<float> (bounds.getX() + 8.0f, bounds.getCentreY() - 6.0f, 12.0f, 12.0f)));
 
     g.setFont (font (Weight::regular, 14.0f));
-    g.drawText ("EDIT", bounds.withTrimmedLeft (24.0f), juce::Justification::centredLeft, false);
+    g.drawText (linkText, bounds.withTrimmedLeft (24.0f), juce::Justification::centredLeft, false);
 }
 
 void EditLink::mouseUp (const juce::MouseEvent& event)

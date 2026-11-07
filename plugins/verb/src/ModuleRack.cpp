@@ -116,9 +116,21 @@ void ModuleCard::CardButton::paint (juce::Graphics& g)
 
     if (dropdown)
     {
-        g.fillPath (icons::chevrons (bounds.removeFromRight (28.0f).withSizeKeepingCentre (8.0f, 14.0f)));
+        g.strokePath (icons::chevrons (bounds.removeFromRight (28.0f).withSizeKeepingCentre (8.0f, 12.0f)), juce::PathStrokeType (1.0f));
         g.setColour (textColour);
         g.drawFittedText (buttonText, bounds.withTrimmedLeft (10.0f).toNearestInt(), juce::Justification::centredLeft, 1, 0.8f);
+    }
+    else if (buttonText == "<" || buttonText == ">")
+    {
+        const auto tip = buttonText == "<" ? -4.0f : 4.0f;
+        const auto centre = bounds.getCentre();
+
+        juce::Path chevron;
+        chevron.startNewSubPath (centre.x - tip, centre.y - 7.0f);
+        chevron.lineTo (centre.x + tip, centre.y);
+        chevron.lineTo (centre.x - tip, centre.y + 7.0f);
+
+        g.strokePath (chevron, juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     }
     else
     {
@@ -393,7 +405,7 @@ void ModuleCard::paint (juce::Graphics& g)
     const auto dim = isOn ? 1.0f : 0.4f;
 
     g.setColour (accent().withMultipliedAlpha (dim));
-    g.fillPath (icons::power (powerArea().toFloat().withSizeKeepingCentre (16.0f, 16.0f)));
+    g.strokePath (icons::power (powerArea().toFloat().withSizeKeepingCentre (16.0f, 16.0f)), juce::PathStrokeType (2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
     g.setColour (colours::textPrimary.withMultipliedAlpha (dim));
     g.setFont (font (Weight::medium, 16.0f));
@@ -419,7 +431,7 @@ void ModuleCard::paint (juce::Graphics& g)
     g.drawLine ({ close.getBottomLeft(), close.getTopRight() }, 1.5f);
 
     g.setColour (colours::textPrimary);
-    g.fillPath (icons::plus (plusArea().toFloat().withSizeKeepingCentre (14.0f, 14.0f)));
+    g.strokePath (icons::plus (plusArea().toFloat().withSizeKeepingCentre (14.0f, 14.0f)), juce::PathStrokeType (1.5f));
 
     g.setColour (colours::grey6);
 
@@ -746,7 +758,8 @@ void ChainStrip::paint (juce::Graphics& g)
         g.fillRoundedRectangle (chip.bounds, 2.0f);
 
         g.setColour (accentOf (type).withMultipliedAlpha (on ? 1.0f : 0.4f));
-        g.fillPath (icons::power (juce::Rectangle<float> (chip.bounds.getX() + 8.0f, chip.bounds.getY() + 5.0f, 14.0f, 14.0f)));
+        g.strokePath (icons::power (juce::Rectangle<float> (chip.bounds.getX() + 8.0f, chip.bounds.getY() + 5.0f, 14.0f, 14.0f)),
+                      juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
         g.setColour (colours::textSecondary);
         g.setFont (font (Weight::medium, 12.0f));

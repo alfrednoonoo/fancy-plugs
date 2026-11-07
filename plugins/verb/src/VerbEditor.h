@@ -29,6 +29,13 @@ private:
 
     VerbProcessor& processor;
 
+    class ColumnPanel final : public juce::Component
+    {
+    public:
+        void paint (juce::Graphics& g) override { g.fillAll (fancy::ui::colours::bgSection); }
+    };
+
+    ColumnPanel columnPanel;
     IrDisplay display;
     ModuleRack rack;
     ChainStrip strip;
@@ -36,7 +43,7 @@ private:
     fancy::ui::Knob predelayKnob, centerKnob, widthKnob;
     fancy::ui::Fader wetFader, dryFader;
     juce::Label centerLabel, widthLabel, wetLabel, dryLabel;
-    fancy::ui::PillButton setupButton { "SETUP" };
+    fancy::ui::EditLink setupButton { fancy::ui::colours::textSecondary, "SETUP" };
 
     fancy::ui::EditDrawer drawer { "SETUP" };
     juce::Label latencyLabel, fftLabel, storageLabel, folderLabel, folderPath, lateLabel;

@@ -36,7 +36,8 @@ juce::File writePreviewFile()
 
     for (int i = 0; i < length; ++i)
     {
-        const auto envelope = (float) std::exp (-6.0 * (double) i / rate);
+        const auto remaining = juce::jmax (0.0f, 1.0f - (float) i / (float) (3.0 * rate));
+        const auto envelope = remaining * remaining * (0.6f + 0.4f * (float) (i % 4800) / 4800.0f);
         audio.setSample (0, i, envelope * (random.nextFloat() * 2.0f - 1.0f));
         audio.setSample (1, i, envelope * (random.nextFloat() * 2.0f - 1.0f));
     }
@@ -76,7 +77,7 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
     styleLabel (dryLabel, "Dry", colours::textSecondary, juce::Justification::centred);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
-             &display, &rack, &strip, &predelayKnob, &centerLabel, &widthLabel, &centerKnob, &widthKnob,
+             &columnPanel, &display, &rack, &strip, &predelayKnob, &centerLabel, &widthLabel, &centerKnob, &widthKnob,
              &wetLabel, &dryLabel, &wetFader, &dryFader, &setupButton })
         getBody().addAndMakeVisible (item);
 
@@ -135,6 +136,8 @@ void VerbEditor::bodyResized()
 
     const auto column = rackWidth;
 
+    columnPanel.setBounds (column, 0, columnWidth, baseHeight - headerHeight);
+
     predelayKnob.setBounds (column + 33, 24, 66, 99);
     centerLabel.setBounds (column + 18, 147, 52, 14);
     widthLabel.setBounds (column + 66, 147, 50, 14);
@@ -144,7 +147,7 @@ void VerbEditor::bodyResized()
     dryLabel.setBounds (column + 67, 219, 44, 17);
     wetFader.setBounds (column + 21, 244, 44, 308);
     dryFader.setBounds (column + 67, 244, 44, 308);
-    setupButton.setBounds (column + 28, 580, 77, 24);
+    setupButton.setBounds (column + 25, 580, 82, 24);
 }
 
 bool VerbEditor::listsParameter (const juce::AudioProcessorParameter& candidate)
