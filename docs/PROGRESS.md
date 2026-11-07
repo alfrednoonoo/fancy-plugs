@@ -6,8 +6,8 @@
 - `fancy-core`: done, except the Verb module card, which is deferred until Verb needs it.
 - Fancy Kicker: done, signed off in REAPER by the user.
 - Fancy Exciter: done, signed off in REAPER by the user.
-- Fancy Comp: built and green in CI, **waiting for the REAPER check** in `docs/comp-checklist.md` (§7 checks 3 and 7).
-- Next: Fancy EQ, once the Comp is signed off.
+- Fancy Comp: done, signed off in REAPER by the user.
+- Next: Fancy EQ.
 
 Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42263079104 (commit `b575b0a`).
 
@@ -43,11 +43,11 @@ Exciter deviations from Figma: knob arrows follow the §3.2 ranges as the user c
 |---|---|---|
 | 1 | Actions run green, artifact contains the plugin | Pass, run above |
 | 2 | pluginval strictness 10 | Pass for all three plugins, GUI tests on |
-| 3 | State survives a REAPER project reload | **Waiting for the user**; state round-trip and corrupted-state tests pass in CI |
+| 3 | State survives a REAPER project reload | Pass, confirmed by the user |
 | 4 | §5.2 tests | Pass, 57 test cases across the suite. Worst alias at 4× is -100.9 dBFS against the -90 dBFS target. The limiter holds its ceiling up to 200 dB above threshold in every oversampling mode. Numbers in `docs/measurements/comp.txt` |
 | 5 | Screenshots compared with the reference | Done against the Figma frame; `docs/screens/comp-vs-reference.png` shows Figma above the build |
 | 6 | CPU against the §4.11 target | Pass: 0.41–0.72 % without oversampling across runs, against < 1 %. About 2 % at 2× and 3–4 % at 4× on CI runners |
-| 7 | Installed and confirmed in REAPER | **Waiting for the user** |
+| 7 | Installed and confirmed in REAPER | Pass, confirmed by the user |
 
 Comp deviations from Figma:
 
