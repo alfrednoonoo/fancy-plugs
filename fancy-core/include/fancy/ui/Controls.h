@@ -136,6 +136,12 @@ class ParamSegments : public ParamClickControl
 public:
     ParamSegments (juce::RangedAudioParameter& parameter, juce::Colour selectedFill, juce::Colour selectedText);
 
+    void setSelectedColours (juce::Colour selectedFill, juce::Colour selectedText);
+    void setTextHeight (float height);
+
+    // Widths in proportion to each segment's text, for labels of very different lengths.
+    void setFitToText (bool shouldFit);
+
     void mouseDown (const juce::MouseEvent&) override;
     void paint (juce::Graphics&) override;
 
@@ -149,6 +155,8 @@ private:
 
     int numSegments;
     juce::Colour fillColour, textColour;
+    float textHeight = 14.0f;
+    bool fitToText = false;
 };
 
 // A small pill with text on it, filled in the accent colour while the parameter is on.

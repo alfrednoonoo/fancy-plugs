@@ -115,6 +115,7 @@ bool PresetManager::saveUser (const juce::String& name)
 
     auto state = owner.getApvts().copyState();
     state.setProperty ("stateVersion", FancyProcessor::stateVersion, nullptr);
+    owner.addToState (state);
 
     const auto xml = state.createXml();
     return xml != nullptr && xml->writeTo (directory.getChildFile (legalName + presetExtension));

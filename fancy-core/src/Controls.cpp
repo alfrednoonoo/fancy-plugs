@@ -462,6 +462,25 @@ ParamSegments::ParamSegments (juce::RangedAudioParameter& parameter, juce::Colou
 {
 }
 
+void ParamSegments::setSelectedColours (juce::Colour selectedFill, juce::Colour selectedText)
+{
+    fillColour = selectedFill;
+    textColour = selectedText;
+    repaint();
+}
+
+void ParamSegments::setTextHeight (float height)
+{
+    textHeight = height;
+    repaint();
+}
+
+void ParamSegments::setFitToText (bool shouldFit)
+{
+    fitToText = shouldFit;
+    repaint();
+}
+
 int ParamSegments::getSelected() const
 {
     return juce::jlimit (0, numSegments - 1, juce::roundToInt (getNormalised() * (float) (numSegments - 1)));
@@ -470,9 +489,38 @@ int ParamSegments::getSelected() const
 juce::Rectangle<float> ParamSegments::segmentBounds (int index) const
 {
     const auto area = getLocalBounds().toFloat().reduced (3.0f);
-    const auto width = area.getWidth() / (float) numSegments;
 
-    return area.withX (area.getX() + (float) index * width).withWidth (width);
+    if (! fitToText)
+    {
+        const auto width = area.getWidth() / (float) numSegments;
+        return area.withX (area.getX() + (float) index * width).withWidth (width);
+    }
+
+    // Each segment gets its text plus an equal share of what's left.
+    const auto choices = param.getAllValueStrings();
+    const auto textFont = font (Weight::regular, textHeight);
+
+    const auto widthOf = [&] (const juce::String& text)
+    {
+        juce::GlyphArrangement glyphs;
+        glyphs.addLineOfText (textFont, text, 0.0f, 0.0f);
+        return glyphs.getBoundingBox (0, -1, true).getWidth();
+    };
+
+    auto total = 0.0f, before = 0.0f;
+
+    for (int i = 0; i < numSegments; ++i)
+    {
+        const auto width = widthOf (choices[i]);
+        total += width;
+
+        if (i < index)
+            before += width;
+    }
+
+    const auto padding = juce::jmax (0.0f, (area.getWidth() - total) / (float) numSegments);
+
+    return area.withX (area.getX() + before + padding * (float) index).withWidth (widthOf (choices[index]) + padding);
 }
 
 void ParamSegments::mouseDown (const juce::MouseEvent& event)
@@ -511,7 +559,7 @@ void ParamSegments::paint (juce::Graphics& g)
 
 void ParamSegments::paintSegment (juce::Graphics& g, int index, juce::Rectangle<float> area, juce::Colour ink)
 {
-    g.setFont (font (Weight::regular, bodyFontSize));
+    g.setFont (font (Weight::regular, textHeight));
     g.setColour (ink);
     g.drawText (param.getAllValueStrings()[index], area, juce::Justification::centred, false);
 }

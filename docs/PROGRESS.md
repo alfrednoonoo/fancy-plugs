@@ -23,11 +23,11 @@ Brief: `docs/BUILD_PROMPT_PHASE2.md`. Mockups: `reference/phase2/`. Each plugin 
 
 - Fancy Delay: built and green in CI. The user asked to move on to the next plugin without saying whether the REAPER checklist passed, so §7 checks 3 and 7 are still unconfirmed.
 - Fancy MultiComp: the user renamed Fancy XComp to this, and the mockup and its source keep their `xcomp` file names. Built and green in CI. Waiting for the user's check in REAPER, with `docs/multicomp-checklist.md`.
-- Fancy FIR: not started.
+- Fancy FIR: in progress. The user asked to start it while they check the Delay and MultiComp in REAPER.
 
 All three use the shared controls, so every knob and fader gets the typed values added in v1.0.1.
 
-Do not start Fancy FIR until the user has checked the MultiComp in REAPER, or says to go ahead. The Delay's REAPER check is unconfirmed too, so ask about both.
+The user is checking the Delay and MultiComp in REAPER while FIR is built. Ask for their results.
 
 Changes to shared code since v1.0.1, which the next release should include:
 

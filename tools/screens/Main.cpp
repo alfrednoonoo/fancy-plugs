@@ -45,6 +45,11 @@
  #include "MultiCompProcessor.h"
 #endif
 
+#if FANCY_HAS_FIR
+ #include "FirEditor.h"
+ #include "FirProcessor.h"
+#endif
+
 namespace
 {
 
@@ -130,6 +135,27 @@ bool renderVerb (const juce::File& outputDir)
 
     editor->showPreview (VerbEditor::Preview::scrolled);
     return writeBothScales (*editor, "verb-scrolled", outputDir) && ok;
+}
+#endif
+
+#if FANCY_HAS_FIR
+bool renderFir (const juce::File& outputDir)
+{
+    FirProcessor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<FirEditor*> (base.get());
+
+    if (editor == nullptr)
+        return false;
+
+    editor->showPreview (FirEditor::Preview::subtractLearning);
+    auto ok = writeBothScales (*editor, "fir", outputDir);
+
+    editor->showPreview (FirEditor::Preview::eqCurve);
+    ok = writeBothScales (*editor, "fir-eq", outputDir) && ok;
+
+    editor->showPreview (FirEditor::Preview::drawer);
+    return writeBothScales (*editor, "fir-edit", outputDir) && ok;
 }
 #endif
 
@@ -227,6 +253,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_MULTICOMP
     ok = renderPlugin<MultiCompProcessor, MultiCompEditor> ("multicomp", outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_FIR
+    ok = renderFir (outputDir) && ok;
    #endif
 
     Gallery gallery;

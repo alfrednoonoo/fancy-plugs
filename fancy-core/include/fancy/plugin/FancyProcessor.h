@@ -49,6 +49,10 @@ public:
     // parameters checks it here.
     virtual void stateApplied() {}
 
+    // Adds state that isn't kept in the value tree, such as data the audio thread writes, to
+    // a copy that's about to be saved.
+    virtual void addToState (juce::ValueTree& state) { juce::ignoreUnused (state); }
+
     // Runs after a factory preset sets its parameters, with the preset's data string.
     virtual void factoryPresetLoaded (const juce::String& data) { juce::ignoreUnused (data); }
 

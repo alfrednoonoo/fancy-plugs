@@ -31,6 +31,7 @@ void FancyProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("stateVersion", stateVersion, nullptr);
+    addToState (state);
 
     if (const auto xml = state.createXml())
         copyXmlToBinary (*xml, destData);
