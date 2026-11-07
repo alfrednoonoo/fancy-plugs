@@ -81,7 +81,7 @@ Lessons from the Delay build:
 ## Market research and Phase 3 draft
 
 - **Reports:** `docs/research/2026-11-market-report-summary.md` and `2026-11-market-report-detailed.md` compare the suite with the 2026 leaders in each category. They use our CI measurements and the leaders' published documentation. No competitor was run.
-- **User's answers, 7 November 2026:** Windows first, and Mac later. New plugin types are wanted, but which ones isn't decided. Release v1.1.0 once FIR passes in REAPER. The order isn't decided, and the options were explained.
+- **User's answers, 7 November 2026:** Windows first, and Mac later. New plugin types are wanted, but which ones isn't decided. Release v1.1.0 once FIR passes in REAPER. Order approved: benchmark host, shared features and design rules, then EQ, Comp and Verb first, as the plugins the user uses most, then new types, then Mac. Still to decide: which new plugin types.
 - **Phase 3.0:** `docs/BUILD_PROMPT_PHASE3.md` is a draft. Its section Q0 lists the decisions the user makes before any work starts, and it isn't in `AGENTS.md` or `CLAUDE.md` until they approve it.
 
 ## FIR acceptance (§7, P5)

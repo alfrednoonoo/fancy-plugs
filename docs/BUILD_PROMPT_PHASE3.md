@@ -19,7 +19,7 @@ Ask these together, once, before writing any code. Record the answers in `docs/P
 - **Platform:** Windows first, until it's a concrete, finished version. Mac is wanted after that, as a later phase.
 - **New plugins:** wanted. Which ones isn't decided yet. The user's main concern is that their design matches the suite, so every new plugin goes through Q5 first.
 - **Release:** v1.1.0 comes first, once Fancy FIR has passed its REAPER check.
-- **Order:** not decided yet. The options are explained to the user, and the recommendation is in Q2's preamble.
+- **Order:** the user approved the order in Q2's preamble. They use the EQ, Comp and Verb most, so those are improved first.
 
 1. **Platform.** Stay Windows VST3 only, as the original brief says, or add CLAP, macOS or AU? Anything beyond Windows VST3 matters only if other people will use the plugins. It changes the CI matrix, costs macOS runner minutes, which are about 10 times Windows ones, and brings signing and notarisation questions.
 2. **New plugins.** The suite has no limiter or maximiser, de-esser, saturator, transient shaper, chorus or other modulation effect, or algorithmic reverb. These are common in the "essential plugins" lists. Phase 3.0 doesn't add any unless the user picks some. If they do, each gets a P2-style section written and approved first.
@@ -48,13 +48,19 @@ The research couldn't compare our plugins with the leaders head to head, because
 
 ## Q2. Improvements, in order
 
-Recommended order, pending the user's choice:
+Order, approved by the user:
 
 1. The benchmark host (Q1), which gives a baseline before anything changes.
 2. The shared features (Q2.1) and the design rules (Q5), so every later change is built on them once.
-3. Improvements to the plugins the user reaches for most, one plugin at a time, each signed off in REAPER.
-4. New plugin types, each designed through Q5 before any code.
+3. Improvements to the existing plugins, one at a time, each signed off in REAPER, in this order:
+   1. EQ (Q2.4)
+   2. Comp (Q2.5)
+   3. Verb (Q2.8)
+   4. then MultiComp (Q2.6), Delay (Q2.3), FIR (Q2.7) and Kicker (Q2.2). Confirm this part with the user when the first three are done.
+4. New plugin types, each designed through Q5 before any code. Which ones is still the user's decision.
 5. Mac, as its own phase.
+
+The sections below keep their numbers. Follow the order above, not the numbering.
 
 Each item needs its design-note section, in `docs/<plugin>.md`, written and approved first, because each changes the parameter list or layout. New controls go in EDIT drawers or popovers unless the user approves a layout change. Every new knob and fader uses the shared components, so typed values come with them.
 
