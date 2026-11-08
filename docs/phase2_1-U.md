@@ -50,6 +50,8 @@ Per band, in `MultiCompDsp::compressBand`, from the same detector level `x` (dB)
 
 ## 5. Controls (panel 4)
 
+The user approved the taller window and leaving out the "Downward" label on 8 November 2026.
+
 The window grows from 760 × 470 to 760 × 589, the height of the new row, so nothing that exists moves sideways:
 
 - **UPWARD row:** a second card under the band card, the full card width (13 to 623, 112 px high). From the left: the label **UPWARD** in the band colour, then Up thresh, Up ratio, Max lift and Floor (the band's tight knobs), an **Upward on** checkbox, and the band's **transfer curve** at the right end.
