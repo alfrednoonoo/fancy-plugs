@@ -4,7 +4,10 @@
 
 #include <fancy/ui/ShellEditor.h>
 
+#include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <iostream>
 #include <random>
 #include <thread>
@@ -871,4 +874,79 @@ TEST_CASE ("Compare: the gain holds below -70 LUFS and stays within 24 dB", "[wo
     }
 
     CHECK (stage.getGainDb() == fancy::dsp::CompareStage::maxGainDb);
+}
+
+// CPU, by the method in §0.4 of the Phase 2.1 brief: the median of five runs in one build, and
+// the ratio to Fancy Comp at its defaults. Compare costs nothing while no editor is open, and
+// its cost while measuring or on is printed against that.
+TEST_CASE ("Workflow CPU measurement", "[.measure]")
+{
+    constexpr int measureBlock = 128;
+    constexpr double seconds = 10.0;
+
+    enum class State { idle, measuring, on };
+
+    const auto cpu = [] (fancy::FancyProcessor& processor, State state)
+    {
+        std::vector<double> runs;
+
+        for (int run = 0; run < 5; ++run)
+        {
+            processor.compare.setMeasuring (state != State::idle);
+            processor.compare.setOn (state == State::on);
+            processor.setRateAndBufferSizeDetails (rate, measureBlock);
+            processor.prepareToPlay (rate, measureBlock);
+            processor.waitForBackgroundWork (20000);
+
+            juce::AudioBuffer<float> block (juce::jmax (2, processor.getTotalNumInputChannels()), measureBlock);
+            juce::MidiBuffer midi;
+            std::mt19937 random (8);
+            std::uniform_real_distribution<float> noise (-0.25f, 0.25f);
+            std::chrono::duration<double> spent {};
+
+            for (int done = 0; done < (int) (seconds * rate); done += measureBlock)
+            {
+                block.clear();
+
+                for (int ch = 0; ch < processor.getMainBusNumInputChannels(); ++ch)
+                    for (int i = 0; i < measureBlock; ++i)
+                        block.setSample (ch, i, noise (random));
+
+                midi.clear();
+                const auto start = std::chrono::steady_clock::now();
+                processor.processBlock (block, midi);
+                spent += std::chrono::steady_clock::now() - start;
+            }
+
+            processor.releaseResources();
+            runs.push_back (100.0 * spent.count() / seconds);
+        }
+
+        processor.compare.setOn (false);
+        processor.compare.setMeasuring (false);
+        std::sort (runs.begin(), runs.end());
+        return runs[2];
+    };
+
+    double reference = 0.0;
+
+   #if FANCY_HAS_COMP
+    {
+        CompProcessor comp;
+        reference = cpu (comp, State::idle);
+    }
+   #endif
+
+    std::printf ("workflow cpu reference: Fancy Comp default %.3f %% (median of 5, 48 kHz, 128 samples, stereo)\n", reference);
+
+    forEachPlugin ([&] (fancy::FancyProcessor& processor)
+    {
+        const auto idle = cpu (processor, State::idle);
+        const auto measuring = cpu (processor, State::measuring);
+        const auto on = cpu (processor, State::on);
+        const auto ratio = [reference] (double value) { return reference > 0.0 ? value / reference : 0.0; };
+
+        std::printf ("workflow cpu: %-18s default %.3f %% (%.2f x Comp); editor open, Compare measuring %.3f %% (%.2f x); Compare on %.3f %% (%.2f x)\n",
+                     processor.getName().toRawUTF8(), idle, ratio (idle), measuring, ratio (measuring), on, ratio (on));
+    });
 }
