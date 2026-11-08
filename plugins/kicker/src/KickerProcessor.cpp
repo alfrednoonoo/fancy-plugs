@@ -80,7 +80,7 @@ KickerDsp::Targets KickerProcessor::readTargets() const
     return targets;
 }
 
-void KickerProcessor::prepareToPlay (double sampleRate, int)
+void KickerProcessor::prepareAudio (double sampleRate, int)
 {
     dsp.prepare (sampleRate);
     dsp.snapToTargets (readTargets());
@@ -102,7 +102,7 @@ bool KickerProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     return out == layouts.getMainInputChannelSet();
 }
 
-void KickerProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void KickerProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 

@@ -328,8 +328,12 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
     for (juce::Component* item : std::initializer_list<juce::Component*> { &smoothCheckbox, &editLink, &outMeter, &wetLabel, &dryLabel, &wetFader, &dryFader })
         body.addAndMakeVisible (item);
 
+    // Phase 2.1 W.1: room in the header for undo, redo, A/B and Compare.
+    setShortHeaderLabels (true);
+    setPresetDropdownWidth (120);
+
     styleLabel (tempoLabel, {}, colours::textSecondary, juce::Justification::centredRight);
-    tempoLabel.setBounds (520, 13, 124, 24);
+    tempoLabel.setBounds (getHeaderFreeLeft(), 13, getHeaderFreeRight() - getHeaderFreeLeft(), 24);
     getRoot().addAndMakeVisible (tempoLabel);
 
     drawer.setBounds (0, tabRowY - 2, rightColumnX, bodyHeight - tabRowY + 2);

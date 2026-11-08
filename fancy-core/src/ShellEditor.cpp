@@ -17,10 +17,14 @@ constexpr float scales[] { 1.0f, 1.25f, 1.5f, 2.0f };
 constexpr int scaleItemBase = 1000;
 constexpr int aboutItem = 2000;
 constexpr int saveItem = 10001, reloadItem = 10002, renameItem = 10003, deleteItem = 10004, folderItem = 10005;
+constexpr int undoItem = 3001, redoItem = 3002, copyItem = 3003, compareItem = 3004, ioItem = 3005;
 
 const juce::String ellipsis (juce::CharPointer_UTF8 ("\xe2\x80\xa6"));
 const juce::String changedMark (juce::CharPointer_UTF8 (" \xe2\x80\xa2"));
 const juce::String apostrophe (juce::CharPointer_UTF8 ("\xe2\x80\x99"));
+const juce::String rightArrowText (juce::CharPointer_UTF8 (" \xe2\x86\x92 "));
+const juce::String approxText (juce::CharPointer_UTF8 ("\xe2\x89\x88 "));
+const juce::String slotLetters[] { "A", "B" };
 
 juce::String quoted (const juce::String& text)
 {
@@ -127,8 +131,30 @@ ShellEditor::ShellEditor (FancyProcessor& processor, int baseWidth, int baseHeig
     addAndMakeVisible (root);
     root.addAndMakeVisible (body);
 
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &presetDropdown, &saveButton, &parameterButton, &ioPill, &outputKnob, &powerPill })
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &presetDropdown, &saveButton, &parameterButton, &ioPill, &outputKnob, &powerPill, &abSwitch })
         root.addAndMakeVisible (item);
+
+    // Compact plugins keep only A | B in the header; the rest is in the Prm menu (W.1).
+    if (style == HeaderStyle::full)
+    {
+        for (juce::Component* item : std::initializer_list<juce::Component*> { &undoButton, &redoButton, &copyButton, &compareButton,
+                                                                               &separators[0], &separators[1], &separators[2] })
+            root.addAndMakeVisible (item);
+    }
+    else
+    {
+        ioPill.setVisible (false);
+    }
+
+    undoButton.onClick = [this] { undo(); };
+    redoButton.onClick = [this] { redo(); };
+    copyButton.onClick = [this] { copyToOtherSlot(); };
+    abSwitch.onSelect = [this] (int slot) { selectSlot (slot); };
+    compareButton.onClick = [this] { setCompare (! isCompareOn()); };
+
+    // The history starts from the settings the editor opens on, and Compare measures while open.
+    processor.getWorkflow().commit();
+    processor.compare.setMeasuring (true);
 
     root.addChildComponent (sidechainNotice);
     root.addChildComponent (tooltips);
@@ -147,6 +173,12 @@ ShellEditor::ShellEditor (FancyProcessor& processor, int baseWidth, int baseHeig
 ShellEditor::~ShellEditor()
 {
     stopTimer();
+
+    // Compare is never left on with nobody to see it.
+    fancyProcessor.compare.setMeasuring (false);
+    fancyProcessor.compare.setOn (false);
+    fancyProcessor.getWorkflow().commit();
+
     popups.clear();
     setLookAndFeel (nullptr);
 }
@@ -216,10 +248,26 @@ void ShellEditor::closePopups()
 
 bool ShellEditor::keyPressed (const juce::KeyPress& key)
 {
-    // Only the plugin's own shortcuts. Every other key goes back to the host (H.2).
-    if (key == juce::KeyPress ('s', juce::ModifierKeys::ctrlModifier, 0))
+    // Only the plugin's own shortcuts, which only arrive while the plugin window has the
+    // keyboard focus. Every other key goes back to the host (H.2, W.2).
+    constexpr auto ctrl = juce::ModifierKeys::ctrlModifier;
+    constexpr auto shift = juce::ModifierKeys::shiftModifier;
+
+    if (key == juce::KeyPress ('s', ctrl, 0))
     {
         showSavePrompt();
+        return true;
+    }
+
+    if (key == juce::KeyPress ('z', ctrl, 0))
+    {
+        undo();
+        return true;
+    }
+
+    if (key == juce::KeyPress ('z', ctrl | shift, 0) || key == juce::KeyPress ('y', ctrl, 0))
+    {
+        redo();
         return true;
     }
 
@@ -324,15 +372,68 @@ void ShellEditor::layoutHeader()
         x += itemWidth + gap;
     };
 
+    const auto shortButtons = compact || shortLabels;
+
     place (presetDropdown, presetWidth > 0 ? presetWidth : (compact ? 110 : 246));
-    place (saveButton, compact ? 28 : 63);
-    place (parameterButton, compact ? 43 : 86);
-    place (ioPill, compact ? 39 : 80);
+    place (saveButton, shortButtons ? 28 : 63);
+    place (parameterButton, shortButtons ? 43 : 86);
 
     const auto pillWidth = compact ? 48 : 56;
 
     powerPill.setBounds (width - 16 - pillWidth, top, pillWidth, itemHeight);
     outputKnob.setBounds (powerPill.getX() - 36, 11, 28, 28);
+    headerFreeRight = outputKnob.getX() - gap;
+
+    // W.1: in a compact header, A | B takes the I/O pill's place.
+    constexpr int abWidth = 46, iconWidth = 24, compareWidth = 84, iconGap = 4, separatorMargin = 6;
+
+    if (compact)
+    {
+        place (abSwitch, abWidth);
+        headerFreeLeft = x;
+        return;
+    }
+
+    place (ioPill, shortButtons ? 39 : 80);
+
+    // Undo, redo | A B, copy | Compare, with the mockup's separators.
+    x -= gap;
+
+    const auto separator = [&] (HeaderSeparator& line)
+    {
+        x += separatorMargin;
+        line.setBounds (x, top, 1, itemHeight);
+        x += 1 + separatorMargin;
+    };
+
+    const auto button = [&] (juce::Component& item, int itemWidth, int after)
+    {
+        item.setBounds (x, top, itemWidth, itemHeight);
+        x += itemWidth + after;
+    };
+
+    separator (separators[0]);
+    button (undoButton, iconWidth, iconGap);
+    button (redoButton, iconWidth, 0);
+    separator (separators[1]);
+    button (abSwitch, abWidth, iconGap);
+    button (copyButton, iconWidth, 0);
+    separator (separators[2]);
+    button (compareButton, compareWidth, 0);
+
+    headerFreeLeft = x + gap;
+}
+
+void ShellEditor::setShortHeaderLabels (bool shouldBeShort)
+{
+    shortLabels = shouldBeShort;
+
+    const auto shortButtons = shortLabels || headerStyle == HeaderStyle::compact;
+    saveButton.setText (shortButtons ? "+" : "+ New");
+    parameterButton.setText (shortButtons ? "Prm" : "Parameter");
+
+    layoutHeader();
+    refreshHeader();
 }
 
 void ShellEditor::showTip (juce::Component& near, const juce::String& text)
@@ -403,8 +504,57 @@ void ShellEditor::setPresetDropdownWidth (int newWidth)
 
 void ShellEditor::timerCallback()
 {
+    // One drag, one click or one menu choice is one undo step: edits are made into a step once
+    // no mouse button is down.
+    if (! juce::ModifierKeys::currentModifiers.isAnyMouseButtonDown())
+        fancyProcessor.getWorkflow().commit();
+
     refreshHeader();
     onTick (1.0f / (float) timerHz);
+}
+
+void ShellEditor::refreshWorkflow()
+{
+    auto& workflow = fancyProcessor.getWorkflow();
+    const auto active = workflow.getActiveSlot();
+
+    undoButton.setEnabled (workflow.canUndo() || workflow.hasPendingEdits());
+    redoButton.setEnabled (workflow.canRedo());
+    undoButton.setTooltip (workflow.canUndo() ? "Undo " + workflow.getUndoName() + " (Ctrl+Z)" : juce::String ("Undo (Ctrl+Z)"));
+    redoButton.setTooltip (workflow.canRedo() ? "Redo " + workflow.getRedoName() + " (Ctrl+Shift+Z)" : juce::String ("Redo (Ctrl+Shift+Z)"));
+    copyButton.setTooltip ("Copy " + slotLetters[active] + " to " + slotLetters[1 - active]);
+    abSwitch.setActive (active);
+    compareButton.setState (isCompareOn(), fancyProcessor.compare.getGainDb());
+}
+
+void ShellEditor::undo()
+{
+    fancyProcessor.getWorkflow().undo();
+    refreshHeader();
+}
+
+void ShellEditor::redo()
+{
+    fancyProcessor.getWorkflow().redo();
+    refreshHeader();
+}
+
+void ShellEditor::selectSlot (int slot)
+{
+    fancyProcessor.getWorkflow().selectSlot (slot);
+    refreshHeader();
+}
+
+void ShellEditor::copyToOtherSlot()
+{
+    fancyProcessor.getWorkflow().copyToOtherSlot();
+    refreshHeader();
+}
+
+void ShellEditor::setCompare (bool shouldBeOn)
+{
+    fancyProcessor.compare.setOn (shouldBeOn);
+    refreshHeader();
 }
 
 void ShellEditor::refreshHeader()
@@ -427,8 +577,10 @@ void ShellEditor::refreshHeader()
     const auto inputs = juce::String (getShownInputs());
     const auto outputs = juce::String (fancyProcessor.getMainBusNumOutputChannels());
 
-    ioPill.setText (headerStyle == HeaderStyle::compact ? inputs + "/" + outputs
-                                                        : inputs + " in " + outputs + " out");
+    ioPill.setText (headerStyle == HeaderStyle::compact || shortLabels ? inputs + "/" + outputs
+                                                                       : inputs + " in " + outputs + " out");
+
+    refreshWorkflow();
 }
 
 void ShellEditor::showPresetMenu()
@@ -573,7 +725,7 @@ void ShellEditor::showDeletePrompt (const juce::String& presetName)
 
 void ShellEditor::showParameterMenu()
 {
-    Menu menu;
+    Menu menu, parameterList;
 
     const auto& parameters = fancyProcessor.getParameters();
     const auto hasHost = getHostContext() != nullptr;
@@ -583,7 +735,30 @@ void ShellEditor::showParameterMenu()
         const auto* item = parameters[i];
 
         if (listsParameter (*item))
-            menu.addItem (i + 1, item->getName (64), hasHost, false, item->getCurrentValueAsText());
+            parameterList.addItem (i + 1, item->getName (64), hasHost, false, item->getCurrentValueAsText());
+    }
+
+    if (headerStyle == HeaderStyle::compact)
+    {
+        // W.1: the compact header's workflow commands, as panel 2 of the Phase 2.1 mockup has them.
+        auto& workflow = fancyProcessor.getWorkflow();
+        workflow.commit();
+
+        const auto active = workflow.getActiveSlot();
+        const auto inputs = juce::String (getShownInputs());
+        const auto outputs = juce::String (fancyProcessor.getMainBusNumOutputChannels());
+
+        menu.addItem (undoItem, "Undo", workflow.canUndo(), false, "Ctrl+Z");
+        menu.addItem (redoItem, "Redo", workflow.canRedo(), false, "Ctrl+Shift+Z");
+        menu.addItem (copyItem, "Copy " + slotLetters[active] + rightArrowText + slotLetters[1 - active]);
+        menu.addItem (compareItem, approxText + "Compare (level-matched)", true, isCompareOn());
+        menu.addSeparator();
+        menu.addSubMenu ("Parameters" + ellipsis, std::move (parameterList));
+        menu.addItem (ioItem, "I/O: " + inputs + " in / " + outputs + " out", false);
+    }
+    else
+    {
+        menu = std::move (parameterList);
     }
 
     menu.addSeparator();
@@ -606,6 +781,22 @@ void ShellEditor::showParameterMenu()
         if (result == aboutItem)
         {
             self.showAbout();
+        }
+        else if (result == undoItem)
+        {
+            self.undo();
+        }
+        else if (result == redoItem)
+        {
+            self.redo();
+        }
+        else if (result == copyItem)
+        {
+            self.copyToOtherSlot();
+        }
+        else if (result == compareItem)
+        {
+            self.setCompare (! self.isCompareOn());
         }
         else if (result >= scaleItemBase)
         {

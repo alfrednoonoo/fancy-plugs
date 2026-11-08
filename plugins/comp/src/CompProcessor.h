@@ -11,11 +11,11 @@ class CompProcessor final : public fancy::FancyProcessor
 public:
     CompProcessor();
 
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void prepareAudio (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
     void reset() override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-    void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) override;
+    void processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) override;
 
     juce::AudioProcessorEditor* createEditor() override;
 

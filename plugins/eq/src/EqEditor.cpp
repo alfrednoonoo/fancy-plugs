@@ -376,6 +376,10 @@ EqEditor::EqEditor (EqProcessor& processor)
       peakCheckbox (parameter ("anaPeak"), "Peak hold"),
       smoothingKnob (parameter ("anaSmooth"), "Smoothing", colours::uiTeal, Knob::smallStyle)
 {
+    // Phase 2.1 W.1: room in the header for undo, redo, A/B and Compare.
+    setShortHeaderLabels (true);
+    setPresetDropdownWidth (170);
+
     auto& body = getBody();
 
     panels.setInterceptsMouseClicks (false, false);

@@ -501,7 +501,7 @@ void FirProcessor::BuildThread::run()
     }
 }
 
-void FirProcessor::prepareToPlay (double sampleRate, int)
+void FirProcessor::prepareAudio (double sampleRate, int)
 {
     buildThread.stopThread (2000);
 
@@ -557,7 +557,7 @@ bool FirProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
         || sidechain == juce::AudioChannelSet::stereo();
 }
 
-void FirProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void FirProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 

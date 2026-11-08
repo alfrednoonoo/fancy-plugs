@@ -225,7 +225,7 @@ void EqProcessor::DesignThread::run()
     }
 }
 
-void EqProcessor::prepareToPlay (double sampleRate, int)
+void EqProcessor::prepareAudio (double sampleRate, int)
 {
     designThread.stopThread (2000);
 
@@ -274,7 +274,7 @@ bool EqProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     return out == layouts.getMainInputChannelSet();
 }
 
-void EqProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void EqProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 
@@ -301,14 +301,18 @@ void EqProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuff
         setLatencySamples (dsp.getLatencySamples());
 }
 
+// The band operations set parameters without a gesture, so each is marked as a user edit,
+// one undo step (Phase 2.1 W.2).
 void EqProcessor::setParameter (const juce::String& parameterId, float value)
 {
+    const UserEdit edit (*this);
     auto& parameter = *getApvts().getParameter (parameterId);
     parameter.setValueNotifyingHost (parameter.convertTo0to1 (value));
 }
 
 void EqProcessor::resetBand (int band)
 {
+    const UserEdit edit (*this);
     for (const auto* suffix : { "on", "type", "freq", "gain", "q", "slope" })
     {
         auto& parameter = *getApvts().getParameter (id (band, suffix));
@@ -318,6 +322,7 @@ void EqProcessor::resetBand (int band)
 
 int EqProcessor::addBand (float hz, float gainDb)
 {
+    const UserEdit edit (*this);
     for (int band = 0; band < eq::maxBands; ++band)
     {
         if (isBandUsed (band))
@@ -336,6 +341,7 @@ int EqProcessor::addBand (float hz, float gainDb)
 
 void EqProcessor::removeBand (int band)
 {
+    const UserEdit edit (*this);
     setParameter (id (band, "used"), 0.0f);
 }
 

@@ -267,7 +267,7 @@ void DelayProcessor::updateTempo()
     }
 }
 
-void DelayProcessor::prepareToPlay (double sampleRate, int)
+void DelayProcessor::prepareAudio (double sampleRate, int)
 {
     dsp.prepare (sampleRate);
     updateTempo();
@@ -289,7 +289,7 @@ bool DelayProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     return out == layouts.getMainInputChannelSet();
 }
 
-void DelayProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void DelayProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 

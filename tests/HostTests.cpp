@@ -236,11 +236,12 @@ TEST_CASE ("Editors leave the keyboard to the host", "[host][keyboard]")
 
         walk (*editor);
 
-        // With nothing focused, the keys reach the editor, and it passes every one on.
+        // With nothing focused, the keys reach the editor, and it passes every one on. Its own
+        // shortcuts, Ctrl+S and undo's (W.2), are tested in WorkflowTests.cpp.
         for (const auto& key : { juce::KeyPress (juce::KeyPress::spaceKey), juce::KeyPress (juce::KeyPress::returnKey),
                                  juce::KeyPress (juce::KeyPress::escapeKey), juce::KeyPress ('a'), juce::KeyPress ('s'),
                                  juce::KeyPress ('z'), juce::KeyPress ('1'), juce::KeyPress (juce::KeyPress::leftKey),
-                                 juce::KeyPress (juce::KeyPress::upKey), juce::KeyPress ('z', juce::ModifierKeys::ctrlModifier, 0) })
+                                 juce::KeyPress (juce::KeyPress::upKey), juce::KeyPress ('z', juce::ModifierKeys::altModifier, 0) })
         {
             INFO (key.getTextDescription());
             CHECK_FALSE (editor->keyPressed (key));
@@ -510,11 +511,18 @@ TEST_CASE ("Every parameter changed every block: no NaN, and no allocation on th
         auto finite = true;
         allocationsWhileCounting = 0;
 
+        // Compare measures, and goes on and off, as it would with the editor open (W.4).
+        processor.compare.setMeasuring (true);
+        auto blocks = 0;
+
         for (int done = 0; done < (int) (10.0 * rate); done += blockSize)
         {
             for (auto* parameter : processor.getParameters())
                 if (parameter != processor.getBypassParameter())
                     parameter->setValueNotifyingHost (unit (random));
+
+            if (++blocks % 37 == 0)
+                processor.compare.setOn (! processor.compare.isOn());
 
             buffer.clear();
             fill (buffer, 0, processor.getMainBusNumInputChannels(), random, phase);
@@ -527,6 +535,8 @@ TEST_CASE ("Every parameter changed every block: no NaN, and no allocation on th
             finite = finite && allFinite (buffer);
         }
 
+        processor.compare.setOn (false);
+        processor.compare.setMeasuring (false);
         processor.releaseResources();
 
         CHECK (finite);

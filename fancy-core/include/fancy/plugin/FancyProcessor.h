@@ -1,7 +1,9 @@
 #pragma once
 
 #include "PresetManager.h"
+#include "Workflow.h"
 
+#include <fancy/dsp/CompareStage.h>
 #include <fancy/dsp/MeterTap.h>
 #include <fancy/dsp/SidechainWatch.h>
 
@@ -18,7 +20,8 @@ namespace fancy
 class FancyProcessor : public juce::AudioProcessor
 {
 public:
-    static constexpr int stateVersion = 1;
+    // 2: Phase 2.1 W adds the A/B slots. Version 1 states load with B as a copy of A.
+    static constexpr int stateVersion = 2;
 
     using Layout = juce::AudioProcessorValueTreeState::ParameterLayout;
 
@@ -42,6 +45,14 @@ public:
     void changeProgramName (int, const juce::String&) override {}
 
     juce::AudioProcessorParameter* getBypassParameter() const override;
+
+    // Final, so Compare (W.4) wraps every plugin. Plugins implement prepareAudio and processAudio.
+    void prepareToPlay (double sampleRate, int samplesPerBlock) final;
+    void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) final;
+    using juce::AudioProcessor::processBlock;
+
+    virtual void prepareAudio (double sampleRate, int samplesPerBlock) = 0;
+    virtual void processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) = 0;
 
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
@@ -69,6 +80,30 @@ public:
     void noteEdited() noexcept { edits.fetch_add (1, std::memory_order_relaxed); }
     int getEditCount() const noexcept { return edits.load (std::memory_order_relaxed); }
 
+    // Changes whenever state outside the parameters changes, for the undo history. A plugin adds
+    // changes that happen on their own, such as FIR finishing a noise profile.
+    virtual int getEditCounter() const { return getEditCount(); }
+
+    // Undo, redo and A/B (W.2, W.3).
+    Workflow& getWorkflow() noexcept { return *workflow; }
+
+    // Makes every parameter change inside it a user edit, for code that sets parameters
+    // without a gesture: adding or deleting a band, loading a preset. One step, with this name
+    // if it's the outermost scope.
+    class UserEdit
+    {
+    public:
+        UserEdit (FancyProcessor& processor, const juce::String& name = {}) : workflow (processor.getWorkflow()) { workflow.beginUserEdit (name); }
+        ~UserEdit() { workflow.endUserEdit(); }
+
+    private:
+        Workflow& workflow;
+        JUCE_DECLARE_NON_COPYABLE (UserEdit)
+    };
+
+    // Level-matched Compare (W.4). Not a parameter: the editor turns it on and off.
+    dsp::CompareStage compare;
+
     juce::AudioProcessorValueTreeState& getApvts() noexcept { return apvts; }
     PresetManager& getPresets() noexcept { return presets; }
     const PresetManager& getPresets() const noexcept { return presets; }
@@ -84,6 +119,7 @@ private:
     std::atomic<int> edits { 0 };
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presets;
+    std::unique_ptr<Workflow> workflow;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FancyProcessor)
 };

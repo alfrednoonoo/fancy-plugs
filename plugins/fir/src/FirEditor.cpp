@@ -205,8 +205,12 @@ FirEditor::FirEditor (FirProcessor& processor)
     panels.setBounds (0, 0, baseWidth, bodyHeight);
     body.addAndMakeVisible (panels);
 
+    // Phase 2.1 W.1: room in the header for undo, redo, A/B and Compare.
+    setShortHeaderLabels (true);
+    setPresetDropdownWidth (120);
+
     styleLabel (latencyLabel, {}, colours::textSecondary, juce::Justification::centredRight);
-    latencyLabel.setBounds (380, 13, 264, 24);
+    latencyLabel.setBounds (getHeaderFreeLeft(), 13, getHeaderFreeRight() - getHeaderFreeLeft(), 24);
     getRoot().addAndMakeVisible (latencyLabel);
 
     styleLabel (modeLabel, "Mode", colours::textSecondary, juce::Justification::centredLeft);
@@ -311,7 +315,6 @@ FirEditor::FirEditor (FirProcessor& processor)
     addLatencyNote (fftDropdown);
     addLatencyNote (lowLatencyCheckbox);
 
-    setPresetDropdownWidth (170);
     updateMode();
 }
 
@@ -373,8 +376,8 @@ void FirEditor::onTick (float seconds)
     const auto latency = processor.getLatency();
     const auto rate = processor.getSampleRate() > 0.0 ? processor.getSampleRate() : 48000.0;
 
-    latencyLabel.setText ("Latency " + juce::String (latency) + " smp " + juce::String::charToString (0x00b7) + " "
-                              + fancy::formatFixed ((float) (1000.0 * latency / rate), 1) + " ms",
+    // Milliseconds only: the header's free space is narrower since the workflow controls (W.1).
+    latencyLabel.setText ("Latency " + fancy::formatFixed ((float) (1000.0 * latency / rate), 1) + " ms",
                           juce::dontSendNotification);
 }
 
@@ -437,7 +440,7 @@ void FirEditor::showPreview (Preview preview)
 
     outMeter.show (-10.4f, -9.8f);
 
-    latencyLabel.setText ("Latency 2048 smp " + juce::String::charToString (0x00b7) + " 42.7 ms", juce::dontSendNotification);
+    latencyLabel.setText ("Latency 42.7 ms", juce::dontSendNotification);
 
     drawer.setVisible (preview == Preview::drawer);
 }

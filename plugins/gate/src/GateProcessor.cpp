@@ -238,7 +238,7 @@ GateDsp::Targets GateProcessor::readTargets() const
     return targets;
 }
 
-void GateProcessor::prepareToPlay (double sampleRate, int)
+void GateProcessor::prepareAudio (double sampleRate, int)
 {
     dsp.prepare (sampleRate);
     dsp.snapToTargets (readTargets());
@@ -267,7 +267,7 @@ bool GateProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
         || sidechain == juce::AudioChannelSet::stereo();
 }
 
-void GateProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
+void GateProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     const juce::ScopedNoDenormals noDenormals;
 

@@ -381,7 +381,7 @@ void MultiCompProcessor::DesignThread::run()
     }
 }
 
-void MultiCompProcessor::prepareToPlay (double sampleRate, int)
+void MultiCompProcessor::prepareAudio (double sampleRate, int)
 {
     designThread.stopThread (2000);
 
@@ -438,7 +438,7 @@ bool MultiCompProcessor::isBusesLayoutSupported (const BusesLayout& layouts) con
         || sidechain == juce::AudioChannelSet::stereo();
 }
 
-void MultiCompProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void MultiCompProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 
@@ -487,14 +487,18 @@ void MultiCompProcessor::setParameter (const juce::String& parameterId, float va
 }
 
 // Not a gesture, because rearranging bands isn't a move Link bands should repeat.
+// The band operations set parameters without a gesture, so each is marked as a user edit,
+// one undo step (Phase 2.1 W.2).
 void MultiCompProcessor::writeValue (const juce::String& parameterId, float value)
 {
+    const UserEdit edit (*this);
     auto& parameter = *getApvts().getParameter (parameterId);
     parameter.setValueNotifyingHost (parameter.convertTo0to1 (value));
 }
 
 void MultiCompProcessor::copyBand (int from, int to)
 {
+    const UserEdit edit (*this);
     for (const auto* suffix : bandSuffixes)
     {
         const auto& source = *getApvts().getParameter (id (from, suffix));
@@ -504,6 +508,7 @@ void MultiCompProcessor::copyBand (int from, int to)
 
 void MultiCompProcessor::resetBand (int band)
 {
+    const UserEdit edit (*this);
     for (const auto* suffix : bandSuffixes)
     {
         auto& parameter = *getApvts().getParameter (id (band, suffix));
@@ -513,6 +518,7 @@ void MultiCompProcessor::resetBand (int band)
 
 int MultiCompProcessor::splitBand (int band, double hz)
 {
+    const UserEdit edit (*this);
     const auto numBands = getNumBands();
 
     if (numBands >= maxBands)
@@ -548,6 +554,7 @@ int MultiCompProcessor::splitBand (int band, double hz)
 
 void MultiCompProcessor::removeBand (int band)
 {
+    const UserEdit edit (*this);
     const auto numBands = getNumBands();
 
     if (numBands <= 1)

@@ -79,7 +79,6 @@ private:
     fancy::ui::ColourTabs tabs;
     std::vector<std::unique_ptr<BandEditor>> bandEditors;
 
-    juce::Label detectorLabel;
     fancy::ui::ParamDropdown detectorDropdown;
 
     fancy::ui::ParamCheckbox spectrumCheckbox, linkCheckbox, gridCheckbox, limitCheckbox;

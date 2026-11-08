@@ -71,6 +71,9 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
       fftDropdown (parameter ("maxFft")),
       storageDropdown (parameter ("irStorage"))
 {
+    // Phase 2.1 W.1: room in the header for undo, redo, A/B and Compare.
+    setPresetDropdownWidth (230);
+
     styleLabel (centerLabel, {}, colours::uiTeal, juce::Justification::centred, 12.0f);
     styleLabel (widthLabel, {}, colours::uiTeal, juce::Justification::centred, 12.0f);
     styleLabel (wetLabel, "Wet", colours::textSecondary, juce::Justification::centred);

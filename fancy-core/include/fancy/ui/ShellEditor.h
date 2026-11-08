@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Controls.h"
+#include "WorkflowControls.h"
 
 #include <fancy/plugin/FancyProcessor.h>
 
@@ -112,6 +113,14 @@ public:
     void showParameterMenu();
     void showAbout();
 
+    // Undo, redo, A/B and Compare, as the header's buttons and the compact Prm menu do them.
+    void undo();
+    void redo();
+    void selectSlot (int slot);
+    void copyToOtherSlot();
+    void setCompare (bool shouldBeOn);
+    bool isCompareOn() const noexcept { return fancyProcessor.compare.isOn(); }
+
 protected:
     // Lets the host resize the window between these sizes, in 100 % units. Call this at the
     // end of the subclass's constructor. The size is saved with the plugin's state.
@@ -125,6 +134,15 @@ protected:
 
     // Narrows the preset dropdown, to make room for controls in the header row.
     void setPresetDropdownWidth (int newWidth);
+
+    // Uses the compact header's labels ("+", "Prm", "4/2") in a full header, to make room for
+    // the workflow controls in a narrow window.
+    void setShortHeaderLabels (bool shouldBeShort);
+
+    // The free part of the header row, between the workflow controls and the output knob, for
+    // a plugin's own items there.
+    int getHeaderFreeLeft() const noexcept { return headerFreeLeft; }
+    int getHeaderFreeRight() const noexcept { return headerFreeRight; }
 
     // The number the I/O pill shows. A plugin can count its sidechain here.
     virtual int getShownInputs() { return fancyProcessor.getMainBusNumInputChannels(); }
@@ -168,6 +186,7 @@ private:
 
     void timerCallback() override;
     void refreshHeader();
+    void refreshWorkflow();
     void applyScale (float scale);
     void layoutHeader();
 
@@ -186,6 +205,13 @@ private:
     juce::Component body;
     PillDropdown presetDropdown;
     PillButton saveButton, parameterButton, ioPill;
+    HeaderIconButton undoButton { HeaderIconButton::Icon::undo }, redoButton { HeaderIconButton::Icon::redo },
+        copyButton { HeaderIconButton::Icon::copy };
+    AbSwitch abSwitch;
+    CompareButton compareButton;
+    HeaderSeparator separators[3];
+    bool shortLabels = false;
+    int headerFreeLeft = 0, headerFreeRight = 0;
     Knob outputKnob;
     PowerPill powerPill;
     SidechainNotice sidechainNotice;

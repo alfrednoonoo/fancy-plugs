@@ -169,7 +169,7 @@ CompDsp::Targets CompProcessor::readTargets()
     return targets;
 }
 
-void CompProcessor::prepareToPlay (double sampleRate, int)
+void CompProcessor::prepareAudio (double sampleRate, int)
 {
     dsp.prepare (sampleRate);
     dsp.snapToTargets (readTargets());
@@ -198,7 +198,7 @@ bool CompProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
         || sidechain == juce::AudioChannelSet::stereo();
 }
 
-void CompProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void CompProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 

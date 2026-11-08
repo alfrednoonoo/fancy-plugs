@@ -199,7 +199,9 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
 {
     auto& body = getBody();
 
-    setPresetDropdownWidth (170);
+    // Phase 2.1 W.1: room in the header for undo, redo, A/B and Compare.
+    setShortHeaderLabels (true);
+    setPresetDropdownWidth (120);
 
     panels.setInterceptsMouseClicks (false, false);
     panels.setBounds (0, 0, baseWidth, bodyHeight);
@@ -223,11 +225,10 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
 
     tabs.toFront (false);
 
-    styleLabel (detectorLabel, "Detector", colours::textSecondary, juce::Justification::centredRight, labelHeight);
-    detectorLabel.setBounds (448, 13, 58, 24);
-    detectorDropdown.setBounds (512, 13, 130, 24);
+    // No room for its label beside the workflow controls, so the dropdown says it in its tooltip.
+    detectorDropdown.setBounds (getHeaderFreeLeft(), 13, getHeaderFreeRight() - getHeaderFreeLeft(), 24);
     detectorDropdown.setTextHeight (labelHeight);
-    getRoot().addAndMakeVisible (detectorLabel);
+    detectorDropdown.setTooltip ("Detector input");
     getRoot().addAndMakeVisible (detectorDropdown);
 
     spectrumCheckbox.setBounds (15, footerY, 116, 20);

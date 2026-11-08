@@ -269,7 +269,7 @@ bool VerbProcessor::waitForBuild (int timeoutMs)
     return true;
 }
 
-void VerbProcessor::prepareToPlay (double sampleRate, int)
+void VerbProcessor::prepareAudio (double sampleRate, int)
 {
     const auto rateChanged = sampleRate != buildRate.load();
 
@@ -301,7 +301,7 @@ bool VerbProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     return out == layouts.getMainInputChannelSet();
 }
 
-void VerbProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void VerbProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 

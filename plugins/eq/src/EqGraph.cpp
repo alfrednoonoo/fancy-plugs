@@ -553,6 +553,7 @@ juce::RangedAudioParameter& EqGraph::bandParameter (int band, const char* suffix
 
 void EqGraph::setValue (int band, const char* suffix, float value)
 {
+    const fancy::FancyProcessor::UserEdit edit (processor);
     auto& parameter = bandParameter (band, suffix);
     parameter.setValueNotifyingHost (parameter.convertTo0to1 (value));
 }
@@ -704,6 +705,7 @@ void EqGraph::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWh
     auto& q = bandParameter (band, "q");
     const auto step = wheel.deltaY * (event.mods.isShiftDown() ? 0.1f / fineDivisor : 0.1f);
 
+    const fancy::FancyProcessor::UserEdit edit (processor);
     q.setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, q.getValue() + step));
 }
 

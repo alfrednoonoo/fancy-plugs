@@ -173,6 +173,8 @@ void PresetManager::load (int index)
     if (index < 0)
         return;
 
+    const FancyProcessor::UserEdit edit (owner, "Load preset");
+
     if (index < (int) factory.size())
     {
         loadFactory (factory[(size_t) index]);

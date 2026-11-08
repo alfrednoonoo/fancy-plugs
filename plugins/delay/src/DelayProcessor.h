@@ -12,11 +12,11 @@ class DelayProcessor final : public fancy::FancyProcessor
 public:
     DelayProcessor();
 
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void prepareAudio (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
     void reset() override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-    void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) override;
+    void processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) override;
 
     double getTailLengthSeconds() const override { return delay::maxDelayMs * 0.001; }
 

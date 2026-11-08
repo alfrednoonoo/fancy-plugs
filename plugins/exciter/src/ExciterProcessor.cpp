@@ -75,7 +75,7 @@ ExciterDsp::Targets ExciterProcessor::readTargets() const
     return targets;
 }
 
-void ExciterProcessor::prepareToPlay (double sampleRate, int)
+void ExciterProcessor::prepareAudio (double sampleRate, int)
 {
     dsp.prepare (sampleRate);
     dsp.snapToTargets (readTargets());
@@ -97,7 +97,7 @@ bool ExciterProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     return out == layouts.getMainInputChannelSet();
 }
 
-void ExciterProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void ExciterProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 
