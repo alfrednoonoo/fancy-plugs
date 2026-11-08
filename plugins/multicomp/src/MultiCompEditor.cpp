@@ -10,17 +10,21 @@ using multicomp::maxBands;
 namespace
 {
 // design/phase2-mockup-src/xcomp.html at 100 %. The shared header is 16 px taller than the
-// mockup's, so the window is too.
+// mockup's, so the window is too. Phase 2.1 U adds the UPWARD row under the band card, which
+// makes the body 119 px taller, and Depth and Time at the top of the right column.
 constexpr int baseWidth = 760;
-constexpr int bodyHeight = 417;
+constexpr int upwardHeight = 119;
+constexpr int bodyHeight = 417 + upwardHeight;
 constexpr int baseHeight = ShellEditor::headerHeight + bodyHeight;
 constexpr int rightColumnX = 632;
 
 constexpr int graphX = 13, graphY = 10, graphWidth = 610, graphHeight = 190;
 constexpr int tabRowY = 209, tabRowHeight = 22;
 constexpr int cardX = 13, cardY = 238, cardWidth = 610, cardHeight = 139;
-constexpr int footerY = 386;
-constexpr int faderTop = 26, faderHeight = 331;
+constexpr int upCardY = 384, upCardHeight = 112;
+constexpr int footerY = 386 + upwardHeight;
+constexpr int meterTop = 10 + upwardHeight;
+constexpr int faderTop = 26 + upwardHeight, faderHeight = 331;
 
 constexpr float labelHeight = 12.0f;
 
@@ -60,6 +64,110 @@ void MultiCompEditor::Panels::paint (juce::Graphics& g)
     g.setColour (colours::bgSection);
     g.fillRect (rightColumnX, 0, baseWidth - rightColumnX, bodyHeight);
     g.fillRoundedRectangle ((float) cardX, (float) cardY, (float) cardWidth, (float) cardHeight, 6.0f);
+    g.fillRoundedRectangle ((float) cardX, (float) upCardY, (float) cardWidth, (float) upCardHeight, 6.0f);
+}
+
+// TransferCurve ---------------------------------------------------------------
+
+MultiCompEditor::BandEditor::TransferCurve::TransferCurve (MultiCompProcessor& processorToUse, int bandIndex)
+    : processor (processorToUse), band (bandIndex)
+{
+    setInterceptsMouseClicks (false, false);
+}
+
+void MultiCompEditor::BandEditor::TransferCurve::update()
+{
+    const auto spec = processor.readBand (band);
+    const auto depth = processor.readTargets().depth;
+    const auto same = [] (const MultiCompDsp::BandSpec& a, const MultiCompDsp::BandSpec& b)
+    {
+        return a.thresholdDb == b.thresholdDb && a.ratio == b.ratio && a.kneeDb == b.kneeDb && a.upward == b.upward
+            && a.upThresholdDb == b.upThresholdDb && a.upRatio == b.upRatio && a.maxLiftDb == b.maxLiftDb && a.floorDb == b.floorDb;
+    };
+
+    if (! same (spec, shown) || depth != shownDepth)
+    {
+        shown = spec;
+        shownDepth = depth;
+        repaint();
+    }
+}
+
+void MultiCompEditor::BandEditor::TransferCurve::paint (juce::Graphics& g)
+{
+    constexpr float lowDb = -90.0f, highDb = 0.0f;
+
+    const auto bounds = getLocalBounds().toFloat();
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (bounds, 4.0f);
+
+    const auto plot = bounds.reduced (6.0f, 6.0f);
+    const auto xFor = [&] (float db) { return plot.getX() + plot.getWidth() * (db - lowDb) / (highDb - lowDb); };
+    const auto yFor = [&] (float db) { return plot.getBottom() - plot.getHeight() * (juce::jlimit (lowDb, highDb, db) - lowDb) / (highDb - lowDb); };
+    const auto colour = multiBandColour (band);
+
+    // The 1:1 line.
+    {
+        juce::Path diagonal, dashed;
+        diagonal.startNewSubPath (xFor (lowDb), yFor (lowDb));
+        diagonal.lineTo (xFor (highDb), yFor (highDb));
+        const float dashes[] { 2.0f, 3.0f };
+        juce::PathStrokeType (1.0f).createDashedStroke (dashed, diagonal, dashes, 2);
+        g.setColour (colours::textSecondary.withAlpha (0.5f));
+        g.fillPath (dashed);
+    }
+
+    // Guides: Floor (dotted), Up threshold (dashed), Threshold (solid).
+    const auto upClamped = shown.upward && shown.upThresholdDb > shown.thresholdDb;
+
+    const auto guide = [&] (float db, float dash, float alpha)
+    {
+        juce::Path line, styled;
+        line.startNewSubPath (xFor (db), plot.getY());
+        line.lineTo (xFor (db), plot.getBottom());
+        const float dashes[] { dash, dash + 1.0f };
+
+        if (dash > 0.0f)
+            juce::PathStrokeType (1.0f).createDashedStroke (styled, line, dashes, 2);
+        else
+            juce::PathStrokeType (1.0f).createStrokedPath (styled, line);
+
+        g.setColour (colour.withAlpha (alpha));
+        g.fillPath (styled);
+    };
+
+    if (shown.upward)
+    {
+        guide ((float) shown.floorDb, 1.0f, 0.6f);
+        guide ((float) std::min (shown.upThresholdDb, shown.thresholdDb), 3.0f, 0.8f);
+    }
+
+    guide ((float) shown.thresholdDb, 0.0f, 0.9f);
+
+    // The static curve, scaled by Depth.
+    juce::Path curve;
+
+    for (int i = 0; i <= 180; ++i)
+    {
+        const auto in = lowDb + (highDb - lowDb) * (float) i / 180.0f;
+        const auto out = in + (float) MultiCompDsp::staticChangeDb ((double) in, shown, shownDepth);
+
+        if (i == 0)
+            curve.startNewSubPath (xFor (in), yFor (out));
+        else
+            curve.lineTo (xFor (in), yFor (out));
+    }
+
+    g.setColour (colour);
+    g.strokePath (curve, juce::PathStrokeType (1.6f));
+
+    g.setFont (font (Weight::regular, 10.0f));
+    g.setColour (colours::textSecondary);
+    g.drawText ("out", bounds.withHeight (14.0f).translated (6.0f, 3.0f), juce::Justification::topLeft, false);
+    g.drawText ("in", bounds.withTrimmedTop (bounds.getHeight() - 15.0f).withTrimmedRight (6.0f), juce::Justification::bottomRight, false);
+
+    if (upClamped)
+        g.drawText ("clamped", bounds.withHeight (14.0f).translated (0.0f, 3.0f).withTrimmedRight (6.0f), juce::Justification::topRight, false);
 }
 
 // BandEditor ------------------------------------------------------------------
@@ -82,9 +190,44 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
       sidechainCheckbox (bandParameter (processor, bandIndex, "sc"), "Sidechain"),
       soloButton (bandParameter (processor, bandIndex, "solo"), "S", multiBandColour (bandIndex)),
       powerIcon (bandParameter (processor, bandIndex, "on"), multiBandColour (bandIndex)),
-      closeButton (IconButton::Glyph::cross)
+      closeButton (IconButton::Glyph::cross),
+      upThresholdKnob (bandParameter (processor, bandIndex, "uthr"), "Up thresh", multiBandColour (bandIndex), Knob::tightStyle),
+      upRatioKnob (bandParameter (processor, bandIndex, "uratio"), "Up ratio", multiBandColour (bandIndex), Knob::tightStyle),
+      maxLiftKnob (bandParameter (processor, bandIndex, "lift"), "Max lift", multiBandColour (bandIndex), Knob::tightStyle),
+      floorKnob (bandParameter (processor, bandIndex, "floor"), "Floor", multiBandColour (bandIndex), Knob::tightStyle),
+      upwardCheckbox (bandParameter (processor, bandIndex, "up"), "Upward on", multiBandColour (bandIndex)),
+      transferCurve (processor, bandIndex)
 {
     setInterceptsMouseClicks (false, true);
+
+    // Phase 2.1 U: the UPWARD row, under the band card (panel 4 of the mockup).
+    upwardLabel.setText ("UPWARD", juce::dontSendNotification);
+    upwardLabel.setFont (font (Weight::semiBold, 12.0f).withExtraKerningFactor (0.06f));
+    upwardLabel.setColour (juce::Label::textColourId, multiBandColour (bandIndex));
+    upwardLabel.setJustificationType (juce::Justification::centredLeft);
+    upwardLabel.setBorderSize ({});
+    upwardLabel.setInterceptsMouseClicks (false, false);
+    upwardLabel.setBounds (cardX + 12, upCardY + 47, 70, 16);
+
+    {
+        constexpr int knobWidth = 70, knobHeight = 99, firstCentre = 128, spacing = 64;
+        int index = 0;
+
+        for (auto* knob : { &upThresholdKnob, &upRatioKnob, &maxLiftKnob, &floorKnob })
+            knob->setBounds (firstCentre + (index++) * spacing - knobWidth / 2, upCardY + 7, knobWidth, knobHeight);
+    }
+
+    upwardCheckbox.setBounds (366, upCardY + 46, 104, 20);
+    upwardCheckbox.setLabelHeight (labelHeight);
+    transferCurve.setBounds (478, upCardY + 6, 138, upCardHeight - 12);
+
+    upThresholdKnob.setTooltip ("Signals below it are lifted. Above the Threshold, it acts as the Threshold.");
+    upRatioKnob.setTooltip ("At 1:2, a signal 20 dB below Up thresh is lifted by 10 dB, up to Max lift.");
+    floorKnob.setTooltip ("No lift below it, fading in over the 8 dB above, so noise and silence aren't raised.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &upwardLabel, &upThresholdKnob, &upRatioKnob, &maxLiftKnob, &floorKnob,
+                                                                           &upwardCheckbox, &transferCurve })
+        addAndMakeVisible (item);
 
     styleLabel (thresholdLabel, "Threshold", colours::textSecondary, juce::Justification::centred, labelHeight);
 
@@ -150,6 +293,13 @@ void MultiCompEditor::BandEditor::update (int titleX, float reductionDb, float s
 
     titleLeft = titleX;
     repaint (0, tabRowY, 536, tabRowHeight);
+
+    transferCurve.update();
+
+    const auto upwardAlpha = spec.upward ? 1.0f : 0.5f;
+
+    for (auto* knob : { &upThresholdKnob, &upRatioKnob, &maxLiftKnob, &floorKnob })
+        knob->setAlpha (upwardAlpha);
 }
 
 void MultiCompEditor::BandEditor::showLevels (float left, float right, float reductionDb)
@@ -190,6 +340,8 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
       limitCheckbox (parameter ("limit"), "Limit output"),
       crossoverDropdown (parameter ("crossover")),
       outMeter (outGeometry),
+      depthKnob (parameter ("depth"), "Depth", colours::uiTeal, Knob::tightStyle),
+      timeKnob (parameter ("time"), "Time", colours::uiTeal, Knob::tightStyle),
       wetFader (parameter ("wet"), colours::uiTeal),
       dryFader (parameter ("dry"), colours::uiTeal),
       editLink (colours::uiTeal),
@@ -249,13 +401,19 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
     crossoverDropdown.setBounds (466, footerY - 2, 157, 24);
     crossoverDropdown.setTextHeight (labelHeight);
 
-    outMeter.setBounds (638, 10, 46, 350);
+    // Phase 2.1 U: Depth and Time above the meter and faders, which move down under them.
+    depthKnob.setBounds (636, 12, 60, 99);
+    timeKnob.setBounds (694, 12, 60, 99);
+    depthKnob.setTooltip ("Scales every band's gain change, down and up. 0 % changes nothing.");
+    timeKnob.setTooltip ("Multiplies every band's attack and release.");
+
+    outMeter.setBounds (638, meterTop, 46, 350);
 
     styleLabel (wetLabel, "Wet", colours::textSecondary, juce::Justification::centred);
     styleLabel (dryLabel, "Dry", colours::textSecondary, juce::Justification::centred);
 
-    wetLabel.setBounds (680, 10, 33, 17);
-    dryLabel.setBounds (713, 10, 33, 17);
+    wetLabel.setBounds (680, meterTop, 33, 17);
+    dryLabel.setBounds (713, meterTop, 33, 17);
     wetFader.setBounds (680, faderTop, 33, faderHeight);
     dryFader.setBounds (713, faderTop, 33, faderHeight);
 
@@ -263,7 +421,7 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &spectrumCheckbox, &linkCheckbox, &gridCheckbox, &limitCheckbox, &crossoverLabel, &crossoverDropdown,
-             &outMeter, &wetLabel, &dryLabel, &wetFader, &dryFader, &editLink })
+             &outMeter, &depthKnob, &timeKnob, &wetLabel, &dryLabel, &wetFader, &dryFader, &editLink })
         body.addAndMakeVisible (item);
 
     drawer.setBounds (0, tabRowY - 2, rightColumnX, bodyHeight - tabRowY + 2);
@@ -410,6 +568,14 @@ void MultiCompEditor::showPreview (bool drawerOpen)
     bandValue (1, "ratio", 3.0f);
     bandValue (1, "gain", 2.0f);
     bandValue (1, "mk", 1.0f);
+
+    // Phase 2.1 U: panel 4's upward row, Depth and Time.
+    bandValue (1, "up", 1.0f);
+    bandValue (1, "uthr", -42.0f);
+    bandValue (1, "uratio", 3.0f);
+    bandValue (1, "lift", 12.0f);
+    bandValue (1, "floor", -70.0f);
+    setValue (parameter ("depth"), 75.0f);
 
     setValue (parameter ("wet"), -1.5f);
 

@@ -27,6 +27,10 @@ public:
         double thresholdDb = 0.0, ratio = 2.0, kneeDb = 6.0;
         double attackMs = 10.0, releaseMs = 120.0, rmsMs = 5.0, gainDb = 0.0;
         bool active = true, solo = false, autoMakeup = false, autoRelease = true, feedback = false, sidechain = false;
+
+        // Phase 2.1 U: upward compression, off by default.
+        bool upward = false;
+        double upThresholdDb = -40.0, upRatio = 2.0, maxLiftDb = 12.0, floorDb = -70.0;
     };
 
     struct Targets
@@ -37,7 +41,17 @@ public:
         multicomp::CrossoverType crossover = multicomp::CrossoverType::lr24;
         double wetGain = 1.0, dryGain = 0.0, outputGain = 1.0;
         bool limitOutput = false, attack90 = false, bypass = false;
+
+        // Phase 2.1 U: scale every band's gain change, and its attack and release.
+        double depth = 1.0, time = 1.0;
     };
+
+    // The upward part of a band's static curve, in dB, before ballistics and Depth: the lift
+    // for a level, with the Up threshold clamped to the Threshold, Max lift and the Floor fade.
+    static double liftFor (double levelDb, double thresholdDb, const BandSpec& band) noexcept;
+
+    // The band's whole static curve, in dB of gain change, as the transfer-curve display draws it.
+    static double staticChangeDb (double levelDb, const BandSpec& band, double depth) noexcept;
 
     // The gain computer's slope. Above 1:1 it's positive, and below it's negative.
     static double slopeFor (double ratio) noexcept;
@@ -87,13 +101,14 @@ private:
     struct BandState
     {
         fancy::dsp::Smoother threshold, slope, knee, gainDb, rms, activeMix, soloGain;
+        fancy::dsp::Smoother upThreshold, upSlope, maxLift, floor, depth;
         fancy::dsp::Ballistics ballistics;
-        fancy::dsp::EnvelopeFollower follower;
+        fancy::dsp::EnvelopeFollower follower, upFollower;
 
         double meanSquare[2] {};
         double previousOutput[2] {};
         double rmsCoefficient = 1.0;
-        double lastAttack = -1.0, lastRelease = -1.0;
+        double lastAttack = -1.0, lastRelease = -1.0, lastTime = -1.0;
         bool lastAuto = false, lastAttack90 = false;
 
         std::atomic<float> gainReduction { 0.0f };

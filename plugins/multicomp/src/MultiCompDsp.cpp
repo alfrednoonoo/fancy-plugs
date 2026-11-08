@@ -59,7 +59,8 @@ void MultiCompDsp::prepare (double newSampleRate)
     }
 
     for (auto& state : bandStates)
-        for (auto* smoother : { &state.threshold, &state.slope, &state.knee, &state.gainDb, &state.rms, &state.activeMix, &state.soloGain })
+        for (auto* smoother : { &state.threshold, &state.slope, &state.knee, &state.gainDb, &state.rms, &state.activeMix, &state.soloGain,
+                                &state.upThreshold, &state.upSlope, &state.maxLift, &state.floor, &state.depth })
             smoother->setTime (parameterMs, sampleRate);
 
     for (auto* smoother : { &wet, &dry, &output })
@@ -83,6 +84,7 @@ void MultiCompDsp::resetCore() noexcept
     for (auto& state : bandStates)
     {
         state.follower.reset();
+        state.upFollower.reset();
         state.meanSquare[0] = state.meanSquare[1] = 0.0;
         state.previousOutput[0] = state.previousOutput[1] = 0.0;
     }
@@ -143,16 +145,25 @@ void MultiCompDsp::setTargets (const Targets& targets) noexcept
         state.threshold.setTarget (band.thresholdDb);
         state.slope.setTarget (slopeFor (band.ratio));
         state.knee.setTarget (band.kneeDb);
-        state.gainDb.setTarget (band.gainDb + (band.autoMakeup ? autoMakeupDb (band) : 0.0));
+        // Depth scales Auto make-up with the gain change it makes up for (Phase 2.1 U).
+        state.gainDb.setTarget (band.gainDb + (band.autoMakeup ? autoMakeupDb (band) * targets.depth : 0.0));
+
+        state.upThreshold.setTarget (band.upThresholdDb);
+        state.upSlope.setTarget (1.0 - 1.0 / std::max (1.0, band.upRatio));
+        state.maxLift.setTarget (band.maxLiftDb);
+        state.floor.setTarget (band.floorDb);
+        state.depth.setTarget (targets.depth);
         state.rms.setTarget (band.rmsMs);
         state.activeMix.setTarget (band.active ? 1.0 : 0.0);
         state.soloGain.setTarget (! anySolo || band.solo ? 1.0 : 0.0);
 
         if (band.attackMs != state.lastAttack || band.releaseMs != state.lastRelease
-            || band.autoRelease != state.lastAuto || targets.attack90 != state.lastAttack90)
+            || band.autoRelease != state.lastAuto || targets.attack90 != state.lastAttack90 || targets.time != state.lastTime)
         {
-            state.ballistics.set (band.attackMs, band.releaseMs, targets.attack90, band.autoRelease, false, sampleRate);
+            // Time multiplies every attack and release (Phase 2.1 U). At 100 % it's exactly 1.
+            state.ballistics.set (band.attackMs * targets.time, band.releaseMs * targets.time, targets.attack90, band.autoRelease, false, sampleRate);
 
+            state.lastTime = targets.time;
             state.lastAttack = band.attackMs;
             state.lastRelease = band.releaseMs;
             state.lastAuto = band.autoRelease;
@@ -206,7 +217,8 @@ void MultiCompDsp::snapToTargets (const Targets& targets) noexcept
 
     for (auto& state : bandStates)
     {
-        for (auto* smoother : { &state.threshold, &state.slope, &state.knee, &state.gainDb, &state.rms, &state.activeMix, &state.soloGain })
+        for (auto* smoother : { &state.threshold, &state.slope, &state.knee, &state.gainDb, &state.rms, &state.activeMix, &state.soloGain,
+                                &state.upThreshold, &state.upSlope, &state.maxLift, &state.floor, &state.depth })
             smoother->snapToTarget();
 
         state.rmsCoefficient = fancy::dsp::timeCoefficient (state.rms.getCurrent(), sampleRate);
@@ -313,6 +325,33 @@ bool MultiCompDsp::needsKey() const noexcept
                         [] (const BandSpec& band) { return band.sidechain; });
 }
 
+double MultiCompDsp::liftFor (double levelDb, double thresholdDb, const BandSpec& band) noexcept
+{
+    constexpr double floorFadeDb = 8.0;
+
+    // An Up threshold above the Threshold acts as the Threshold.
+    const auto upThreshold = std::min (band.upThresholdDb, thresholdDb);
+
+    if (levelDb >= upThreshold || levelDb < band.floorDb)
+        return 0.0;
+
+    const auto lift = std::min (band.maxLiftDb, (upThreshold - levelDb) * (1.0 - 1.0 / std::max (1.0, band.upRatio)));
+    const auto fade = std::clamp ((levelDb - band.floorDb) / floorFadeDb, 0.0, 1.0);
+    return lift * fade;
+}
+
+double MultiCompDsp::staticChangeDb (double levelDb, const BandSpec& band, double depth) noexcept
+{
+    const auto slope = slopeFor (band.ratio);
+    auto reduction = fancy::dsp::computeReduction (levelDb, band.thresholdDb, std::abs (slope), band.kneeDb, false);
+
+    if (slope < 0.0)
+        reduction = -std::min (reduction, maxExpansionDb);
+
+    const auto lift = band.upward ? liftFor (levelDb, band.thresholdDb, band) : 0.0;
+    return depth * (lift - reduction);
+}
+
 void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexcept
 {
     const auto& spec = current.bands[(size_t) b];
@@ -343,6 +382,11 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
         const auto gainDb = state.gainDb.next();
         const auto activeMix = state.activeMix.next();
         const auto soloGain = state.soloGain.next();
+        const auto depth = state.depth.next();
+        const auto upThresholdDb = state.upThreshold.next();
+        const auto upSlope = state.upSlope.next();
+        const auto maxLiftDb = state.maxLift.next();
+        const auto floorDb = state.floor.next();
 
         if (! state.rms.isSettled())
             state.rmsCoefficient = fancy::dsp::timeCoefficient (state.rms.next(), sampleRate);
@@ -384,7 +428,31 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
         const auto change = std::min (state.follower.follow (state.ballistics, target), maxExpansionDb * 2.0);
         const auto reduction = slope < 0.0 ? -std::min (change, maxExpansionDb) : change;
 
-        const auto totalDb = gainDb - reduction;
+        // Phase 2.1 U: the upward part, with its own follower on the band's ballistics. With
+        // Upward off and Depth at 100 % this is the existing gain, to the bit.
+        auto lift = 0.0;
+
+        if (spec.upward || state.upFollower.envelope != 0.0)
+        {
+            auto liftTarget = 0.0;
+
+            if (spec.upward)
+            {
+                BandSpec upward;
+                upward.upThresholdDb = upThresholdDb;
+                upward.upRatio = upSlope < 1.0 ? 1.0 / (1.0 - upSlope) : 1.0e9;
+                upward.maxLiftDb = maxLiftDb;
+                upward.floorDb = floorDb;
+                liftTarget = liftFor (level, thresholdDb, upward);
+            }
+
+            lift = state.upFollower.follow (state.ballistics, liftTarget);
+
+            if (! spec.upward && lift < 1.0e-6)
+                lift = state.upFollower.envelope = 0.0;
+        }
+
+        const auto totalDb = depth == 1.0 && lift == 0.0 ? gainDb - reduction : gainDb + depth * (lift - reduction);
         const auto gain = totalDb == 0.0 ? 1.0 : std::pow (10.0, totalDb / 20.0);
 
         const auto compressedLeft = inLeft * gain;

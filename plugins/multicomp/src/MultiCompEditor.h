@@ -42,6 +42,23 @@ private:
         fancy::ui::Knob& getRatioKnob() noexcept { return ratioKnob; }
 
     private:
+        // Phase 2.1 U: the band's static curve, input level against output level, with guides
+        // at Floor, Up threshold and Threshold.
+        class TransferCurve final : public juce::Component
+        {
+        public:
+            TransferCurve (MultiCompProcessor& processor, int bandIndex);
+
+            void update();
+            void paint (juce::Graphics&) override;
+
+        private:
+            MultiCompProcessor& processor;
+            const int band;
+            MultiCompDsp::BandSpec shown;
+            double shownDepth = -1.0;
+        };
+
         MultiCompProcessor& multiProcessor;
         const int band;
         int titleLeft = 0;
@@ -57,6 +74,12 @@ private:
         fancy::ui::ParamTextToggle soloButton;
         fancy::ui::ParamPowerIcon powerIcon;
         fancy::ui::IconButton closeButton;
+
+        // Phase 2.1 U: the UPWARD row.
+        juce::Label upwardLabel;
+        fancy::ui::Knob upThresholdKnob, upRatioKnob, maxLiftKnob, floorKnob;
+        fancy::ui::ParamCheckbox upwardCheckbox;
+        TransferCurve transferCurve;
     };
 
     void onTick (float seconds) override;
@@ -86,6 +109,7 @@ private:
     fancy::ui::ParamDropdown crossoverDropdown;
 
     fancy::ui::OutMeter outMeter;
+    fancy::ui::Knob depthKnob, timeKnob;
     juce::Label wetLabel, dryLabel;
     fancy::ui::Fader wetFader, dryFader;
     fancy::ui::EditLink editLink;

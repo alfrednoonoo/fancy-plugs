@@ -38,6 +38,31 @@ Attack and Release are time constants: the time to reach about 63 % of the targe
 
 The gain in a band is always stereo-linked, set by the louder channel, so the band's image holds.
 
+## Upward compression
+
+Each band can lift quiet material as well as push down loud material. The **UPWARD** row under the band's controls holds:
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Upward on | | off | Turns the band's upward part on |
+| Up thresh | -80 to 0 dB | -40 dB | Signals below it are lifted. Set above the band's Threshold, it acts as the Threshold, and the curve says "clamped" |
+| Up ratio | 1:1 to 1:10 | 1:2 | At 1:2, a signal 20 dB below Up thresh is lifted by 10 dB. Type `2` or `1:2` |
+| Max lift | 0 to 30 dB | +12 dB | The most gain it ever adds |
+| Floor | -100 to -40 dB | -70 dB | No lift below it, fading in over the 8 dB above it |
+
+Both parts use the band's Attack and Release. The small curve at the right of the row plots input level against output level, with the band's whole static curve (downward and upward, scaled by Depth) and guides at Floor (dotted), Up thresh (dashed) and Threshold (solid).
+
+**Upward compression raises the noise floor by design.** Hiss, room tone and bleed between notes get louder along with the quiet parts you want. Floor is the safety: set it just above the noise, and anything quieter is left alone. Silence stays silent.
+
+## Depth and Time
+
+Two small knobs at the top of the right column act on every band:
+
+- **Depth** (0-100 %, default 100 %) scales every band's gain change, downward and upward, and Auto make-up with it. At 0 % nothing changes the level, and you hear the bands summed, as Dry.
+- **Time** (10-1000 %, default 100 %) multiplies every band's Attack and Release: 200 % makes everything twice as slow.
+
+Together with the **Big squash** preset (three bands, 4:1 down above -18 dB and 1:4 up below -40 dB, fast attack) they make the heavy, squashed multiband sound quick to dial in: start there and bring Depth down until it's enough.
+
 ## Detector and sidechain
 
 In REAPER, a sidechain arrives on the plugin's channels 3 and 4.

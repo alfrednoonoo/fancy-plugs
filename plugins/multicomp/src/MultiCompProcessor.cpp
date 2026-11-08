@@ -13,10 +13,11 @@ constexpr float mixFloorDb = -60.0f;
 constexpr int designIntervalMs = 30;
 
 // The parameters Link bands moves together.
-const char* const linkedSuffixes[] { "thr", "ratio", "att", "rel", "gain" };
+const char* const linkedSuffixes[] { "thr", "ratio", "att", "rel", "gain", "uthr" };
 
 // Every parameter of a band except its top frequency, which belongs to the crossover.
-const char* const bandSuffixes[] { "on", "solo", "thr", "ratio", "knee", "att", "rel", "rms", "gain", "mk", "ar", "fb", "sc" };
+const char* const bandSuffixes[] { "on", "solo", "thr", "ratio", "knee", "att", "rel", "rms", "gain", "mk", "ar", "fb", "sc",
+                                   "up", "uthr", "uratio", "lift", "floor" };
 
 juce::NormalisableRange<float> skewedRange (float high, float interval, float centre)
 {
@@ -43,6 +44,14 @@ juce::String ratioText (float ratio)
 juce::String signedDb (float db)
 {
     return (db > 0.0f ? "+" : "") + fancy::formatFixed (db, 1) + " dB";
+}
+
+// "2", "1:2" and "1:2.0" are all 1:2. "2:1" is read the same way, since only lifting is possible.
+float upRatioFromText (const juce::String& text)
+{
+    const auto parts = juce::StringArray::fromTokens (text.trim(), ":", "");
+    const auto value = parts.size() >= 2 ? juce::jmax (fancy::parseNumber (parts[0]), fancy::parseNumber (parts[1])) : fancy::parseNumber (text);
+    return juce::jlimit (1.0f, 10.0f, value);
 }
 
 fancy::FancyProcessor::Layout createLayout (const fancy::SwitchableFrequencyParameter::Flag& logScale)
@@ -136,6 +145,46 @@ fancy::FancyProcessor::Layout createLayout (const fancy::SwitchableFrequencyPara
 
     layout.add (toggle ("bypass", "Bypass", false));
 
+    // Phase 2.1 U, appended after everything above so no ID or index moves. Upward is off and
+    // Depth and Time are at 100 %, which leaves every band as it was.
+    for (int band = 0; band < maxBands; ++band)
+    {
+        const auto prefix = "Band " + juce::String (band + 1) + " ";
+        const auto id = [band] (const char* suffix) { return MultiCompProcessor::id (band, suffix); };
+
+        layout.add (toggle (id ("up"), prefix + "Upward", false));
+        layout.add (fancy::levelParameter (id ("uthr"), prefix + "Up threshold", -80.0f, 0.0f, -40.0f, -100.0f));
+        layout.add (fancy::floatParameter (
+            id ("uratio"), prefix + "Up ratio", fancy::logRange (1.0f, 10.0f, 0.01f), 2.0f,
+            FloatAttributes {}
+                .withStringFromValueFunction ([] (float value, int) { return "1:" + fancy::formatFixed (value, 1); })
+                .withValueFromStringFunction ([] (const juce::String& text) { return upRatioFromText (text); })));
+        layout.add (fancy::floatParameter (
+            id ("lift"), prefix + "Max lift", juce::NormalisableRange<float> (0.0f, 30.0f, 0.1f), 12.0f,
+            FloatAttributes {}
+                .withLabel ("dB")
+                .withStringFromValueFunction ([] (float value, int) { return signedDb (value); })
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+        layout.add (fancy::levelParameter (id ("floor"), prefix + "Floor", -100.0f, -40.0f, -70.0f, -200.0f));
+    }
+
+    layout.add (fancy::floatParameter (
+        "depth", "Depth", juce::NormalisableRange<float> (0.0f, 100.0f, 1.0f), 100.0f,
+        FloatAttributes {}
+            .withLabel ("%")
+            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
+    juce::NormalisableRange<float> timeRange (10.0f, 1000.0f, 1.0f);
+    timeRange.setSkewForCentre (100.0f);
+
+    layout.add (fancy::floatParameter (
+        "time", "Time", timeRange, 100.0f,
+        FloatAttributes {}
+            .withLabel ("%")
+            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
     return layout;
 }
 
@@ -173,6 +222,10 @@ std::vector<fancy::FactoryPreset> createPresets()
                                  { { "crossover", 2.0f } }) },
         { "Multiband Limiter", with (everyBand ({ { "thr", -6.0f }, { "ratio", (float) MultiCompDsp::infiniteRatio }, { "knee", 0.0f }, { "att", 0.0f }, { "rel", 80.0f }, { "rms", 0.0f } }),
                                      { { "limit", 1.0f } }) },
+        // Phase 2.1 U: heavy upward and downward multiband compression.
+        { "Big squash", with (everyBand ({ { "thr", -18.0f }, { "ratio", 4.0f }, { "att", 3.0f }, { "rel", 200.0f }, { "ar", 0.0f },
+                                           { "up", 1.0f }, { "uthr", -40.0f }, { "uratio", 4.0f }, { "lift", 18.0f }, { "floor", -70.0f } }),
+                              { { "bands", 3.0f }, { "b1top", 88.0f }, { "b2top", 2500.0f }, { "depth", 100.0f } }) },
     };
 }
 } // namespace
@@ -200,6 +253,8 @@ MultiCompProcessor::MultiCompProcessor (SharedFlag logScaleFlag)
 
         bandValues[(size_t) band] = { value ("on"), value ("solo"), value ("top"), value ("thr"), value ("ratio"), value ("knee"), value ("att"),
                                       value ("rel"), value ("rms"), value ("gain"), value ("mk"), value ("ar"), value ("fb"), value ("sc") };
+
+        upwardValues[(size_t) band] = { value ("up"), value ("uthr"), value ("uratio"), value ("lift"), value ("floor") };
 
         for (const auto* suffix : linkedSuffixes)
             apvts.getParameter (id (band, suffix))->addListener (this);
@@ -325,6 +380,13 @@ MultiCompDsp::BandSpec MultiCompProcessor::readBand (int band) const
     spec.feedback = on (values.feedback);
     spec.sidechain = on (values.sidechain);
 
+    const auto& upward = upwardValues[(size_t) band];
+    spec.upward = on (upward.on);
+    spec.upThresholdDb = (double) load (upward.threshold);
+    spec.upRatio = (double) load (upward.ratio);
+    spec.maxLiftDb = (double) load (upward.maxLift);
+    spec.floorDb = (double) load (upward.floor);
+
     return spec;
 }
 
@@ -344,6 +406,8 @@ MultiCompDsp::Targets MultiCompProcessor::readTargets() const
     targets.limitOutput = isOn ("limit");
     targets.attack90 = isOn ("attack90");
     targets.bypass = isOn ("bypass");
+    targets.depth = (double) read ("depth") / 100.0;
+    targets.time = (double) read ("time") / 100.0;
 
     return targets;
 }

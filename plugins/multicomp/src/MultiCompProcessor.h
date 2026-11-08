@@ -85,7 +85,13 @@ private:
     };
 
     SharedFlag logScale;
+    struct UpwardValues
+    {
+        std::atomic<float>* on, *threshold, *ratio, *maxLift, *floor;
+    };
+
     std::array<BandValues, multicomp::maxBands> bandValues {};
+    std::array<UpwardValues, multicomp::maxBands> upwardValues {};
     MultiCompDsp dsp;
     DesignThread designThread;
 

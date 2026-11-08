@@ -95,6 +95,8 @@ Per band, with IDs prefixed `b1` to `b8`:
 | `fb` | Feedback detect | off/on | off | | | P3.2 |
 | `sc` | Sidechain | off/on | off | | | P3.2 |
 
+Phase 2.1 U appends `bNup`, `bNuthr`, `bNuratio`, `bNlift` and `bNfloor` per band, then `depth` and `time`, after everything below. Their design is in `docs/phase2_1-U.md`.
+
 Global:
 
 | ID | Name | Range | Default | Source |

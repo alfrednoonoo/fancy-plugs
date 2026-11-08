@@ -90,3 +90,13 @@
 - [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
 - [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
 - [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
+
+## Upward, Depth and Time (Phase 2.1 U)
+
+- [ ] The window is taller: under the band card there's an **UPWARD** row with Up thresh, Up ratio, Max lift, Floor, an Upward on checkbox and a small curve. Depth and Time sit at the top of the right column, above the meter and Wet and Dry. Nothing overlaps at 100 % or 200 %.
+- [ ] Open an older project: Upward is off in every band, Depth and Time read 100 %, and it sounds as before.
+- [ ] Tick Upward on in a band on a quiet passage: quiet parts come up, and the curve shows the lift below Up thresh. Raise Up thresh above Threshold: the curve says "clamped".
+- [ ] On a track with gaps of silence or hiss, raise Floor until the gaps stop rising.
+- [ ] Load **Big squash** on a drum bus or a mix: it's heavy and dense, with no crackle. With Limit output on, the output never goes over 0 dBFS.
+- [ ] Turn **Depth** down to 0 %: the compression and lifting go away and you hear the plain band sum. Halfway is about half the effect.
+- [ ] Set **Time** to 200 %: attack and release are audibly slower; at 50 % faster.

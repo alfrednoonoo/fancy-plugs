@@ -413,6 +413,15 @@ TEST_CASE ("Delay: an offline render matches playback", "[host][offline]")
 #endif
 
 #if FANCY_HAS_MULTICOMP
+// Phase 2.1 U: upward bands, with Depth and Time automated.
+TEST_CASE ("MultiComp: an offline render with upward compression matches playback", "[host][offline]")
+{
+    checkRenders<MultiCompProcessor> ("MultiComp, upward",
+                                      { { { "b1up", 1.0f }, { "b2up", 1.0f }, { "b2uthr", -30.0f }, { "b2uratio", 4.0f }, { "b1thr", -20.0f } },
+                                        join ({ alternate ("depth", 40.0f, 100.0f), alternate ("time", 50.0f, 300.0f, 777),
+                                                alternate ("b2lift", 6.0f, 18.0f, 1500) }), {} });
+}
+
 TEST_CASE ("MultiComp: an offline render matches playback", "[host][offline]")
 {
     const auto crossover = GENERATE (0.0f, 1.0f, 2.0f);
