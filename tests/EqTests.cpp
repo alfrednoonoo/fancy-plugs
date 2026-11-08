@@ -1114,15 +1114,16 @@ TEST_CASE ("eq bus layouts are mono and stereo", "[eq]")
     EqProcessor processor;
     juce::AudioProcessor::BusesLayout layout;
 
-    layout.inputBuses = { juce::AudioChannelSet::stereo() };
+    // The second input is the optional sidechain for dynamic bands (Phase 2.1 D).
+    layout.inputBuses = { juce::AudioChannelSet::stereo(), juce::AudioChannelSet::disabled() };
     layout.outputBuses = { juce::AudioChannelSet::stereo() };
     CHECK (processor.checkBusesLayoutSupported (layout));
 
-    layout.inputBuses = { juce::AudioChannelSet::mono() };
+    layout.inputBuses = { juce::AudioChannelSet::mono(), juce::AudioChannelSet::disabled() };
     layout.outputBuses = { juce::AudioChannelSet::mono() };
     CHECK (processor.checkBusesLayoutSupported (layout));
 
-    layout.inputBuses = { juce::AudioChannelSet::stereo() };
+    layout.inputBuses = { juce::AudioChannelSet::stereo(), juce::AudioChannelSet::disabled() };
     layout.outputBuses = { juce::AudioChannelSet::mono() };
     CHECK_FALSE (processor.checkBusesLayoutSupported (layout));
 }

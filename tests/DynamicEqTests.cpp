@@ -262,9 +262,14 @@ TEST_CASE ("Dynamic EQ: Below mode acts on quiet signals only", "[eq][dynamic]")
     // 20 dB under: the full Range.
     CHECK (std::abs (finalChange (targets (spec, settings), sine (1000.0, -44.0, (int) rate)) - (-6.0)) < 0.2);
 
-    // 12 dB over: nothing, exactly.
+    // 12 dB over: once the level is known it lets go to exactly 0 and sounds as the static band.
+    // (A render starts from silence, which is quiet, so Below acts for the first milliseconds.)
     const auto loud = sine (1000.0, -12.0, (int) rate);
-    CHECK (identical (render (targets (spec, settings), loud), render (targets (spec), loud)));
+    const auto dynamicOut = render (targets (spec, settings), loud);
+    const auto staticOut = render (targets (spec), loud);
+
+    CHECK (finalChange (targets (spec, settings), loud) == 0.0);
+    CHECK (std::abs (levelAt (dynamicOut.left, (int) (rate / 2), 1000.0) - levelAt (staticOut.left, (int) (rate / 2), 1000.0)) < 0.001);
 }
 
 TEST_CASE ("Dynamic EQ: Sidechain makes the band listen to the sidechain only", "[eq][dynamic]")
