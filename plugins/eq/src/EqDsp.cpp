@@ -17,6 +17,14 @@ constexpr double levelWindowSeconds = 0.005;
 constexpr double kneeDb = 6.0;
 constexpr double fullRangeDb = 12.0;
 
+// The gain computer runs every 8 host samples, counted from the start of playback so the result
+// doesn't depend on block sizes. The level is already smoothed over 5 ms, and a band redesigns
+// every 16 samples, so this loses nothing.
+constexpr int controlInterval = 8;
+
+// A moving band skips a redesign when its change has moved less than this.
+constexpr double redesignStepDb = 0.01;
+
 // How far the level is past Threshold, with a soft knee: 0 below Threshold - 3 dB.
 double distancePast (double distanceDb) noexcept
 {
@@ -95,6 +103,8 @@ void EqDsp::reset()
         detector.change = 0.0;
         liveChange[b].store (0.0f, std::memory_order_relaxed);
     }
+
+    detectorClock = 0;
 
     for (auto& oversampler : oversamplers)
         if (oversampler != nullptr)
@@ -235,8 +245,8 @@ void EqDsp::runDetectors (const float* const* main, int numMain, const float* co
         const auto* const* source = useSidechain ? sidechain : main;
         const auto numSource = std::min (useSidechain ? numSidechain : numMain, (int) maxChannels);
 
-        const auto attack = std::exp (-1.0 / (std::max (0.01, settings.attackMs) * 0.001 * sampleRate));
-        const auto release = std::exp (-1.0 / (std::max (0.01, settings.releaseMs) * 0.001 * sampleRate));
+        const auto attack = std::exp (-(double) controlInterval / (std::max (0.01, settings.attackMs) * 0.001 * sampleRate));
+        const auto release = std::exp (-(double) controlInterval / (std::max (0.01, settings.releaseMs) * 0.001 * sampleRate));
         const auto notch = spec.type == eq::BandType::notch;
 
         for (int i = 0; i < numSamples; ++i)
@@ -262,6 +272,14 @@ void EqDsp::runDetectors (const float* const* main, int numMain, const float* co
                 loudest = std::max (loudest, meanSquare);
             }
 
+            auto& change = detector.change;
+
+            if (((detectorClock + i) & (controlInterval - 1)) != 0)
+            {
+                changes[(size_t) i] = change;
+                continue;
+            }
+
             auto target = 0.0;
 
             if (dynamic)
@@ -274,7 +292,6 @@ void EqDsp::runDetectors (const float* const* main, int numMain, const float* co
                     target = std::min (0.0, target);
             }
 
-            auto& change = detector.change;
             const auto coefficient = std::abs (target) > std::abs (change) ? attack : release;
             change = target + coefficient * (change - target);
 
@@ -294,6 +311,8 @@ void EqDsp::runDetectors (const float* const* main, int numMain, const float* co
 
     for (int b = 0; b < eq::maxBands; ++b)
         liveChange[(size_t) b].store ((float) detectors[(size_t) b].change, std::memory_order_relaxed);
+
+    detectorClock = (detectorClock + numSamples) & (controlInterval - 1);
 }
 
 void EqDsp::applyConfig (const Config& config)
@@ -429,8 +448,12 @@ void EqDsp::updateBands (int baseIndex) noexcept
         const auto dynamic = isDynamic (b);
         const auto wanted = effectiveSpec (current.bands[(size_t) b], dynamic);
 
-        // The detector's change at this point of the chunk, at the host rate.
-        const auto change = chunkLength > 0 ? chunkChange[(size_t) b][(size_t) std::clamp (baseIndex, 0, chunkLength - 1)] : 0.0;
+        // The detector's change at this point of the chunk, at the host rate. A change that has
+        // hardly moved keeps the last one, but a return to exactly 0 always goes through.
+        auto change = chunkLength > 0 ? chunkChange[(size_t) b][(size_t) std::clamp (baseIndex, 0, chunkLength - 1)] : 0.0;
+
+        if (change != 0.0 && std::abs (change - band.appliedChange) < redesignStepDb)
+            change = band.appliedChange;
 
         if (! wanted.sameShape (band.active))
         {

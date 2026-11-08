@@ -138,6 +138,7 @@ private:
     std::array<Detector, eq::maxBands> detectors;
     std::array<std::array<double, 512>, eq::maxBands> chunkChange {};
     int chunkLength = 0;
+    int detectorClock = 0;
     double levelCoefficient = 0.0;
     std::array<std::atomic<float>, eq::maxBands> liveChange {};
     double work[maxChannels][stepSamples] {};

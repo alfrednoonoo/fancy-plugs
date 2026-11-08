@@ -314,7 +314,9 @@ EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEdito
 void EqEditor::BandEditor::layoutFor (bool compact)
 {
     isCompact = compact;
-    typeDropdown.compact = compact;
+
+    // The dynamic layout uses the compact card's short type names in both modes.
+    typeDropdown.compact = compact || dynamicShown;
 
     const auto& style = compact ? Knob::compactStyle : Knob::mediumStyle;
 
