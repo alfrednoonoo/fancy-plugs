@@ -148,6 +148,7 @@ CompEditor::CompEditor (CompProcessor& processor)
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
+    addLatencyNote (oversamplingDropdown);
 
     for (auto* knob : { &ratioKnob, &kneeKnob, &attackKnob, &releaseKnob })
         knob->setValueColour (colours::uiTealBright);
@@ -199,5 +200,6 @@ std::vector<ShellEditor::PopupOpener> CompEditor::getPopupOpeners()
     openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); oversamplingDropdown.click(); } });
     openers.push_back ({ "tooltip-attack", [this] { showTip (attackKnob, attackKnob.getTooltip()); } });
     openers.push_back ({ "value-threshold", [this] { thresholdMeter.openValueEditor(); } });
+    openers.push_back ({ "sidechain-notice", [this] { forceSidechainNotice (true); } });
     return openers;
 }

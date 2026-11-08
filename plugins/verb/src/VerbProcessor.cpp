@@ -312,9 +312,11 @@ void VerbProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
 
     const auto offline = isNonRealtime();
 
-    // An offline render can wait, and it must not start on an old impulse.
+    // An offline render waits as long as the build takes: it must never start on an old
+    // impulse, and never drop audio to save time.
     if (offline)
-        waitForBuild (60000);
+        while (buildPending())
+            juce::Thread::sleep (1);
 
     dsp.setTargets (readTargets());
     dsp.process (buffer.getArrayOfWritePointers(), numChannels, buffer.getNumSamples(), offline);

@@ -509,8 +509,25 @@ void FirProcessor::prepareToPlay (double sampleRate, int)
     dsp.setSynchronousBuilds (isNonRealtime());
     setLatencySamples (dsp.getLatencySamples());
 
-    if (! isNonRealtime())
-        buildThread.startThread (juce::Thread::Priority::low);
+    // Always running, as a host can switch between offline and real time without preparing
+    // again. Offline, each block builds in-line and the thread finds nothing to do.
+    buildThread.startThread (juce::Thread::Priority::low);
+}
+
+bool FirProcessor::waitForBackgroundWork (int timeoutMs)
+{
+    const auto limit = juce::Time::getMillisecondCounterHiRes() + timeoutMs;
+
+    while (dsp.isBuildPending())
+    {
+        if (juce::Time::getMillisecondCounterHiRes() > limit)
+            return false;
+
+        buildThread.notify();
+        juce::Thread::sleep (1);
+    }
+
+    return true;
 }
 
 void FirProcessor::releaseResources()
@@ -561,6 +578,8 @@ void FirProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuf
 
     if (analysing)
         inputFifo.push (main, numChannels, numSamples);
+
+    sidechainWatch.update (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples, getSampleRate(), isOn ("sidechain"));
 
     dsp.setSynchronousBuilds (isNonRealtime());
     dsp.setTargets (readTargets());

@@ -63,6 +63,7 @@ ExciterEditor::ExciterEditor (ExciterProcessor& processor)
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (true); };
+    addLatencyNote (oversamplingDropdown);
 }
 
 void ExciterEditor::onTick (float seconds)

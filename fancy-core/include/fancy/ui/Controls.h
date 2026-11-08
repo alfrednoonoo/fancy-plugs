@@ -282,6 +282,11 @@ private:
     float pulseLeft = 0.0f, pulseLength = 1.0f;
 };
 
+// Adds a line to a control's tooltip for settings that change the plugin's latency, because
+// some hosts only read the new latency when playback stops and starts (Phase 2.1 H.6).
+inline constexpr const char* latencyNote = "Latency changes take effect in some hosts after you stop and start playback.";
+void addLatencyNote (juce::SettableTooltipClient& control);
+
 // Draws the shared dropdown look, for a control that isn't a ParamDropdown. Lighter while open.
 void paintDropdownBox (juce::Graphics&, juce::Rectangle<float> bounds, const juce::String& text, float textHeight, bool open = false);
 

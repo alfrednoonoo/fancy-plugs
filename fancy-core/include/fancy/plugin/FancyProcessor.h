@@ -3,6 +3,7 @@
 #include "PresetManager.h"
 
 #include <fancy/dsp/MeterTap.h>
+#include <fancy/dsp/SidechainWatch.h>
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -55,6 +56,10 @@ public:
     // a copy that's about to be saved.
     virtual void addToState (juce::ValueTree& state) { juce::ignoreUnused (state); }
 
+    // Waits until any background thread has caught up with the current settings: a design, a
+    // build or an impulse. For tests that render "real time" as a fast machine would hear it.
+    virtual bool waitForBackgroundWork (int timeoutMs) { juce::ignoreUnused (timeoutMs); return true; }
+
     // Runs after a factory preset sets its parameters, with the preset's data string.
     virtual void factoryPresetLoaded (const juce::String& data) { juce::ignoreUnused (data); }
 
@@ -69,6 +74,9 @@ public:
 
     dsp::MeterTap inputMeter;
     dsp::MeterTap outputMeter;
+
+    // Plugins with a sidechain update it each block; the header shows its warning.
+    dsp::SidechainWatch sidechainWatch;
 
 private:
     juce::String name;

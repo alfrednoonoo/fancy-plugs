@@ -61,6 +61,9 @@ public:
     // the crossovers have moved.
     void updateLinearDesign (const Targets& targets) noexcept;
 
+    // Whether the linear-phase crossover design is behind these settings.
+    bool isDesignPending (const Targets& targets) const noexcept;
+
     // Runs the design inline, so an offline render is repeatable.
     void setSynchronousDesign (bool shouldBeSynchronous) noexcept { synchronousDesign = shouldBeSynchronous; }
 

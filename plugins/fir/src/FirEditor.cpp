@@ -308,6 +308,8 @@ FirEditor::FirEditor (FirProcessor& processor)
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
+    addLatencyNote (fftDropdown);
+    addLatencyNote (lowLatencyCheckbox);
 
     setPresetDropdownWidth (170);
     updateMode();
@@ -450,6 +452,7 @@ std::vector<ShellEditor::PopupOpener> FirEditor::getPopupOpeners()
     auto openers = ShellEditor::getPopupOpeners();
     openers.push_back ({ "dropdown-edit", [this] { editDropdown.click(); } });
     openers.push_back ({ "dropdown-fft", [this] { fftDropdown.click(); } });
+    openers.push_back ({ "sidechain-notice", [this] { forceSidechainNotice (true); } });
     openers.push_back ({ "point-prompt", [this] { if (! firProcessor().getPoints (juce::jmin (firProcessor().getMode(), numCurves - 1)).empty()) graph.typePoint (0); } });
     openers.push_back ({ "axis-prompt", [this] { graph.typeAxis (true); } });
     openers.push_back ({ "clear-profile", [this] { confirmThen ("Clear the noise profile?", "The learned profile will be removed. You can learn it again from a section with only noise.", "Clear", true, [] {}); } });

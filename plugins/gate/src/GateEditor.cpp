@@ -226,7 +226,7 @@ void GateEditor::History::paint (juce::Graphics& g)
         g.setColour (colours::bgSection.withAlpha (0.85f));
         g.fillRoundedRectangle (6.0f, 5.0f, 364.0f, 18.0f, 3.0f);
         g.setColour (colours::accentRed);
-        g.drawText ("No sidechain signal: check track routing (REAPER: pins 3/4)", juce::Rectangle<float> (12.0f, 5.0f, 356.0f, 18.0f),
+        g.drawText (sidechainWarningText, juce::Rectangle<float> (12.0f, 5.0f, 356.0f, 18.0f),
                     juce::Justification::centredLeft, false);
     }
 }
@@ -413,6 +413,7 @@ GateEditor::GateEditor (GateProcessor& processor)
     detectorDropdown.setTextHeight (11.0f);
     lookaheadCheckbox.setBounds (210, 11, 84, 20);
     lookaheadCheckbox.setLabelHeight (labelHeight);
+    addLatencyNote (lookaheadCheckbox);
     latencyLabel.setBounds (294, 9, 100, 24);
     modeLabel.setBounds (440, 9, 40, 24);
     modeSegments.setBounds (486, 9, 90, 24);

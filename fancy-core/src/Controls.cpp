@@ -860,6 +860,16 @@ void PowerPill::paint (juce::Graphics& g)
     g.drawText ("ON", bounds.withTrimmedLeft (inset + 15.0f), juce::Justification::centredLeft, false);
 }
 
+void addLatencyNote (juce::SettableTooltipClient& control)
+{
+    const auto current = control.getTooltip();
+
+    if (current.contains (latencyNote))
+        return;
+
+    control.setTooltip (current.isEmpty() ? juce::String (latencyNote) : current + "\n" + latencyNote);
+}
+
 // ParamDropdown ---------------------------------------------------------------
 
 void ParamDropdown::setTextHeight (float height)

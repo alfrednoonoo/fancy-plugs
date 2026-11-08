@@ -276,6 +276,8 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
+    addLatencyNote (crossoverDropdown);
+    addLatencyNote (limitCheckbox);
 
     selectedBand = juce::jlimit (0, maxBands - 1, (int) processor.getApvts().state.getProperty (selectedBandProperty, 0));
     graph.setSelectedBand (selectedBand);
@@ -433,6 +435,7 @@ std::vector<ShellEditor::PopupOpener> MultiCompEditor::getPopupOpeners()
     auto openers = ShellEditor::getPopupOpeners();
     openers.push_back ({ "dropdown-detector", [this] { detectorDropdown.click(); } });
     openers.push_back ({ "dropdown-crossover", [this] { crossoverDropdown.click(); } });
+    openers.push_back ({ "sidechain-notice", [this] { forceSidechainNotice (true); } });
     openers.push_back ({ "delete-band", [this] { confirmThen ("Delete band " + juce::String (selectedBand + 1) + "?", "Its settings will be lost.", "Delete", true, [] {}); } });
     openers.push_back ({ "tooltip-ratio", [this] { auto& knob = bandEditors[(size_t) selectedBand]->getRatioKnob(); showTip (knob, knob.getTooltip()); } });
     openers.push_back ({ "value-threshold", [this] { bandEditors[(size_t) selectedBand]->getThresholdFader().openValueEditor(); } });

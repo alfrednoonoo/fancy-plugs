@@ -21,6 +21,7 @@ public:
     void releaseResources() override {}
     void reset() override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
+    bool waitForBackgroundWork (int timeoutMs) override { return waitForBuild (timeoutMs); }
     void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) override;
 
     double getTailLengthSeconds() const override;

@@ -412,6 +412,9 @@ EqEditor::EqEditor (EqProcessor& processor)
     getRoot().addAndMakeVisible (editLink);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
 
+    for (auto* dropdown : { &phaseDropdown, &firDropdown, &oversamplingDropdown })
+        addLatencyNote (*dropdown);
+
     const std::pair<juce::Label*, const char*> labels[] {
         { &phaseLabel, "Phase" }, { &firLabel, "FIR length" }, { &oversamplingLabel, "Oversampling" }, { &slopeLabel, "Slope" },
         { &rangeLabel, "Graph range" }, { &analyzerLabel, "Analyzer" }, { &fftLabel, "Size" }, { &windowLabel, "Window" }, { &overlapLabel, "Overlap" }

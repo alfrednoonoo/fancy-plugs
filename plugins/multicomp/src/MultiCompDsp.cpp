@@ -218,6 +218,23 @@ void MultiCompDsp::snapToTargets (const Targets& targets) noexcept
     switchGain.snapTo (1.0);
 }
 
+bool MultiCompDsp::isDesignPending (const Targets& targets) const noexcept
+{
+    if (targets.crossover != CrossoverType::linear)
+        return false;
+
+    const auto count = std::clamp (targets.numBands, 1, maxBands);
+
+    std::array<double, multicomp::maxCrossovers> hz {};
+
+    for (int i = 0; i < count - 1; ++i)
+        hz[(size_t) i] = targets.bands[(size_t) i].topHz;
+
+    multicomp::sanitiseCrossovers (hz.data(), count - 1);
+
+    return designNeeded.load (std::memory_order_acquire) || count != designedBands || hz != designedHz;
+}
+
 void MultiCompDsp::updateLinearDesign (const Targets& targets) noexcept
 {
     if (targets.crossover != CrossoverType::linear)

@@ -45,6 +45,9 @@ public:
     // True while a new engine is being built, warmed up or faded in.
     bool isChanging() const noexcept { return incoming != nullptr || requested.load (std::memory_order_relaxed) >= 0; }
 
+    // True while the audio thread waits for the worker to build an engine.
+    bool isBuildPending() const noexcept { return requested.load() >= 0 && built.load() == nullptr; }
+
     fir::Shared shared;
 
 private:

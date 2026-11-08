@@ -553,6 +553,9 @@ ModuleRack::ModuleRack (VerbProcessor& processorToUse) : processor (processorToU
 {
     viewport.setViewedComponent (&content, false);
     viewport.setScrollBarsShown (false, false, true, true);
+
+    // A clicked viewport would take the keys, and the host's space bar with them (H.2).
+    viewport.setWantsKeyboardFocus (false);
     addAndMakeVisible (viewport);
 
     content.addChildComponent (addPanel);

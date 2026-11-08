@@ -4,7 +4,7 @@ get_property(fancy_screen_sources GLOBAL PROPERTY FANCY_SCREEN_SOURCES)
 get_property(fancy_screen_includes GLOBAL PROPERTY FANCY_SCREEN_INCLUDES)
 get_property(fancy_screen_defs GLOBAL PROPERTY FANCY_SCREEN_DEFS)
 
-target_sources(fancy-tests PRIVATE DecibelsTests.cpp ValueEntryTests.cpp PopupTests.cpp ${fancy_screen_sources})
+target_sources(fancy-tests PRIVATE DecibelsTests.cpp ValueEntryTests.cpp PopupTests.cpp HostRenderTests.cpp HostTests.cpp ${fancy_screen_sources})
 
 if("FANCY_HAS_KICKER=1" IN_LIST fancy_screen_defs)
     target_sources(fancy-tests PRIVATE KickerTests.cpp)

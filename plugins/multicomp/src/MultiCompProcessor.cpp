@@ -390,8 +390,25 @@ void MultiCompProcessor::prepareToPlay (double sampleRate, int)
     dsp.snapToTargets (readTargets());
     setLatencySamples (dsp.getLatencySamples());
 
-    if (! isNonRealtime())
-        designThread.startThread (juce::Thread::Priority::low);
+    // Always running, as a host can switch between offline and real time without preparing
+    // again. It skips its work while offline, where each block designs in-line.
+    designThread.startThread (juce::Thread::Priority::low);
+}
+
+bool MultiCompProcessor::waitForBackgroundWork (int timeoutMs)
+{
+    const auto limit = juce::Time::getMillisecondCounterHiRes() + timeoutMs;
+
+    while (dsp.isDesignPending (readTargets()))
+    {
+        if (juce::Time::getMillisecondCounterHiRes() > limit)
+            return false;
+
+        designThread.notify();
+        juce::Thread::sleep (1);
+    }
+
+    return true;
 }
 
 void MultiCompProcessor::releaseResources()
@@ -442,8 +459,16 @@ void MultiCompProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     if (analyzerActive.load (std::memory_order_relaxed))
         analyzerFifo.push (main, numChannels, numSamples);
 
+    const auto targets = readTargets();
+    auto sidechainChosen = targets.detector >= MultiCompDsp::sideLR && targets.detector <= MultiCompDsp::sideR;
+
+    for (int band = 0; band < targets.numBands && band < multicomp::maxBands; ++band)
+        sidechainChosen = sidechainChosen || targets.bands[(size_t) band].sidechain;
+
+    sidechainWatch.update (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples, getSampleRate(), sidechainChosen);
+
     dsp.setSynchronousDesign (isNonRealtime());
-    dsp.setTargets (readTargets());
+    dsp.setTargets (targets);
     dsp.process (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples);
 
     outputMeter.push (main, numChannels, numSamples);

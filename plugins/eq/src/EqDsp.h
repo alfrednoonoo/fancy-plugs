@@ -113,6 +113,11 @@ private:
 
     eq::LinearPhase linear;
     std::atomic<bool> synchronousDesign { false };
+public:
+    // Whether the linear-phase design is behind these settings.
+    bool isDesignPending (const Targets& targets) noexcept;
+
+private:
     std::atomic<bool> designRequested { false };
     juce::SpinLock designLock;
     std::array<eq::BandSpec, eq::maxBands> designedBands;

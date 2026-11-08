@@ -130,6 +130,7 @@ ShellEditor::ShellEditor (FancyProcessor& processor, int baseWidth, int baseHeig
     for (juce::Component* item : std::initializer_list<juce::Component*> { &presetDropdown, &saveButton, &parameterButton, &ioPill, &outputKnob, &powerPill })
         root.addAndMakeVisible (item);
 
+    root.addChildComponent (sidechainNotice);
     root.addChildComponent (tooltips);
 
     presetDropdown.onClick = [this] { showPresetMenu(); };
@@ -175,6 +176,30 @@ void ShellEditor::disposePopup (juce::Component* popup)
     });
 }
 
+void ShellEditor::SidechainNotice::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+
+    g.setColour (colours::bgSection.withAlpha (0.92f));
+    g.fillRoundedRectangle (bounds, 3.0f);
+    g.setColour (colours::accentRed);
+    g.drawRoundedRectangle (bounds.reduced (0.5f), 3.0f, 1.0f);
+    g.setFont (font (Weight::medium, 12.0f));
+    g.drawText (sidechainWarningText, bounds.reduced (8.0f, 0.0f), juce::Justification::centred, true);
+}
+
+juce::Rectangle<int> ShellEditor::getSidechainNoticeBounds()
+{
+    constexpr int noticeWidth = 380, noticeHeight = 22;
+    return { (width - noticeWidth) / 2, headerHeight + 6, noticeWidth, noticeHeight };
+}
+
+void ShellEditor::forceSidechainNotice (bool shouldShow)
+{
+    sidechainNoticeForced = shouldShow;
+    refreshHeader();
+}
+
 void ShellEditor::closePopups()
 {
     if (auto* menu = MenuLayer::findOpen (root))
@@ -184,6 +209,9 @@ void ShellEditor::closePopups()
         dialog->cancel();
 
     tooltips.hide();
+
+    if (sidechainNoticeForced)
+        forceSidechainNotice (false);
 }
 
 bool ShellEditor::keyPressed (const juce::KeyPress& key)
@@ -383,6 +411,15 @@ void ShellEditor::refreshHeader()
 {
     const auto bypassed = fancyProcessor.getBypassParameter()->getValue() >= 0.5f;
     body.setAlpha (bypassed ? 0.5f : 1.0f);
+
+    const auto noticeWanted = sidechainNoticeForced || fancyProcessor.sidechainWatch.isMissing();
+
+    if (noticeWanted != sidechainNotice.isVisible())
+    {
+        sidechainNotice.setBounds (getSidechainNoticeBounds());
+        sidechainNotice.setVisible (noticeWanted);
+        sidechainNotice.toFront (false);
+    }
 
     const auto& presets = fancyProcessor.getPresets();
     presetDropdown.setText (presets.getCurrentName() + (presets.isModified() ? changedMark : juce::String()));

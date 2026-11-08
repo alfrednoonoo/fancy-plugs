@@ -1,7 +1,8 @@
 // Renders each plugin's editor offscreen to PNG at 100 % and 200 %, plus a gallery of the
 // fancy-core controls that the finished plugins don't exercise yet. With a second directory,
-// it also renders every pop-up each plugin lists (Phase 2.1 item S) into it.
-// Usage: fancy-screens <output-directory> [<popups-directory>]
+// it also renders every pop-up each plugin lists (Phase 2.1 item S) into it. With a third, it
+// renders each editor, and its preset menu, at the host scales 1.25, 1.5 and 2.0 (item H.3).
+// Usage: fancy-screens <output-directory> [<popups-directory> [<host-scale-directory>]]
 
 #include <fancy/ui/Controls.h>
 #include <fancy/ui/ShellEditor.h>
@@ -213,6 +214,83 @@ bool renderPopups (const juce::String& slug, const juce::File& outputDir, Setup 
     return ok;
 }
 
+// The host's content scale on top of the plugin's own size, as a VST3 host on a high-DPI
+// screen sets it.
+template <typename Processor, typename Editor, typename Setup>
+bool renderHostScales (const juce::String& slug, const juce::File& outputDir, Setup setup)
+{
+    Processor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<Editor*> (base.get());
+
+    if (editor == nullptr)
+        return false;
+
+    setup (*editor);
+
+    auto ok = true;
+
+    for (const auto scale : { 1.25f, 1.5f, 2.0f })
+    {
+        const auto suffix = "@host" + juce::String (juce::roundToInt (scale * 100.0f));
+
+        editor->setScaleFactor (scale);
+        editor->closePopups();
+        ok = writeSnapshot (*editor, scale, outputDir.getChildFile (slug + suffix + ".png")) && ok;
+
+        editor->showPresetMenu();
+        ok = writeSnapshot (*editor, scale, outputDir.getChildFile (slug + "-preset-menu" + suffix + ".png")) && ok;
+    }
+
+    editor->closePopups();
+    return ok;
+}
+
+bool renderAllHostScales (const juce::File& outputDir)
+{
+    auto ok = true;
+    const auto plain = [] (auto& editor) { editor.showPreview (false); };
+    juce::ignoreUnused (plain);
+
+   #if FANCY_HAS_KICKER
+    ok = renderHostScales<KickerProcessor, KickerEditor> ("kicker", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_EXCITER
+    ok = renderHostScales<ExciterProcessor, ExciterEditor> ("exciter", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_COMP
+    ok = renderHostScales<CompProcessor, CompEditor> ("comp", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_EQ
+    ok = renderHostScales<EqProcessor, EqEditor> ("eq", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_VERB
+    ok = renderHostScales<VerbProcessor, VerbEditor> ("verb", outputDir, [] (VerbEditor& editor) { editor.showPreview (VerbEditor::Preview::rack); }) && ok;
+   #endif
+
+   #if FANCY_HAS_DELAY
+    ok = renderHostScales<DelayProcessor, DelayEditor> ("delay", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_MULTICOMP
+    ok = renderHostScales<MultiCompProcessor, MultiCompEditor> ("multicomp", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_FIR
+    ok = renderHostScales<FirProcessor, FirEditor> ("fir", outputDir, [] (FirEditor& editor) { editor.showPreview (FirEditor::Preview::eqCurve); }) && ok;
+   #endif
+
+   #if FANCY_HAS_GATE
+    ok = renderHostScales<GateProcessor, GateEditor> ("gate", outputDir, plain) && ok;
+   #endif
+
+    return ok;
+}
+
 bool renderAllPopups (const juce::File& outputDir)
 {
     auto ok = true;
@@ -307,7 +385,7 @@ private:
 
 int main (int argc, char** argv)
 {
-    if (argc != 2 && argc != 3)
+    if (argc < 2 || argc > 4)
     {
         std::cerr << "usage: fancy-screens <output-directory> [<popups-directory>]\n";
         return 2;
@@ -365,7 +443,7 @@ int main (int argc, char** argv)
     Gallery gallery;
     ok = writeBothScales (gallery, "gallery", outputDir) && ok;
 
-    if (argc == 3)
+    if (argc >= 3)
     {
         const auto popupsDir = juce::File::getCurrentWorkingDirectory().getChildFile (argv[2]);
 
@@ -376,6 +454,16 @@ int main (int argc, char** argv)
         }
 
         ok = renderAllPopups (popupsDir) && ok;
+    }
+
+    if (argc == 4)
+    {
+        const auto hostScaleDir = juce::File::getCurrentWorkingDirectory().getChildFile (argv[3]);
+
+        if (! hostScaleDir.createDirectory())
+            return 1;
+
+        ok = renderAllHostScales (hostScaleDir) && ok;
     }
 
     return ok ? 0 : 1;

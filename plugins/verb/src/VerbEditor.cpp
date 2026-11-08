@@ -114,6 +114,7 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
     lateLabel.setBounds (labelX, row (4), rackWidth - 48, rowHeight);
 
     folderButton.onClick = [this] { chooseIrFolder(); };
+    addLatencyNote (latencyDropdown);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &latencyDropdown, &fftDropdown, &storageDropdown, &folderButton, &folderPath, &lateLabel })

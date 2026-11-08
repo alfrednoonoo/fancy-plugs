@@ -85,6 +85,12 @@ public:
     // Closes any open menu, dialog or tooltip.
     void closePopups();
 
+    // Shows the "No sidechain signal" strip whatever the processor says, for rendered screenshots.
+    void forceSidechainNotice (bool shouldShow);
+    bool isSidechainNoticeShowing() const noexcept { return sidechainNotice.isVisible(); }
+
+    static constexpr const char* sidechainWarningText = "No sidechain signal: check track routing (REAPER: pins 3/4)";
+
     Tooltips& getTooltips() noexcept { return tooltips; }
 
     // Runs an action, asking first when `ask` is true. Only for destructive actions.
@@ -123,6 +129,9 @@ protected:
     // The number the I/O pill shows. A plugin can count its sidechain here.
     virtual int getShownInputs() { return fancyProcessor.getMainBusNumInputChannels(); }
 
+    // Where the "No sidechain signal" strip goes: by default across the top of the body.
+    virtual juce::Rectangle<int> getSidechainNoticeBounds();
+
     // The window's root, for controls that sit in the header row.
     juce::Component& getRoot() noexcept { return root; }
 
@@ -148,6 +157,15 @@ private:
         void paint (juce::Graphics&) override;
     };
 
+    // Shown while the processor's SidechainWatch reports a silent sidechain. Not a control: it
+    // appears over the body only while the warning is on.
+    class SidechainNotice final : public juce::Component
+    {
+    public:
+        SidechainNotice() { setInterceptsMouseClicks (false, false); }
+        void paint (juce::Graphics&) override;
+    };
+
     void timerCallback() override;
     void refreshHeader();
     void applyScale (float scale);
@@ -170,6 +188,8 @@ private:
     PillButton saveButton, parameterButton, ioPill;
     Knob outputKnob;
     PowerPill powerPill;
+    SidechainNotice sidechainNotice;
+    bool sidechainNoticeForced = false;
     Tooltips tooltips { root };
 
     // Declared last, so open pop-ups go before the root they sit on.

@@ -1,0 +1,459 @@
+// Phase 2.1 item H.1: an offline render, with random blocks, sounds exactly like playback.
+//
+// Each plugin, in each mode, renders the same 30 s of noise and sine bursts with automation
+// three ways: real time in 128-sample blocks, offline in 128-sample blocks, and offline in
+// random blocks of 0 to 8192 samples. Every automation point starts a new block in all three,
+// so the parameters change at the same sample.
+//
+// - Offline with random blocks against offline with 128: the block size must change nothing.
+// - Real time against offline: a plugin with no worker thread must be identical. One with a
+//   worker (a design, a build or an impulse) is compared outside the second after each change,
+//   with the real-time render waiting for the worker before each block, as a machine that
+//   keeps up would. Inside that second the output only has to be finite.
+
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+
+#include <fancy/plugin/FancyProcessor.h>
+
+#include <algorithm>
+#include <cmath>
+#include <functional>
+#include <iostream>
+#include <random>
+#include <vector>
+
+#if FANCY_HAS_KICKER
+ #include "KickerProcessor.h"
+#endif
+
+#if FANCY_HAS_EXCITER
+ #include "ExciterProcessor.h"
+#endif
+
+#if FANCY_HAS_COMP
+ #include "CompProcessor.h"
+#endif
+
+#if FANCY_HAS_EQ
+ #include "EqProcessor.h"
+#endif
+
+#if FANCY_HAS_VERB
+ #include "VerbProcessor.h"
+#endif
+
+#if FANCY_HAS_DELAY
+ #include "DelayProcessor.h"
+#endif
+
+#if FANCY_HAS_MULTICOMP
+ #include "MultiCompProcessor.h"
+#endif
+
+#if FANCY_HAS_FIR
+ #include "FirProcessor.h"
+#endif
+
+#if FANCY_HAS_GATE
+ #include "GateProcessor.h"
+#endif
+
+namespace
+{
+
+constexpr double sampleRate = 48000.0;
+constexpr int seconds = 30;
+constexpr int length = (int) sampleRate * seconds;
+constexpr int maxBlock = 8192;
+constexpr int changeWindow = (int) sampleRate; // after each change, for plugins with a worker
+
+using Settings = std::vector<std::pair<const char*, float>>;
+
+struct Point
+{
+    int sample;
+    const char* id;
+    float value;
+};
+
+// A change that isn't a parameter, such as swapping the impulse, at a sample.
+struct Event
+{
+    int sample;
+    std::function<void (fancy::FancyProcessor&)> run;
+};
+
+struct Plan
+{
+    Settings settings;
+    std::vector<Point> automation;
+    std::vector<Event> events;
+    bool hasWorker = false;
+};
+
+void set (fancy::FancyProcessor& processor, const char* id, float value)
+{
+    auto* parameter = processor.getApvts().getParameter (id);
+    REQUIRE (parameter != nullptr);
+    parameter->setValueNotifyingHost (parameter->convertTo0to1 (value));
+}
+
+// Pink-ish noise at about -20 dBFS, with a sine burst every half second.
+juce::AudioBuffer<float> testSignal()
+{
+    juce::AudioBuffer<float> signal (2, length);
+    std::mt19937 random (1234);
+    std::normal_distribution<float> white (0.0f, 1.0f);
+
+    double b0 = 0.0, b1 = 0.0, b2 = 0.0;
+
+    for (int i = 0; i < length; ++i)
+    {
+        const auto w = (double) white (random);
+        b0 = 0.99765 * b0 + w * 0.0990460;
+        b1 = 0.96300 * b1 + w * 0.2965164;
+        b2 = 0.57000 * b2 + w * 1.0526913;
+        const auto pink = (b0 + b1 + b2 + w * 0.1848) * 0.02;
+
+        const auto inBurst = (i % 24000) < 6000;
+        const auto burst = inBurst ? 0.25 * std::sin (2.0 * juce::MathConstants<double>::pi * 440.0 * i / sampleRate) : 0.0;
+
+        signal.setSample (0, i, (float) (pink + burst));
+        signal.setSample (1, i, (float) (pink * 0.9 - burst));
+    }
+
+    return signal;
+}
+
+const juce::AudioBuffer<float>& input()
+{
+    static const auto signal = testSignal();
+    return signal;
+}
+
+enum class Run { realTime, offline, offlineRandom };
+
+template <typename Processor>
+juce::AudioBuffer<float> render (const Plan& plan, Run run, const std::function<void (Processor&)>& setup)
+{
+    Processor processor;
+    setup (processor);
+
+    for (const auto& [id, value] : plan.settings)
+        set (processor, id, value);
+
+    const auto offline = run != Run::realTime;
+    processor.setNonRealtime (offline);
+    processor.prepareToPlay (sampleRate, maxBlock);
+
+    if (plan.hasWorker && ! offline)
+        REQUIRE (processor.waitForBackgroundWork (60000));
+
+    auto output = input();
+    juce::MidiBuffer midi;
+    std::mt19937 random (99);
+
+    // Blocks of 0 to 8192 samples: some empty, many tiny, some large.
+    const auto randomBlock = [&random]
+    {
+        const auto kind = random() % 10;
+
+        if (kind == 0) return 0;
+        if (kind < 4) return (int) (1 + random() % 16);
+        if (kind < 8) return (int) (1 + random() % 1024);
+        return (int) (1 + random() % maxBlock);
+    };
+
+    std::vector<int> changes;
+
+    for (const auto& point : plan.automation)
+        changes.push_back (point.sample);
+
+    for (const auto& event : plan.events)
+        changes.push_back (event.sample);
+
+    std::sort (changes.begin(), changes.end());
+
+    for (int position = 0; position < length;)
+    {
+        for (const auto& point : plan.automation)
+            if (point.sample == position)
+                set (processor, point.id, point.value);
+
+        for (const auto& event : plan.events)
+            if (event.sample == position)
+                event.run (processor);
+
+        auto next = length;
+
+        for (const auto change : changes)
+        {
+            if (change > position)
+            {
+                next = change;
+                break;
+            }
+        }
+
+        const auto wanted = run == Run::offlineRandom ? randomBlock() : 128;
+        const auto size = std::min (wanted, next - position);
+
+        // A fast machine: the worker has caught up before the block plays.
+        if (plan.hasWorker && ! offline)
+            REQUIRE (processor.waitForBackgroundWork (60000));
+
+        juce::AudioBuffer<float> block (output.getArrayOfWritePointers(), 2, position, size);
+        midi.clear();
+        processor.processBlock (block, midi);
+        position += size;
+    }
+
+    processor.releaseResources();
+    return output;
+}
+
+struct Difference
+{
+    double worstDb = -400.0;
+    bool identical = true;
+    bool finite = true;
+};
+
+// The largest difference, in dB below the reference's peak. Samples inside a window after a
+// change are only checked for being finite.
+Difference compare (const juce::AudioBuffer<float>& a, const juce::AudioBuffer<float>& b, const std::vector<int>& windows)
+{
+    Difference result;
+    auto peak = 1.0e-9;
+
+    for (int channel = 0; channel < 2; ++channel)
+        peak = std::max (peak, (double) b.getMagnitude (channel, 0, length));
+
+    auto worst = 0.0;
+
+    for (int channel = 0; channel < 2; ++channel)
+    {
+        const auto* x = a.getReadPointer (channel);
+        const auto* y = b.getReadPointer (channel);
+
+        for (int i = 0; i < length; ++i)
+        {
+            if (! std::isfinite (x[i]) || ! std::isfinite (y[i]))
+            {
+                result.finite = false;
+                continue;
+            }
+
+            const auto inWindow = std::any_of (windows.begin(), windows.end(), [i] (int start) { return i >= start && i < start + changeWindow; });
+
+            if (inWindow)
+                continue;
+
+            if (x[i] != y[i])
+            {
+                result.identical = false;
+                worst = std::max (worst, (double) std::abs (x[i] - y[i]));
+            }
+        }
+    }
+
+    result.worstDb = worst > 0.0 ? 20.0 * std::log10 (worst / peak) : -400.0;
+    return result;
+}
+
+template <typename Processor>
+void checkRenders (const char* name, const Plan& plan, const std::function<void (Processor&)>& setup = [] (Processor&) {})
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    const auto realTime = render<Processor> (plan, Run::realTime, setup);
+    const auto offline = render<Processor> (plan, Run::offline, setup);
+    const auto offlineRandom = render<Processor> (plan, Run::offlineRandom, setup);
+
+    std::vector<int> windows;
+
+    if (plan.hasWorker)
+    {
+        for (const auto& point : plan.automation)
+            windows.push_back (point.sample);
+
+        for (const auto& event : plan.events)
+            windows.push_back (event.sample);
+
+        windows.push_back (0);
+    }
+
+    const auto blocks = compare (offlineRandom, offline, {});
+    const auto modes = compare (realTime, offline, windows);
+
+    std::cout << "offline render: " << name
+              << ": random blocks " << (blocks.identical ? "bit-identical" : juce::String (blocks.worstDb, 1) + " dB")
+              << ", real time " << (modes.identical ? "bit-identical" : juce::String (modes.worstDb, 1) + " dB")
+              << (plan.hasWorker ? " outside 1 s after each change" : "") << std::endl;
+
+    INFO (name);
+    CHECK (blocks.finite);
+    CHECK (modes.finite);
+    CHECK (blocks.worstDb <= -120.0);
+    CHECK (modes.worstDb <= -120.0);
+}
+
+// Automation that alternates between two values, every 5 s from 2.5 s.
+std::vector<Point> alternate (const char* id, float a, float b, int offset = 0)
+{
+    std::vector<Point> points;
+
+    for (int i = 0; i < 5; ++i)
+        points.push_back ({ (int) (sampleRate * (2.5 + 5.0 * i)) + offset, id, i % 2 == 0 ? a : b });
+
+    return points;
+}
+
+std::vector<Point> join (std::initializer_list<std::vector<Point>> lists)
+{
+    std::vector<Point> all;
+
+    for (const auto& list : lists)
+        all.insert (all.end(), list.begin(), list.end());
+
+    return all;
+}
+
+} // namespace
+
+#if FANCY_HAS_KICKER
+TEST_CASE ("Kicker: an offline render matches playback", "[host][offline]")
+{
+    checkRenders<KickerProcessor> ("Kicker", { {}, join ({ alternate ("freq", 45.0f, 90.0f), alternate ("wet", -20.0f, -6.0f, 777) }), {} });
+}
+#endif
+
+#if FANCY_HAS_EXCITER
+TEST_CASE ("Exciter: an offline render matches playback", "[host][offline]")
+{
+    const auto oversampling = GENERATE (0.0f, 1.0f, 2.0f);
+    checkRenders<ExciterProcessor> (("Exciter, oversampling " + juce::String (oversampling)).toRawUTF8(),
+                                    { { { "oversampling", oversampling } },
+                                      join ({ alternate ("freq", 2000.0f, 6000.0f), alternate ("harmonics", 20.0f, 80.0f, 501) }), {} });
+}
+#endif
+
+#if FANCY_HAS_COMP
+TEST_CASE ("Comp: an offline render matches playback", "[host][offline]")
+{
+    const auto oversampling = GENERATE (0.0f, 1.0f, 2.0f);
+    checkRenders<CompProcessor> (("Comp, oversampling " + juce::String (oversampling)).toRawUTF8(),
+                                 { { { "oversampling", oversampling } },
+                                   join ({ alternate ("threshold", -30.0f, -10.0f), alternate ("ratio", 2.0f, 8.0f, 333), alternate ("attack", 1.0f, 30.0f, 999) }), {} });
+}
+#endif
+
+#if FANCY_HAS_EQ
+TEST_CASE ("EQ: an offline render matches playback", "[host][offline]")
+{
+    const auto linear = GENERATE (0.0f, 1.0f);
+    checkRenders<EqProcessor> (linear > 0.5f ? "EQ, linear phase" : "EQ, minimum phase",
+                               { { { "phase", linear } },
+                                 join ({ alternate ("b2gain", -6.0f, 6.0f), alternate ("b2freq", 300.0f, 1500.0f, 1234) }), {}, linear > 0.5f });
+}
+#endif
+
+#if FANCY_HAS_DELAY
+TEST_CASE ("Delay: an offline render matches playback", "[host][offline]")
+{
+    const auto noteMode = GENERATE (0.0f, 1.0f);
+    checkRenders<DelayProcessor> (noteMode > 0.5f ? "Delay, note taps" : "Delay, ms taps",
+                                  { { { "t1mode", noteMode }, { "t1fb", 40.0f } },
+                                    join ({ alternate ("t1fb", 20.0f, 70.0f), alternate ("t1lp", 3000.0f, 12000.0f, 555), alternate ("t1ms", 300.0f, 450.0f, 2048) }), {} });
+}
+#endif
+
+#if FANCY_HAS_MULTICOMP
+TEST_CASE ("MultiComp: an offline render matches playback", "[host][offline]")
+{
+    const auto crossover = GENERATE (0.0f, 1.0f, 2.0f);
+    checkRenders<MultiCompProcessor> (("MultiComp, crossover " + juce::String (crossover)).toRawUTF8(),
+                                      { { { "crossover", crossover } },
+                                        join ({ alternate ("b1thr", -30.0f, -10.0f), alternate ("b1top", 150.0f, 300.0f, 4321) }), {}, crossover > 1.5f });
+}
+#endif
+
+#if FANCY_HAS_FIR
+TEST_CASE ("FIR: an offline render matches playback, through an FFT-size change", "[host][offline]")
+{
+    const auto mode = GENERATE (0.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+    const std::vector<Event> sizeChange { { length / 2, [] (fancy::FancyProcessor& processor) { set (processor, "fft", 3.0f); } } };
+
+    checkRenders<FirProcessor> (("FIR, mode " + juce::String (mode)).toRawUTF8(),
+                                { { { "mode", mode } },
+                                  join ({ alternate ("output", -6.0f, 0.0f), alternate ("gain", -3.0f, 3.0f, 777) }), sizeChange, true });
+}
+#endif
+
+#if FANCY_HAS_GATE
+TEST_CASE ("Gate: an offline render matches playback", "[host][offline]")
+{
+    const auto lookahead = GENERATE (0.0f, 1.0f);
+    checkRenders<GateProcessor> (lookahead > 0.5f ? "Gate, lookahead" : "Gate",
+                                 { { { "lookahead", lookahead } },
+                                   join ({ alternate ("threshold", -40.0f, -20.0f), alternate ("release", 50.0f, 200.0f, 888) }), {} });
+}
+#endif
+
+#if FANCY_HAS_VERB
+namespace
+{
+juce::File writeImpulse (const char* name, int seed, double decaySeconds)
+{
+    const auto folder = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("fancy-host-tests");
+    folder.createDirectory();
+    const auto file = folder.getChildFile (name);
+
+    const auto samples = (int) (decaySeconds * sampleRate);
+    juce::AudioBuffer<float> audio (2, samples);
+    std::mt19937 random ((unsigned) seed);
+    std::uniform_real_distribution<float> noise (-1.0f, 1.0f);
+
+    for (int channel = 0; channel < 2; ++channel)
+        for (int i = 0; i < samples; ++i)
+            audio.setSample (channel, i, 0.5f * noise (random) * std::exp (-5.0f * (float) i / (float) samples));
+
+    file.deleteFile();
+    std::unique_ptr<juce::OutputStream> stream = std::make_unique<juce::FileOutputStream> (file);
+
+    juce::WavAudioFormat wav;
+    const auto writer = wav.createWriterFor (stream, juce::AudioFormatWriterOptions {}
+                                                         .withSampleRate (sampleRate)
+                                                         .withNumChannels (2)
+                                                         .withBitsPerSample (24));
+    REQUIRE (writer != nullptr);
+    REQUIRE (writer->writeFromAudioSampleBuffer (audio, 0, samples));
+    return file;
+}
+} // namespace
+
+TEST_CASE ("Verb: an offline render matches playback, through an impulse swap", "[host][offline]")
+{
+    const auto lowCpu = GENERATE (0.0f, 1.0f);
+
+    const auto first = writeImpulse ("first.wav", 1, 0.8);
+    const auto second = writeImpulse ("second.wav", 2, 1.5);
+
+    const std::vector<Event> swap { { length / 2, [second] (fancy::FancyProcessor& processor)
+                                      {
+                                          auto& verb = dynamic_cast<VerbProcessor&> (processor);
+                                          const auto uid = (int) verb.getChain().getChild (0).getProperty (verb::ids::uid);
+                                          verb.loadFile (uid, second);
+                                      } } };
+
+    checkRenders<VerbProcessor> (lowCpu > 0.5f ? "Verb, low CPU" : "Verb, zero latency",
+                                 { { { "latency", lowCpu }, { "wet", -6.0f } },
+                                   join ({ alternate ("wet", -12.0f, -3.0f), alternate ("predelay", 0.0f, 40.0f, 1500) }), swap, true },
+                                 [first] (VerbProcessor& verb)
+                                 {
+                                     const auto uid = verb.addModule (verb::ModuleType::file, 0);
+                                     REQUIRE (verb.loadFile (uid, first));
+                                 });
+}
+#endif

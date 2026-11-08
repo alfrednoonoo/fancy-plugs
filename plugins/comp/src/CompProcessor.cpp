@@ -216,7 +216,11 @@ void CompProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
 
     inputMeter.push (main, numChannels, numSamples);
 
-    dsp.setTargets (readTargets());
+    const auto targets = readTargets();
+    const auto sidechainChosen = targets.detector >= CompDsp::sideLR && targets.detector <= CompDsp::sideR;
+    sidechainWatch.update (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples, getSampleRate(), sidechainChosen);
+
+    dsp.setTargets (targets);
     dsp.process (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples);
 
     outputMeter.push (main, numChannels, numSamples);

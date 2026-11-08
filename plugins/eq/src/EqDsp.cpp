@@ -188,6 +188,14 @@ void EqDsp::snapToTargets (const Targets& targets)
     switchGain.snapTo (1.0);
 }
 
+bool EqDsp::isDesignPending (const Targets& targets) noexcept
+{
+    const juce::SpinLock::ScopedLockType lock (designLock);
+
+    return targets.linearPhase
+        && (designRequested.load() || designedLength != targets.firLength || designedBands != targets.bands);
+}
+
 void EqDsp::updateLinearDesign (const Targets& targets) noexcept
 {
     const juce::SpinLock::ScopedLockType lock (designLock);

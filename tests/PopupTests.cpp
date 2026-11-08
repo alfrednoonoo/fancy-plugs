@@ -91,6 +91,9 @@ bool somethingOpen (ShellEditor& editor)
     if (editor.getTooltips().isVisible() && editor.getTooltips().getShownText().isNotEmpty())
         return true;
 
+    if (editor.isSidechainNoticeShowing())
+        return true;
+
     // A typed-value field, on the layout root.
     for (auto* child : parent.getChildren())
         if (auto* field = dynamic_cast<juce::TextEditor*> (child))
