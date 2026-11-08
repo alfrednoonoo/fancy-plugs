@@ -1324,20 +1324,25 @@ TEST_CASE ("gate CPU measurement", "[.measure]")
     auto defaults = gateTargets();
     defaults.thresholdDb = -30.0;
 
-    auto busy = defaults;
+    // The brief's target case: filters and RMS on, Lookahead off.
+    auto filtered = defaults;
+    filtered.rmsMs = 10.0;
+    filtered.lowpassHz = 6000.0;
+    filtered.highpassHz = 150.0;
+
+    auto busy = filtered;
     busy.lookahead = true;
-    busy.rmsMs = 10.0;
-    busy.lowpassHz = 6000.0;
-    busy.highpassHz = 150.0;
     busy.midi = true;
     busy.velocityFromLevel = true;
     busy.noiseGain = 0.01;
     busy.link = false;
 
     const auto gate = medianOfFive ([&] { return gateCpu (defaults); });
+    const auto gateFiltered = medianOfFive ([&] { return gateCpu (filtered); });
     const auto gateBusy = medianOfFive ([&] { return gateCpu (busy); });
 
-    std::printf ("gate cpu (median of 5): default %.3f %%, lookahead + filters + MIDI + noise, unlinked %.3f %%\n", gate, gateBusy);
+    std::printf ("gate cpu (median of 5): default %.3f %%, filters + RMS, Lookahead off (target < 0.5 %%) %.3f %%, lookahead + filters + MIDI + noise, unlinked %.3f %%\n",
+                 gate, gateFiltered, gateBusy);
 
    #if FANCY_HAS_COMP
     const auto comp = medianOfFive ([]
@@ -1369,8 +1374,8 @@ TEST_CASE ("gate CPU measurement", "[.measure]")
         return 100.0 * spent.count() / ((double) (measureBlocks * measureBlock) / rate);
     });
 
-    std::printf ("gate cpu reference: Fancy Comp default %.3f %% in the same run; gate default / comp = %.2f, busy / comp = %.2f\n",
-                 comp, gate / comp, gateBusy / comp);
+    std::printf ("gate cpu reference: Fancy Comp default %.3f %% in the same run; gate default / comp = %.2f, filters + RMS / comp = %.2f, busy / comp = %.2f\n",
+                 comp, gate / comp, gateFiltered / comp, gateBusy / comp);
    #endif
 
     SUCCEED();
