@@ -93,6 +93,7 @@ public:
         float labelHeight = 14.0f;
         bool secondaryLabel = false, scale = false, gateReadouts = false;
         float scaleStepDb = 12.0f;
+        float scaleTextHeight = 11.0f, readoutTextHeight = 12.0f;
     };
 
     explicit ThresholdMeter (juce::RangedAudioParameter& threshold);

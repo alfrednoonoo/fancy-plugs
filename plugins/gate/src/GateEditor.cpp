@@ -22,7 +22,7 @@ constexpr int lowerY = 222, levelWidth = 226, filterX = 354, filterWidth = 222;
 constexpr int footerY = 336;
 constexpr int faderTop = 26, faderHeight = 331;
 
-constexpr float labelHeight = 12.0f;
+constexpr float labelHeight = 10.5f;   // the mockup's captions and checkboxes
 constexpr float historyFloorDb = -90.0f;
 
 const juce::Colour gateYellow = colours::accentYellow;
@@ -34,7 +34,7 @@ constexpr GainReductionMeter::Geometry gainGeometry { 16.0f, 14.0f, 232.0f, true
 ThresholdMeter::Style thresholdStyle()
 {
     ThresholdMeter::Style style;
-    style.wellX = 4.0f;
+    style.wellX = 8.0f;
     style.wellTop = 14.0f;
     style.wellHeight = 232.0f;
     style.lowestDb = -90.0f;
@@ -44,6 +44,8 @@ ThresholdMeter::Style thresholdStyle()
     style.scale = true;
     style.gateReadouts = true;
     style.scaleStepDb = 18.0f;
+    style.scaleTextHeight = 8.0f;
+    style.readoutTextHeight = 10.5f;
     return style;
 }
 
@@ -310,7 +312,7 @@ void GateEditor::MidiDropdown::refresh()
 
 void GateEditor::MidiDropdown::paint (juce::Graphics& g)
 {
-    paintDropdownBox (g, getLocalBounds().toFloat(), text, 11.0f);
+    paintDropdownBox (g, getLocalBounds().toFloat(), text, 10.0f);
 }
 
 void GateEditor::MidiDropdown::mouseUp (const juce::MouseEvent& event)
@@ -424,7 +426,7 @@ GateEditor::GateEditor (GateProcessor& processor)
     modeSegments.setTextHeight (labelHeight);
 
     // Left column.
-    thresholdMeter.setBounds (12, historyY, 50, 276);
+    thresholdMeter.setBounds (8, historyY, 58, 276);
     gainMeter.setBounds (68, historyY, 40, 269);
     light.setBounds (60, historyY + 271, 56, 16);
     light.setInterceptsMouseClicks (false, false);
@@ -448,8 +450,8 @@ GateEditor::GateEditor (GateProcessor& processor)
     previewCheckbox.setBounds (14, footerY, 98, 20);
     linkCheckbox.setBounds (116, footerY, 98, 20);
     midiCheckbox.setBounds (218, footerY, 128, 20);
-    midiDropdown.setBounds (350, footerY - 2, 70, 24);
-    velocityCheckbox.setBounds (430, footerY, 140, 20);
+    midiDropdown.setBounds (346, footerY - 2, 78, 24);
+    velocityCheckbox.setBounds (432, footerY, 140, 20);
 
     for (auto* checkbox : { &previewCheckbox, &linkCheckbox, &midiCheckbox, &velocityCheckbox })
         checkbox->setLabelHeight (labelHeight);
@@ -462,15 +464,15 @@ GateEditor::GateEditor (GateProcessor& processor)
     // Right column.
     outMeter.setBounds (rightColumnX + 6, 10, 46, 350);
 
-    styleLabel (wetLabel, "Wet", colours::textSecondary, juce::Justification::centred);
-    styleLabel (dryLabel, "Dry", colours::textSecondary, juce::Justification::centred);
+    styleLabel (wetLabel, "Wet", colours::textSecondary, juce::Justification::centred, labelHeight);
+    styleLabel (dryLabel, "Dry", colours::textSecondary, juce::Justification::centred, labelHeight);
     styleLabel (noiseLabel, "Noise", colours::textSecondary, juce::Justification::centred, labelHeight);
 
     constexpr int faderWidth = 33, faderX = rightColumnX + 50;
 
     wetLabel.setBounds (faderX, 10, faderWidth, 17);
     dryLabel.setBounds (faderX + faderWidth, 10, faderWidth, 17);
-    noiseLabel.setBounds (faderX + 2 * faderWidth - 2, 10, faderWidth + 4, 17);
+    noiseLabel.setBounds (faderX + 2 * faderWidth, 10, faderWidth, 17);
     wetFader.setBounds (faderX, faderTop, faderWidth, faderHeight);
     dryFader.setBounds (faderX + faderWidth, faderTop, faderWidth, faderHeight);
     noiseFader.setBounds (faderX + 2 * faderWidth, faderTop, faderWidth, faderHeight);

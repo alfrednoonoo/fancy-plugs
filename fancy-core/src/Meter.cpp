@@ -299,12 +299,17 @@ void ThresholdMeter::paint (juce::Graphics& g)
 
     if (style.scale)
     {
-        g.setFont (font (Weight::medium, 11.0f));
+        const auto textHeight = style.scaleTextHeight;
+        g.setFont (font (Weight::medium, textHeight));
         g.setColour (colours::textSecondary);
 
+        // The end labels stay inside the well's height, clear of the title and the readouts.
         for (auto db = 0.0f; db >= style.lowestDb - 0.01f; db -= style.scaleStepDb)
-            g.drawText (juce::String (juce::roundToInt (db)), juce::Rectangle<float> (wellX + wellWidth + 2.0f, yFor (db) - 6.0f, bounds.getWidth() - wellX - wellWidth - 2.0f, 12.0f),
+        {
+            const auto top = juce::jlimit (wellTop, wellTop + wellHeight - textHeight, yFor (db) - textHeight * 0.5f);
+            g.drawText (juce::String (juce::roundToInt (db)), juce::Rectangle<float> (wellX + wellWidth + 2.0f, top, bounds.getWidth() - wellX - wellWidth - 2.0f, textHeight),
                         juce::Justification::centredRight, false);
+        }
     }
 
     if (style.gateReadouts && closeDb > style.lowestDb - 1.0f)
@@ -332,7 +337,7 @@ void ThresholdMeter::paint (juce::Graphics& g)
     {
         const auto readoutTop = wellTop + wellHeight + 1.0f;
 
-        g.setFont (font (Weight::regular, 12.0f));
+        g.setFont (font (Weight::regular, style.readoutTextHeight));
         g.setColour (style.accent);
         g.drawText (getValueText(), juce::Rectangle<float> (0.0f, readoutTop, bounds.getWidth(), 14.0f), juce::Justification::centred, false);
 
