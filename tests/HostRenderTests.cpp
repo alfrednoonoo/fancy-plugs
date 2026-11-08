@@ -206,7 +206,7 @@ juce::AudioBuffer<float> render (const Plan& plan, Run run, const std::function<
         {
             if (change > position)
             {
-                next = change;
+                next = std::min (change, plan.samples);
                 break;
             }
         }
