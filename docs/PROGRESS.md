@@ -35,7 +35,7 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
 
 1. **Phase 2.0.1, Fancy Gate:** done. The updated Phase 2.1 brief treats it as finished, as one of the nine plugins that Phase 2.1 changes. Its REAPER checklist, `docs/gate-checklist.md`, can still be run with the next build.
 2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. It builds no new plugin. Each item has its own design note, `docs/phase2_1-<item>.md`, written before any code.
-   - S: styled menus, dropdown lists, tooltips, typed values and dialogs, built once in `fancy-core`. Mockup `reference/phase2_1/16__menus_mockup.png`, which also sets their exact styling. **In progress:** the audit and design are in `docs/phase2_1-S.md`.
+   - S: styled menus, dropdown lists, tooltips, typed values and dialogs, built once in `fancy-core`. Mockup `reference/phase2_1/16__menus_mockup.png`, which also sets their exact styling. **Built, and green in CI.** Waiting for the user's check in REAPER, the new section at the end of each `docs/<plugin>-checklist.md`. Audit and design: `docs/phase2_1-S.md`.
    - H: host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
    - W: undo and redo, A/B, and level-matched Compare, for all nine plugins.
    - D: dynamic EQ.
@@ -139,6 +139,42 @@ Fixed during the build:
 - **Range from -inf to 0 dB** was 0.8 dB short after 100 ms, because it was smoothed in dB from -120. It's now smoothed as a linear gain.
 - **Clipped labels** in the first render: "Threshol", "close -4", "MIDI on open/clos" and "A4 · c...". The I/O pill read "2 in 2 out" in renders, because the shell's first header refresh runs before the plugin's override exists. In a host the 30 Hz refresh corrects it at once. The fix also corrects the FIR and MultiComp renders, which now read "4 in 2 out" like their mockups. Their committed screenshots changed only there.
 - **Line endings:** three commits turned seven files into CRLF, and the next commit puts them back to LF. Write files with `newline=''` or bytes in Python here.
+
+## Phase 2.1 S: styled pop-ups
+
+Design note and audit: `docs/phase2_1-S.md`. Every pop-up in the audit is converted. Run: RUN_LINK.
+
+What changed, for all nine plugins:
+
+- **One overlay layer.** Menus, tooltips, dialogs and typed values are components on the editor's layout root, so they're drawn inside the plugin window with Inter and follow the UI size. No JUCE `PopupMenu`, `AlertWindow` or `TooltipWindow` is left, and a test scans the sources for them.
+- **Preset menu:** Factory and User sections, a check on the loaded preset, Save as new preset… (Ctrl+S), Reload "…" while changed, Rename…, Delete… (asks first) and Open preset folder. The dropdown reads "Default" at the defaults and adds " •" once anything changes. A project saved with a changed preset reopens with the mark.
+- **Confirms** before deleting a user preset, a changed EQ or MultiComp band, Delay tap or Verb module, and the FIR noise profile. A fresh band, tap or module goes without asking.
+- **Prompts in the window:** Save, Rename, About, and FIR's point and axis prompts, which were JUCE alert windows.
+- **Typed values:** the §S.2 field, in each control's accent. Times take seconds ("0.12 s"), and the Delay's note takes "1/8." for dotted and "1/8t" for triplet.
+- **Tooltips:** the mockup's look, after 600 ms, or 300 ms on a dimmed control such as Gate's Pre-open.
+- **Shared code:** `fancy-core/ui/Popups.h` (Menu, MenuLayer, Tooltips, DialogLayer); `ShellEditor` is the pop-up host and lists its pop-ups for the gallery; `PresetManager` tracks changes, renames, deletes and reloads; `FancyProcessor::noteEdited()` counts changes outside the parameters (Verb's chain, FIR's curves and profile); `ParamControl` gains `openValueEditor`, `onTypedText` and `getAccentColour`; `ParamDropdown::addSection`; `parseMs`.
+
+Checks:
+
+| Check | Result |
+|---|---|
+| Actions run green, pluginval | Pass, run above |
+| Gallery (§S.5.1) | `screens-popups-<sha>`: 82 pop-ups across the nine plugins, at 100 % and 200 % |
+| Attached and styled (§S.5.2) | Every listed pop-up on every editor opens on the layout root, inside the window, in the plugin's accent, and no JUCE menu is open |
+| Keyboard (§S.5.3) | ↑ ↓ skip disabled rows, → and ← open and close a submenu, Enter chooses, Esc closes with no choice |
+| Typed values (§S.5.4) | "120", "120ms", "120 ms", "0.12 s", "2k", "2500", "-6", "-6 dB", "1/8." and a clamped "9000 ms" give the expected values; "abc" and "" change nothing |
+| Saved projects | No parameter or DSP change. Every existing test passes, and the main screenshots differ from the committed ones only in the preset name (x 26-88, y 19-32), which now reads "Default" |
+| REAPER (§S.5.5) | Pending: a "Menus and pop-ups" section at the end of each checklist |
+
+Deviations from the menus mockup:
+
+- **Typed values** still open with a single click on the value, as since v1.0.1, as well as the brief's double-click.
+- **Long lists:** the 12-row limit applies to value lists. The preset menu and right-click menus show every row, as the mockup draws the preset menu with 15, and scroll only when the window is too short. Gate's window, at 421 px, is.
+- **EQ band types** keep the parameter's names, so "Band" where the mockup says "Bell". Slope submenus are on Low pass and High pass only, as drawn; the shelves' and Tilt's slope stays in the band's right-click menu and EDIT.
+- **EQ right-click menu:** no "Del" hint, because the graph doesn't take keyboard focus (H.2). Dynamic comes with item D. A Slope submenu is added for the types that have one.
+- **Gate MIDI dropdown:** Note, Channel and Velocity window as three submenus, with Note one scrolling list of 128. At the Gate's window edge the Note list opens to the left.
+- **Comp's Detector input** has a third section, Mid/side, for its two extra choices.
+- **Tooltips:** Kicker, Exciter, EQ and Verb have none of their own, so their checklists don't ask for one.
 
 ## Market research and Phase 3 draft
 

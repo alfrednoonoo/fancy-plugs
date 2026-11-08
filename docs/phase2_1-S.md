@@ -6,23 +6,23 @@ S changes no parameter, no DSP, no latency and no saved audio state. `stateVersi
 
 ## 1. Audit
 
-Every pop-up, dropdown list, tooltip, value editor and dialog in the nine plugins, as of commit `5943b08`. "JUCE" means it's drawn by JUCE's default `PopupMenu` or `AlertWindow`, in its own top-level window, which is what the brief's screenshot shows. Each row is ticked off once it's converted and shows in the `screens-popups-<sha>` gallery.
+Every pop-up, dropdown list, tooltip, value editor and dialog in the nine plugins, as of commit `5943b08`, all converted in Phase 2.1 S. "JUCE" means it's drawn by JUCE's default `PopupMenu` or `AlertWindow`, in its own top-level window, which is what the brief's screenshot shows. Each row is ticked off once it's converted and shows in the `screens-popups-<sha>` gallery.
 
 ### Shared (`fancy-core`), all nine plugins
 
 | # | Element | Where | Today | Becomes | Done |
 |---|---|---|---|---|---|
-| C1 | Preset menu | `ShellEditor::showPresetMenu` | JUCE menu, one flat list, no sections or actions | `Menu`, as §S.3: Factory and User sections, ✓, Save as new preset…, Reload, Rename…, Delete…, Open preset folder | |
-| C2 | Preset dropdown text | `ShellEditor::refreshHeader` | "No preset" by default, no changed mark | "Default" at defaults, " •" once changed | |
-| C3 | Save preset prompt (`+ New`, `+`) | `ShellEditor::showSavePrompt` | JUCE `AlertWindow` with a text box | `Dialog` with a text field, action "Save" | |
-| C4 | Rename preset prompt | new | none | `Dialog` with a text field, action "Rename" | |
-| C5 | Delete preset confirm | new | none | `Dialog`, destructive "Delete" | |
-| C6 | Parameter / Prm menu | `ShellEditor::showParameterMenu` | JUCE menu, with a UI size submenu and About | `Menu`, with a "UI size" submenu | |
-| C7 | About box | `ShellEditor::showAbout` | JUCE `AlertWindow` | `Dialog`, one "Close" button in the accent colour | |
-| C8 | Tooltips | `ShellEditor::tooltips` (`juce::TooltipWindow`, 600 ms) | JUCE default look, and not scaled with the UI size | `Tooltips` overlay: 600 ms, 300 ms on locked controls | |
-| C9 | Click-shown tips | `ShellEditor::showTip` (Gate's Pre-open) | the same `TooltipWindow` | the same `Tooltips` overlay, shown at once | |
-| C10 | Typed value | `ParamControl::showValueEditor`: every `Knob`, `Fader` and `ThresholdMeter` | `#141414` box, grey outline, teal focus, white caret, 12 px | §S.2 field: `#141414`, 1 px accent border and caret, radius 4, 10.5 px | |
-| C11 | Parameter dropdown | `ParamDropdown::clicked`, used by every plugin below | JUCE menu | `Menu`, ✓ on the value, 12 rows then a scrollbar | |
+| C1 | Preset menu | `ShellEditor::showPresetMenu` | JUCE menu, one flat list, no sections or actions | `Menu`, as §S.3: Factory and User sections, ✓, Save as new preset…, Reload, Rename…, Delete…, Open preset folder || ✓ |
+| C2 | Preset dropdown text | `ShellEditor::refreshHeader` | "No preset" by default, no changed mark | "Default" at defaults, " •" once changed || ✓ |
+| C3 | Save preset prompt (`+ New`, `+`) | `ShellEditor::showSavePrompt` | JUCE `AlertWindow` with a text box | `Dialog` with a text field, action "Save" || ✓ |
+| C4 | Rename preset prompt | new | none | `Dialog` with a text field, action "Rename" || ✓ |
+| C5 | Delete preset confirm | new | none | `Dialog`, destructive "Delete" || ✓ |
+| C6 | Parameter / Prm menu | `ShellEditor::showParameterMenu` | JUCE menu, with a UI size submenu and About | `Menu`, with a "UI size" submenu || ✓ |
+| C7 | About box | `ShellEditor::showAbout` | JUCE `AlertWindow` | `Dialog`, one "Close" button in the accent colour || ✓ |
+| C8 | Tooltips | `ShellEditor::tooltips` (`juce::TooltipWindow`, 600 ms) | JUCE default look, and not scaled with the UI size | `Tooltips` overlay: 600 ms, 300 ms on locked controls || ✓ |
+| C9 | Click-shown tips | `ShellEditor::showTip` (Gate's Pre-open) | the same `TooltipWindow` | the same `Tooltips` overlay, shown at once || ✓ |
+| C10 | Typed value | `ParamControl::showValueEditor`: every `Knob`, `Fader` and `ThresholdMeter` | `#141414` box, grey outline, teal focus, white caret, 12 px | §S.2 field: `#141414`, 1 px accent border and caret, radius 4, 10.5 px || ✓ |
+| C11 | Parameter dropdown | `ParamDropdown::clicked`, used by every plugin below | JUCE menu | `Menu`, ✓ on the value, 12 rows then a scrollbar || ✓ |
 | C12 | Host's parameter menu (right-click a control, or a Parameter menu item) | `ParamControl::showHostMenu` | the host's own menu | unchanged: it's the host's, §S.4 says leave it | n/a |
 
 ### Per plugin
@@ -30,37 +30,37 @@ Every pop-up, dropdown list, tooltip, value editor and dialog in the nine plugin
 | # | Plugin | Element | Where | Today | Done |
 |---|---|---|---|---|---|
 | K1 | Kicker | none of its own: header (C1-C12) only | | | n/a |
-| X1 | Exciter | Oversampling dropdown (EDIT drawer) | `ParamDropdown` | JUCE menu | |
-| M1 | Comp | Detector input dropdown | `ParamDropdown` | JUCE menu | |
-| M2 | Comp | Oversampling, Phase, Release curve (EDIT drawer) | `ParamDropdown` | JUCE menu | |
-| M3 | Comp | Attack tooltip | `setTooltip` | JUCE tooltip | |
-| E1 | EQ | Band type dropdown | `BandEditor::TypeDropdown::clicked` | JUCE menu | |
-| E2 | EQ | Band handle right-click menu (type, slope submenu, On, Delete band) | `EqGraph::showBandMenu` | JUCE menu at the mouse | |
-| E3 | EQ | Delete band (× button and the menu) | `EqEditor::removeSelectedBand`, `EqGraph` | deletes at once | |
-| E4 | EQ | Slope dropdowns, Phase, FIR length, Oversampling, Range, Analyzer, FFT, Window, Overlap | `ParamDropdown` | JUCE menu | |
-| V1 | Verb | FILE module file list | `ModuleCard::showFileMenu` | JUCE menu, can be long | |
-| V2 | Verb | FILE module SRC-gain list | `ModuleCard::showGainMenu` | JUCE menu | |
-| V3 | Verb | Latency, Max FFT, IR storage (SETUP drawer) | `ParamDropdown` | JUCE menu | |
-| V4 | Verb | Delete module (card ×) | `ModuleCard::mouseUp` | deletes at once | |
+| X1 | Exciter | Oversampling dropdown (EDIT drawer) | `ParamDropdown` | JUCE menu || ✓ |
+| M1 | Comp | Detector input dropdown | `ParamDropdown` | JUCE menu || ✓ |
+| M2 | Comp | Oversampling, Phase, Release curve (EDIT drawer) | `ParamDropdown` | JUCE menu || ✓ |
+| M3 | Comp | Attack tooltip | `setTooltip` | JUCE tooltip || ✓ |
+| E1 | EQ | Band type dropdown | `BandEditor::TypeDropdown::clicked` | JUCE menu || ✓ |
+| E2 | EQ | Band handle right-click menu (type, slope submenu, On, Delete band) | `EqGraph::showBandMenu` | JUCE menu at the mouse || ✓ |
+| E3 | EQ | Delete band (× button and the menu) | `EqEditor::removeSelectedBand`, `EqGraph` | deletes at once || ✓ |
+| E4 | EQ | Slope dropdowns, Phase, FIR length, Oversampling, Range, Analyzer, FFT, Window, Overlap | `ParamDropdown` | JUCE menu || ✓ |
+| V1 | Verb | FILE module file list | `ModuleCard::showFileMenu` | JUCE menu, can be long || ✓ |
+| V2 | Verb | FILE module SRC-gain list | `ModuleCard::showGainMenu` | JUCE menu || ✓ |
+| V3 | Verb | Latency, Max FFT, IR storage (SETUP drawer) | `ParamDropdown` | JUCE menu || ✓ |
+| V4 | Verb | Delete module (card ×) | `ModuleCard::mouseUp` | deletes at once || ✓ |
 | V5 | Verb | Add-module panel | `ModuleRack::showAddPanel` | an inline card in the rack, not a pop-up | n/a, already styled |
 | V6 | Verb | Browse… and IR folder | `FileChooser` | native file dialog | n/a, §S.4 keeps it native |
-| D1 | Delay | Note dropdown, per tap | `ParamDropdown` | JUCE menu | |
-| D2 | Delay | Multiplier dropdowns (EDIT drawer) | `ParamDropdown` | JUCE menu | |
-| D3 | Delay | Delete tap (×) | `DelayEditor` | deletes at once | |
-| D4 | Delay | Feedback and Pan tooltips | `setTooltip` | JUCE tooltip | |
-| D5 | Delay | Typed "1/8." and "1/8T" on the note | `parseNote` | sets 1/8 and ignores the dot | |
-| P1 | MultiComp | Detector, Crossover dropdowns | `ParamDropdown` | JUCE menu | |
-| P2 | MultiComp | Delete band (×) | `MultiCompEditor` | deletes at once | |
-| P3 | MultiComp | Ratio, Attack, Gain, Link tooltips | `setTooltip` | JUCE tooltip | |
-| F1 | FIR | Edit dropdown, FFT size dropdown | `ParamDropdown` | JUCE menu | |
-| F2 | FIR | Point value prompt (right-click a point) | `FirGraph::typePoint` | JUCE `AlertWindow`, two text boxes | |
-| F3 | FIR | Graph top and Analysis floor prompts (double-click the axis ends) | `FirGraph::typeAxis` | JUCE `AlertWindow` | |
-| F4 | FIR | Clear learned noise profile | `FirEditor` Clear button | clears at once | |
-| F5 | FIR | Low latency, Ratio tooltips | `setTooltip` | JUCE tooltip | |
-| G1 | Gate | Detector input dropdown | `ParamDropdown` | JUCE menu, flat | |
-| G2 | Gate | MIDI dropdown: note, channel and velocity window | `MidiDropdown::mouseUp` | JUCE menu, eleven octave submenus | |
-| G3 | Gate | History, Hysteresis, Range, Hold, Preview, Link, MIDI, Noise, Pre-open, Velocity tooltips | `setTooltip` | JUCE tooltip | |
-| G4 | Gate | Pre-open locked hint (dimmed, 300 ms) | `ParamControl::setLocked`, `showTip` | JUCE tooltip | |
+| D1 | Delay | Note dropdown, per tap | `ParamDropdown` | JUCE menu || ✓ |
+| D2 | Delay | Multiplier dropdowns (EDIT drawer) | `ParamDropdown` | JUCE menu || ✓ |
+| D3 | Delay | Delete tap (×) | `DelayEditor` | deletes at once || ✓ |
+| D4 | Delay | Feedback and Pan tooltips | `setTooltip` | JUCE tooltip || ✓ |
+| D5 | Delay | Typed "1/8." and "1/8T" on the note | `parseNote` | sets 1/8 and ignores the dot || ✓ |
+| P1 | MultiComp | Detector, Crossover dropdowns | `ParamDropdown` | JUCE menu || ✓ |
+| P2 | MultiComp | Delete band (×) | `MultiCompEditor` | deletes at once || ✓ |
+| P3 | MultiComp | Ratio, Attack, Gain, Link tooltips | `setTooltip` | JUCE tooltip || ✓ |
+| F1 | FIR | Edit dropdown, FFT size dropdown | `ParamDropdown` | JUCE menu || ✓ |
+| F2 | FIR | Point value prompt (right-click a point) | `FirGraph::typePoint` | JUCE `AlertWindow`, two text boxes || ✓ |
+| F3 | FIR | Graph top and Analysis floor prompts (double-click the axis ends) | `FirGraph::typeAxis` | JUCE `AlertWindow` || ✓ |
+| F4 | FIR | Clear learned noise profile | `FirEditor` Clear button | clears at once || ✓ |
+| F5 | FIR | Low latency, Ratio tooltips | `setTooltip` | JUCE tooltip || ✓ |
+| G1 | Gate | Detector input dropdown | `ParamDropdown` | JUCE menu, flat || ✓ |
+| G2 | Gate | MIDI dropdown: note, channel and velocity window | `MidiDropdown::mouseUp` | JUCE menu, eleven octave submenus || ✓ |
+| G3 | Gate | History, Hysteresis, Range, Hold, Preview, Link, MIDI, Noise, Pre-open, Velocity tooltips | `setTooltip` | JUCE tooltip || ✓ |
+| G4 | Gate | Pre-open locked hint (dimmed, 300 ms) | `ParamControl::setLocked`, `showTip` | JUCE tooltip || ✓ |
 
 The shared `ParamSegments`, `ColourTabs`, `ParamCheckbox` and the pill buttons open nothing, so they aren't listed. The Delay and FIR mode switches are segment controls, not pop-ups.
 

@@ -261,29 +261,22 @@ void MenuLayer::openPanel (const Menu& menu, juce::Rectangle<float> anchor, bool
     auto panel = std::make_unique<Panel> (*this, menus.back(), asSubMenu || position.has_value() ? 0.0f : anchor.getWidth());
 
     const auto bounds = getLocalBounds().toFloat().reduced (edgeMargin);
-    const auto width = juce::jmin ((float) panel->getIdealWidth(), bounds.getWidth());
     const auto chrome = 2.0f * (Panel::border + Panel::padding);
     auto height = panel->getContentHeight() + chrome;
 
     if (menu.isScrollingList())
         height = juce::jmin (height, Panel::maxScrollRows * Panel::rowHeight + chrome);
 
-    float x = 0.0f, y = 0.0f;
+    // The height and top first: below the target, or above it if there's more room there.
+    auto y = 0.0f;
 
     if (asSubMenu)
     {
-        // Top-aligned with its row, overlapping the parent by 2 px; to the left if there's no room.
-        const auto& parentPanel = *panels.back();
-        x = (float) parentPanel.getRight() - subMenuOverlap;
-
-        if (x + width > bounds.getRight())
-            x = (float) parentPanel.getX() - width + subMenuOverlap;
-
+        // Top-aligned with its row.
         y = anchor.getY() - Panel::border - Panel::padding;
     }
     else if (position.has_value())
     {
-        x = position->x;
         y = position->y;
 
         if (y + height > bounds.getBottom())
@@ -291,7 +284,6 @@ void MenuLayer::openPanel (const Menu& menu, juce::Rectangle<float> anchor, bool
     }
     else
     {
-        x = anchor.getX();
         const auto below = bounds.getBottom() - (anchor.getBottom() + targetGap);
         const auto above = anchor.getY() - targetGap - bounds.getY();
 
@@ -308,6 +300,27 @@ void MenuLayer::openPanel (const Menu& menu, juce::Rectangle<float> anchor, bool
     }
 
     height = juce::jmin (height, bounds.getHeight());
+
+    // A panel that scrolls gets the scrollbar's width on top of its text.
+    const auto scrolls = panel->getContentHeight() > height - chrome + 0.5f;
+    const auto width = juce::jmin ((float) panel->getIdealWidth() + (scrolls ? Panel::scrollbarWidth : 0.0f), bounds.getWidth());
+
+    auto x = 0.0f;
+
+    if (asSubMenu)
+    {
+        // Overlapping the parent by 2 px, or to its left if there's no room on the right.
+        const auto& parentPanel = *panels.back();
+        x = (float) parentPanel.getRight() - subMenuOverlap;
+
+        if (x + width > bounds.getRight())
+            x = (float) parentPanel.getX() - width + subMenuOverlap;
+    }
+    else
+    {
+        x = position.has_value() ? position->x : anchor.getX();
+    }
+
     x = juce::jlimit (bounds.getX(), bounds.getRight() - width, x);
     y = juce::jlimit (bounds.getY(), bounds.getBottom() - height, y);
 
@@ -489,9 +502,9 @@ MenuLayer::Panel::Panel (MenuLayer& owner, std::shared_ptr<Menu> menuToShow, flo
     }
 
     const auto chrome = 2.0f * (border + padding);
-    const auto scrollbar = menu->isScrollingList() && contentHeight > maxScrollRows * rowHeight ? scrollbarWidth : 0.0f;
 
-    idealWidth = (int) std::ceil (juce::jmax (minimumMenuWidth, minimumWidth, widest + chrome + scrollbar));
+    // Without a scrollbar: the layer adds its width if the panel ends up scrolling.
+    idealWidth = (int) std::ceil (juce::jmax (minimumMenuWidth, minimumWidth, widest + chrome));
 
     setWantsKeyboardFocus (false);
     setMouseClickGrabsKeyboardFocus (false);

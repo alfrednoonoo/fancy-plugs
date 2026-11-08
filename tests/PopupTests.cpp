@@ -260,6 +260,9 @@ TEST_CASE ("Long value lists scroll after 12 rows with the current value in view
     CHECK (panel.isScrolling());
     CHECK ((float) panel.getHeight() == Approx (12.0f * 26.0f + 10.0f).margin (1.0f));
 
+    // The scrollbar gets its own 10 px beside the 200 px minimum, so it doesn't cut into the text.
+    CHECK (panel.getWidth() >= 210);
+
     // The ticked row is inside the visible part.
     const auto top = panel.getRowTop (69);
     CHECK (top >= 0.0f);

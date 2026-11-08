@@ -200,8 +200,8 @@ void EqEditor::BandEditor::TypeDropdown::paint (juce::Graphics& g)
 
 void EqEditor::BandEditor::TypeDropdown::clicked()
 {
-    // The mockup's order: the gain types, then the filters, with a slope submenu on the two
-    // that have one. Ids: 1 + type, then 100 + slope for Low pass and 200 + slope for High pass.
+    // The mockup's order: the gain types, then the filters, with a slope submenu on Low pass
+    // and High pass. Ids: 1 + type, then 100 + slope for Low pass and 200 + slope for High pass.
     const auto types = param.getAllValueStrings();
     const auto slopes = slopeParameter.getAllValueStrings();
     const auto current = (int) juce::roundToInt (param.convertFrom0to1 (param.getValue()));
@@ -222,7 +222,8 @@ void EqEditor::BandEditor::TypeDropdown::clicked()
     {
         const auto index = (int) type;
 
-        if (! eq::hasSlope (type))
+        // Shelves and Tilt keep their slope; it's in the band's right-click menu and EDIT.
+        if (type != eq::BandType::lowPass && type != eq::BandType::highPass)
         {
             menu.addItem (1 + index, types[index], true, index == current).withIcon (icon (type));
             return;
