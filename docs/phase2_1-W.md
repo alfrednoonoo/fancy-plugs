@@ -82,7 +82,7 @@ Built from S's components: icon buttons, a two-segment `A | B` switch and pill b
 
 ## 4. Questions for the user
 
-Both were built as recommended, while the user was away, and are waiting for the user's decision. The click test answered question 2 with numbers: no plugin's output jumps when switching from its defaults to its last factory preset (§5), so the test is now required.
+Both were built as recommended, while the user was away, and the user approved both on 8 November 2026, keeping the smoothing. The click test answered question 2 with numbers: no plugin's output jumps when switching from its defaults to its last factory preset (§5), so the test is now required.
 
 1. **Header space (layout change).** The large header doesn't have room for the workflow group in the plugins under 800 px wide. The group needs about 250 px between the I/O pill and the output knob (about 300 px with Compare's read-out). Today there's 380 px on Comp, 240 px on Verb, 255 px on EQ (less its EDIT link), 205 px on Delay, FIR and MultiComp (less their label or dropdown), and 185 px on Gate. Recommended:
    - Built: on EQ, Delay, FIR, MultiComp and Gate, the left buttons use the compact labels (`+`, `Prm`, `4/2`), and the preset dropdown is narrower: 120 px on Delay, FIR and MultiComp, 150 px on Gate and 170 px on EQ. Verb keeps the full labels with a 230 px dropdown; Comp is unchanged.

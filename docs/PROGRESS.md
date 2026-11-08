@@ -37,7 +37,7 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
 2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. It builds no new plugin. Each item has its own design note, `docs/phase2_1-<item>.md`, written before any code.
    - S: styled menus, dropdown lists, tooltips, typed values and dialogs, built once in `fancy-core`. Mockup `reference/phase2_1/16__menus_mockup.png`, which also sets their exact styling. **Done.** The user reported the REAPER checks passed on 8 November 2026. Audit and design: `docs/phase2_1-S.md`.
    - H: **built, and green in CI**; waiting for the user's host checks (`docs/host-compat.md`); the FIR frame-grid question is decided (below). Design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
-   - W: **built, and green in CI**; waiting for the user's REAPER checks and two layout decisions (below). Undo and redo, A/B, and level-matched Compare, for all nine plugins. Design note `docs/phase2_1-W.md`.
+   - W: **built, and green in CI**; the user approved both decisions on 8 November 2026 (below) and asked to start D. Its REAPER checks are still to run. Undo and redo, A/B, and level-matched Compare, for all nine plugins. Design note `docs/phase2_1-W.md`.
    - D: dynamic EQ.
    - U: upward compression in MultiComp.
    - A: adaptive noise tracking in FIR.
@@ -254,7 +254,7 @@ Results:
 | Flood with Compare toggling | No NaN, no allocation |
 | CPU (`docs/measurements/workflow.txt`) | Editor closed: unchanged. Compare measuring adds 0.1-0.2 % (0.1-0.3 × Comp's default) while the window is open |
 
-Decisions waiting for the user:
+Decisions, both approved by the user on 8 November 2026 ("Approve both, keep the smoothing"):
 
 1. **Header layout.** Built as recommended, so it can be judged from the screenshots: compact labels and a narrower preset dropdown on EQ, Delay, FIR, MultiComp and Gate; MultiComp's "Detector" label is now its dropdown's tooltip; FIR's latency label shows milliseconds only; Compare's gain shows inside the lit button. Each is a small change to undo.
 2. **A/B crossfade.** The brief asks for the old and new settings rendered in parallel for 20 ms. Built instead: the plugins' own parameter smoothing glides to the other settings, and the click test shows no jump in any plugin. A parallel render would need a second copy of each plugin's DSP.
