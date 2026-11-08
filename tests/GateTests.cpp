@@ -371,7 +371,13 @@ TEST_CASE ("switching Gate and Duck, or moving Range, doesn't click", "[gate]")
         largestStep = std::max (largestStep, std::abs (rising.left[i] - rising.left[i - 1]));
 
     CHECK (largestStep < 0.002f);
-    CHECK (rising.left.back() == Approx (0.01f).epsilon (1.0e-4));
+
+    // Within 0.1 dB after 100 ms (five time constants), and settled soon after.
+    CHECK (rising.left.back() > 0.01f * 0.9886f);
+
+    Audio settled (14400, 0.01f);
+    settled.process (quiet);
+    CHECK (settled.left.back() == Approx (0.01f).epsilon (1.0e-4));
 }
 
 TEST_CASE ("Wet and Dry are independent", "[gate]")

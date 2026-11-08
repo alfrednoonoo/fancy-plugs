@@ -122,9 +122,12 @@ private:
     Machine machines[2];
     double cachedPosition[2] { -1.0, -1.0 }, cachedGain[2] { 0.0, 0.0 };
 
-    // Range and the Gate/Duck switch move the curve smoothly. The range is in dB, with -inf
-    // as the curve floor.
+    // Range and the Gate/Duck switch move the curve smoothly. Range is smoothed as a linear gain,
+    // 0 for -inf, so a jump from -inf to 0 dB settles like any gain change rather than creeping
+    // up from -120 dB. curveRangeDb is its value in dB, floored at curveFloorDb.
     fancy::dsp::Smoother curveRange, duckBlend;
+    double curveRangeDb = curveFloorDb;
+    void updateCurveRangeDb() noexcept;
 
     fancy::dsp::Smoother wet, dry, noise, output, bypass, switchGain, preOpen;
     std::uint32_t noiseState[2] { 0x12345678u, 0x9abcdef1u };

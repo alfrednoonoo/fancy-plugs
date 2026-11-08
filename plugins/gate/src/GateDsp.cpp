@@ -228,7 +228,7 @@ void GateDsp::setTargets (const Targets& targets) noexcept
     output.setTarget (targets.outputGain);
     bypass.setTarget (targets.bypass ? 1.0 : 0.0);
     preOpen.setTarget (std::clamp (targets.preOpenMs, 0.0, lookaheadMs) * 0.001 * rate);
-    curveRange.setTarget (targets.rangeDb <= rangeFloorDb ? curveFloorDb : std::min (0.0, targets.rangeDb));
+    curveRange.setTarget (targets.rangeDb <= rangeFloorDb ? 0.0 : std::pow (10.0, std::min (0.0, targets.rangeDb) / 20.0));
     duckBlend.setTarget (targets.duck ? 1.0 : 0.0);
 }
 
@@ -244,6 +244,7 @@ void GateDsp::snapToTargets (const Targets& targets) noexcept
     holdOffSamples = 0;
     switchGain.snapTo (1.0);
     cachedPosition[0] = cachedPosition[1] = -1.0;
+    updateCurveRangeDb();
 
     updateFilters();
     rmsCoefficient = fancy::dsp::timeCoefficient (rms.getCurrent(), rate);
@@ -257,13 +258,19 @@ void GateDsp::updateFilters() noexcept
 
 // Gain --------------------------------------------------------------------------------------
 
+void GateDsp::updateCurveRangeDb() noexcept
+{
+    const auto gain = curveRange.getCurrent();
+    curveRangeDb = gain >= 1.0 ? 0.0 : std::max (curveFloorDb, 20.0 * std::log10 (std::max (gain, 1.0e-12)));
+}
+
 double GateDsp::gainFor (double position) noexcept
 {
-    const auto range = curveRange.getCurrent();
+    const auto range = curveRangeDb;
     const auto blend = duckBlend.getCurrent();
 
     // Fully shut at -inf is exact silence, not -120 dB.
-    if (curveRange.isSettled() && range <= curveFloorDb && duckBlend.isSettled()
+    if (curveRange.isSettled() && curveRange.getCurrent() <= 0.0 && duckBlend.isSettled()
         && ((blend == 0.0 && position <= 0.0) || (blend == 1.0 && position >= 1.0)))
         return 0.0;
 
@@ -474,7 +481,12 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
         const auto lowBlend = lowpassBlend.next();
         const auto preOpenSamples = (int) std::lround (preOpen.next());
         const auto curveMoving = ! curveRange.isSettled() || ! duckBlend.isSettled();
-        curveRange.next();
+        if (! curveRange.isSettled())
+        {
+            curveRange.next();
+            updateCurveRangeDb();
+        }
+
         duckBlend.next();
 
         double in[2], key[2];
