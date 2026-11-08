@@ -70,6 +70,18 @@ Typed values take their unit or not: `120`, `120 ms` and `0.12 s` all mean 120 m
 
 The plugin asks before anything that can't be undone, such as deleting a user preset. The host's own menus, such as REAPER's right-click automation menu, and any bar or buttons the host draws around the plugin window keep the host's look.
 
+## Undo, A/B and Compare
+
+**A | B** in the header holds two complete sets of settings. Click the other letter to switch: the plugin glides to the other settings. Both sets, and which one is active, are saved with the project. Each starts as a copy of the other.
+
+The **Prm** menu has the rest:
+
+- **Undo** and **Redo** step back and forward through your changes: each drag, click, typed value or preset load is one step, up to 100. Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y do the same while the plugin window has the keyboard focus; in REAPER the host usually keeps it, so use the menu. Automation, and changes the host makes (REAPER's own undo, loading a project), aren't steps. The history isn't saved with the project.
+- **Copy A → B** (or B → A) copies the active set into the other one.
+- **≈ Compare (level-matched)** plays the input instead of the output, at the volume that matches the output's loudness, so you hear what the plugin does without a change in loudness fooling you. The match is measured while Compare is off, over the last 3 seconds, and holds while it's on. It isn't a parameter: it can't be automated, isn't saved and turns off when you close the window. It's separate from **ON**.
+- **I/O** shows the plugin's inputs and outputs.
+
+
 ## Credits
 
 UI design based on "ReaPlugs (vst GUI)" by Eugene Reznik, CC BY 4.0 — https://www.figma.com/community/file/967866927752067729. Modified from the original.

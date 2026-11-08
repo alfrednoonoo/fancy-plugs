@@ -231,7 +231,8 @@ void Workflow::commit()
             step.values.emplace_back (i, baseValues[(size_t) i], now[(size_t) i]);
     }
 
-    if (counter != baseCounter || touchedAll)
+    // Always compared: a parameter can change the state outside the parameters too, as FIR's
+    // curve mode redraws the freehand curve from the points.
     {
         auto extra = captureExtra();
 
@@ -469,7 +470,12 @@ void Workflow::restoreSlots (const juce::ValueTree& tree)
             continue;
 
         const auto& range = ranged->getNormalisableRange();
-        snapshot.values[(size_t) ranged->getParameterIndex()] = ranged->convertTo0to1 (juce::jlimit (range.start, range.end, (float) value));
+        const auto index = parameters.indexOf (ranged);
+
+        if (index < 0)
+            continue;
+
+        snapshot.values[(size_t) index] = ranged->convertTo0to1 (juce::jlimit (range.start, range.end, (float) value));
     }
 
     const auto extra = slot.getChildWithName (extraType);

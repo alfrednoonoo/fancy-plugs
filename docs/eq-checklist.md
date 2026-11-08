@@ -100,3 +100,14 @@ Tell me "EQ OK", or list which items failed and what you saw. Once it's OK, I'll
 - [ ] Click the band type dropdown: the list shows each type's icon, then Low pass and High pass with a slope submenu each. Pick High pass, 24 dB/oct.
 - [ ] Right-click a band handle: the menu's title reads the band, type and frequency. **Set frequency…** opens the band's Freq field to type in.
 - [ ] Change a band's Q, then delete it with ×: it asks first. A band you've just added and not changed goes without asking.
+
+## Undo, A/B and Compare (Phase 2.1 W)
+
+- [ ] The header has **↶ ↷ | A B → | ≈ Compare** between the I/O pill and the output knob, with thin lines between the groups. Nothing overlaps at 100 % or 200 %.
+- [ ] Move a control: **↶** lights up, and its tooltip says what it will undo. Click it: the control goes back. **↷** puts it forward again.
+- [ ] Add a band, drag it on the graph, then delete it: Undo takes back each one in turn.
+- [ ] Set something you'll recognise, click **B**, change it, then click **A** and **B** in turn while playing: each comes back exactly, with no click.
+- [ ] **→** copies the active set into the other one.
+- [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
+- [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
+- [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.

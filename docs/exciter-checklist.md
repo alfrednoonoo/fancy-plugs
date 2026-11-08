@@ -62,3 +62,13 @@ Tell me "Exciter OK", or list which items failed and what you saw. Once it's OK,
 - [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
 - [ ] Open **EDIT** and click Oversampling: the list opens in the same style, with a red check mark on the current value.
 - [ ] Click the Freq value and type `2.5k`: Freq moves to 2.50 kHz.
+
+## Undo, A/B and Compare (Phase 2.1 W)
+
+- [ ] The header reads: preset, **+**, **Prm**, **A | B**, output knob, **ON**. The I/O pill has gone into the Prm menu.
+- [ ] Move a knob, then open **Prm**: **Undo** (Ctrl+Z) is enabled. Click it: the knob goes back. **Redo** puts it forward again.
+- [ ] Set something you'll recognise, click **B**, change it, then click **A** and **B** in turn while playing: each comes back exactly, with no click.
+- [ ] **Copy A → B** in Prm, then switch: both sound the same.
+- [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
+- [ ] Play a loop and pick **≈ Compare (level-matched)**: you hear the input at about the same loudness as the plugin's output. Pick it again to go back. No clicks either way.
+- [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.

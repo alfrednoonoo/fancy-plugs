@@ -54,3 +54,13 @@
 - [ ] Click the MIDI dropdown and open **Note**: one scrolling list of all 128 notes, with the current one ticked and in view.
 - [ ] With Lookahead off, hover the dimmed Pre-open: its hint appears after about a third of a second, quicker than other tooltips.
 - [ ] Click the Release value and type `0.2 s`: Release moves to 200 ms.
+
+## Undo, A/B and Compare (Phase 2.1 W)
+
+- [ ] The header has **↶ ↷ | A B → | ≈ Compare** between the I/O pill and the output knob, with thin lines between the groups. Nothing overlaps at 100 % or 200 %.
+- [ ] Move a control: **↶** lights up, and its tooltip says what it will undo. Click it: the control goes back. **↷** puts it forward again.
+- [ ] Set something you'll recognise, click **B**, change it, then click **A** and **B** in turn while playing: each comes back exactly, with no click.
+- [ ] **→** copies the active set into the other one.
+- [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
+- [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
+- [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.

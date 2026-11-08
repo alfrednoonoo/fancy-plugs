@@ -327,11 +327,13 @@ TEST_CASE ("Undo: steps are gestures, kept to 100, and redo clears on a new edit
         auto& parameter = firstContinuous (processor);
 
         // One drag, many values: one step, named after the parameter.
+        const auto from = parameter.getValue();
+        const auto to = from > 0.5f ? 0.1f : 0.9f;
         parameter.beginChangeGesture();
 
         for (int i = 0; i <= 20; ++i)
         {
-            parameter.setValueNotifyingHost ((float) i / 20.0f);
+            parameter.setValueNotifyingHost (from + (to - from) * (float) i / 20.0f);
             workflow.commit(); // ignored while the gesture is open
         }
 
@@ -371,7 +373,9 @@ TEST_CASE ("Undo: steps are gestures, kept to 100, and redo clears on a new edit
             processor.getPresets().load (processor.getPresets().getFactoryNames().size() - 1);
             workflow.commit();
 
-            CHECK (workflow.getNumUndoSteps() == before + 1);
+            // The history is full, so the count stays at 100; the newest step is the load.
+            CHECK (workflow.getNumUndoSteps() == juce::jmin (before + 1, fancy::Workflow::maxSteps));
+            CHECK (workflow.getUndoName() == "Load preset");
             REQUIRE (workflow.undo());
             INFO (describeDifference (processor, settings, workflow.capture()));
             CHECK (workflow.capture().sameAs (settings));
@@ -498,8 +502,15 @@ TEST_CASE ("A/B: switching, copying, undo, and both slots saved with the project
         const auto other = workflow.getOtherSlot();
 
         for (size_t i = 0; i < other.values.size(); ++i)
-            if (! std::isnan (other.values[i]))
-                CHECK (std::abs (other.values[i] - a.values[i]) < 1.0e-5f);
+        {
+            if (std::isnan (other.values[i]))
+                continue;
+
+            auto* parameter = processor.getParameters()[(int) i];
+            INFO (parameter->getName (64) << ": loaded " << other.values[i] << ", saved " << a.values[i]
+                  << ", live " << parameter->getValue());
+            CHECK (std::abs (other.values[i] - a.values[i]) < 1.0e-5f);
+        }
 
         CHECK (other.extra.isEquivalentTo (a.extra));
     });
@@ -609,11 +620,11 @@ TEST_CASE ("A/B: a version 1 state loads with B as a copy of A, and renders bit-
     });
 }
 
-TEST_CASE ("A/B: switching to a factory preset's settings mid-playback (report)", "[workflow][ab][click]")
+TEST_CASE ("A/B: switching mid-playback makes no step beyond the old and new sound's own", "[workflow][ab][click]")
 {
-    // Reported, not yet required: see question 2 in docs/phase2_1-W.md. A sine plays through A
-    // (the defaults); B is the last factory preset. The largest sample-to-sample step in the
-    // 50 ms after the switch is printed against the largest in steady playback of A and of B.
+    // A sine plays through A (the defaults); B is the last factory preset. The largest
+    // sample-to-sample step in the 50 ms after the switch is held against the largest in
+    // steady playback of A and of B.
     const juce::ScopedJuceInitialiser_GUI juceInitialiser;
 
     forEachPlugin ([] (fancy::FancyProcessor& processor)
@@ -688,8 +699,10 @@ TEST_CASE ("A/B: switching to a factory preset's settings mid-playback (report)"
         const auto stepSwitch = largestStep (afterSwitch, 0, afterSwitch.getNumSamples());
 
         std::cout << "A/B switch: " << processor.getName() << " to " << presets.getFactoryNames()[presets.getFactoryNames().size() - 1]
-                  << ": largest step " << stepSwitch << " after the switch, " << stepA << " in A, " << stepB << " in B"
-                  << (stepSwitch > 1.5f * juce::jmax (stepA, stepB) + 1.0e-4f ? "  <-- jumps" : "") << std::endl;
+                  << ": largest step " << stepSwitch << " after the switch, " << stepA << " in A, " << stepB << " in B" << std::endl;
+
+        // Parameter smoothing glides to the other settings (docs/phase2_1-W.md, question 2).
+        CHECK (stepSwitch <= 1.5f * juce::jmax (stepA, stepB) + 1.0e-4f);
 
         processor.releaseResources();
     });

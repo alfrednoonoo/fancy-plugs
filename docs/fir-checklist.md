@@ -76,3 +76,14 @@
 - [ ] Hover Low latency for about half a second: the tooltip appears.
 - [ ] In EQ mode, right-click a point: a small dialog asks for its frequency and gain. `2k` and `-3 dB` move it.
 - [ ] In Subtract mode with a learned profile, click Clear: it asks first.
+
+## Undo, A/B and Compare (Phase 2.1 W)
+
+- [ ] The header has **↶ ↷ | A B → | ≈ Compare** between the I/O pill and the output knob, with thin lines between the groups. Nothing overlaps at 100 % or 200 %.
+- [ ] Move a control: **↶** lights up, and its tooltip says what it will undo. Click it: the control goes back. **↷** puts it forward again.
+- [ ] Draw a curve, then clear it: Undo takes back each one. Learn a noise profile: when it finishes, Undo takes it back. A and B each keep their own curves and profile.
+- [ ] Set something you'll recognise, click **B**, change it, then click **A** and **B** in turn while playing: each comes back exactly, with no click.
+- [ ] **→** copies the active set into the other one.
+- [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
+- [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
+- [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.

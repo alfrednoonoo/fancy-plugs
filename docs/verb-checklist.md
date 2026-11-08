@@ -87,3 +87,14 @@
 - [ ] On a FILE module, click the SRC-gain dropdown: the list opens under it with a purple check mark.
 - [ ] Change a module's setting, then click its ×: it asks before deleting. A new, unchanged module goes without asking.
 - [ ] Click the Pre-delay value and type `0.02 s`: Pre-delay moves to 20.0 ms.
+
+## Undo, A/B and Compare (Phase 2.1 W)
+
+- [ ] The header has **↶ ↷ | A B → | ≈ Compare** between the I/O pill and the output knob, with thin lines between the groups. Nothing overlaps at 100 % or 200 %.
+- [ ] Move a control: **↶** lights up, and its tooltip says what it will undo. Click it: the control goes back. **↷** puts it forward again.
+- [ ] Add a module, change one of its knobs, then remove it: Undo takes back each one in turn. A and B each keep their own chain.
+- [ ] Set something you'll recognise, click **B**, change it, then click **A** and **B** in turn while playing: each comes back exactly, with no click.
+- [ ] **→** copies the active set into the other one.
+- [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
+- [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
+- [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.

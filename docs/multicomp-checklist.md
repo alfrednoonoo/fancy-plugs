@@ -79,3 +79,14 @@
 - [ ] Hover Ratio for about half a second: the tooltip appears under it.
 - [ ] Change a band's Ratio, then delete the band with ×: it asks first.
 - [ ] Click the Threshold value and type `-24`: the fader moves to -24.0.
+
+## Undo, A/B and Compare (Phase 2.1 W)
+
+- [ ] The header has **↶ ↷ | A B → | ≈ Compare** between the I/O pill and the output knob, with thin lines between the groups. Nothing overlaps at 100 % or 200 %.
+- [ ] Move a control: **↶** lights up, and its tooltip says what it will undo. Click it: the control goes back. **↷** puts it forward again.
+- [ ] Split a band, then merge it back: Undo takes back each one. With Link bands on, one drag that moves every band undoes in one step.
+- [ ] Set something you'll recognise, click **B**, change it, then click **A** and **B** in turn while playing: each comes back exactly, with no click.
+- [ ] **→** copies the active set into the other one.
+- [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
+- [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
+- [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.

@@ -49,3 +49,13 @@ Tell me "Kicker OK", or list which boxes failed. Once it's OK, I'll start the Ex
 - [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
 - [ ] Open **Prm** and hover **UI size**: the sizes open to the right after a moment. Pick 200 %, and open the preset menu again: it's twice the size too.
 - [ ] Click the Freq value and type `80`, then Enter: the field has a red border and caret, and Freq moves to 80 Hz.
+
+## Undo, A/B and Compare (Phase 2.1 W)
+
+- [ ] The header reads: preset, **+**, **Prm**, **A | B**, output knob, **ON**. The I/O pill has gone into the Prm menu.
+- [ ] Move a knob, then open **Prm**: **Undo** (Ctrl+Z) is enabled. Click it: the knob goes back. **Redo** puts it forward again.
+- [ ] Set something you'll recognise, click **B**, change it, then click **A** and **B** in turn while playing: each comes back exactly, with no click.
+- [ ] **Copy A → B** in Prm, then switch: both sound the same.
+- [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
+- [ ] Play a loop and pick **≈ Compare (level-matched)**: you hear the input at about the same loudness as the plugin's output. Pick it again to go back. No clicks either way.
+- [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
