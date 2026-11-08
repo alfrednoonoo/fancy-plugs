@@ -25,7 +25,7 @@ env:
 jobs:
   build:
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
 
     steps:
       - uses: actions/checkout@v7
@@ -92,6 +92,45 @@ jobs:
           Copy-Item -Path scripts/install.ps1 -Destination dist
           Get-ChildItem -Path dist -Recurse -File | ForEach-Object { $_.FullName }
 
+      # Steinberg's own conformance check (Phase 2.1 H.7.1), built once per SDK tag.
+      - name: Cache Steinberg VST3 validator
+        id: validator-cache
+        uses: actions/cache@v6
+        with:
+          path: validator-bin
+          key: vst3-validator-v3.8.0_build_66-${{ runner.os }}-${{ env.IMAGE_VERSION }}
+
+      - name: Build Steinberg VST3 validator
+        if: steps.validator-cache.outputs.cache-hit != 'true'
+        shell: bash
+        timeout-minutes: 20
+        run: |
+          git clone --depth 1 --branch v3.8.0_build_66 https://github.com/steinbergmedia/vst3sdk.git vst3sdk
+          git -C vst3sdk submodule update --init --depth 1 base cmake pluginterfaces public.sdk
+          cmake -S vst3sdk -B vst3sdk-build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl \
+            -DSMTG_ENABLE_VST3_PLUGIN_EXAMPLES=OFF -DSMTG_ENABLE_VST3_HOSTING_EXAMPLES=ON \
+            -DSMTG_ENABLE_VSTGUI_SUPPORT=OFF -DSMTG_CREATE_PLUGIN_LINK=OFF -DSMTG_RUN_VST_VALIDATOR=OFF
+          cmake --build vst3sdk-build --target validator
+          mkdir -p validator-bin
+          find vst3sdk-build -name 'validator.exe' -exec cp {} validator-bin/ \;
+          ls -la validator-bin
+
+      - name: Run Steinberg VST3 validator
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          status=0
+          for bundle in dist/*.vst3; do
+            echo "::group::validator $bundle"
+            if ! ./validator-bin/validator.exe "$bundle"; then
+              echo "::error::Steinberg validator failed for $bundle"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
+
       - name: Run pluginval
         shell: bash
         timeout-minutes: 15
@@ -100,9 +139,44 @@ jobs:
           7z x -y pluginval_Windows.zip -opluginval
           for bundle in dist/*.vst3; do
             echo "::group::pluginval $bundle"
-            ./pluginval/pluginval.exe --strictness-level 10 --validate "$bundle"
+            ./pluginval/pluginval.exe --strictness-level 10 --vst3validator "$(pwd)/validator-bin/validator.exe" --validate "$bundle"
             echo "::endgroup::"
           done
+
+      # The built bundles loaded as a host loads them (Phase 2.1 H.7.2).
+      - name: Run host-behaviour harness
+        shell: pwsh
+        timeout-minutes: 20
+        run: |
+          $exe = Get-ChildItem -Path build/tools/hosttest -Recurse -File -Filter 'fancy-hosttest.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'fancy-hosttest.exe was not built' }
+          & $exe.FullName dist | Tee-Object -FilePath measurements/hosttest.txt
+          if ($LASTEXITCODE -ne 0) { throw "fancy-hosttest exited with $LASTEXITCODE" }
+
+      # A test host for the user's PC (Phase 2.1 H.7.3), built once per JUCE version.
+      - name: Cache AudioPluginHost
+        id: pluginhost-cache
+        uses: actions/cache@v6
+        with:
+          path: pluginhost-bin
+          key: audiopluginhost-${{ runner.os }}-${{ hashFiles('cmake/Dependencies.cmake') }}
+
+      - name: Build AudioPluginHost
+        if: steps.pluginhost-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        timeout-minutes: 20
+        run: |
+          cmake --build build --target AudioPluginHost
+          New-Item -ItemType Directory -Force -Path pluginhost-bin | Out-Null
+          $exe = Get-ChildItem -Path build/AudioPluginHost -Recurse -File -Filter 'AudioPluginHost.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'AudioPluginHost.exe was not built' }
+          Copy-Item $exe.FullName pluginhost-bin/
+
+      - name: Add AudioPluginHost to the artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/tools | Out-Null
+          Copy-Item pluginhost-bin/AudioPluginHost.exe dist/tools/
 
       - name: Render UI screenshots
         shell: pwsh

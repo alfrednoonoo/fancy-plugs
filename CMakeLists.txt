@@ -33,3 +33,8 @@ endif()
 enable_testing()
 add_subdirectory(tests)
 add_subdirectory(tools/screens)
+add_subdirectory(tools/hosttest)
+
+# JUCE's AudioPluginHost, for checking sidechain and MIDI routing by hand (Phase 2.1 H.7.3).
+# Only built when asked for: CI builds it once per JUCE version and caches it.
+add_subdirectory("${juce_SOURCE_DIR}/extras/AudioPluginHost" "${CMAKE_BINARY_DIR}/AudioPluginHost" EXCLUDE_FROM_ALL)

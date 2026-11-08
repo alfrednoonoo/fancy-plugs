@@ -172,12 +172,14 @@ void ExciterDsp::process (float* const* channels, int numChannels, int numSample
 void ExciterDsp::shapeBlock (juce::dsp::AudioBlock<float> block, int baseSamples)
 {
     const auto numSamples = (int) block.getNumSamples();
-    const auto biasStart = biasFor (character.getCurrent());
+    const auto factor = std::max (1, numSamples / std::max (1, baseSamples));
 
+    // The bias of each input sample, held across its oversampled samples.
     for (int i = 0; i < baseSamples; ++i)
+    {
+        chunkBias[(size_t) i] = biasFor (character.getCurrent());
         character.next();
-
-    const auto biasStep = (biasFor (character.getCurrent()) - biasStart) / (double) numSamples;
+    }
 
     for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
     {
@@ -186,7 +188,7 @@ void ExciterDsp::shapeBlock (juce::dsp::AudioBlock<float> block, int baseSamples
 
         for (int i = 0; i < numSamples; ++i)
         {
-            const auto bias = biasStart + biasStep * (double) i;
+            const auto bias = chunkBias[(size_t) std::min (baseSamples - 1, i / factor)];
             const auto in = (double) samples[i] + bias;
             const auto antiderivative = shapeAntiderivative (in);
             const auto difference = in - state.previousInput;
@@ -235,6 +237,8 @@ void ExciterDsp::processChunk (float* const* channels, int numChannels, int offs
         if (! logFrequency.isSettled())
             updateFilter (logFrequency.next());
 
+        chunkFilters[(size_t) i] = filter;
+
         const auto gain = boost.next();
         const auto writePosition = (delayWritePosition + i) % delayLength;
 
@@ -277,7 +281,7 @@ void ExciterDsp::processChunk (float* const* channels, int numChannels, int offs
         {
             auto& state = channelStates[(size_t) ch];
 
-            const auto post = state.postFilter.tick (filter, (double) wetBuffer.getSample (ch, i)).high;
+            const auto post = state.postFilter.tick (chunkFilters[(size_t) i], (double) wetBuffer.getSample (ch, i)).high;
             const auto wet = state.lowPass.process (post);
 
             if (ch >= numChannels)

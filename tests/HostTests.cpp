@@ -289,6 +289,7 @@ void checkSidechain (fancy::FancyProcessor& processor, const std::function<void 
         // Hosts switch buses while the plugin is inactive, between two blocks of playback.
         processor.releaseResources();
         REQUIRE (setLayout (processor, juce::AudioChannelSet::stereo(), sidechain));
+        processor.setRateAndBufferSizeDetails (rate, blockSize);
         processor.prepareToPlay (rate, blockSize);
         processor.sidechainWatch.reset();
         processor.waitForBackgroundWork (20000);

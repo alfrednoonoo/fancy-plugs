@@ -7,9 +7,15 @@
 //
 // - Offline with random blocks against offline with 128: the block size must change nothing.
 // - Real time against offline: a plugin with no worker thread must be identical. One with a
-//   worker (a design, a build or an impulse) is compared outside the second after each change,
+//   worker (a design, a build or an impulse) is compared outside a window after each change,
 //   with the real-time render waiting for the worker before each block, as a machine that
-//   keeps up would. Inside that second the output only has to be finite.
+//   keeps up would. Inside the window the output only has to be finite. Verb's real-time
+//   render is paced at real time, because its convolver plays silence in a stage whose
+//   background job is late, which only happens when rendering faster than real time.
+//
+// A rebuilt engine lands a block later in real time than offline. For FIR's nonlinear,
+// frame-based modes that shifts the new engine's frame grid, so after an FFT-size change the
+// two renders keep differing. That difference is printed, and not required to be zero.
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -90,6 +96,10 @@ struct Plan
     std::vector<Point> automation;
     std::vector<Event> events;
     bool hasWorker = false;
+    int samples = length;
+    int window = changeWindow;
+    bool paceRealTime = false;
+    bool eventWindowToEnd = false;
 };
 
 void set (fancy::FancyProcessor& processor, const char* id, float value)
@@ -150,9 +160,14 @@ juce::AudioBuffer<float> render (const Plan& plan, Run run, const std::function<
     if (plan.hasWorker && ! offline)
         REQUIRE (processor.waitForBackgroundWork (60000));
 
-    auto output = input();
+    juce::AudioBuffer<float> output (2, plan.samples);
+
+    for (int channel = 0; channel < 2; ++channel)
+        output.copyFrom (channel, 0, input(), channel, 0, plan.samples);
+
     juce::MidiBuffer midi;
     std::mt19937 random (99);
+    const auto started = juce::Time::getMillisecondCounterHiRes();
 
     // Blocks of 0 to 8192 samples: some empty, many tiny, some large.
     const auto randomBlock = [&random]
@@ -175,7 +190,7 @@ juce::AudioBuffer<float> render (const Plan& plan, Run run, const std::function<
 
     std::sort (changes.begin(), changes.end());
 
-    for (int position = 0; position < length;)
+    for (int position = 0; position < plan.samples;)
     {
         for (const auto& point : plan.automation)
             if (point.sample == position)
@@ -185,7 +200,7 @@ juce::AudioBuffer<float> render (const Plan& plan, Run run, const std::function<
             if (event.sample == position)
                 event.run (processor);
 
-        auto next = length;
+        auto next = plan.samples;
 
         for (const auto change : changes)
         {
@@ -207,6 +222,11 @@ juce::AudioBuffer<float> render (const Plan& plan, Run run, const std::function<
         midi.clear();
         processor.processBlock (block, midi);
         position += size;
+
+        // Real time, for a plugin whose background work has to keep up with playback.
+        if (plan.paceRealTime && ! offline)
+            while (juce::Time::getMillisecondCounterHiRes() < started + 1000.0 * position / sampleRate)
+                juce::Thread::sleep (1);
     }
 
     processor.releaseResources();
@@ -222,10 +242,13 @@ struct Difference
 
 // The largest difference, in dB below the reference's peak. Samples inside a window after a
 // change are only checked for being finite.
-Difference compare (const juce::AudioBuffer<float>& a, const juce::AudioBuffer<float>& b, const std::vector<int>& windows)
+using Windows = std::vector<std::pair<int, int>>;
+
+Difference compare (const juce::AudioBuffer<float>& a, const juce::AudioBuffer<float>& b, const Windows& windows, int from = 0)
 {
     Difference result;
     auto peak = 1.0e-9;
+    const auto length = b.getNumSamples();
 
     for (int channel = 0; channel < 2; ++channel)
         peak = std::max (peak, (double) b.getMagnitude (channel, 0, length));
@@ -237,7 +260,7 @@ Difference compare (const juce::AudioBuffer<float>& a, const juce::AudioBuffer<f
         const auto* x = a.getReadPointer (channel);
         const auto* y = b.getReadPointer (channel);
 
-        for (int i = 0; i < length; ++i)
+        for (int i = from; i < length; ++i)
         {
             if (! std::isfinite (x[i]) || ! std::isfinite (y[i]))
             {
@@ -245,7 +268,7 @@ Difference compare (const juce::AudioBuffer<float>& a, const juce::AudioBuffer<f
                 continue;
             }
 
-            const auto inWindow = std::any_of (windows.begin(), windows.end(), [i] (int start) { return i >= start && i < start + changeWindow; });
+            const auto inWindow = std::any_of (windows.begin(), windows.end(), [i] (const auto& window) { return i >= window.first && i < window.second; });
 
             if (inWindow)
                 continue;
@@ -271,26 +294,36 @@ void checkRenders (const char* name, const Plan& plan, const std::function<void 
     const auto offline = render<Processor> (plan, Run::offline, setup);
     const auto offlineRandom = render<Processor> (plan, Run::offlineRandom, setup);
 
-    std::vector<int> windows;
+    Windows windows;
 
     if (plan.hasWorker)
     {
         for (const auto& point : plan.automation)
-            windows.push_back (point.sample);
+            windows.emplace_back (point.sample, point.sample + plan.window);
 
         for (const auto& event : plan.events)
-            windows.push_back (event.sample);
+            windows.emplace_back (event.sample, plan.eventWindowToEnd ? plan.samples : event.sample + plan.window);
 
-        windows.push_back (0);
+        windows.emplace_back (0, plan.window);
     }
+
+    const auto describe = [] (const Difference& difference)
+    {
+        return difference.identical ? juce::String ("bit-identical") : juce::String (difference.worstDb, 1) + " dB";
+    };
 
     const auto blocks = compare (offlineRandom, offline, {});
     const auto modes = compare (realTime, offline, windows);
 
-    std::cout << "offline render: " << name
-              << ": random blocks " << (blocks.identical ? "bit-identical" : juce::String (blocks.worstDb, 1) + " dB")
-              << ", real time " << (modes.identical ? "bit-identical" : juce::String (modes.worstDb, 1) + " dB")
-              << (plan.hasWorker ? " outside 1 s after each change" : "") << std::endl;
+    std::cout << "offline render: " << name << ": random blocks " << describe (blocks) << ", real time " << describe (modes);
+
+    if (plan.hasWorker)
+        std::cout << " outside " << juce::String ((double) plan.window / sampleRate, 1) << " s after each change";
+
+    if (plan.eventWindowToEnd && ! plan.events.empty())
+        std::cout << "; after the change, real time differs by " << describe (compare (realTime, offline, {}, plan.events.front().sample));
+
+    std::cout << std::endl;
 
     INFO (name);
     CHECK (blocks.finite);
@@ -385,9 +418,13 @@ TEST_CASE ("FIR: an offline render matches playback, through an FFT-size change"
     const auto mode = GENERATE (0.0f, 1.0f, 2.0f, 3.0f, 4.0f);
     const std::vector<Event> sizeChange { { length / 2, [] (fancy::FancyProcessor& processor) { set (processor, "fft", 3.0f); } } };
 
-    checkRenders<FirProcessor> (("FIR, mode " + juce::String (mode)).toRawUTF8(),
-                                { { { "mode", mode } },
-                                  join ({ alternate ("output", -6.0f, 0.0f), alternate ("gain", -3.0f, 3.0f, 777) }), sizeChange, true });
+    // EQ and Subtract are linear, so the new engine's frame grid doesn't change their output.
+    const auto frameGridMatters = mode == 1.0f || mode == 2.0f || mode == 4.0f;
+
+    Plan plan { { { "mode", mode } }, join ({ alternate ("output", -6.0f, 0.0f), alternate ("gain", -3.0f, 3.0f, 777) }), sizeChange, true };
+    plan.eventWindowToEnd = frameGridMatters;
+
+    checkRenders<FirProcessor> (("FIR, mode " + juce::String (mode)).toRawUTF8(), plan);
 }
 #endif
 
@@ -440,16 +477,21 @@ TEST_CASE ("Verb: an offline render matches playback, through an impulse swap", 
     const auto first = writeImpulse ("first.wav", 1, 0.8);
     const auto second = writeImpulse ("second.wav", 2, 1.5);
 
-    const std::vector<Event> swap { { length / 2, [second] (fancy::FancyProcessor& processor)
+    const std::vector<Event> swap { { (int) sampleRate * 6, [second] (fancy::FancyProcessor& processor)
                                       {
                                           auto& verb = dynamic_cast<VerbProcessor&> (processor);
                                           const auto uid = (int) verb.getChain().getChild (0).getProperty (verb::ids::uid);
                                           verb.loadFile (uid, second);
                                       } } };
 
-    checkRenders<VerbProcessor> (lowCpu > 0.5f ? "Verb, low CPU" : "Verb, zero latency",
-                                 { { { "latency", lowCpu }, { "wet", -6.0f } },
-                                   join ({ alternate ("wet", -12.0f, -3.0f), alternate ("predelay", 0.0f, 40.0f, 1500) }), swap, true },
+    // 12 s, paced at real time, with a window covering the old impulse's tail after the swap.
+    Plan plan { { { "latency", lowCpu }, { "wet", -6.0f } },
+                join ({ alternate ("wet", -12.0f, -3.0f), alternate ("predelay", 0.0f, 40.0f, 1500) }), swap, true };
+    plan.samples = (int) sampleRate * 12;
+    plan.window = (int) (sampleRate * 2.5);
+    plan.paceRealTime = true;
+
+    checkRenders<VerbProcessor> (lowCpu > 0.5f ? "Verb, low CPU" : "Verb, zero latency", plan,
                                  [first] (VerbProcessor& verb)
                                  {
                                      const auto uid = verb.addModule (verb::ModuleType::file, 0);

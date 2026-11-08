@@ -77,6 +77,11 @@ private:
     std::array<ChannelState, 2> channelStates;
     fancy::dsp::SvfCoefficients filter;
 
+    // Each sample's filter and bias in the chunk being processed, so a gliding Freq or
+    // Character gives the same output whatever the block sizes (Phase 2.1 H.1).
+    std::array<fancy::dsp::SvfCoefficients, maxChunk> chunkFilters;
+    std::array<double, maxChunk> chunkBias {};
+
     int activeOversampling = x4;
     int requestedOversampling = x4;
     int delayWritePosition = 0;

@@ -26,4 +26,13 @@ foreach ($bundle in $bundles) {
     Write-Host "Installed $($bundle.Name)"
 }
 
+# JUCE's AudioPluginHost, for checking sidechain and MIDI routing without a DAW.
+$pluginHost = Join-Path $Source 'tools\AudioPluginHost.exe'
+if (Test-Path $pluginHost) {
+    $toolsTarget = Join-Path $env:USERPROFILE 'VST3-Dev-Tools'
+    New-Item -ItemType Directory -Force -Path $toolsTarget | Out-Null
+    Copy-Item -Path $pluginHost -Destination $toolsTarget -Force
+    Write-Host "Installed AudioPluginHost.exe in $toolsTarget"
+}
+
 Write-Host 'Done - in REAPER: Options > Preferences > Plug-ins > VST > Re-scan'
