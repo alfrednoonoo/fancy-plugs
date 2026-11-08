@@ -506,10 +506,15 @@ TEST_CASE ("A/B: switching, copying, undo, and both slots saved with the project
             if (std::isnan (other.values[i]))
                 continue;
 
-            auto* parameter = processor.getParameters()[(int) i];
-            INFO (parameter->getName (64) << ": loaded " << other.values[i] << ", saved " << a.values[i]
-                  << ", live " << parameter->getValue());
-            CHECK (std::abs (other.values[i] - a.values[i]) < 1.0e-5f);
+            // Compared as plain values: a switch keeps the raw 0-1 value it was given (0.74 is
+            // on), and the saved state, like the host's own, keeps its plain value (on).
+            auto* parameter = dynamic_cast<juce::RangedAudioParameter*> (processor.getParameters()[(int) i]);
+            REQUIRE (parameter != nullptr);
+
+            const auto loaded = parameter->convertFrom0to1 (other.values[i]);
+            const auto saved = parameter->convertFrom0to1 (a.values[i]);
+            INFO (parameter->getName (64) << ": loaded " << loaded << ", saved " << saved);
+            CHECK (std::abs (loaded - saved) <= 1.0e-5f * juce::jmax (1.0f, std::abs (saved)));
         }
 
         CHECK (other.extra.isEquivalentTo (a.extra));

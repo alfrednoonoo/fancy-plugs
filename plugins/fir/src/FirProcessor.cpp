@@ -173,6 +173,10 @@ FirProcessor::FirProcessor()
         publishCurve (curve);
     }
 
+    // The curves are in the state from the start, so undo and A/B restore the defaults as
+    // they were (Phase 2.1 W).
+    storeCurves();
+
     getApvts().addParameterListener ("edit", this);
 }
 
