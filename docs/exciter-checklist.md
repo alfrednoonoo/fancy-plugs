@@ -53,3 +53,12 @@
 ## Report back
 
 Tell me "Exciter OK", or list which items failed and what you saw. Once it's OK, I'll start the Comp. Also tell me if the sound isn't what you want: the balance between Clip Boost and Harmonics is the part most worth tuning by ear.
+
+## Menus and pop-ups (Phase 2.1)
+
+- [ ] Click the preset dropdown: the menu opens just under it, in the plugin's dark style, with **FACTORY** (and **USER** once you've saved one) sections and a check mark on the loaded preset. Hovering a row shows a lighter row with a red bar at its left.
+- [ ] Change any control: the dropdown shows the name with a **•** after it, and the menu offers **Reload "…"**. Reload puts the preset back and the dot goes.
+- [ ] **Save as new preset…** opens a small dialog inside the plugin window. Save one, then **Rename…** and **Delete…** it from the menu. Delete asks first, with a red Delete button. **Open preset folder** opens Explorer.
+- [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
+- [ ] Open **EDIT** and click Oversampling: the list opens in the same style, with a red check mark on the current value.
+- [ ] Click the Freq value and type `2.5k`: Freq moves to 2.50 kHz.

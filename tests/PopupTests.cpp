@@ -384,7 +384,7 @@ TEST_CASE ("Typed values: units are optional, and text without a value changes n
         knob.getValueEditor()->setText (text);
         knob.getValueEditor()->onReturnKey();
 
-        CHECK (time->convertFrom0to1 (time->getValue()) == Approx (50.0f));
+        CHECK (time->get() == Approx (50.0f));
     }
 }
 

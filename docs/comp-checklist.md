@@ -71,3 +71,13 @@ This one takes a little longer than the others, because there's more to try. Use
 ## Report back
 
 Tell me "Comp OK", or list which items failed and what you saw. Once it's OK, I'll start the EQ.
+
+## Menus and pop-ups (Phase 2.1)
+
+- [ ] Click the preset dropdown: the menu opens just under it, in the plugin's dark style, with **FACTORY** (and **USER** once you've saved one) sections and a check mark on the loaded preset. Hovering a row shows a lighter row with a teal bar at its left.
+- [ ] Change any control: the dropdown shows the name with a **•** after it, and the menu offers **Reload "…"**. Reload puts the preset back and the dot goes.
+- [ ] **Save as new preset…** opens a small dialog inside the plugin window. Save one, then **Rename…** and **Delete…** it from the menu. Delete asks first, with a red Delete button. **Open preset folder** opens Explorer.
+- [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
+- [ ] Click Detector input: the list has **MAIN INPUT**, **SIDECHAIN** and **MID/SIDE** sections.
+- [ ] Hover Attack for about half a second: a dark tooltip appears under it.
+- [ ] Click the Attack value and type `0.01 s`: Attack moves to 10.0 ms.

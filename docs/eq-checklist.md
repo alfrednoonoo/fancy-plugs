@@ -90,3 +90,13 @@ Use a full mix or a loop with plenty of top end.
 ## Report back
 
 Tell me "EQ OK", or list which items failed and what you saw. Once it's OK, I'll start the Verb.
+
+## Menus and pop-ups (Phase 2.1)
+
+- [ ] Click the preset dropdown: the menu opens just under it, in the plugin's dark style, with **FACTORY** (and **USER** once you've saved one) sections and a check mark on the loaded preset. Hovering a row shows a lighter row with a band-coloured bar at its left.
+- [ ] Change any control: the dropdown shows the name with a **•** after it, and the menu offers **Reload "…"**. Reload puts the preset back and the dot goes.
+- [ ] **Save as new preset…** opens a small dialog inside the plugin window. Save one, then **Rename…** and **Delete…** it from the menu. Delete asks first, with a red Delete button. **Open preset folder** opens Explorer.
+- [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
+- [ ] Click the band type dropdown: the list shows each type's icon, then Low pass and High pass with a slope submenu each. Pick High pass, 24 dB/oct.
+- [ ] Right-click a band handle: the menu's title reads the band, type and frequency. **Set frequency…** opens the band's Freq field to type in.
+- [ ] Change a band's Q, then delete it with ×: it asks first. A band you've just added and not changed goes without asking.

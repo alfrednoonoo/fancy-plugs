@@ -77,3 +77,13 @@
 - [ ] The Parameter menu lists Pre-delay, Center, Width, Wet, Dry, Output and Bypass.
 - [ ] Automating Wet from a REAPER envelope works.
 - [ ] The UI size menu scales the window, and the waveform and rack stay sharp.
+
+## Menus and pop-ups (Phase 2.1)
+
+- [ ] Click the preset dropdown: the menu opens just under it, in the plugin's dark style, with **FACTORY** (and **USER** once you've saved one) sections and a check mark on the loaded preset. Hovering a row shows a lighter row with a purple bar at its left.
+- [ ] Change any control: the dropdown shows the name with a **•** after it, and the menu offers **Reload "…"**. Reload puts the preset back and the dot goes.
+- [ ] **Save as new preset…** opens a small dialog inside the plugin window. Save one, then **Rename…** and **Delete…** it from the menu. Delete asks first, with a red Delete button. **Open preset folder** opens Explorer.
+- [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
+- [ ] On a FILE module, click the SRC-gain dropdown: the list opens under it with a purple check mark.
+- [ ] Change a module's setting, then click its ×: it asks before deleting. A new, unchanged module goes without asking.
+- [ ] Click the Pre-delay value and type `0.02 s`: Pre-delay moves to 20.0 ms.

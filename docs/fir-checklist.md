@@ -65,3 +65,14 @@
 - [ ] Draw curves in EQ, Gate and Compressor, save the project, close REAPER and reopen it: every curve is back.
 - [ ] `+ New` saves a preset with the curves, and it appears in the list.
 - [ ] Parameter > UI size scales the window, and the typing box scales with it.
+
+## Menus and pop-ups (Phase 2.1)
+
+- [ ] Click the preset dropdown: the menu opens just under it, in the plugin's dark style, with **FACTORY** (and **USER** once you've saved one) sections and a check mark on the loaded preset. Hovering a row shows a lighter row with a mode-coloured bar at its left.
+- [ ] Change any control: the dropdown shows the name with a **•** after it, and the menu offers **Reload "…"**. Reload puts the preset back and the dot goes.
+- [ ] **Save as new preset…** opens a small dialog inside the plugin window. Save one, then **Rename…** and **Delete…** it from the menu. Delete asks first, with a red Delete button. **Open preset folder** opens Explorer.
+- [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
+- [ ] Click FFT size: the list opens with the check mark in the mode's colour.
+- [ ] Hover Low latency for about half a second: the tooltip appears.
+- [ ] In EQ mode, right-click a point: a small dialog asks for its frequency and gain. `2k` and `-3 dB` move it.
+- [ ] In Subtract mode with a learned profile, click Clear: it asks first.

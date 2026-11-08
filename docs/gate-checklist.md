@@ -43,3 +43,14 @@
 - [ ] Raise Dry: the untouched signal comes back under the gate.
 - [ ] Raise Noise: hiss plays only while the gate is open.
 - [ ] The ON pill switches cleanly, with and without Lookahead.
+
+## Menus and pop-ups (Phase 2.1)
+
+- [ ] Click the preset dropdown: the menu opens just under it, in the plugin's dark style, with **FACTORY** (and **USER** once you've saved one) sections and a check mark on the loaded preset. Hovering a row shows a lighter row with a yellow bar at its left.
+- [ ] Change any control: the dropdown shows the name with a **•** after it, and the menu offers **Reload "…"**. Reload puts the preset back and the dot goes.
+- [ ] **Save as new preset…** opens a small dialog inside the plugin window. Save one, then **Rename…** and **Delete…** it from the menu. Delete asks first, with a red Delete button. **Open preset folder** opens Explorer.
+- [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
+- [ ] Click Detector input: the list has **MAIN INPUT** and **SIDECHAIN** sections.
+- [ ] Click the MIDI dropdown and open **Note**: one scrolling list of all 128 notes, with the current one ticked and in view.
+- [ ] With Lookahead off, hover the dimmed Pre-open: its hint appears after about a third of a second, quicker than other tooltips.
+- [ ] Click the Release value and type `0.2 s`: Release moves to 200 ms.

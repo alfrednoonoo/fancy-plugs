@@ -93,3 +93,11 @@ The late-block counter should stay at 0. If it climbs, a background job missed i
 ## Moved files
 
 A project looks for its IR in its embedded copy, then at the original path, then in your IR folder by name and contents. If all three fail, the File card shows `IR missing – Relink...` in red, and clicking it opens a file browser. IRs under 10 MB are embedded by default. An embedded copy is 24-bit FLAC, so a float IR peaking over 0 dBFS would clip in the copy.
+
+## Menus and dialogs
+
+Menus, tooltips, typed values and prompts are drawn inside the plugin window, in its own style, and follow the UI size. The preset menu groups **Factory** and **User** presets, marks the loaded one, and has **Save as new preset…** (Ctrl+S while the plugin window has focus), **Reload** to discard changes, **Rename…**, **Delete…** and **Open preset folder**. A **•** after the preset's name means something has changed since it loaded.
+
+Typed values take their unit or not: `120`, `120 ms` and `0.12 s` all mean 120 ms, and `2k` means 2000 Hz.
+
+The plugin asks before anything that can't be undone, such as deleting a user preset. The host's own menus, such as REAPER's right-click automation menu, and any bar or buttons the host draws around the plugin window keep the host's look.

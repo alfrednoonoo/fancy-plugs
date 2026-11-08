@@ -59,3 +59,14 @@
 - [ ] Set up three taps, save the project, close REAPER and reopen it: every tap, setting and the selected tab are back, and it sounds the same.
 - [ ] `+ New` saves a preset, and it appears in the list.
 - [ ] Parameter > UI size scales the window, and the typing box scales with it.
+
+## Menus and pop-ups (Phase 2.1)
+
+- [ ] Click the preset dropdown: the menu opens just under it, in the plugin's dark style, with **FACTORY** (and **USER** once you've saved one) sections and a check mark on the loaded preset. Hovering a row shows a lighter row with a yellow bar at its left.
+- [ ] Change any control: the dropdown shows the name with a **•** after it, and the menu offers **Reload "…"**. Reload puts the preset back and the dot goes.
+- [ ] **Save as new preset…** opens a small dialog inside the plugin window. Save one, then **Rename…** and **Delete…** it from the menu. Delete asks first, with a red Delete button. **Open preset folder** opens Explorer.
+- [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
+- [ ] Click a tap's note dropdown: the list scrolls if it's long, with the current note in view.
+- [ ] Hover Feedback for about half a second: the tooltip appears under it.
+- [ ] With the tap in Note mode, click the Length value and type `1/8.`: it becomes a dotted eighth. `1/4t` gives a quarter triplet.
+- [ ] Change a tap's Feedback, then delete the tap with ×: it asks first.

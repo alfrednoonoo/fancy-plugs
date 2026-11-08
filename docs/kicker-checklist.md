@@ -40,3 +40,12 @@
 ## Report back
 
 Tell me "Kicker OK", or list which boxes failed. Once it's OK, I'll start the Exciter. Also tell me if the sound isn't what you wanted: the filter's character and the default Q are the settings most worth tuning by ear.
+
+## Menus and pop-ups (Phase 2.1)
+
+- [ ] Click the preset dropdown: the menu opens just under it, in the plugin's dark style, with **FACTORY** (and **USER** once you've saved one) sections and a check mark on the loaded preset. Hovering a row shows a lighter row with a red bar at its left.
+- [ ] Change any control: the dropdown shows the name with a **•** after it, and the menu offers **Reload "…"**. Reload puts the preset back and the dot goes.
+- [ ] **Save as new preset…** opens a small dialog inside the plugin window. Save one, then **Rename…** and **Delete…** it from the menu. Delete asks first, with a red Delete button. **Open preset folder** opens Explorer.
+- [ ] Arrow keys move through an open menu, Enter picks, Esc closes.
+- [ ] Open **Prm** and hover **UI size**: the sizes open to the right after a moment. Pick 200 %, and open the preset menu again: it's twice the size too.
+- [ ] Click the Freq value and type `80`, then Enter: the field has a red border and caret, and Freq moves to 80 Hz.

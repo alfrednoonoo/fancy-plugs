@@ -2,7 +2,7 @@
 
 Brief: §S of `docs/BUILD_PROMPT_PHASE2_1.md`. Target: `reference/phase2_1/16__menus_mockup.png`, source `design/phase2_1-mockup-src/menus.html`. Unlike the other mockups, this one sets the exact styling, so its values win over `fancy-core`'s for these elements.
 
-S changes no parameter, no DSP, no latency and no saved audio state. `stateVersion` stays at 1. Two new properties are added to the saved tree, and older versions ignore both (see "State").
+S changes no parameter, no DSP, no latency and no saved audio state. `stateVersion` stays at 1. Two properties are added to the saved tree, `presetUser` and `presetModified`, beside the existing `presetName`. Older versions ignore them (see "State").
 
 ## 1. Audit
 
@@ -131,7 +131,7 @@ The User section is left out when there are no user presets. Open preset folder 
 
 **Changed mark.** `PresetManager` keeps the normalised value of every parameter except bypass, taken when a preset loads, and compares it at the header's 30 Hz refresh. Plugins with state outside the parameters (Verb's chain and IR, FIR's curves and noise profile) call `FancyProcessor::noteEdited()`, which bumps a counter the snapshot also holds. With no preset loaded, the snapshot is every parameter's default, so a fresh instance reads "Default" and any change makes it "Default •".
 
-**State.** Two properties are saved with the plugin: `presetModified`, so a project saved with a changed preset reopens with the mark, and the existing `presetName`. A project from v1.1.0 has neither the flag nor, unless it loaded a preset, a name: it reads "Default" if its values are the defaults, and "Default •" if they aren't. That's right, because those projects were all made from the defaults. Neither property touches the audio.
+**State.** Three properties are saved with the plugin: the existing `presetName`; `presetUser`, so Rename and Delete know the preset is a user one; and `presetModified`, so a project saved with a changed preset reopens with the mark. A project from before `presetUser` counts a name as a user preset if it isn't a factory name and its file exists. A project from v1.1.0 has neither the flag nor, unless it loaded a preset, a name: it reads "Default" if its values are the defaults, and "Default •" if they aren't. That's right, because those projects were all made from the defaults. Neither property touches the audio.
 
 **Ctrl+S** works when the plugin window has keyboard focus. Every other key is left for the host (H.2).
 
