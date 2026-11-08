@@ -15,7 +15,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42508653864, Phase 2.1 H: every test, Steinberg's validator, pluginval with its Steinberg step, and 101 host-harness checks passed for all nine plugins.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42528662854, Phase 2.1 W: 317 test cases, Steinberg's validator, pluginval and the host harness passed for all nine plugins.
 
 ## Phase 2
 
@@ -37,7 +37,7 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
 2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. It builds no new plugin. Each item has its own design note, `docs/phase2_1-<item>.md`, written before any code.
    - S: styled menus, dropdown lists, tooltips, typed values and dialogs, built once in `fancy-core`. Mockup `reference/phase2_1/16__menus_mockup.png`, which also sets their exact styling. **Done.** The user reported the REAPER checks passed on 8 November 2026. Audit and design: `docs/phase2_1-S.md`.
    - H: **built, and green in CI**; waiting for the user's host checks (`docs/host-compat.md`); the FIR frame-grid question is decided (below). Design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
-   - W: undo and redo, A/B, and level-matched Compare, for all nine plugins.
+   - W: **built, and green in CI**; waiting for the user's REAPER checks and two layout decisions (below). Undo and redo, A/B, and level-matched Compare, for all nine plugins. Design note `docs/phase2_1-W.md`.
    - D: dynamic EQ.
    - U: upward compression in MultiComp.
    - A: adaptive noise tracking in FIR.
@@ -225,6 +225,39 @@ In real time, a rebuilt FIR engine (new FFT size, mode or Low latency) arrives f
 **The user chose 1** on 8 Nov 2026. The FIR manual's "Rendering and export" section now says so.
 
 Verb's impulse swap has the same timing difference, but its convolution is linear, so it only lasts for the old impulse's tail.
+
+## Phase 2.1 W: undo, A/B and Compare
+
+Design note: `docs/phase2_1-W.md`. Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42528662854. Started while the user was away, with "continue with the next one".
+
+What changed:
+
+- **`fancy::Workflow`** (in `FancyProcessor`): snapshots of the settings (every parameter's 0-1 value except bypass, plus the state outside the parameters), a 100-step undo history and the A/B slots. A step is a parameter change inside a change gesture, which only the editor makes, or inside a `FancyProcessor::UserEdit` scope (EQ's and MultiComp's band operations, preset loads), or a change to the state outside the parameters. The editor's 30 Hz timer commits pending edits when no mouse button is down, so one drag or one click is one step. Restoring sets only what differs, with no gesture, so REAPER doesn't write automation.
+- **`fancy::dsp::CompareStage`**: BS.1770 short-term loudness of the output and of the latency-aligned input, the gain frozen when Compare goes on, ±24 dB, held below -70 LUFS, and a 20 ms equal-power fade. `FancyProcessor` now wraps `prepareToPlay` and `processBlock` (both final); each plugin implements `prepareAudio` and `processAudio`. It only runs while an editor is open.
+- **State:** `stateVersion` 2 adds a `WORKFLOW` child with the active slot and the other slot. Version 1 states load with B as a copy of A and render bit-identically (tested for all nine).
+- **Header:** `↶ ↷ | A B → | ≈ Compare` in the large plugins; `A | B` in Kicker and Exciter, whose Prm menu has Undo, Redo, Copy, Compare, Parameters… and I/O. Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y while the plugin window has the keyboard focus. Screenshots checked by eye: nothing overlaps.
+- **FIR** writes its curves into the state from the start, so undoing back to a fresh instance is exact.
+- **Docs:** an "Undo, A/B and Compare" section in every manual and checklist.
+
+Results:
+
+| Check | Result |
+|---|---|
+| 50 random edits (and structural ones for Verb and FIR), 50 undos, 50 redos | Bit-identical to the start and the end, all nine |
+| Automation from the message and audio threads, state loads | No steps; undo leaves automated values alone |
+| Steps | One drag is one step; 100 kept; redo clears on a new edit; a preset load is one step and undoes exactly |
+| A/B | A → B → A exact; copy and switch are undo steps; both slots and the active one survive save and load |
+| Version 1 state | Loads with B = A, renders bit-identically |
+| A/B switch click, defaults to the last factory preset, during playback | No step beyond the old or new sound's own in any plugin, now required |
+| Compare, EQ +6 dB bell on pink noise | Within 0.5 LU of the processed output; no step beyond the noise's own when toggled |
+| Compare output | The input delayed by exactly the reported latency, all nine; gain holds in silence and clamps at 24 dB |
+| Flood with Compare toggling | No NaN, no allocation |
+| CPU (`docs/measurements/workflow.txt`) | Editor closed: unchanged. Compare measuring adds 0.1-0.2 % (0.1-0.3 × Comp's default) while the window is open |
+
+Decisions waiting for the user:
+
+1. **Header layout.** Built as recommended, so it can be judged from the screenshots: compact labels and a narrower preset dropdown on EQ, Delay, FIR, MultiComp and Gate; MultiComp's "Detector" label is now its dropdown's tooltip; FIR's latency label shows milliseconds only; Compare's gain shows inside the lit button. Each is a small change to undo.
+2. **A/B crossfade.** The brief asks for the old and new settings rendered in parallel for 20 ms. Built instead: the plugins' own parameter smoothing glides to the other settings, and the click test shows no jump in any plugin. A parallel render would need a second copy of each plugin's DSP.
 
 ## Market research and Phase 3 draft
 

@@ -78,14 +78,16 @@ Built from S's components: icon buttons, a two-segment `A | B` switch and pill b
 ## 3. Latency and CPU
 
 - **Latency:** unchanged in every plugin. Compare's dry path uses the latency the plugin already reports.
-- **CPU:** undo and A/B run on the message thread. Compare, with the editor open, adds K-weighting filters and a squared sum on 2 × 2 channels, well under 1 % of Fancy Comp's default cost; with the editor closed, nothing. Measured by the §0.4 method, as a ratio to Comp's defaults with the editor closed, for every plugin.
+- **CPU:** undo and A/B run on the message thread. Compare costs nothing with the editor closed. With it open, its measurement (K-weighting and a squared sum on 2 × 2 channels) adds about 0.1-0.2 % at 48 kHz, 0.1-0.3 × Fancy Comp's default cost. That's more than this note first estimated ("well under 1 %" of Comp), and it only runs while the window is open. Measured by the §0.4 method in `docs/measurements/workflow.txt`.
 
 ## 4. Questions for the user
 
+Both were built as recommended, while the user was away, and are waiting for the user's decision. The click test answered question 2 with numbers: no plugin's output jumps when switching from its defaults to its last factory preset (§5), so the test is now required.
+
 1. **Header space (layout change).** The large header doesn't have room for the workflow group in the plugins under 800 px wide. The group needs about 250 px between the I/O pill and the output knob (about 300 px with Compare's read-out). Today there's 380 px on Comp, 240 px on Verb, 255 px on EQ (less its EDIT link), 205 px on Delay, FIR and MultiComp (less their label or dropdown), and 185 px on Gate. Recommended:
-   - On Delay, FIR, MultiComp and Gate, the left buttons use the compact labels (`+`, `Prm`, `4/2`), and the preset dropdown is 150 px wide. That leaves about 320 px.
-   - On Verb and EQ, the preset dropdown is 200 px wide.
-   - Delay's tempo and FIR's latency labels move into the footer, or into their tooltips. MultiComp's Detector dropdown and EQ's `⚙ EDIT` move into the footer.
+   - Built: on EQ, Delay, FIR, MultiComp and Gate, the left buttons use the compact labels (`+`, `Prm`, `4/2`), and the preset dropdown is narrower: 120 px on Delay, FIR and MultiComp, 150 px on Gate and 170 px on EQ. Verb keeps the full labels with a 230 px dropdown; Comp is unchanged.
+   - Built: everything stays in the header. Delay's tempo label and EQ's `⚙ EDIT` are unchanged. FIR's latency label shows milliseconds only ("Latency 42.7 ms"). MultiComp's Detector dropdown loses its "Detector" label, which moves into its tooltip.
+   - Built: Compare's read-out ("+2.4 dB") is drawn inside the lit button, in place of its name, rather than beside it, because none of the narrow headers has room for both.
 2. **A/B crossfade.** The brief asks to render the old and new settings in parallel for the 20 ms fade. For the seven plugins without a rebuild path, that means a second copy of each plugin's DSP, copied from the live one on the audio thread at the switch (Delay's lines alone are several MB). EQ's and MultiComp's design threads would also have to be made copyable. Recommended instead: every continuous parameter already glides over 20-50 ms (§4.2), Verb and FIR crossfade their rebuilds, and the test (no sample jump beyond what the crossfade allows) is run on all nine plugins with random A and B settings. Any plugin that fails gets the parallel render, for the parameters that jump.
 
 ## 5. Tests (Catch2, all nine plugins)

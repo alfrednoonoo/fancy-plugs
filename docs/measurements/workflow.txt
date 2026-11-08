@@ -1,0 +1,13 @@
+# Phase 2.1 W, run 42528662854 (§0.4: median of 5 runs in one build, ratio to Fancy Comp at its defaults).
+# "default" is with no editor open, where Compare does nothing. The idle Comp line differs from the
+# reference by run-to-run noise: both are the same settings.
+workflow cpu reference: Fancy Comp default 0.710 % (median of 5, 48 kHz, 128 samples, stereo)
+workflow cpu: Fancy Comp         default 0.759 % (1.07 x Comp); editor open, Compare measuring 0.926 % (1.30 x); Compare on 0.678 % (0.95 x)
+workflow cpu: Fancy Delay        default 0.186 % (0.26 x Comp); editor open, Compare measuring 0.297 % (0.42 x); Compare on 0.354 % (0.50 x)
+workflow cpu: Fancy EQ           default 0.237 % (0.33 x Comp); editor open, Compare measuring 0.458 % (0.64 x); Compare on 0.596 % (0.84 x)
+workflow cpu: Fancy Exciter      default 3.299 % (4.64 x Comp); editor open, Compare measuring 3.113 % (4.38 x); Compare on 3.407 % (4.80 x)
+workflow cpu: Fancy FIR          default 1.673 % (2.36 x Comp); editor open, Compare measuring 1.486 % (2.09 x); Compare on 1.562 % (2.20 x)
+workflow cpu: Fancy Gate         default 0.520 % (0.73 x Comp); editor open, Compare measuring 0.621 % (0.87 x); Compare on 0.685 % (0.96 x)
+workflow cpu: Fancy Kicker       default 0.156 % (0.22 x Comp); editor open, Compare measuring 0.323 % (0.46 x); Compare on 0.445 % (0.63 x)
+workflow cpu: Fancy MultiComp    default 2.187 % (3.08 x Comp); editor open, Compare measuring 2.479 % (3.49 x); Compare on 2.813 % (3.96 x)
+workflow cpu: Fancy Verb         default 0.206 % (0.29 x Comp); editor open, Compare measuring 0.380 % (0.53 x); Compare on 0.327 % (0.46 x)
