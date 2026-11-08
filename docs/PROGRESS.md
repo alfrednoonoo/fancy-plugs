@@ -15,7 +15,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42452843623 (commit `58d9717`), Fancy Gate: 272 test cases passed, and all nine plugins passed pluginval.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42497501203, Phase 2.1 S: 289 test cases passed, and all nine plugins passed pluginval.
 
 ## Phase 2
 
@@ -142,7 +142,7 @@ Fixed during the build:
 
 ## Phase 2.1 S: styled pop-ups
 
-Design note and audit: `docs/phase2_1-S.md`. Every pop-up in the audit is converted. Run: RUN_LINK.
+Design note and audit: `docs/phase2_1-S.md`. Every pop-up in the audit is converted. Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42497501203 (commit `814f947`): 289 test cases passed, and all nine plugins passed pluginval. A selection of the gallery is in `docs/screens/popups/`.
 
 What changed, for all nine plugins:
 
@@ -159,7 +159,7 @@ Checks:
 | Check | Result |
 |---|---|
 | Actions run green, pluginval | Pass, run above |
-| Gallery (§S.5.1) | `screens-popups-<sha>`: 82 pop-ups across the nine plugins, at 100 % and 200 % |
+| Gallery (§S.5.1) | `screens-popups-<sha>`: 81 pop-ups across the nine plugins, at 100 % and 200 % |
 | Attached and styled (§S.5.2) | Every listed pop-up on every editor opens on the layout root, inside the window, in the plugin's accent, and no JUCE menu is open |
 | Keyboard (§S.5.3) | ↑ ↓ skip disabled rows, → and ← open and close a submenu, Enter chooses, Esc closes with no choice |
 | Typed values (§S.5.4) | "120", "120ms", "120 ms", "0.12 s", "2k", "2500", "-6", "-6 dB", "1/8." and a clamped "9000 ms" give the expected values; "abc" and "" change nothing |
