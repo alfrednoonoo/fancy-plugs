@@ -98,6 +98,29 @@ The `EDIT` link at the bottom right holds Attack = 90 % rise, Log-scale automate
 
 The plugin reports this to REAPER, and changing the crossover or Limit output fades the sound briefly.
 
+## Using it in other hosts
+
+### How to sidechain
+
+The plugin has an optional input called **Sidechain**, mono or stereo, which is off until the host turns it on. Choose a sidechain source in the plugin as well, or it keeps listening to its main input.
+
+- **REAPER:** set the track to 4 channels, send the source track to channels 3/4, and check the plugin's pins (the I/O button) map 3/4 to the sidechain.
+- **Cubase:** switch on the sidechain button at the top of the plugin window, then pick the source in the plugin's sidechain routing.
+- **Ableton Live 10.1 and later:** open the Sidechain section of the plugin's device and choose the source track.
+- **Tracktion Waveform:** use the input button at the top left of the plugin window to add a sidechain input from another track.
+- **UA LUNA:** use LUNA's sidechain routing for the insert, as UA's LUNA manual describes.
+- **Audacity** has no sidechain routing. The plugin works on its main input, and shows the warning if a sidechain source is chosen.
+
+If a sidechain source is chosen and nothing arrives for 2 s while the main input plays, the plugin shows "No sidechain signal: check track routing (REAPER: pins 3/4)".
+
+### Latency
+
+Some settings change the plugin's latency: a Linear crossover, and Limit output. The plugin reports each change to the host, which delays the other tracks to match. Some hosts only read the new latency when playback stops and starts, so change these settings while stopped, or stop and start once after changing them; the tooltip says so too. In a host with no delay compensation, the track plays late by the latency, and nothing else goes wrong.
+
+### Rendering and export
+
+Offline renders, Audacity's Apply, freezing and exporting all sound the same as playback. When the host renders faster than real time, the plugin does the work it would otherwise do in the background before each block, so nothing is skipped.
+
 ## Menus and dialogs
 
 Menus, tooltips, typed values and prompts are drawn inside the plugin window, in its own style, and follow the UI size. The preset menu groups **Factory** and **User** presets, marks the loaded one, and has **Save as new preset…** (Ctrl+S while the plugin window has focus), **Reload** to discard changes, **Rename…**, **Delete…** and **Open preset folder**. A **•** after the preset's name means something has changed since it loaded.

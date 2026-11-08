@@ -94,6 +94,16 @@ The late-block counter should stay at 0. If it climbs, a background job missed i
 
 A project looks for its IR in its embedded copy, then at the original path, then in your IR folder by name and contents. If all three fail, the File card shows `IR missing – Relink...` in red, and clicking it opens a file browser. IRs under 10 MB are embedded by default. An embedded copy is 24-bit FLAC, so a float IR peaking over 0 dBFS would clip in the copy.
 
+## Using it in other hosts
+
+### Latency
+
+Some settings change the plugin's latency: the latency mode (zero latency or low CPU). The plugin reports each change to the host, which delays the other tracks to match. Some hosts only read the new latency when playback stops and starts, so change these settings while stopped, or stop and start once after changing them; the tooltip says so too. In a host with no delay compensation, the track plays late by the latency, and nothing else goes wrong.
+
+### Rendering and export
+
+Offline renders, Audacity's Apply, freezing and exporting all sound the same as playback. When the host renders faster than real time, the plugin does the work it would otherwise do in the background before each block, so nothing is skipped.
+
 ## Menus and dialogs
 
 Menus, tooltips, typed values and prompts are drawn inside the plugin window, in its own style, and follow the UI size. The preset menu groups **Factory** and **User** presets, marks the loaded one, and has **Save as new preset…** (Ctrl+S while the plugin window has focus), **Reload** to discard changes, **Rename…**, **Delete…** and **Open preset folder**. A **•** after the preset's name means something has changed since it loaded.

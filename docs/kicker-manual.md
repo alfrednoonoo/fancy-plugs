@@ -41,6 +41,12 @@ Use the dropdown to load a preset and **+** to save your own. User presets are s
 
 Latency is 0 samples at all settings. The filtered signal is minimum-phase, so it stays aligned with the dry signal at Freq, apart from a small phase lead from a 15 Hz filter that keeps DC and infrasonic energy out of the wet path. At 50 Hz, wet and dry at equal level sum to about +5.8 dB. The sum is smaller at the bottom of the Freq range.
 
+## Using it in other hosts
+
+### Rendering and export
+
+Offline renders, Audacity's Apply, freezing and exporting all sound the same as playback. When the host renders faster than real time, the plugin does the work it would otherwise do in the background before each block, so nothing is skipped.
+
 ## Menus and dialogs
 
 Menus, tooltips, typed values and prompts are drawn inside the plugin window, in its own style, and follow the UI size. The preset menu groups **Factory** and **User** presets, marks the loaded one, and has **Save as new preset…** (Ctrl+S while the plugin window has focus), **Reload** to discard changes, **Rename…**, **Delete…** and **Open preset folder**. A **•** after the preset's name means something has changed since it loaded.

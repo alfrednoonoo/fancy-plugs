@@ -79,6 +79,12 @@ None.
 
 Each instance reserves about 67 MB at 48 kHz, and about 540 MB at 384 kHz, so that adding a tap never allocates while audio runs.
 
+## Using it in other hosts
+
+### Rendering and export
+
+Offline renders, Audacity's Apply, freezing and exporting all sound the same as playback. When the host renders faster than real time, the plugin does the work it would otherwise do in the background before each block, so nothing is skipped.
+
 ## Menus and dialogs
 
 Menus, tooltips, typed values and prompts are drawn inside the plugin window, in its own style, and follow the UI size. The preset menu groups **Factory** and **User** presets, marks the loaded one, and has **Save as new preset…** (Ctrl+S while the plugin window has focus), **Reload** to discard changes, **Rename…**, **Delete…** and **Open preset folder**. A **•** after the preset's name means something has changed since it loaded.

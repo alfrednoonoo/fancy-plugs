@@ -104,6 +104,16 @@ Drag the window's edge in REAPER. The graph takes the extra room. Parameter > UI
 
 Default, Low Cut, Vocal Presence, Smile, Air, Telephone and Linear Master. **+ New** saves your own.
 
+## Using it in other hosts
+
+### Latency
+
+Some settings change the plugin's latency: Phase, FIR length and Oversampling. The plugin reports each change to the host, which delays the other tracks to match. Some hosts only read the new latency when playback stops and starts, so change these settings while stopped, or stop and start once after changing them; the tooltip says so too. In a host with no delay compensation, the track plays late by the latency, and nothing else goes wrong.
+
+### Rendering and export
+
+Offline renders, Audacity's Apply, freezing and exporting all sound the same as playback. When the host renders faster than real time, the plugin does the work it would otherwise do in the background before each block, so nothing is skipped.
+
 ## Menus and dialogs
 
 Menus, tooltips, typed values and prompts are drawn inside the plugin window, in its own style, and follow the UI size. The preset menu groups **Factory** and **User** presets, marks the loaded one, and has **Save as new preset…** (Ctrl+S while the plugin window has focus), **Reload** to discard changes, **Rename…**, **Delete…** and **Open preset folder**. A **•** after the preset's name means something has changed since it loaded.
