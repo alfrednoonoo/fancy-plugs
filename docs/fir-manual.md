@@ -141,6 +141,8 @@ Some settings change the plugin's latency: FFT size and Low latency. The plugin 
 
 Offline renders, Audacity's Apply, freezing and exporting all sound the same as playback. When the host renders faster than real time, the plugin does the work it would otherwise do in the background before each block, so nothing is skipped.
 
+One exception: if you change FFT size, Low latency or Convolve L/R during playback in Gate, Compressor or Convolve L/R mode, the new engine starts a block or more later than it would in a render. From then until the next such change, what you heard and a render of the same passage can differ slightly, at about -26 to -13 dB. Both sound right; they just aren't sample-identical. EQ and Subtract modes aren't affected, and neither is a render of a project where those settings stay put.
+
 ## Menus and dialogs
 
 Menus, tooltips, typed values and prompts are drawn inside the plugin window, in its own style, and follow the UI size. The preset menu groups **Factory** and **User** presets, marks the loaded one, and has **Save as new preset…** (Ctrl+S while the plugin window has focus), **Reload** to discard changes, **Rename…**, **Delete…** and **Open preset folder**. A **•** after the preset's name means something has changed since it loaded.

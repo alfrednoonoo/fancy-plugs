@@ -36,7 +36,7 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
 1. **Phase 2.0.1, Fancy Gate:** done. The updated Phase 2.1 brief treats it as finished, as one of the nine plugins that Phase 2.1 changes. Its REAPER checklist, `docs/gate-checklist.md`, can still be run with the next build.
 2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. It builds no new plugin. Each item has its own design note, `docs/phase2_1-<item>.md`, written before any code.
    - S: styled menus, dropdown lists, tooltips, typed values and dialogs, built once in `fancy-core`. Mockup `reference/phase2_1/16__menus_mockup.png`, which also sets their exact styling. **Done.** The user reported the REAPER checks passed on 8 November 2026. Audit and design: `docs/phase2_1-S.md`.
-   - H: **built, and green in CI**; waiting for the user's host checks (`docs/host-compat.md`) and one decision about FIR (below). Design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
+   - H: **built, and green in CI**; waiting for the user's host checks (`docs/host-compat.md`) ; the FIR frame-grid question is decided (below). Design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
    - W: undo and redo, A/B, and level-matched Compare, for all nine plugins.
    - D: dynamic EQ.
    - U: upward compression in MultiComp.
@@ -198,7 +198,7 @@ Results:
 |---|---|
 | Offline, random blocks of 0-8192 against 128, with automation | Bit-identical for all nine plugins in every mode, in-process and through the hosted `.vst3` |
 | Real time against offline | Bit-identical for the seven plugins and modes with no rebuild. EQ linear, MultiComp linear and Verb bit-identical outside the window after each rebuild (1 s; 2.5 s for Verb's impulse swap, paced at real time). FIR EQ and Subtract within -132 dB |
-| FIR Gate, Compressor and Convolve after an FFT-size change | Differ by -25.9, -26.7 and -12.9 dB from then on: see the open decision below |
+| FIR Gate, Compressor and Convolve after an FFT-size change | Differ by -25.9, -26.7 and -12.9 dB from then on: documented, see the decision below |
 | Keyboard | No control wants focus in any editor; space, Enter, Esc, letters, digits, arrows and Ctrl+Z all go back to the host |
 | Mono main bus, no sidechain | All nine process |
 | Sidechain inactive, mono, stereo, back to inactive | Comp, MultiComp, FIR and Gate process, and the warning comes and goes as it should |
@@ -215,12 +215,14 @@ Notes:
 - **Hosts restore state as JUCE's hosting does:** component state, then the controller's. The harness compares the restored parameters as the plugin displays them, because a stepped parameter snaps a host's raw value.
 - **Allocation counting is in-process:** the plugins link the C runtime statically, so a hook in a host can't see their allocations.
 
-### Open decision: FIR's frame grid after a rebuild
+### Decided: FIR's frame grid after a rebuild
 
 In real time, a rebuilt FIR engine (new FFT size, mode or Low latency) arrives from the worker a block or more after the change, while offline builds it in the same block. EQ and Subtract are linear, so that doesn't change their output. In Gate, Compressor and Convolve L/R, the new engine's analysis frames then sit a block later than in an offline render, and the two keep differing, at -26 to -13 dB, until the next rebuild. Both sound right; they just aren't the same render. Options:
 
 1. **Leave it, and document it** in the FIR manual: after changing FFT size, mode or Low latency during playback, a render can differ slightly from what played.
 2. **Align engine switches to a fixed sample grid:** the new engine starts at the next multiple of its hop, counted from the start of playback, in both real time and offline. Then the two match whenever the worker keeps up. That changes FIR's core switching code, which passed its REAPER check, so it needs FIR's size-change tests rerun and a REAPER check.
+
+**The user chose 1** on 8 Nov 2026. The FIR manual's "Rendering and export" section now says so.
 
 Verb's impulse swap has the same timing difference, but its convolution is linear, so it only lasts for the old impulse's tail.
 
