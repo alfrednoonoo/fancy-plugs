@@ -1,0 +1,61 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><script src="lib.js"></script>
+<style>
+.sheet{background:#121212;padding:8px 4px;width:820px;display:flex;flex-direction:column;gap:16px}
+.h{font-size:13px;font-weight:700;color:#fff;margin:4px 0 2px}.n{font-size:11px;color:#909090;margin-bottom:8px;line-height:1.45;max-width:780px}
+.menu{background:#262626;border:1px solid #434343;border-radius:6px;padding:4px;box-shadow:0 10px 28px rgba(0,0,0,.55);font-size:11.5px;color:#EDEDED;min-width:200px}
+.mi{height:26px;display:flex;align-items:center;padding:0 10px 0 26px;border-radius:4px;position:relative;white-space:nowrap;gap:10px}
+.mi .k{margin-left:auto;color:#909090;font-size:10.5px}
+.mi.hov{background:#383838}
+.mi.hov:before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;border-radius:1px;background:var(--a)}
+.mi.chk:after{content:"";position:absolute;left:10px;top:8px;width:4px;height:8px;border:solid var(--a);border-width:0 1.8px 1.8px 0;transform:rotate(45deg)}
+.mi.dis{color:#5A5A5A}.mi.dis .k{color:#4C4C4C}
+.mi .sub{margin-left:auto;color:#909090}
+.sepl{height:1px;background:#3a3a3a;margin:4px 6px}
+.sec{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#909090;padding:6px 10px 3px 26px;font-weight:600}
+.tip{background:#1E1E1E;border:1px solid #434343;border-radius:5px;padding:7px 10px;font-size:10.5px;color:#EDEDED;max-width:250px;line-height:1.45;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.dlg{background:#262626;border:1px solid #434343;border-radius:8px;padding:16px;width:300px;box-shadow:0 14px 36px rgba(0,0,0,.6)}
+.b2{border-radius:4px;padding:6px 14px;font-size:11px}
+</style></head><body>
+<div class="sheet win" style="background:#121212;border:none;box-shadow:none">
+
+<div><div class="h">1 · Preset menu (all plugins)</div><div class="n">Opens 4 px under the preset dropdown, left-aligned, at least as wide as it. Factory and User presets in labelled sections; ✓ marks the loaded preset; a • after the name in the dropdown means it's been changed since loading. Hover = slightly lighter row plus a 2 px bar in the plugin's accent (here Gate yellow).</div>
+<div style="display:flex;gap:24px;align-items:flex-start;--a:#F1C315">
+ <div style="width:330px"><div class="win" style="width:330px"><div class="hdr"><div class="dd" style="width:170px;background:#383838">Kick tight •</div><div class="btn">+ New</div><div class="sp"></div><div class="on">⏻ ON</div></div><div style="height:20px;background:#303030"></div></div>
+ <div class="menu" style="width:240px;margin-top:4px;--a:#F1C315">
+  <div class="sec">Factory</div>
+  <div class="mi">Default</div><div class="mi">Vocal clean-up</div><div class="mi chk">Kick tight</div><div class="mi hov">Snare (with spill) · lookahead</div><div class="mi">Tom (with spill) · lookahead</div><div class="mi">Duck under kick</div><div class="mi">Drum trigger to MIDI</div><div class="mi">Gentle expander</div>
+  <div class="sec">User</div><div class="mi">Church choir mic</div><div class="mi">Podcast voice</div>
+  <div class="sepl"></div>
+  <div class="mi">Save as new preset…<span class="k">Ctrl+S</span></div><div class="mi">Reload “Kick tight”<span class="k">discard changes</span></div><div class="mi dis">Rename…</div><div class="mi dis">Delete…</div><div class="mi">Open preset folder</div>
+ </div></div>
+ <div style="display:flex;flex-direction:column;gap:18px">
+  <div><div class="h" style="font-size:11.5px">States, close up</div>
+  <div class="menu" style="width:240px;--a:#F1C315"><div class="mi">Normal item</div><div class="mi hov">Hovered item<span class="k">Ctrl+Z</span></div><div class="mi chk">Selected item</div><div class="mi dis">Disabled item<span class="k">Ctrl+Y</span></div><div class="sepl"></div><div class="mi hov">Submenu<span class="sub">›</span></div></div></div>
+  <div><div class="h" style="font-size:11.5px">Same menu in another plugin (Comp, teal)</div>
+  <div class="menu" style="width:240px;--a:#00A884"><div class="mi chk">Default</div><div class="mi hov">Vocal smooth</div><div class="mi">Drum bus glue</div></div></div>
+ </div>
+</div></div>
+
+<div><div class="h">2 · Parameter dropdown (Detector input, FFT size, band type, crossover, note…)</div><div class="n">Same panel. The current value has a ✓ in the accent colour. Values longer than ~12 items get a fixed height and a thin scrollbar. Groups get section labels.</div>
+<div style="display:flex;gap:24px;align-items:flex-start">
+ <div><div class="dd" style="width:150px;font-size:10.5px;padding:4px 8px;background:#383838">Main input L+R</div>
+ <div class="menu" style="width:190px;margin-top:4px;--a:#F1C315"><div class="sec">Main input</div><div class="mi chk">Main input L+R</div><div class="mi">Main L</div><div class="mi">Main R</div><div class="sec">Sidechain</div><div class="mi hov">Sidechain L+R</div><div class="mi">Sidechain L</div><div class="mi">Sidechain R</div></div></div>
+ <div><div class="dd" style="width:90px;font-size:10.5px;padding:4px 8px;background:#383838">A4 · ch 1</div>
+ <div class="menu" style="width:200px;margin-top:4px;--a:#F1C315;display:flex;padding:4px 0 4px 4px"><div style="flex:1;max-height:182px;overflow:hidden"><div class="sec">Note</div><div class="mi">F#4 · 66</div><div class="mi">G4 · 67</div><div class="mi">G#4 · 68</div><div class="mi chk hov">A4 · 69</div><div class="mi">A#4 · 70</div><div class="mi">B4 · 71</div></div><div style="width:10px;display:flex;justify-content:center;padding:6px 0"><div style="width:4px;height:170px;background:#1E1E1E;border-radius:2px;position:relative"><div style="position:absolute;top:70px;width:4px;height:34px;background:#4C4C4C;border-radius:2px"></div></div></div></div></div>
+ <div><div class="dd" style="width:110px;font-size:10.5px;padding:4px 8px;background:#383838">∩ Bell</div>
+ <div class="menu" style="width:200px;margin-top:4px;--a:#9648BA"><div class="mi">⌐ Low shelf</div><div class="mi chk">∩ Bell</div><div class="mi">¬ High shelf</div><div class="mi hov">∨ Notch</div><div class="sepl"></div><div class="mi">⟋ Low pass<span class="sub">›</span></div><div class="mi">⟍ High pass<span class="sub">›</span></div><div class="mi">⌒ Band pass</div><div class="mi">○ All pass</div><div class="mi">⟋ Tilt</div></div></div>
+</div></div>
+
+<div><div class="h">3 · Right-click menu inside the plugin (e.g. an EQ band handle) with a submenu</div><div class="n">Submenus open to the right, top-aligned with their row, 2 px overlap. If there's no room on screen, open left. Title row in grey caps.</div>
+<div style="display:flex;gap:2px;align-items:flex-start;--a:#9648BA">
+ <div class="menu" style="width:210px"><div class="sec" style="padding-left:10px">Band 2 · Bell · 487.7 Hz</div><div class="mi">Set frequency…</div><div class="mi">Set gain…</div><div class="mi hov">Type<span class="sub">›</span></div><div class="mi chk">Enabled</div><div class="mi">Dynamic</div><div class="sepl"></div><div class="mi">Reset band<span class="k">Double-click</span></div><div class="mi">Delete band<span class="k">Del</span></div></div>
+ <div class="menu" style="width:160px;margin-top:62px"><div class="mi">Low shelf</div><div class="mi chk">Bell</div><div class="mi hov">High shelf</div><div class="mi">Notch</div></div>
+</div></div>
+
+<div><div class="h">4 · Tooltip, typed value, confirm dialog</div><div class="n">Tooltips after ~600 ms (300 ms for the dimmed-control hints). Double-click a value (or Ctrl-click a knob) to type: the read-out becomes a field with an accent border; Enter accepts, Esc cancels, and units are optional ("120", "120ms", "0.12 s"). Dialogs only for destructive actions.</div>
+<div style="display:flex;gap:28px;align-items:flex-start">
+ <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:6px"><div class="knob" data-k data-v="0" data-c="#F1C315" data-l="Pre-open" data-t="off" style="opacity:.5"></div><div class="tip">Pre-open needs Lookahead. Tick ‘Lookahead (+50 ms latency)’ above to use it.</div></div>
+ <div style="display:flex;flex-direction:column;align-items:center;padding-top:6px"><div class="lbl">Release</div><svg width="52" height="52" style="margin-top:4px"><circle cx="26" cy="26" r="20" fill="#4B4B4B"/></svg><div style="margin-top:3px;background:#141414;border:1px solid #F1C315;border-radius:4px;padding:3px 8px;font-size:10.5px;color:#EDEDED;width:74px">120 ms<span style="display:inline-block;width:1px;height:11px;background:#F1C315;vertical-align:-2px;margin-left:1px"></span></div></div>
+ <div class="dlg"><div style="font-size:12.5px;font-weight:600;margin-bottom:6px">Delete user preset?</div><div style="font-size:11px;color:#909090;line-height:1.5;margin-bottom:14px">“Church choir mic” will be removed from your preset folder. This can’t be undone.</div><div style="display:flex;justify-content:flex-end;gap:8px"><div class="b2" style="background:#383838">Cancel</div><div class="b2" style="background:#E84E3C;color:#fff;font-weight:600">Delete</div></div></div>
+</div></div>
+</div></body></html>

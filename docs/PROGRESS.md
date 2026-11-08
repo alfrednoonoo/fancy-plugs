@@ -31,16 +31,18 @@ Phase 2 is finished and released as v1.1.0.
 
 ## What comes next
 
-The user set this order on 7 November 2026:
+The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 2026:
 
-1. **Phase 2.0.1, Fancy Gate:** from `docs/BUILD_PROMPT_PHASE2_0_1.md`, with the mockup `reference/phase2_0_1/15__gate_mockup.png` and its source in `design/phase2_0_1-mockup-src/`. Built, and green in CI. Waiting for the user's check in REAPER (`docs/gate-checklist.md`).
-2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order W, D, U, A.
+1. **Phase 2.0.1, Fancy Gate:** done. The updated Phase 2.1 brief treats it as finished, as one of the nine plugins that Phase 2.1 changes. Its REAPER checklist, `docs/gate-checklist.md`, can still be run with the next build.
+2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. It builds no new plugin. Each item has its own design note, `docs/phase2_1-<item>.md`, written before any code.
+   - S: styled menus, dropdown lists, tooltips, typed values and dialogs, built once in `fancy-core`. Mockup `reference/phase2_1/16__menus_mockup.png`, which also sets their exact styling. **In progress:** the audit and design are in `docs/phase2_1-S.md`.
+   - H: host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
    - W: undo and redo, A/B, and level-matched Compare, for all nine plugins.
    - D: dynamic EQ.
    - U: upward compression in MultiComp.
    - A: adaptive noise tracking in FIR.
 
-   Its mockup is `reference/phase2_1/14__phase2_1_controls.png`, with its source in `design/phase2_1-mockup-src/`. The brief cites `docs/2026-11-market-report-detailed.md`, where the report is actually `docs/research/2026-11-market-report-detailed.md`.
+   The controls mockup is `reference/phase2_1/14__phase2_1_controls.png`, and both mockups' source is in `design/phase2_1-mockup-src/`. The brief cites `docs/2026-11-market-report-detailed.md`, where the report is actually `docs/research/2026-11-market-report-detailed.md`.
 3. **Phase 3:** from `docs/BUILD_PROMPT_PHASE3.md`, a draft. Phase 2.1 now covers four of its items, so it keeps what's left:
    - the benchmark host;
    - the preset browser and free resizing;

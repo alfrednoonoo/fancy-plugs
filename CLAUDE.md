@@ -25,16 +25,20 @@ Phase 2, from `docs/BUILD_PROMPT_PHASE2.md`, done and released as v1.1.0:
 8. Fancy MultiComp (reuses Fancy Comp's detector and gain computer)
 9. Fancy FIR
 
-Phase 2.0.1, from `docs/BUILD_PROMPT_PHASE2_0_1.md`:
+Phase 2.0.1, from `docs/BUILD_PROMPT_PHASE2_0_1.md`, done:
 
 10. Fancy Gate (reuses Fancy Comp's detector, detector filters, Threshold-over-meter fader and reduction meter)
 
-Phase 2.1, from `docs/BUILD_PROMPT_PHASE2_1.md`, after Fancy Gate passes, in the order W, D, U, A:
+Phase 2.1, from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. It builds no new plugin: it changes the nine that exist, Fancy Gate included. Each item gets its own design note, `docs/phase2_1-<item>.md`, before any code, and its own commit, green run and `docs/PROGRESS.md` entry:
 
-11. W: undo and redo, A/B and level-matched Compare, for all nine plugins in `fancy-core`
-12. D: dynamic EQ in Fancy EQ
-13. U: upward compression, Depth and Time in Fancy MultiComp
-14. A: adaptive noise tracking in Fancy FIR
+11. S: styled menus, dropdown lists, tooltips, typed values and dialogs, in `fancy-core`. The mockup `reference/phase2_1/16__menus_mockup.png` sets their exact styling. Start with the pop-up audit in `docs/phase2_1-S.md`
+12. H: host compatibility: offline rendering, keyboard pass-through, scaling, sidechain and MIDI buses, latency changes, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with checklists for the user's hosts
+13. W: undo and redo, A/B and level-matched Compare, for all nine plugins in `fancy-core`
+14. D: dynamic EQ in Fancy EQ
+15. U: upward compression, Depth and Time in Fancy MultiComp
+16. A: adaptive noise tracking in Fancy FIR
+
+Saved projects from the current release must load and render bit-identical after every item. New parameters are appended, with defaults that keep the old sound, and `stateVersion` is bumped with a migration. Measure CPU with §0.4 of the Phase 2.1 brief: five runs in one build, the median, and the ratio to Fancy Comp at its defaults.
 
 Phase 3, from `docs/BUILD_PROMPT_PHASE3.md`, after Phase 2.1. It's a draft until the user approves it, and it drops whatever Phase 2.1 now covers.
 
@@ -68,6 +72,8 @@ Do not copy literally: host window title bars, the "[LOOSER]" tag (show just the
 ## Phase 2 reference mockups
 
 There are no Figma frames for Phase 2. `reference/phase2/` holds 2× mockups drawn in the same design system: `11__delay_mockup.png`, `12__xcomp_mockup.png`, `13__fir_mockup.png`. Fancy Gate's is `reference/phase2_0_1/15__gate_mockup.png`. Divide their pixel sizes by 2. Target windows at 100 %: Delay about 760 × 410, MultiComp about 760 × 455, FIR about 760 × 430, Gate about 740 × 405. Their HTML source, with exact layout formulas, is in `design/phase2-mockup-src/` and `design/phase2_0_1-mockup-src/`: read it before building.
+
+Phase 2.1's mockups are `reference/phase2_1/14__phase2_1_controls.png`, for the new controls, and `16__menus_mockup.png`, for menus, tooltips, typed values and dialogs, with their source in `design/phase2_1-mockup-src/`. The menus mockup is the one exception to "`fancy-core` wins": it sets the exact styling of those pop-ups, with the values in §S.2 of the brief.
 
 The mockups set each control's layout, grouping and type, the way §2.5 does for Phase 1. Exact styling comes from `fancy-core`: where a mockup pixel disagrees with it, `fancy-core` wins. Never fork a component to match a mockup. Defaults come from P2-P4 in the brief, not the sample values drawn in the mockups.
 
