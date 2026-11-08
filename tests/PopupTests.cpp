@@ -178,6 +178,7 @@ TEST_CASE ("Menus move by keyboard, skip disabled rows and open submenus", "[pop
     const juce::ScopedJuceInitialiser_GUI juceInitialiser;
 
     TestHost host;
+    host.setSize (600, 400); // room for the submenu on the right
     juce::Component target;
     target.setBounds (10, 10, 120, 24);
     host.addAndMakeVisible (target);
