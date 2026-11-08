@@ -390,6 +390,16 @@ TEST_CASE ("EQ: an offline render matches playback", "[host][offline]")
                                { { { "phase", linear } },
                                  join ({ alternate ("b2gain", -6.0f, 6.0f), alternate ("b2freq", 300.0f, 1500.0f, 1234) }), {}, linear > 0.5f });
 }
+
+// Phase 2.1 D: dynamic bands, Above and Below, with their thresholds and gains automated.
+TEST_CASE ("EQ: an offline render with dynamic bands matches playback", "[host][offline]")
+{
+    checkRenders<EqProcessor> ("EQ, dynamic bands",
+                               { { { "b2dyn", 1.0f }, { "b2thresh", -40.0f }, { "b2range", -9.0f }, { "b2attack", 2.0f },
+                                   { "b3dyn", 1.0f }, { "b3dynMode", 1.0f }, { "b3thresh", -30.0f }, { "b3range", 6.0f } },
+                                 join ({ alternate ("b2thresh", -45.0f, -25.0f), alternate ("b2gain", -3.0f, 3.0f, 1234),
+                                         alternate ("b3release", 20.0f, 300.0f, 777) }), {} });
+}
 #endif
 
 #if FANCY_HAS_DELAY

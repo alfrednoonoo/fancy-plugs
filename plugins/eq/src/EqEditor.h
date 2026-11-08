@@ -20,6 +20,9 @@ public:
     void showPreview (bool drawerOpen);
     void showCompactPreview();
 
+    // Panel 3 of the Phase 2.1 mockup: band 2 dynamic, 3.6 dB into its -6 dB reach.
+    void showDynamicPreview (bool compact);
+
 private:
     class Panels final : public juce::Component
     {
@@ -75,21 +78,41 @@ private:
         TypeDropdown& getTypeDropdown() noexcept { return typeDropdown; }
         fancy::ui::Knob& getFrequencyKnob() noexcept { return frequencyKnob; }
         fancy::ui::Knob& getGainKnob() noexcept { return gainKnob; }
+        fancy::ui::ParamTextToggle& getDynamicChip() noexcept { return dynamicChip; }
+
+        // Whether the dynamic half is showing, which widens the Compact-mode card (Phase 2.1 D).
+        bool showsDynamics() const noexcept { return dynamicShown; }
+
+        static constexpr const char* linearTooltip = "Dynamic bands need Minimum phase";
 
     private:
 
+        void layoutDynamic (int dx, int dy, int buttonsX, int buttonsDy);
+
         EqProcessor& eqProcessor;
+        EqEditor& owner;
         const int band;
         bool isCompact = false;
+        bool dynamicShown = false, chipShown = false, linearPhase = false;
 
         TypeDropdown typeDropdown;
         fancy::ui::Knob frequencyKnob, gainKnob, qKnob;
         fancy::ui::ParamPowerIcon powerIcon;
         fancy::ui::IconButton plusButton, closeButton;
+
+        // Phase 2.1 D: the DYN chip and the dynamic half.
+        fancy::ui::ParamTextToggle dynamicChip;
+        fancy::ui::Knob thresholdKnob, rangeKnob, attackKnob, releaseKnob;
+        fancy::ui::ParamSegments modeSwitch;
+        fancy::ui::ParamCheckbox sidechainCheckbox;
+        int separatorX = -1, separatorTop = 0;
     };
 
     void bodyResized() override;
     void onTick (float seconds) override;
+
+    // The sidechain counts once the host connects it (Phase 2.1 D), as in Comp: "4 in 2 out".
+    int getShownInputs() override { return juce::jmax (getFancyProcessor().getTotalNumInputChannels(), getFancyProcessor().getMainBusNumInputChannels() + 2); }
     bool listsParameter (const juce::AudioProcessorParameter&) override;
 
     EqProcessor& eqProcessor() noexcept;

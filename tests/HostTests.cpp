@@ -350,6 +350,17 @@ TEST_CASE ("FIR: sidechain inactive, mono, stereo, and the warning", "[host][sid
 }
 #endif
 
+#if FANCY_HAS_EQ
+// Phase 2.1 D: a dynamic band with Sidechain ticked.
+TEST_CASE ("EQ: sidechain inactive, mono, stereo, and the warning", "[host][sidechain]")
+{
+    EqProcessor processor;
+    set (processor, "b2dyn", 1.0f);
+
+    checkSidechain (processor, [&] (bool on) { set (processor, "b2dynSc", on ? 1.0f : 0.0f); }, true);
+}
+#endif
+
 #if FANCY_HAS_GATE
 TEST_CASE ("Gate: sidechain inactive, mono and stereo", "[host][sidechain]")
 {

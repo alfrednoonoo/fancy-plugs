@@ -24,6 +24,26 @@ constexpr bool hasSlope (BandType type) noexcept
         || type == BandType::highPass || type == BandType::tilt;
 }
 
+// Which types can be dynamic (Phase 2.1 D). A notch works as a dynamic cut.
+constexpr bool supportsDynamics (BandType type) noexcept
+{
+    return hasGain (type) || type == BandType::notch;
+}
+
+// A band's dynamic settings (Phase 2.1 D). Off by default, which leaves the band static.
+struct DynamicSpec
+{
+    bool on = false;
+    double thresholdDb = -24.0;
+    double rangeDb = -6.0;
+    double attackMs = 5.0;
+    double releaseMs = 80.0;
+    bool below = false;
+    bool sidechain = false;
+
+    bool operator== (const DynamicSpec&) const = default;
+};
+
 struct BandSpec
 {
     BandType type = BandType::band;

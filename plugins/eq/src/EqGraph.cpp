@@ -246,6 +246,22 @@ void EqGraph::update()
             lastUsed[(size_t) b] = used;
             needsRecalculation = true;
         }
+
+        // Dynamic bands redraw as their change moves, in 0.05 dB steps (Phase 2.1 D).
+        DynamicState dynamics;
+        dynamics.dynamic = used && processor.isDynamic (b);
+
+        if (dynamics.dynamic)
+        {
+            dynamics.rangeDb = (float) processor.readDynamics (b).rangeDb;
+            dynamics.changeDb = std::round ((b == previewBand ? previewChangeDb : processor.getDynamicChange (b)) * 20.0f) / 20.0f;
+        }
+
+        if (! (dynamics == lastDynamics[(size_t) b]))
+        {
+            lastDynamics[(size_t) b] = dynamics;
+            needsRecalculation = true;
+        }
     }
 
     if (needsRecalculation)
@@ -253,6 +269,15 @@ void EqGraph::update()
 
     if (analyzerMode != 0)
         repaint();
+}
+
+// "-6 dB", "+2.5 dB", "-3.6 dB": the graph's dynamic read-out.
+juce::String EqGraph::formatDbText (float db)
+{
+    const auto rounded = std::round (db * 10.0f) / 10.0f;
+    const auto whole = std::abs (rounded - std::round (rounded)) < 0.05f;
+    const auto magnitude = juce::String (std::abs (rounded), whole ? 0 : 1);
+    return (rounded > 0.0f ? "+" : rounded < 0.0f ? juce::String (juce::CharPointer_UTF8 ("\xe2\x88\x92")) : juce::String()) + magnitude + " dB";
 }
 
 void EqGraph::recalculate()
@@ -283,20 +308,51 @@ void EqGraph::recalculate()
         auto shape = band.spec;
         shape.on = true;
 
+        // A dynamic band draws its static curve, its reach at Gain + Range, and adds its
+        // current change to the total. A dynamic notch is a bell that only cuts.
+        const auto& dynamics = lastDynamics[(size_t) b];
+        band.dynamic = dynamics.dynamic && band.spec.on;
+
+        auto reachShape = shape, liveShape = shape;
+
+        if (band.dynamic)
+        {
+            const auto notch = shape.type == eq::BandType::notch;
+
+            if (notch)
+            {
+                shape.type = eq::BandType::band;
+                shape.gainDb = 0.0;
+                reachShape = liveShape = shape;
+            }
+
+            band.reachDb = notch ? juce::jmin (0.0f, dynamics.rangeDb) : dynamics.rangeDb;
+            band.changeDb = dynamics.changeDb;
+            reachShape.gainDb = shape.gainDb + band.reachDb;
+            liveShape.gainDb = shape.gainDb + band.changeDb;
+        }
+
         const auto filter = eq::design (shape, lastRate);
+        const auto reachFilter = eq::design (reachShape, lastRate);
+        const auto liveFilter = eq::design (liveShape, lastRate);
+
+        band.reach.resize ((size_t) width);
 
         for (int x = 0; x < width; ++x)
         {
             const auto hz = juce::jmin (hzForX ((double) x, (double) width), 0.499 * lastRate);
-            const auto response = filter.responseAt (2.0 * std::numbers::pi * hz / lastRate);
+            const auto w = 2.0 * std::numbers::pi * hz / lastRate;
+            const auto response = filter.responseAt (w);
             const auto db = (float) fancy::gainToDb (std::abs (response), -200.0);
 
             band.db[(size_t) x] = band.spec.on ? db : 0.0f;
+            band.reach[(size_t) x] = band.dynamic ? (float) fancy::gainToDb (std::abs (reachFilter.responseAt (w)), -200.0) : db;
 
             if (band.spec.on)
             {
-                composite[(size_t) x] += db;
-                phase[(size_t) x] += linear ? 0.0f : (float) std::arg (response);
+                const auto live = band.dynamic ? liveFilter.responseAt (w) : response;
+                composite[(size_t) x] += band.dynamic ? (float) fancy::gainToDb (std::abs (live), -200.0) : db;
+                phase[(size_t) x] += linear ? 0.0f : (float) std::arg (live);
             }
         }
 
@@ -456,6 +512,34 @@ void EqGraph::paintBands (juce::Graphics& g)
 
         g.setColour (colour);
         g.strokePath (curve, juce::PathStrokeType (1.0f));
+
+        // Phase 2.1 D: the dynamic reach, a lighter fill between the static curve and the curve
+        // at Gain + Range, with a dashed edge.
+        if (band.dynamic && band.reach.size() == (size_t) width)
+        {
+            juce::Path reach;
+            reach.startNewSubPath (0.0f, yForDb (clampDb (band.reach[0])));
+
+            for (int x = 1; x < width; ++x)
+                reach.lineTo ((float) x, yForDb (clampDb (band.reach[(size_t) x])));
+
+            auto between = reach;
+
+            for (int x = width - 1; x >= 0; --x)
+                between.lineTo ((float) x, yForDb (clampDb (band.db[(size_t) x])));
+
+            between.closeSubPath();
+
+            g.setColour (colour.withAlpha (0.18f));
+            g.fillPath (between);
+
+            juce::Path dashed;
+            const float dashes[] { 3.0f, 3.0f };
+            juce::PathStrokeType (1.0f).createDashedStroke (dashed, reach, dashes, 2);
+
+            g.setColour (colour);
+            g.fillPath (dashed);
+        }
     }
 
     // Figma's 0 dB line takes each band's colour in turn.
@@ -511,6 +595,17 @@ void EqGraph::paintBands (juce::Graphics& g)
 
     g.setColour (juce::Colours::white);
     g.strokePath (total, juce::PathStrokeType (1.0f));
+
+    // The selected dynamic band's reach and where it is now, as panel 3 of the mockup shows.
+    if (juce::isPositiveAndBelow (selectedBand, eq::maxBands) && bands[(size_t) selectedBand].dynamic)
+    {
+        const auto& band = bands[(size_t) selectedBand];
+        const auto text = "reach " + formatDbText (band.reachDb) + juce::String (juce::CharPointer_UTF8 (" \xc2\xb7 now ")) + formatDbText (band.changeDb);
+
+        g.setFont (font (Weight::regular, 12.0f));
+        g.setColour (colours::menuHint);
+        g.drawText (text, 76, 4, 260, 14, juce::Justification::centredLeft, false);
+    }
 }
 
 void EqGraph::paintHandles (juce::Graphics& g)

@@ -29,6 +29,9 @@ public:
     // For rendered screenshots: stops the analyzer and draws a fixed spectrum instead.
     void showPreviewSpectrum();
 
+    // For rendered screenshots: a dynamic band's change, as if the detector had moved it.
+    void showPreviewChange (int band, float changeDb) { previewBand = band; previewChangeDb = changeDb; }
+
     std::function<void (int)> onBandSelected;
 
     // From the band's right-click menu: type a value ("freq" or "gain"), or delete the band.
@@ -64,9 +67,24 @@ private:
         std::vector<float> db;
         juce::Point<float> handle;
         bool used = false;
+
+        // Phase 2.1 D: a dynamic band's reach (its curve at Gain + Range) and current change.
+        bool dynamic = false;
+        std::vector<float> reach;
+        float reachDb = 0.0f, changeDb = 0.0f;
+    };
+
+    // What the graph last drew for a band's dynamics, to know when to draw again.
+    struct DynamicState
+    {
+        bool dynamic = false;
+        float rangeDb = 0.0f, changeDb = 0.0f;
+
+        bool operator== (const DynamicState&) const = default;
     };
 
     void recalculate();
+    static juce::String formatDbText (float db);
     void analyse (fancy::dsp::SpectrumAnalyzer& analyzer, std::vector<float>& scratch);
 
     float yForDb (float db) const noexcept;
@@ -92,6 +110,7 @@ private:
     std::vector<float> composite, phase;
     std::array<eq::BandSpec, eq::maxBands> lastSpecs;
     std::array<bool, eq::maxBands> lastUsed {};
+    std::array<DynamicState, eq::maxBands> lastDynamics {};
     double lastRate = 0.0;
     float rangeDb = 12.0f;
     bool needsRecalculation = true;
@@ -105,6 +124,8 @@ private:
 
     int selectedBand = 0;
     int dragBand = -1;
+    int previewBand = -1;
+    float previewChangeDb = 0.0f;
     bool draggingQ = false;
     juce::Point<float> dragPosition, lastMouse;
 

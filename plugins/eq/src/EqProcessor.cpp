@@ -19,6 +19,16 @@ juce::String qText (float q)
     return fancy::formatFixed (q, q < 10.0f ? (q < 1.0f ? 2 : 1) : 0);
 }
 
+std::unique_ptr<juce::AudioParameterFloat> msParameter (const juce::String& id, const juce::String& name, float low, float high, float defaultMs)
+{
+    return fancy::floatParameter (
+        id, name, fancy::logRange (low, high, 0.01f), defaultMs,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("ms")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, value < 10.0f ? 1 : 0) + " ms"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); }));
+}
+
 fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
 {
     using Bool = juce::AudioParameterBool;
@@ -100,6 +110,22 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
                                            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
                                            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
+    // Phase 2.1 D: dynamic bands, appended after everything above so no ID or index moves.
+    // Off by default, which leaves every band as it was.
+    for (int band = 0; band < eq::maxBands; ++band)
+    {
+        const auto prefix = "Band " + juce::String (band + 1) + " ";
+
+        layout.add (toggle (EqProcessor::id (band, "dyn"), prefix + "Dynamic", false));
+        layout.add (fancy::levelParameter (EqProcessor::id (band, "thresh"), prefix + "Threshold", -60.0f, 0.0f, -24.0f, -100.0f));
+        layout.add (fancy::levelParameter (EqProcessor::id (band, "range"), prefix + "Range", -30.0f, 30.0f, -6.0f, -100.0f));
+        layout.add (msParameter (EqProcessor::id (band, "attack"), prefix + "Attack", 0.1f, 200.0f, 5.0f));
+        layout.add (msParameter (EqProcessor::id (band, "release"), prefix + "Release", 5.0f, 2000.0f, 80.0f));
+        layout.add (std::make_unique<Choice> (juce::ParameterID { EqProcessor::id (band, "dynMode"), 1 }, prefix + "Dynamic mode",
+                                              juce::StringArray { "Above", "Below" }, 0));
+        layout.add (toggle (EqProcessor::id (band, "dynSc"), prefix + "Sidechain", false));
+    }
+
     return layout;
 }
 
@@ -133,7 +159,8 @@ EqProcessor::EqProcessor (SharedFlag logScaleFlag)
     : FancyProcessor ("Fancy EQ", "FancyEq",
                       BusesProperties()
                           .withInput ("Input", juce::AudioChannelSet::stereo(), true)
-                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true),
+                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                          .withInput ("Sidechain", juce::AudioChannelSet::stereo(), false),
                       createLayout (logScaleFlag), createPresets()),
       logScale (std::move (logScaleFlag)),
       designThread (*this)
@@ -148,6 +175,15 @@ EqProcessor::EqProcessor (SharedFlag logScaleFlag)
                                       apvts.getRawParameterValue (id (band, "gain")),
                                       apvts.getRawParameterValue (id (band, "q")),
                                       apvts.getRawParameterValue (id (band, "slope")) };
+
+    for (int band = 0; band < eq::maxBands; ++band)
+        dynamicValues[(size_t) band] = { apvts.getRawParameterValue (id (band, "dyn")),
+                                         apvts.getRawParameterValue (id (band, "thresh")),
+                                         apvts.getRawParameterValue (id (band, "range")),
+                                         apvts.getRawParameterValue (id (band, "attack")),
+                                         apvts.getRawParameterValue (id (band, "release")),
+                                         apvts.getRawParameterValue (id (band, "dynMode")),
+                                         apvts.getRawParameterValue (id (band, "dynSc")) };
 
     apvts.addParameterListener ("logFreq", this);
 }
@@ -197,12 +233,37 @@ eq::BandSpec EqProcessor::readBand (int band)
     return spec;
 }
 
+eq::DynamicSpec EqProcessor::readDynamics (int band)
+{
+    const auto& values = dynamicValues[(size_t) band];
+    const auto load = [] (std::atomic<float>* value) { return value->load (std::memory_order_relaxed); };
+
+    eq::DynamicSpec spec;
+    spec.on = load (values.on) >= 0.5f;
+    spec.thresholdDb = (double) load (values.threshold);
+    spec.rangeDb = (double) load (values.range);
+    spec.attackMs = (double) load (values.attack);
+    spec.releaseMs = (double) load (values.release);
+    spec.below = juce::roundToInt (load (values.mode)) == 1;
+    spec.sidechain = load (values.sidechain) >= 0.5f;
+    return spec;
+}
+
+bool EqProcessor::isDynamic (int band)
+{
+    const auto spec = readBand (band);
+    return readDynamics (band).on && spec.on && eq::supportsDynamics (spec.type) && ! isOn ("phase");
+}
+
 EqDsp::Targets EqProcessor::readTargets()
 {
     EqDsp::Targets targets;
 
     for (int band = 0; band < eq::maxBands; ++band)
+    {
         targets.bands[(size_t) band] = readBand (band);
+        targets.dynamics[(size_t) band] = readDynamics (band);
+    }
 
     targets.gain = fancy::levelToGain (read ("gain"), mixFloorDb);
     targets.outputGain = fancy::dbToGain ((double) read ("output"));
@@ -271,28 +332,51 @@ bool EqProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     if (out != juce::AudioChannelSet::mono() && out != juce::AudioChannelSet::stereo())
         return false;
 
-    return out == layouts.getMainInputChannelSet();
+    if (out != layouts.getMainInputChannelSet())
+        return false;
+
+    // The optional sidechain for dynamic bands (Phase 2.1 D).
+    const auto sidechain = layouts.getChannelSet (true, 1);
+
+    return sidechain.isDisabled()
+        || sidechain == juce::AudioChannelSet::mono()
+        || sidechain == juce::AudioChannelSet::stereo();
 }
 
 void EqProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 
-    const auto numChannels = juce::jmin (getMainBusNumOutputChannels(), buffer.getNumChannels(), 2);
+    auto mainBuffer = getBusBuffer (buffer, true, 0);
+    auto sidechainBuffer = getBusBuffer (buffer, true, 1);
+
+    const auto numChannels = juce::jmin (getMainBusNumOutputChannels(), mainBuffer.getNumChannels(), 2);
     const auto numSamples = buffer.getNumSamples();
 
     if (numChannels == 0)
         return;
 
-    const auto channels = buffer.getArrayOfWritePointers();
+    const auto channels = mainBuffer.getArrayOfWritePointers();
+    const auto numSidechain = juce::jmin (sidechainBuffer.getNumChannels(), 2);
+    const auto* const* sidechain = numSidechain > 0 ? sidechainBuffer.getArrayOfReadPointers() : nullptr;
     const auto analyzerSource = analyzerActive.load (std::memory_order_relaxed) ? juce::roundToInt (read ("analyzer")) : 0;
 
     if (analyzerSource == 1)
         analyzerFifo.push (channels, numChannels, numSamples);
 
+    const auto targets = readTargets();
+    auto sidechainChosen = false;
+
+    for (int band = 0; band < eq::maxBands; ++band)
+        sidechainChosen = sidechainChosen || (targets.dynamics[(size_t) band].sidechain && targets.dynamics[(size_t) band].on
+                                              && targets.bands[(size_t) band].on && eq::supportsDynamics (targets.bands[(size_t) band].type)
+                                              && ! targets.linearPhase);
+
+    sidechainWatch.update (channels, numChannels, sidechain, numSidechain, numSamples, getSampleRate(), sidechainChosen);
+
     dsp.setSynchronousDesign (isNonRealtime());
-    dsp.setTargets (readTargets());
-    dsp.process (channels, numChannels, numSamples);
+    dsp.setTargets (targets);
+    dsp.process (channels, numChannels, numSamples, sidechain, numSidechain);
 
     if (analyzerSource == 2)
         analyzerFifo.push (channels, numChannels, numSamples);
@@ -313,7 +397,7 @@ void EqProcessor::setParameter (const juce::String& parameterId, float value)
 void EqProcessor::resetBand (int band)
 {
     const UserEdit edit (*this);
-    for (const auto* suffix : { "on", "type", "freq", "gain", "q", "slope" })
+    for (const auto* suffix : { "on", "type", "freq", "gain", "q", "slope", "dyn", "thresh", "range", "attack", "release", "dynMode", "dynSc" })
     {
         auto& parameter = *getApvts().getParameter (id (band, suffix));
         parameter.setValueNotifyingHost (parameter.getDefaultValue());

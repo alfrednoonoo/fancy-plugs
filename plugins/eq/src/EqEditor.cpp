@@ -15,6 +15,7 @@ constexpr int gainColumnWidth = 68;
 constexpr int detailsHeight = 178;
 constexpr int optionsHeight = 50;
 constexpr int cardWidth = 437, cardHeight = 122, cardBottomGap = 24;
+constexpr int dynamicCardWidth = 720;
 
 constexpr int tabWidth = 42, tabHeight = 23;
 
@@ -274,8 +275,9 @@ void EqEditor::BandEditor::TypeDropdown::clicked()
 
 // BandEditor ------------------------------------------------------------------
 
-EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEditor& owner)
+EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEditor& ownerToUse)
     : eqProcessor (processor),
+      owner (ownerToUse),
       band (bandIndex),
       typeDropdown (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "type")),
                     *processor.getApvts().getParameter (EqProcessor::id (bandIndex, "slope"))),
@@ -284,13 +286,29 @@ EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEdito
       qKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "q")), "Q", bandColour (bandIndex), Knob::mediumStyle),
       powerIcon (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "on")), bandColour (bandIndex)),
       plusButton (IconButton::Glyph::plus),
-      closeButton (IconButton::Glyph::cross)
+      closeButton (IconButton::Glyph::cross),
+      dynamicChip (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dyn")), "DYN", bandColour (bandIndex)),
+      thresholdKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "thresh")), "Threshold", bandColour (bandIndex), Knob::tightStyle),
+      rangeKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "range")), "Range", bandColour (bandIndex), Knob::tightStyle, true),
+      attackKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "attack")), "Attack", bandColour (bandIndex), Knob::tightStyle),
+      releaseKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "release")), "Release", bandColour (bandIndex), Knob::tightStyle),
+      modeSwitch (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dynMode")), juce::Colour (0xff434343), juce::Colours::white),
+      sidechainCheckbox (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dynSc")), "Sidechain", bandColour (bandIndex))
 {
     for (juce::Component* item : std::initializer_list<juce::Component*> { &typeDropdown, &frequencyKnob, &gainKnob, &qKnob, &powerIcon, &plusButton, &closeButton })
         addAndMakeVisible (item);
 
-    plusButton.onClick = [&owner] { owner.addBand(); };
-    closeButton.onClick = [&owner] { owner.removeSelectedBand(); };
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &dynamicChip, &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob,
+                                                                           &modeSwitch, &sidechainCheckbox })
+        addChildComponent (item);
+
+    dynamicChip.setTooltip ("Dynamic: the band's gain follows the level in its own region, up to Range.");
+    modeSwitch.setTextHeight (12.0f);
+    sidechainCheckbox.setLabelHeight (12.0f);
+    sidechainCheckbox.setTooltip ("The band listens to the sidechain input instead of the main input.");
+
+    plusButton.onClick = [this] { owner.addBand(); };
+    closeButton.onClick = [this] { owner.removeSelectedBand(); };
 }
 
 void EqEditor::BandEditor::layoutFor (bool compact)
@@ -301,10 +319,35 @@ void EqEditor::BandEditor::layoutFor (bool compact)
     const auto& style = compact ? Knob::compactStyle : Knob::mediumStyle;
 
     for (auto* knob : { &frequencyKnob, &gainKnob, &qKnob })
-        knob->setStyle (style);
+        knob->setStyle (dynamicShown ? Knob::tightStyle : style);
 
     resized();
     repaint();
+}
+
+// The dynamic half, at the Compact-mode card's positions moved by (dx, dy): panel 3 of the
+// Phase 2.1 mockup. The normal Details panel uses the same positions, below the band tabs.
+void EqEditor::BandEditor::layoutDynamic (int dx, int dy, int buttonsX, int buttonsDy)
+{
+    typeDropdown.setBounds (dx + 12, dy + 24, 94, 32);
+    dynamicChip.setBounds (dx + 12, dy + 64, 94, 24);
+    frequencyKnob.setBounds (dx + 112, dy + 12, 62, 99);
+    gainKnob.setBounds (dx + 174, dy + 12, 90, 99);
+    qKnob.setBounds (dx + 264, dy + 12, 56, 99);
+
+    separatorX = dx + 326;
+    separatorTop = dy + 20;
+
+    thresholdKnob.setBounds (dx + 334, dy + 12, 62, 99);
+    rangeKnob.setBounds (dx + 396, dy + 12, 62, 99);
+    attackKnob.setBounds (dx + 458, dy + 12, 56, 99);
+    releaseKnob.setBounds (dx + 514, dy + 12, 56, 99);
+    modeSwitch.setBounds (dx + 578, dy + 32, 88, 22);
+    sidechainCheckbox.setBounds (dx + 578, dy + 64, 96, 20);
+
+    powerIcon.setBounds (buttonsX, buttonsDy + 17, isCompact ? 14 : 18, isCompact ? 15 : 19);
+    plusButton.setBounds (buttonsX, buttonsDy + 56, isCompact ? 14 : 18, isCompact ? 14 : 18);
+    closeButton.setBounds (buttonsX + 1, buttonsDy + 94, isCompact ? 12 : 14, isCompact ? 12 : 14);
 }
 
 void EqEditor::BandEditor::paint (juce::Graphics& g)
@@ -314,13 +357,44 @@ void EqEditor::BandEditor::paint (juce::Graphics& g)
         g.setColour (juce::Colour (0xff2e2e2e).withAlpha (0.9f));
         g.fillRoundedRectangle (getLocalBounds().toFloat(), 8.0f);
     }
+
+    if (dynamicShown && separatorX >= 0)
+    {
+        g.setColour (juce::Colour (0xff434343));
+        g.fillRect ((float) separatorX, (float) separatorTop, 1.0f, 82.0f);
+    }
 }
 
 void EqEditor::BandEditor::resized()
 {
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob, &modeSwitch, &sidechainCheckbox })
+        item->setVisible (dynamicShown);
+
+    dynamicChip.setVisible (chipShown);
+    separatorX = -1;
+
+    if (dynamicShown)
+    {
+        if (isCompact)
+            layoutDynamic (0, 0, getWidth() - 31, 0);
+        else
+            layoutDynamic (10 + (getWidth() - 734) / 2, 42, getWidth() - 43, 5);
+
+        return;
+    }
+
     if (isCompact)
     {
-        typeDropdown.setBounds (16, 45, 94, 32);
+        if (chipShown)
+        {
+            typeDropdown.setBounds (16, 28, 94, 32);
+            dynamicChip.setBounds (16, 68, 94, 24);
+        }
+        else
+        {
+            typeDropdown.setBounds (16, 45, 94, 32);
+        }
+
         frequencyKnob.setBounds (138, 25, 62, 79);
         gainKnob.setBounds (198, 25, 100, 79);
         qKnob.setBounds (292, 25, 62, 79);
@@ -334,6 +408,7 @@ void EqEditor::BandEditor::resized()
     const auto right = getWidth() - 43;
 
     typeDropdown.setBounds (26, 80, 142, 32);
+    dynamicChip.setBounds (26, 120, 142, 24);
     frequencyKnob.setBounds (232 + centreShift, 40, 90, 123);
     gainKnob.setBounds (338 + centreShift, 40, 90, 123);
     qKnob.setBounds (444 + centreShift, 40, 90, 123);
@@ -346,6 +421,32 @@ void EqEditor::BandEditor::update()
 {
     const auto spec = eqProcessor.readBand (band);
     const auto usesGain = eq::hasGain (spec.type);
+
+    // Phase 2.1 D: the chip shows for the types that can be dynamic, and the dynamic half
+    // while it's on. In Linear phase both stay visible but dimmed: dynamic bands run static.
+    const auto supports = eq::supportsDynamics (spec.type);
+    const auto dynamicOn = eqProcessor.readDynamics (band).on;
+    const auto linear = eqProcessor.getApvts().getParameter ("phase")->getValue() >= 0.5f;
+    const auto wantChip = supports;
+    const auto wantDynamic = supports && dynamicOn;
+
+    if (wantChip != chipShown || wantDynamic != dynamicShown)
+    {
+        chipShown = wantChip;
+        dynamicShown = wantDynamic;
+        owner.layoutEditors();
+    }
+
+    if (linear != linearPhase)
+    {
+        linearPhase = linear;
+        dynamicChip.setEnabled (! linear);
+        dynamicChip.setTooltip (linear ? linearTooltip : "Dynamic: the band's gain follows the level in its own region, up to Range.");
+
+        for (juce::Component* item : std::initializer_list<juce::Component*> { &dynamicChip, &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob,
+                                                                               &modeSwitch, &sidechainCheckbox })
+            item->setAlpha (linear ? 0.4f : 1.0f);
+    }
 
     gainKnob.setValueSuffix ("(" + noteName (spec.frequencyHz) + ")");
     gainKnob.setAlpha (usesGain ? 1.0f : 0.4f);
@@ -625,8 +726,11 @@ void EqEditor::layoutEditors()
 
     for (auto& editor : bandEditors)
     {
+        // The card widens while the band shows its dynamic half (Phase 2.1 D).
+        const auto editorWidth = editor->showsDynamics() ? juce::jmin (dynamicCardWidth, contentWidth - 8) : cardWidth;
+
         if (compactMode)
-            editor->setBounds ((contentWidth - cardWidth) / 2, optionsTop - cardBottomGap - cardHeight, cardWidth, cardHeight);
+            editor->setBounds ((contentWidth - editorWidth) / 2, optionsTop - cardBottomGap - cardHeight, editorWidth, cardHeight);
         else
             editor->setBounds (0, detailsTop, contentWidth, detailsHeight);
 
@@ -703,6 +807,29 @@ void EqEditor::showPreview (bool drawerOpen)
     drawer.setVisible (drawerOpen);
 
     bandEditors[(size_t) selectedBand]->update();
+    graph.update();
+}
+
+void EqEditor::showDynamicPreview (bool compact)
+{
+    applyPreviewValues();
+
+    auto& processor = eqProcessor();
+    processor.setParameter ("b2freq", 3200.0f);
+    processor.setParameter ("b2gain", 0.0f);
+    processor.setParameter ("b2q", 2.0f);
+    processor.setParameter ("b2dyn", 1.0f);
+    processor.setParameter ("b2thresh", -24.0f);
+    processor.setParameter ("b2range", -6.0f);
+
+    graph.showPreviewChange (1, -3.6f);
+
+    parameter ("compact").setValueNotifyingHost (compact ? 1.0f : 0.0f);
+    compactMode = compact;
+    drawer.setVisible (false);
+    selectBand (1);
+    bandEditors[(size_t) selectedBand]->update();
+    layoutEditors();
     graph.update();
 }
 

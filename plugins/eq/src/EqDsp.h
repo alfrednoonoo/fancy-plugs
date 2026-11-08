@@ -7,6 +7,7 @@
 
 #include <juce_dsp/juce_dsp.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <memory>
@@ -23,6 +24,7 @@ public:
     struct Targets
     {
         std::array<eq::BandSpec, eq::maxBands> bands;
+        std::array<eq::DynamicSpec, eq::maxBands> dynamics;
         double gain = 1.0;
         double outputGain = 1.0;
         int firLength = 2;
@@ -39,7 +41,18 @@ public:
     // Jumps straight to these settings, for prepareToPlay.
     void snapToTargets (const Targets& targets);
 
-    void process (float* const* channels, int numChannels, int numSamples) noexcept;
+    // The sidechain feeds the dynamic bands that ask for it; it may be null.
+    void process (float* const* channels, int numChannels, int numSamples,
+                  const float* const* sidechain = nullptr, int numSidechain = 0) noexcept;
+
+    // Each band's current dynamic gain change in dB, for the graph (Phase 2.1 D).
+    float getDynamicChange (int band) const noexcept { return liveChange[(size_t) band].load (std::memory_order_relaxed); }
+
+    // Whether a band is dynamic now: DYN on, a type that allows it, and Minimum phase.
+    bool isDynamic (int band) const noexcept;
+
+    // Test only: redesign moving bands every this many samples instead of 16.
+    void setStepLength (int samples) noexcept { stepLength = std::clamp (samples, 1, (int) stepSamples); }
 
     int getLatencySamples() const noexcept { return activeLatency.load (std::memory_order_relaxed); }
 
@@ -75,10 +88,25 @@ private:
         double mix = 0.0, mixTarget = 0.0, mixStep = 0.0;
         int numSections = 0;
         bool moving = false;
+        double appliedChange = 0.0;
 
         std::array<Coefficients, eq::maxSections> coefficients, increments;
         std::array<std::array<std::array<double, 2>, eq::maxSections>, maxChannels> state {};
     };
+
+    // One per band: what the band hears, its level, and the gain change it asks for.
+    struct Detector
+    {
+        eq::BandSpec shape;                 // the filter's own spec, to know when to redesign
+        eq::BandFilter filter;
+        std::array<std::array<std::array<double, 2>, eq::maxSections>, maxChannels> state {};
+        std::array<double, maxChannels> meanSquare {};
+        double change = 0.0;
+        bool designed = false;
+    };
+
+    static eq::BandSpec effectiveSpec (const eq::BandSpec& spec, bool dynamic) noexcept;
+    void runDetectors (const float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples) noexcept;
 
     Config configFor (const Targets& targets) const noexcept;
     int latencyOf (const Config& config) const noexcept;
@@ -87,11 +115,12 @@ private:
 
     void snapBand (Band& band, const eq::BandSpec& spec) noexcept;
     void setCoefficients (Band& band, const eq::BandSpec& spec, bool ramp) noexcept;
-    void updateBands() noexcept;
+    void updateBands (int baseIndex) noexcept;
     void filterChunk (float* const* channels, int numChannels, int offset, int numSamples) noexcept;
     void filterBlock (float* const* channels, int numChannels, int numSamples) noexcept;
     void runBand (Band& band, int numChannels, int numSamples) noexcept;
-    void processChunk (float* const* channels, int numChannels, int offset, int numSamples) noexcept;
+    void processChunk (float* const* channels, int numChannels, int offset, int numSamples,
+                       const float* const* sidechain, int numSidechain) noexcept;
 
     double sampleRate = 48000.0;
     double processRate = 48000.0;
@@ -104,6 +133,13 @@ private:
 
     std::array<Band, eq::maxBands> bands;
     int stepPosition = 0;
+    int stepLength = stepSamples;
+
+    std::array<Detector, eq::maxBands> detectors;
+    std::array<std::array<double, 512>, eq::maxBands> chunkChange {};
+    int chunkLength = 0;
+    double levelCoefficient = 0.0;
+    std::array<std::atomic<float>, eq::maxBands> liveChange {};
     double work[maxChannels][stepSamples] {};
     double unfiltered[maxChannels][stepSamples] {};
 

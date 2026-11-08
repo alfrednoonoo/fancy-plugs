@@ -124,6 +124,26 @@ bool FancyProcessor::applyState (const juce::ValueTree& tree)
         child.setProperty ("value", juce::jlimit ((double) range.start, (double) range.end, value), nullptr);
     }
 
+    // Migration (version 3): a parameter the state doesn't mention takes its default, so an
+    // older state, or a preset saved before a parameter existed, sounds as it was saved.
+    for (auto* parameter : getParameters())
+    {
+        auto* ranged = dynamic_cast<juce::RangedAudioParameter*> (parameter);
+
+        if (ranged == nullptr || parameter == getBypassParameter())
+            continue;
+
+        const auto id = ranged->getParameterID();
+
+        if (clean.getChildWithProperty ("id", id).isValid())
+            continue;
+
+        juce::ValueTree child ("PARAM");
+        child.setProperty ("id", id, nullptr);
+        child.setProperty ("value", ranged->convertFrom0to1 (ranged->getDefaultValue()), nullptr);
+        clean.appendChild (child, nullptr);
+    }
+
     apvts.replaceState (clean);
     stateApplied();
     return true;

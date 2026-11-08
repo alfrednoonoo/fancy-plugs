@@ -115,7 +115,14 @@ bool renderEq (const juce::File& outputDir)
     ok = writeBothScales (*editor, "eq-edit", outputDir) && ok;
 
     editor->showCompactPreview();
-    return writeBothScales (*editor, "eq-compact", outputDir) && ok;
+    ok = writeBothScales (*editor, "eq-compact", outputDir) && ok;
+
+    // Phase 2.1 D: a dynamic band, in the normal layout and in the Compact-mode card.
+    editor->showDynamicPreview (false);
+    ok = writeBothScales (*editor, "eq-dynamic", outputDir) && ok;
+
+    editor->showDynamicPreview (true);
+    return writeBothScales (*editor, "eq-dynamic-compact", outputDir) && ok;
 }
 #endif
 

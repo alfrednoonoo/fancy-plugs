@@ -11,6 +11,25 @@ constexpr double mixFadeMs = 10.0;
 constexpr double switchFadeMs = 2.0;
 constexpr double configDebounceSeconds = 0.05;
 constexpr double switchSettleSeconds = 0.02;
+
+// Dynamic bands (Phase 2.1 D).
+constexpr double levelWindowSeconds = 0.005;
+constexpr double kneeDb = 6.0;
+constexpr double fullRangeDb = 12.0;
+
+// How far the level is past Threshold, with a soft knee: 0 below Threshold - 3 dB.
+double distancePast (double distanceDb) noexcept
+{
+    constexpr auto half = kneeDb * 0.5;
+
+    if (distanceDb <= -half)
+        return 0.0;
+
+    if (distanceDb < half)
+        return (distanceDb + half) * (distanceDb + half) / (2.0 * kneeDb);
+
+    return distanceDb;
+}
 } // namespace
 
 void EqDsp::prepare (double newSampleRate)
@@ -48,6 +67,11 @@ void EqDsp::prepare (double newSampleRate)
     dryBuffer.setSize (maxChannels, maxChunk);
     oversamplingBuffer.setSize (maxChannels, maxChunk);
 
+    levelCoefficient = std::exp (-1.0 / (levelWindowSeconds * sampleRate));
+
+    for (auto& detector : detectors)
+        detector.designed = false;
+
     gain.setTime (parameterSmoothingMs, sampleRate);
     output.setTime (parameterSmoothingMs, sampleRate);
     bypass.setTime (10.0, sampleRate);
@@ -62,6 +86,15 @@ void EqDsp::reset()
 {
     for (auto& band : bands)
         band.state = {};
+
+    for (size_t b = 0; b < detectors.size(); ++b)
+    {
+        auto& detector = detectors[b];
+        detector.state = {};
+        detector.meanSquare = {};
+        detector.change = 0.0;
+        liveChange[b].store (0.0f, std::memory_order_relaxed);
+    }
 
     for (auto& oversampler : oversamplers)
         if (oversampler != nullptr)
@@ -107,7 +140,7 @@ void EqDsp::setCoefficients (Band& band, const eq::BandSpec& spec, bool ramp) no
 
         if (ramp)
         {
-            constexpr auto scale = 1.0 / (double) stepSamples;
+            const auto scale = 1.0 / (double) stepLength;
 
             d = { (section.b0 - c.b0) * scale, (section.b1 - c.b1) * scale, (section.b2 - c.b2) * scale,
                   (section.a1 - c.a1) * scale, (section.a2 - c.a2) * scale };
@@ -126,8 +159,141 @@ void EqDsp::snapBand (Band& band, const eq::BandSpec& spec) noexcept
     band.gainDb.snapTo (spec.gainDb);
     band.q.snapTo (std::log (spec.q));
     band.state = {};
+    band.appliedChange = 0.0;
 
     setCoefficients (band, spec, false);
+}
+
+bool EqDsp::isDynamic (int band) const noexcept
+{
+    const auto& spec = current.bands[(size_t) band];
+    return current.dynamics[(size_t) band].on && spec.on && eq::supportsDynamics (spec.type) && ! activeConfig.linearPhase;
+}
+
+eq::BandSpec EqDsp::effectiveSpec (const eq::BandSpec& spec, bool dynamic) noexcept
+{
+    // A dynamic notch is a bell whose only gain is the change: it passes until it acts.
+    if (! dynamic || spec.type != eq::BandType::notch)
+        return spec;
+
+    auto bell = spec;
+    bell.type = eq::BandType::band;
+    bell.gainDb = 0.0;
+    return bell;
+}
+
+void EqDsp::runDetectors (const float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples) noexcept
+{
+    chunkLength = numSamples;
+
+    for (int b = 0; b < eq::maxBands; ++b)
+    {
+        auto& detector = detectors[(size_t) b];
+        auto& changes = chunkChange[(size_t) b];
+        const auto dynamic = isDynamic (b);
+
+        // A band that isn't dynamic, and has let go, does nothing here.
+        if (! dynamic && detector.change == 0.0)
+        {
+            std::fill_n (changes.begin(), numSamples, 0.0);
+            continue;
+        }
+
+        const auto& spec = current.bands[(size_t) b];
+        const auto& settings = current.dynamics[(size_t) b];
+
+        // What the band hears: a band pass for a bell or notch, a low or high pass for a shelf.
+        eq::BandSpec shape;
+        shape.on = true;
+        shape.frequencyHz = spec.frequencyHz;
+        shape.order = 2;
+
+        switch (spec.type)
+        {
+            case eq::BandType::lowShelf:  shape.type = eq::BandType::lowPass;  shape.q = eq::butterworthQ; break;
+            case eq::BandType::highShelf:
+            case eq::BandType::tilt:      shape.type = eq::BandType::highPass; shape.q = eq::butterworthQ; break;
+            default:                      shape.type = eq::BandType::bandPass; shape.q = spec.q; break;
+        }
+
+        if (! detector.designed || ! (shape == detector.shape))
+        {
+            detector.filter = eq::design (shape, sampleRate);
+            detector.shape = shape;
+
+            // A band pass is used twice, 4th order: at Q 1, a tone two octaves away is then
+            // about 24 dB down rather than 12, so it doesn't move the band.
+            if (shape.type == eq::BandType::bandPass && detector.filter.numSections == 1)
+            {
+                detector.filter.sections[1] = detector.filter.sections[0];
+                detector.filter.numSections = 2;
+            }
+            detector.designed = true;
+        }
+
+        const auto useSidechain = settings.sidechain && numSidechain > 0;
+        const auto* const* source = useSidechain ? sidechain : main;
+        const auto numSource = std::min (useSidechain ? numSidechain : numMain, (int) maxChannels);
+
+        const auto attack = std::exp (-1.0 / (std::max (0.01, settings.attackMs) * 0.001 * sampleRate));
+        const auto release = std::exp (-1.0 / (std::max (0.01, settings.releaseMs) * 0.001 * sampleRate));
+        const auto notch = spec.type == eq::BandType::notch;
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            auto loudest = 0.0;
+
+            for (int ch = 0; ch < numSource; ++ch)
+            {
+                auto x = (double) source[ch][i];
+
+                for (int s = 0; s < detector.filter.numSections; ++s)
+                {
+                    const auto& c = detector.filter.sections[(size_t) s];
+                    auto& z = detector.state[(size_t) ch][(size_t) s];
+                    const auto y = c.b0 * x + z[0];
+                    z[0] = c.b1 * x - c.a1 * y + z[1];
+                    z[1] = c.b2 * x - c.a2 * y;
+                    x = y;
+                }
+
+                auto& meanSquare = detector.meanSquare[(size_t) ch];
+                meanSquare = x * x + levelCoefficient * (meanSquare - x * x);
+                loudest = std::max (loudest, meanSquare);
+            }
+
+            auto target = 0.0;
+
+            if (dynamic)
+            {
+                const auto levelDb = 10.0 * std::log10 (loudest + 1.0e-30);
+                const auto distance = settings.below ? settings.thresholdDb - levelDb : levelDb - settings.thresholdDb;
+                target = settings.rangeDb * std::min (1.0, distancePast (distance) / fullRangeDb);
+
+                if (notch)
+                    target = std::min (0.0, target);
+            }
+
+            auto& change = detector.change;
+            const auto coefficient = std::abs (target) > std::abs (change) ? attack : release;
+            change = target + coefficient * (change - target);
+
+            // Letting go ends exactly at 0, so a quiet band is exactly its static self.
+            if (target == 0.0 && std::abs (change) < 1.0e-6)
+                change = 0.0;
+
+            changes[(size_t) i] = change;
+        }
+
+        for (auto& channelState : detector.state)
+            for (auto& z : channelState)
+                for (auto& value : z)
+                    if (! std::isfinite (value))
+                        value = 0.0;
+    }
+
+    for (int b = 0; b < eq::maxBands; ++b)
+        liveChange[(size_t) b].store ((float) detectors[(size_t) b].change, std::memory_order_relaxed);
 }
 
 void EqDsp::applyConfig (const Config& config)
@@ -137,7 +303,7 @@ void EqDsp::applyConfig (const Config& config)
 
     processRate = sampleRate * (double) (1 << config.oversampling);
 
-    const auto stepRate = processRate / (double) stepSamples;
+    const auto stepRate = processRate / (double) stepLength;
 
     for (int b = 0; b < eq::maxBands; ++b)
     {
@@ -255,12 +421,16 @@ void EqDsp::updateConfig (int numSamples) noexcept
     }
 }
 
-void EqDsp::updateBands() noexcept
+void EqDsp::updateBands (int baseIndex) noexcept
 {
     for (int b = 0; b < eq::maxBands; ++b)
     {
         auto& band = bands[(size_t) b];
-        const auto& wanted = current.bands[(size_t) b];
+        const auto dynamic = isDynamic (b);
+        const auto wanted = effectiveSpec (current.bands[(size_t) b], dynamic);
+
+        // The detector's change at this point of the chunk, at the host rate.
+        const auto change = chunkLength > 0 ? chunkChange[(size_t) b][(size_t) std::clamp (baseIndex, 0, chunkLength - 1)] : 0.0;
 
         if (! wanted.sameShape (band.active))
         {
@@ -291,12 +461,13 @@ void EqDsp::updateBands() noexcept
         band.gainDb.setTarget (wanted.gainDb);
         band.q.setTarget (logQ);
 
-        if (band.logFrequency.isSettled() && band.gainDb.isSettled() && band.q.isSettled())
+        if (band.logFrequency.isSettled() && band.gainDb.isSettled() && band.q.isSettled() && change == band.appliedChange)
         {
             if (band.moving)
             {
                 band.active = wanted;
-                setCoefficients (band, wanted, false);
+                band.active.gainDb += change;
+                setCoefficients (band, band.active, false);
             }
 
             continue;
@@ -304,9 +475,10 @@ void EqDsp::updateBands() noexcept
 
         auto spec = wanted;
         spec.frequencyHz = std::exp (band.logFrequency.next());
-        spec.gainDb = band.gainDb.next();
+        spec.gainDb = band.gainDb.next() + change;
         spec.q = std::exp (band.q.next());
 
+        band.appliedChange = change;
         band.active = spec;
         setCoefficients (band, spec, true);
     }
@@ -392,7 +564,7 @@ void EqDsp::runBand (Band& band, int numChannels, int numSamples) noexcept
 void EqDsp::filterChunk (float* const* channels, int numChannels, int offset, int numSamples) noexcept
 {
     if (stepPosition == 0)
-        updateBands();
+        updateBands (offset >> activeConfig.oversampling);
 
     for (int ch = 0; ch < numChannels; ++ch)
         for (int i = 0; i < numSamples; ++i)
@@ -406,20 +578,21 @@ void EqDsp::filterChunk (float* const* channels, int numChannels, int offset, in
         for (int i = 0; i < numSamples; ++i)
             channels[ch][offset + i] = (float) work[ch][i];
 
-    stepPosition = (stepPosition + numSamples) % stepSamples;
+    stepPosition = (stepPosition + numSamples) % stepLength;
 }
 
 void EqDsp::filterBlock (float* const* channels, int numChannels, int numSamples) noexcept
 {
     for (int done = 0; done < numSamples;)
     {
-        const auto chunk = std::min (numSamples - done, stepSamples - stepPosition);
+        const auto chunk = std::min (numSamples - done, stepLength - stepPosition);
         filterChunk (channels, numChannels, done, chunk);
         done += chunk;
     }
 }
 
-void EqDsp::processChunk (float* const* channels, int numChannels, int offset, int numSamples) noexcept
+void EqDsp::processChunk (float* const* channels, int numChannels, int offset, int numSamples,
+                          const float* const* sidechain, int numSidechain) noexcept
 {
     updateConfig (numSamples);
 
@@ -452,6 +625,17 @@ void EqDsp::processChunk (float* const* channels, int numChannels, int offset, i
     }
 
     dryPosition = (dryPosition + numSamples) % dryLength;
+
+    // The dynamic bands' detectors hear the input before the EQ, or the sidechain.
+    {
+        const float* sidechainChunk[maxChannels] {};
+        const auto sidechainChannels = std::min (numSidechain, (int) maxChannels);
+
+        for (int ch = 0; ch < sidechainChannels; ++ch)
+            sidechainChunk[ch] = sidechain[ch] + offset;
+
+        runDetectors (signal, numChannels, sidechainChunk, sidechain != nullptr ? sidechainChannels : 0, numSamples);
+    }
 
     if (activeConfig.linearPhase)
     {
@@ -507,14 +691,15 @@ void EqDsp::processChunk (float* const* channels, int numChannels, int offset, i
     }
 }
 
-void EqDsp::process (float* const* channels, int numChannels, int numSamples) noexcept
+void EqDsp::process (float* const* channels, int numChannels, int numSamples,
+                     const float* const* sidechain, int numSidechain) noexcept
 {
     numChannels = std::min (numChannels, (int) maxChannels);
 
     for (int done = 0; done < numSamples;)
     {
         const auto chunk = std::min (numSamples - done, maxChunk);
-        processChunk (channels, numChannels, done, chunk);
+        processChunk (channels, numChannels, done, chunk, sidechain, numSidechain);
         done += chunk;
     }
 }

@@ -31,6 +31,14 @@ public:
     bool isBandUsed (int band);
 
     EqDsp::Targets readTargets();
+    eq::DynamicSpec readDynamics (int band);
+
+    // A band's current dynamic gain change in dB, and whether it's dynamic now (Phase 2.1 D).
+    float getDynamicChange (int band) const noexcept { return dsp.getDynamicChange (band); }
+    bool isDynamic (int band);
+
+    // Test only: see EqDsp::setStepLength.
+    void setStepLength (int samples) noexcept { dsp.setStepLength (samples); }
 
     // Message thread.
     void setParameter (const juce::String& parameterId, float value);
@@ -69,8 +77,14 @@ private:
         std::atomic<float>* used, *on, *type, *frequency, *gain, *q, *slope;
     };
 
+    struct DynamicValues
+    {
+        std::atomic<float>* on, *threshold, *range, *attack, *release, *mode, *sidechain;
+    };
+
     SharedFlag logScale;
     std::array<BandValues, eq::maxBands> bandValues {};
+    std::array<DynamicValues, eq::maxBands> dynamicValues {};
     EqDsp dsp;
     DesignThread designThread;
 

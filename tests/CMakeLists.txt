@@ -19,7 +19,7 @@ if("FANCY_HAS_COMP=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_EQ=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE EqTests.cpp)
+    target_sources(fancy-tests PRIVATE EqTests.cpp DynamicEqTests.cpp)
 endif()
 
 if("FANCY_HAS_VERB=1" IN_LIST fancy_screen_defs)
