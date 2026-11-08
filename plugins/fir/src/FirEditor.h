@@ -53,6 +53,7 @@ private:
     };
 
     void onTick (float seconds) override;
+    juce::Rectangle<int> getSidechainNoticeBounds() override;
     int getShownInputs() override { return juce::jmax (getFancyProcessor().getTotalNumInputChannels(), getFancyProcessor().getMainBusNumInputChannels() + 2); }
 
     FirProcessor& firProcessor() noexcept;

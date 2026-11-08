@@ -34,6 +34,8 @@ The rule: when the host says non-real-time, every bit of work that would go to a
 
 The editors' analyzer threads only draw, so they're left alone.
 
+**What the first runs found, and changed here:** the Exciter's output depended on the block size under automation, which is fixed. A real-time render with a worker can't match offline right after a rebuild, because the worker's result lands a block or more later; so real time is compared outside a window after each change, and FIR's nonlinear modes, where the later engine shifts the frame grid for good, are reported rather than required to match (see the open decision in `docs/PROGRESS.md`). Verb's real-time render is paced at real time, because its convolver plays silence in a stage whose job is late, which only happens faster than real time.
+
 **Test, every plugin in each of its modes:** a 30 s signal (pink noise with sine bursts, so filters, detectors and tails all work), with automation of two or three parameters per plugin written at fixed sample positions. Rendered (a) in real time with 128-sample blocks and (b) offline with random blocks of 0 to 8192 samples, each automation point starting a new block in both. The outputs must be bit-identical, or within -120 dB of the signal where the plugin isn't deterministic across block sizes, and the test says which it is. Verb swaps its IR, and FIR changes FFT size, half way through. Real-time Verb and FIR wait for their builds at the same point in the render, which is what a real-time render would hear if the CPU kept up; the test is about offline being right, not about a slow worker.
 
 Modes: Kicker as is; Exciter and Comp at 1×, 2× and 4×; EQ minimum and linear phase; Verb zero latency and low CPU; Delay note and ms taps; MultiComp LR 24, LR 48 and Linear; FIR all five modes; Gate with Lookahead off and on.
@@ -57,7 +59,7 @@ The host's scale goes through JUCE's `AudioProcessorEditor::setScaleFactor`, on 
 - The bus stays as it is: an optional input named "Sidechain", inactive by default, mono or stereo.
 - An inactive bus reads as silence. A mono one feeds both detector channels.
 - **Warning:** Gate's rule, sidechain below -90 dBFS for 2 s while the main input is above -60 dBFS and a sidechain source is chosen, is copied into `fancy-core` as `SidechainWatch`, which Comp, MultiComp and FIR use. Gate keeps its own, already tested. They show Gate's message, which the Phase 2.0.1 brief set word for word, "No sidechain signal: check track routing (REAPER: pins 3/4)", in a small strip that appears at the top of the body only while the warning is on. That isn't a control, so the layout doesn't change. The manuals say where the routing is in each host.
-- **Tests:** for Comp, MultiComp, FIR and Gate: inactive, mono and stereo sidechains; the bus switched on and off while processing, with no NaN and no output step beyond the input's; and the warning on with a silent sidechain selected, off without one.
+- **Tests:** for Comp, MultiComp, FIR and Gate: inactive, mono and stereo sidechains; the bus switched on and off while processing, with no NaN, switching while inactive as VST3 requires; and the warning on with a silent sidechain selected, off without one.
 - **Manuals:** "How to sidechain" for REAPER (pins 3/4), Cubase (the sidechain button at the top of the plugin window), Live 10.1+ (the Sidechain section of the device), Waveform (the input button at the top left of the plugin window) and LUNA, plus a line that Audacity has no sidechain routing. EQ's comes with D.
 
 ### H.5 MIDI out (Gate)

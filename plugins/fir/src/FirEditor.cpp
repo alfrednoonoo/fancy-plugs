@@ -459,3 +459,10 @@ std::vector<ShellEditor::PopupOpener> FirEditor::getPopupOpeners()
     openers.push_back ({ "tooltip-low-latency", [this] { showTip (lowLatencyCheckbox, lowLatencyCheckbox.getTooltip()); } });
     return openers;
 }
+
+juce::Rectangle<int> FirEditor::getSidechainNoticeBounds()
+{
+    // Over the top of the graph, clear of the mode switch it would otherwise cover.
+    const auto area = getRoot().getLocalArea (&graph, graph.getLocalBounds());
+    return { area.getCentreX() - 190, area.getY() + 8, 380, 22 };
+}

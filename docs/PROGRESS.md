@@ -15,7 +15,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42497501203, Phase 2.1 S: 289 test cases passed, and all nine plugins passed pluginval.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42506516139, Phase 2.1 H: every test, Steinberg's validator, pluginval with its Steinberg step, and 101 host-harness checks passed for all nine plugins.
 
 ## Phase 2
 
@@ -36,7 +36,7 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
 1. **Phase 2.0.1, Fancy Gate:** done. The updated Phase 2.1 brief treats it as finished, as one of the nine plugins that Phase 2.1 changes. Its REAPER checklist, `docs/gate-checklist.md`, can still be run with the next build.
 2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. It builds no new plugin. Each item has its own design note, `docs/phase2_1-<item>.md`, written before any code.
    - S: styled menus, dropdown lists, tooltips, typed values and dialogs, built once in `fancy-core`. Mockup `reference/phase2_1/16__menus_mockup.png`, which also sets their exact styling. **Done.** The user reported the REAPER checks passed on 8 November 2026. Audit and design: `docs/phase2_1-S.md`.
-   - H: **in progress**, design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
+   - H: **built, and green in CI**; waiting for the user's host checks (`docs/host-compat.md`) and one decision about FIR (below). Design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
    - W: undo and redo, A/B, and level-matched Compare, for all nine plugins.
    - D: dynamic EQ.
    - U: upward compression in MultiComp.
@@ -175,6 +175,54 @@ Deviations from the menus mockup:
 - **Gate MIDI dropdown:** Note, Channel and Velocity window as three submenus, with Note one scrolling list of 128. At the Gate's window edge the Note list opens to the left.
 - **Comp's Detector input** has a third section, Mid/side, for its two extra choices.
 - **Tooltips:** Kicker, Exciter, EQ and Verb have none of their own, so their checklists don't ask for one.
+
+## Phase 2.1 H: host compatibility
+
+Design note: `docs/phase2_1-H.md`. Host table, scenario sources and host checklists: `docs/host-compat.md`. Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42506516139.
+
+What changed:
+
+- **Offline (H.1):** worker threads always run, so a host can switch between offline and real time without preparing again. Verb waits as long as an IR build takes when offline, instead of giving up after 60 s. EQ, MultiComp, FIR and Verb have `waitForBackgroundWork()`, which tests use to render real time as a machine that keeps up would.
+- **Exciter fix:** with automation, its output depended on the block size by up to -60 dB, because the post-shaper filter and the character bias used one value per 64-sample chunk. Each sample now has its own, and offline renders are bit-identical across block sizes. Static settings sound exactly as before.
+- **Keyboard (H.2):** nothing but text fields, menus and dialogs takes focus. Verb's rack viewport did, and no longer does.
+- **Sidechain (H.4):** `fancy::dsp::SidechainWatch` gives Comp, MultiComp and FIR Gate's warning, in a strip at the top of the body (FIR: the top of the graph) only while it's on. The text is Gate's, which its brief set word for word. The bus was already optional, mono or stereo, and inactive by default.
+- **Latency (H.6):** the settings that change latency have the tooltip line "Latency changes take effect in some hosts after you stop and start playback."
+- **Program name:** the one host-facing program is now called "Default", the only error Steinberg's validator found.
+- **CI (H.7):** Steinberg's validator (`vst3sdk` `v3.8.0_build_66`), built once and cached, runs on every bundle and inside pluginval. `tools/hosttest` loads every bundle through JUCE's VST3 hosting. JUCE's AudioPluginHost is built once per JUCE version and ships in the artifact as `tools/AudioPluginHost.exe`; `install.ps1` copies it to `%USERPROFILE%\VST3-Dev-Tools`.
+- **Scaling (H.3):** `screens-hostscale-<sha>` renders every editor and its preset menu at host scales 1.25, 1.5 and 2.0. Checked by eye: no clipped text, and the menus scale with the window.
+- **Docs:** host sections in every manual (sidechain in each host, Gate's MIDI-out table, latency, rendering), and `docs/host-compat.md`.
+
+Results:
+
+| Check | Result |
+|---|---|
+| Offline, random blocks of 0-8192 against 128, with automation | Bit-identical for all nine plugins in every mode, in-process and through the hosted `.vst3` |
+| Real time against offline | Bit-identical for the seven plugins and modes with no rebuild. EQ linear, MultiComp linear and Verb bit-identical outside the window after each rebuild (1 s; 2.5 s for Verb's impulse swap, paced at real time). FIR EQ and Subtract within -132 dB |
+| FIR Gate, Compressor and Convolve after an FFT-size change | Differ by -25.9, -26.7 and -12.9 dB from then on: see the open decision below |
+| Keyboard | No control wants focus in any editor; space, Enter, Esc, letters, digits, arrows and Ctrl+Z all go back to the host |
+| Mono main bus, no sidechain | All nine process |
+| Sidechain inactive, mono, stereo, back to inactive | Comp, MultiComp, FIR and Gate process, and the warning comes and goes as it should |
+| MIDI out nobody reads | Gate's audio is identical with MIDI on and off |
+| Latency notices | Exactly one per change, both ways, for every setting in H.6, in-process and hosted |
+| Automation flood, 10 s | No NaN, and no allocation on the audio thread in any plugin |
+| Host harness | 101 of 101 checks: loads, offline blocks, 44.1/48/96 kHz, reactivation after 60 s of silence, state before and while playing, buses, host bypass time-aligned, latency notices, flood, 50 editor opens |
+| Steinberg validator | 47 of 47 tests for each plugin |
+| Host checks by the user | Pending, `docs/host-compat.md` |
+
+Notes:
+
+- **Steinberg's validator prints every bus as "Default Active".** Its bus scan tests the constant `busInfo.kDefaultActive` instead of the bus's flags. JUCE reports the sidechain as inactive by default.
+- **Hosts restore state as JUCE's hosting does:** component state, then the controller's. The harness compares the restored parameters as the plugin displays them, because a stepped parameter snaps a host's raw value.
+- **Allocation counting is in-process:** the plugins link the C runtime statically, so a hook in a host can't see their allocations.
+
+### Open decision: FIR's frame grid after a rebuild
+
+In real time, a rebuilt FIR engine (new FFT size, mode or Low latency) arrives from the worker a block or more after the change, while offline builds it in the same block. EQ and Subtract are linear, so that doesn't change their output. In Gate, Compressor and Convolve L/R, the new engine's analysis frames then sit a block later than in an offline render, and the two keep differing, at -26 to -13 dB, until the next rebuild. Both sound right; they just aren't the same render. Options:
+
+1. **Leave it, and document it** in the FIR manual: after changing FFT size, mode or Low latency during playback, a render can differ slightly from what played.
+2. **Align engine switches to a fixed sample grid:** the new engine starts at the next multiple of its hop, counted from the start of playback, in both real time and offline. Then the two match whenever the worker keeps up. That changes FIR's core switching code, which passed its REAPER check, so it needs FIR's size-change tests rerun and a REAPER check.
+
+Verb's impulse swap has the same timing difference, but its convolution is linear, so it only lasts for the old impulse's tail.
 
 ## Market research and Phase 3 draft
 
@@ -491,7 +539,7 @@ Target: warm one-plugin build under about 6 minutes (met). The full-suite target
 ## Open questions
 
 - **Figma token.** A personal access token was pasted into the conversation and needs revoking and replacing. Do not store it anywhere in this repo. The Figma data is committed, so later sessions only need the token to re-export.
-- pluginval's Steinberg VST3 validator step is skipped, because no validator path is set. The brief doesn't require it.
+- pluginval's Steinberg VST3 validator step now runs, with the validator CI builds for Phase 2.1 H.7.
 
 ## Known warnings
 
