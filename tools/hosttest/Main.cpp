@@ -258,18 +258,34 @@ void stateRestore (const Loaded& plugin)
     juce::MemoryBlock state;
     source->getStateInformation (state);
 
+    // The source still holds the random values as the host sent them, and a stepped parameter
+    // snaps them inside the plugin. So compare the values as the plugin shows them, as text.
+    juce::String mismatch;
+
     const auto matches = [&] (Instance& target)
     {
         const auto& a = source->getParameters();
         const auto& b = target.getParameters();
 
         if (a.size() != b.size())
+        {
+            mismatch = "parameter count";
             return false;
+        }
 
         for (int i = 0; i < a.size(); ++i)
-            if (std::abs (a[i]->getValue() - b[i]->getValue()) > 1.0e-5f)
-                return false;
+        {
+            const auto sent = a[i]->getCurrentValueAsText();
+            const auto restored = b[i]->getCurrentValueAsText();
 
+            if (sent != restored)
+            {
+                mismatch = a[i]->getName (64) + ": sent " + sent + ", restored " + restored;
+                return false;
+            }
+        }
+
+        mismatch.clear();
         return true;
     };
 
@@ -277,7 +293,8 @@ void stateRestore (const Loaded& plugin)
     auto beforePrepare = plugin.create();
     beforePrepare->setStateInformation (state.getData(), (int) state.getSize());
     pump (50);
-    report (plugin.description.name, "state restored before the first prepareToPlay", matches (*beforePrepare));
+    const auto restoredBefore = matches (*beforePrepare);
+    report (plugin.description.name, "state restored before the first prepareToPlay", restoredBefore, mismatch);
 
     auto afterPrepare = plugin.create();
     afterPrepare->prepareToPlay (48000.0, 512);
@@ -285,7 +302,8 @@ void stateRestore (const Loaded& plugin)
     afterPrepare->setStateInformation (state.getData(), (int) state.getSize());
     pump (50);
     const auto result = run (*afterPrepare, 48000.0, 4800, fixedBlocks (512));
-    report (plugin.description.name, "state restored while playing", matches (*afterPrepare) && result.finite);
+    const auto restoredAfter = matches (*afterPrepare);
+    report (plugin.description.name, "state restored while playing", restoredAfter && result.finite, mismatch);
 
     source->releaseResources();
     afterPrepare->releaseResources();
