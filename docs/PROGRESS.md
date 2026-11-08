@@ -15,7 +15,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42506516139, Phase 2.1 H: every test, Steinberg's validator, pluginval with its Steinberg step, and 101 host-harness checks passed for all nine plugins.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42508653864, Phase 2.1 H: every test, Steinberg's validator, pluginval with its Steinberg step, and 101 host-harness checks passed for all nine plugins.
 
 ## Phase 2
 
