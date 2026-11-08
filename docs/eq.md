@@ -47,6 +47,8 @@ The 16 bands each have these, with `N` from 1 to 16:
 | `bNq` | Band N Q | 0.1–30 | 0.707 on bands 1 and 4, 1.0 otherwise | | log | chosen here |
 | `bNslope` | Band N Slope | 6, 12, 18, 24, 36, 48 dB/oct | 12 dB/oct | | | §3.4 |
 
+Phase 2.1 D appends seven more per band, after every parameter below: `bNdyn`, `bNthresh`, `bNrange`, `bNattack`, `bNrelease`, `bNdynMode` and `bNdynSc`, with an optional stereo Sidechain input. Their design is in `docs/phase2_1-D.md`.
+
 Global parameters:
 
 | ID | Name | Range | Default | Unit | Automatable | Source |

@@ -111,3 +111,17 @@ Tell me "EQ OK", or list which items failed and what you saw. Once it's OK, I'll
 - [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
 - [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
 - [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
+
+## Dynamic bands (Phase 2.1 D)
+
+- [ ] Select band 2 (a bell): a **DYN** chip sits under the type. Pick Low pass: the chip goes. Back to Band: it's back.
+- [ ] Turn DYN on: Threshold, Range, Attack, Release, Above | Below and Sidechain appear right of Q, in the band's colour, after a thin line. Freq, Gain and Q get smaller to make room. Nothing overlaps at 100 % or 200 %.
+- [ ] On the graph, band 2 shows a lighter fill with a dashed edge down to Gain + Range, and the corner reads "reach −6 dB · now 0 dB".
+- [ ] Play a vocal or a mix and lower Threshold until the band acts: the white curve dips inside the dashed area, and "now" follows the music. It sounds smooth, with no crackle or zipper noise, even with Attack at 0.1 ms.
+- [ ] With the music quieter than Threshold, switch DYN on and off: nothing changes in the sound.
+- [ ] Switch to **Below** and a positive Range: the band lifts the region when it's quiet.
+- [ ] Turn on Compact mode: the floating card is wider and shows the same controls as panel 3 of the mockup.
+- [ ] Set Phase to Linear (EDIT): the DYN chip and the dynamic controls grey out, and hovering the chip says "Dynamic bands need Minimum phase". The band stays at its static Gain.
+- [ ] Make a Notch dynamic: quiet, it lets everything through; loud, it cuts at its Freq.
+- [ ] Sidechain: route a kick to the EQ's sidechain (track to 4 channels, send to 3/4, pins 3/4 to Sidechain). The I/O pill reads 4/2. Tick Sidechain on a dynamic low shelf on a bass track: the bass dips on each kick. Unroute it: the "No sidechain signal" warning appears after 2 s.
+- [ ] Open a project saved before this version: every band is static and it sounds as before.

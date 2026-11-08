@@ -42,6 +42,29 @@ Click a tab or a handle to choose a band. In Compact mode these controls float o
 
 Changing Freq, Gain or Q is smooth. Changing a band's type or slope, or switching it, fades the band out and back in over about 20 ms.
 
+## Dynamic bands
+
+A Band (bell), Low shelf, High shelf, Tilt or Notch can be made **dynamic** with the **DYN** chip under its type. Its gain then moves between its Gain and Gain + Range, following how loud the signal is in that band's own region, so it only boosts or cuts when it needs to. With DYN on, the dynamic controls appear to the right of Q, in the band's colour:
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Threshold | -60 to 0 dB | -24 dB | The level where the band starts to act. A sine's level is its RMS: a full-scale sine is -3 dB |
+| Range | -30 to +30 dB | -6 dB | How far the gain can move. Negative cuts, positive boosts. It's all used 12 dB past Threshold, with a soft start over the 6 dB around it |
+| Attack | 0.1-200 ms | 5 ms | How fast the band moves when it starts to act |
+| Release | 5-2000 ms | 80 ms | How fast it goes back |
+| Above, Below | | Above | Above acts when the level rises over Threshold (taming a harsh peak); Below acts when it falls under (lifting a weak region) |
+| Sidechain | | off | The band listens to the sidechain input instead of the main input |
+
+The band hears the input before the EQ: a band pass at its Freq and Q for a bell or notch, everything below Freq for a low shelf, and everything above it for a high shelf or tilt. While the signal stays clear of Threshold, a dynamic band is exactly the same as a static one.
+
+**On the graph,** a dynamic band shows its static curve as usual, plus its reach, the curve at Gain + Range, as a lighter fill with a dashed edge. The white total curve includes where each dynamic band is now, so it moves inside the reach as you play. For the selected band, the top-left corner reads, for example, "reach −6 dB · now −3.6 dB".
+
+**A dynamic notch** works as a dynamic cut: it lets everything through while quiet, and cuts by up to Range at its Freq and Q as the level rises. A positive Range does nothing on a notch. Band pass, low pass, high pass and all pass can't be dynamic.
+
+**Linear phase:** dynamic bands need Minimum phase. In Linear mode the DYN chip is greyed out, with the tooltip "Dynamic bands need Minimum phase", and dynamic bands keep their static Gain. They come back to life when you switch to Minimum.
+
+Dynamic bands add no latency. In Compact mode the floating card widens while the selected band is dynamic.
+
 ## Main controls
 
 | Control | Range | Default | What it does |
@@ -105,6 +128,19 @@ Drag the window's edge in REAPER. The graph takes the extra room. Parameter > UI
 Default, Low Cut, Vocal Presence, Smile, Air, Telephone and Linear Master. **+ New** saves your own.
 
 ## Using it in other hosts
+
+### How to sidechain
+
+The plugin has an optional input called **Sidechain**, mono or stereo, which is off until the host turns it on. It's only used by dynamic bands with **Sidechain** ticked; every other band ignores it.
+
+- **REAPER:** set the track to 4 channels, send the source track to channels 3/4, and check the plugin's pins (the I/O button) map 3/4 to the sidechain.
+- **Cubase:** switch on the sidechain button at the top of the plugin window, then pick the source in the plugin's sidechain routing.
+- **Ableton Live 10.1 and later:** open the Sidechain section of the plugin's device and choose the source track.
+- **Tracktion Waveform:** use the input button at the top left of the plugin window to add a sidechain input from another track.
+- **UA LUNA:** use LUNA's sidechain routing for the insert, as UA's LUNA manual describes.
+- **Audacity** has no sidechain routing. A band with Sidechain ticked hears nothing there, so it stays static, and the plugin shows the warning.
+
+If a dynamic band has Sidechain ticked and nothing arrives for 2 s while the main input plays, the plugin shows "No sidechain signal: check track routing (REAPER: pins 3/4)".
 
 ### Latency
 
