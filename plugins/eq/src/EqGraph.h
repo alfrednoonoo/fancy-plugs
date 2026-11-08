@@ -31,6 +31,13 @@ public:
 
     std::function<void (int)> onBandSelected;
 
+    // From the band's right-click menu: type a value ("freq" or "gain"), or delete the band.
+    std::function<void (int band, const juce::String& suffix)> onTypeValue;
+    std::function<void (int band)> onDeleteBand;
+
+    void showBandMenu (int band, juce::Point<float> position);
+    juce::Point<float> getHandlePosition (int band) const { return bands[(size_t) band].handle; }
+
     void paint (juce::Graphics&) override;
     void resized() override;
     void mouseDown (const juce::MouseEvent&) override;
@@ -75,7 +82,6 @@ private:
 
     int bandAt (juce::Point<float> position) const noexcept;
     void select (int band);
-    void showBandMenu (int band);
     void setValue (int band, const char* suffix, float value);
     juce::RangedAudioParameter& bandParameter (int band, const char* suffix);
 

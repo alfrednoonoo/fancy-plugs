@@ -21,7 +21,7 @@ std::unique_ptr<juce::AudioParameterFloat> timeParameter (const juce::String& id
         juce::AudioParameterFloatAttributes {}
             .withLabel ("ms")
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); }));
 }
 
 std::unique_ptr<juce::AudioParameterFloat> filterParameter (const juce::String& id, const juce::String& name, float defaultHz)

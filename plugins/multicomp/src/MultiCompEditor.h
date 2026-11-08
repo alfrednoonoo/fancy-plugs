@@ -14,6 +14,9 @@ class MultiCompEditor final : public fancy::ui::ShellEditor
 public:
     explicit MultiCompEditor (MultiCompProcessor& processor);
 
+    juce::Colour getAccentColour() override;
+    std::vector<PopupOpener> getPopupOpeners() override;
+
     // For rendered screenshots: mockup values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
 
@@ -34,6 +37,9 @@ private:
         void showLevels (float left, float right, float reductionDb);
 
         void paint (juce::Graphics&) override;
+
+        fancy::ui::Fader& getThresholdFader() noexcept { return thresholdFader; }
+        fancy::ui::Knob& getRatioKnob() noexcept { return ratioKnob; }
 
     private:
         MultiCompProcessor& multiProcessor;
@@ -65,6 +71,7 @@ private:
     void selectBand (int band);
     void addBand();
     void removeSelectedBand();
+    void removeBandNow();
     void updateSelection();
 
     Panels panels;

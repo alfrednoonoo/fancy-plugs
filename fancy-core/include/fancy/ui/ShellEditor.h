@@ -50,9 +50,10 @@ private:
     PillButton closeButton { "Done" };
 };
 
-// Header bar, scaling, bypass dimming and the Parameter menu. Subclasses add their
-// controls to getBody() and put 30 Hz work in onTick().
-class ShellEditor : public juce::AudioProcessorEditor, private juce::Timer
+// Header bar, scaling, bypass dimming, the preset and Parameter menus, and the layer that
+// menus, tooltips and dialogs are drawn on. Subclasses add their controls to getBody() and
+// put 30 Hz work in onTick().
+class ShellEditor : public juce::AudioProcessorEditor, public PopupHost, private juce::Timer
 {
 public:
     enum class HeaderStyle { compact, full };
@@ -63,6 +64,47 @@ public:
     ~ShellEditor() override;
 
     void resized() override;
+    bool keyPressed (const juce::KeyPress&) override;
+
+    // PopupHost
+    juce::Component& getPopupParent() override { return root; }
+    juce::Colour getAccentColour() override { return colours::uiTeal; }
+    void adoptPopup (std::unique_ptr<juce::Component> popup) override;
+    void disposePopup (juce::Component* popup) override;
+
+    // Every pop-up this plugin can show, each with a function that opens it, for the
+    // screenshot gallery and the tests (Phase 2.1 item S). Subclasses add their own.
+    struct PopupOpener
+    {
+        juce::String name;
+        std::function<void()> open;
+    };
+
+    virtual std::vector<PopupOpener> getPopupOpeners();
+
+    // Closes any open menu, dialog or tooltip.
+    void closePopups();
+
+    Tooltips& getTooltips() noexcept { return tooltips; }
+
+    // Runs an action, asking first when `ask` is true. Only for destructive actions.
+    void confirmThen (const juce::String& title, const juce::String& body, const juce::String& action, bool ask,
+                      std::function<void()> run);
+
+    // Whether any parameter whose ID is the prefix and then a word, such as "b2freq" for "b2",
+    // differs from its default, apart from the ignored words. A baseline, as a plain value,
+    // replaces the default for its word.
+    bool differsFromDefault (const juce::String& prefix, const juce::StringArray& ignoredSuffixes,
+                             const std::vector<std::pair<juce::String, float>>& baselines = {});
+
+
+    // The header's menus and prompts, public so the gallery and the tests can open them.
+    void showPresetMenu();
+    void showSavePrompt();
+    void showRenamePrompt();
+    void showDeletePrompt (const juce::String& presetName);
+    void showParameterMenu();
+    void showAbout();
 
 protected:
     // Lets the host resize the window between these sizes, in 100 % units. Call this at the
@@ -109,10 +151,6 @@ private:
     void timerCallback() override;
     void refreshHeader();
     void applyScale (float scale);
-    void showPresetMenu();
-    void showSavePrompt();
-    void showParameterMenu();
-    void showAbout();
     void layoutHeader();
 
     juce::SharedResourcePointer<Typefaces> typefaces;
@@ -132,7 +170,10 @@ private:
     PillButton saveButton, parameterButton, ioPill;
     Knob outputKnob;
     PowerPill powerPill;
-    juce::TooltipWindow tooltips { this, 600 };
+    Tooltips tooltips { root };
+
+    // Declared last, so open pop-ups go before the root they sit on.
+    std::vector<std::unique_ptr<juce::Component>> popups;
 };
 
 } // namespace fancy::ui

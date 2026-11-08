@@ -32,7 +32,7 @@ fancy::FancyProcessor::Layout createLayout()
                                        FloatAttributes {}
                                            .withLabel ("ms")
                                            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
-                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
 
     layout.add (fancy::floatParameter ("center", "Center", juce::NormalisableRange<float> (-100.0f, 100.0f, 1.0f), 0.0f,
                                        FloatAttributes {}
@@ -355,6 +355,8 @@ void VerbProcessor::factoryPresetLoaded (const juce::String& data)
 
 void VerbProcessor::chainEdited (bool structural)
 {
+    noteEdited();
+
     if (structural)
         chainRevision.fetch_add (1);
 

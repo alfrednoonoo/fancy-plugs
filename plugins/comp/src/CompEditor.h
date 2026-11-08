@@ -10,6 +10,8 @@ class CompEditor final : public fancy::ui::ShellEditor
 public:
     explicit CompEditor (CompProcessor& processor);
 
+    std::vector<PopupOpener> getPopupOpeners() override;
+
     // For rendered screenshots: mockup values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
 

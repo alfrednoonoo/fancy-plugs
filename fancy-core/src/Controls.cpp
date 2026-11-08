@@ -18,7 +18,7 @@ constexpr float defaultMarkGap = 8.0f;
 constexpr float bodyFontSize = 14.0f;
 constexpr float fineDragDivisor = 8.0f;
 constexpr float wheelStep = 0.1f;
-constexpr int valueEditorWidth = 76;
+constexpr int valueEditorWidth = 74;
 constexpr int valueEditorMinHeight = 22;
 
 void paintPill (juce::Graphics& g, juce::Rectangle<float> area, juce::Colour fill)
@@ -27,9 +27,9 @@ void paintPill (juce::Graphics& g, juce::Rectangle<float> area, juce::Colour fil
     g.fillRoundedRectangle (area, 3.0f);
 }
 
-void paintDropdown (juce::Graphics& g, juce::Rectangle<float> bounds, const juce::String& text, float textHeight = bodyFontSize)
+void paintDropdown (juce::Graphics& g, juce::Rectangle<float> bounds, const juce::String& text, float textHeight = bodyFontSize, bool open = false)
 {
-    paintPill (g, bounds, colours::bgBody);
+    paintPill (g, bounds, open ? colours::menuHover : colours::bgBody);
 
     g.setFont (font (Weight::regular, textHeight));
     g.setColour (colours::textPrimary);
@@ -97,6 +97,11 @@ ParamControl::ParamControl (juce::RangedAudioParameter& parameter)
                   })
 {
     attachment.sendInitialUpdate();
+}
+
+juce::Colour ParamControl::getAccentColour() const
+{
+    return accentFor (const_cast<ParamControl&> (*this));
 }
 
 juce::String ParamControl::getValueText() const
@@ -229,10 +234,8 @@ void ParamControl::showValueEditor()
     textBeforeEditing = getValueText();
 
     auto editor = std::make_unique<ValueEditor>();
-    editor->setJustification (juce::Justification::centred);
-    editor->setFont (font (Weight::regular, 12.0f));
+    styleField (*editor, getAccentColour());
     editor->setText (textBeforeEditing, false);
-    editor->setPopupMenuEnabled (false);
     editor->setSelectAllWhenFocused (true);
     editor->setBounds (area.withSizeKeepingCentre (valueEditorWidth, juce::jmax (area.getHeight(), valueEditorMinHeight))
                            .constrainedWithin (holder.getLocalBounds()));
@@ -244,7 +247,9 @@ void ParamControl::showValueEditor()
 
     holder.addAndMakeVisible (*editor);
     editor->selectAll();
-    editor->grabKeyboardFocus();
+
+    if (editor->isShowing())
+        editor->grabKeyboardFocus();
 
     valueEditor = std::move (editor);
 }
@@ -277,6 +282,9 @@ void ParamControl::applyTypedText (const juce::String& text)
 {
     // The box shows a rounded value, so applying it unchanged would move the control.
     if (text.trim() == textBeforeEditing || ! isValueText (text))
+        return;
+
+    if (onTypedText != nullptr && onTypedText (text.trim()))
         return;
 
     const auto normalised = param.getValueForText (text.trim());
@@ -788,9 +796,9 @@ void ParamCheckbox::timerCallback()
     repaint();
 }
 
-void paintDropdownBox (juce::Graphics& g, juce::Rectangle<float> bounds, const juce::String& text, float textHeight)
+void paintDropdownBox (juce::Graphics& g, juce::Rectangle<float> bounds, const juce::String& text, float textHeight, bool open)
 {
-    paintDropdown (g, bounds, text, textHeight);
+    paintDropdown (g, bounds, text, textHeight, open);
 }
 
 void ParamCheckbox::paint (juce::Graphics& g)
@@ -862,7 +870,12 @@ void ParamDropdown::setTextHeight (float height)
 
 void ParamDropdown::paint (juce::Graphics& g)
 {
-    paintDropdown (g, getLocalBounds().toFloat(), getValueText(), textHeight);
+    paintDropdown (g, getLocalBounds().toFloat(), getValueText(), textHeight, isMenuOpen());
+}
+
+void ParamDropdown::addSection (int choiceIndex, const juce::String& label)
+{
+    sections.emplace_back (choiceIndex, label);
 }
 
 void ParamDropdown::clicked()
@@ -870,17 +883,23 @@ void ParamDropdown::clicked()
     const auto choices = param.getAllValueStrings();
     const auto last = juce::jmax (1, choices.size() - 1);
 
-    juce::PopupMenu menu;
+    Menu menu;
+    menu.setScrollingList (true);
 
     for (int i = 0; i < choices.size(); ++i)
-        menu.addItem (i + 1, choices[i], true, choices[i] == getValueText());
+    {
+        for (const auto& [index, label] : sections)
+            if (index == i)
+                menu.addSection (label);
 
-    menu.showMenuAsync (juce::PopupMenu::Options {}.withTargetComponent (this),
-                        [safeThis = juce::Component::SafePointer<ParamDropdown> (this), last] (int result)
-                        {
-                            if (safeThis != nullptr && result > 0)
-                                safeThis->setDenormalised (safeThis->param.convertFrom0to1 ((float) (result - 1) / (float) last));
-                        });
+        menu.addItem (i + 1, choices[i], true, choices[i] == getValueText());
+    }
+
+    menu.show (*this, [safeThis = juce::Component::SafePointer<ParamDropdown> (this), last] (int result)
+    {
+        if (safeThis != nullptr && result > 0)
+            safeThis->setDenormalised (safeThis->param.convertFrom0to1 ((float) (result - 1) / (float) last));
+    });
 }
 
 // PillButton ------------------------------------------------------------------
@@ -940,7 +959,7 @@ void PillDropdown::setText (const juce::String& text)
 
 void PillDropdown::paint (juce::Graphics& g)
 {
-    paintDropdown (g, getLocalBounds().toFloat(), dropdownText);
+    paintDropdown (g, getLocalBounds().toFloat(), dropdownText, bodyFontSize, isMenuOpen());
 }
 
 void PillDropdown::mouseUp (const juce::MouseEvent& event)

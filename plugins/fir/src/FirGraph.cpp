@@ -1,6 +1,7 @@
 #include "FirGraph.h"
 
 #include <fancy/plugin/ParamFormat.h>
+#include <fancy/ui/Popups.h>
 #include <fancy/ui/Style.h>
 
 #include <cmath>
@@ -630,59 +631,51 @@ void FirGraph::typePoint (int index)
 {
     const auto point = processor.getPoints (mode)[(size_t) index];
 
-    auto* window = new juce::AlertWindow ("Point", {}, juce::MessageBoxIconType::NoIcon, this);
-    window->addTextEditor ("hz", fancy::formatHz ((float) point.hz), "Frequency");
-    window->addTextEditor ("db", fancy::formatFixed ((float) point.db, 1) + " dB", "Gain");
-    window->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
-    window->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    fancy::ui::DialogSpec spec;
+    spec.title = "Point " + juce::String (index + 1);
+    spec.action = "Set";
+    spec.fields.push_back ({ "Frequency", fancy::formatHz ((float) point.hz) });
+    spec.fields.push_back ({ "Gain", fancy::formatFixed ((float) point.db, 1) + " dB" });
 
     const auto curve = mode;
 
-    window->enterModalState (true,
-                             juce::ModalCallbackFunction::create ([safeThis = juce::Component::SafePointer<FirGraph> (this), window, index, curve] (int result)
-                             {
-                                 if (safeThis == nullptr || result != 1)
-                                     return;
+    fancy::ui::showDialog (*this, std::move (spec),
+                           [safeThis = juce::Component::SafePointer<FirGraph> (this), index, curve] (bool accepted, const juce::StringArray& values)
+    {
+        if (safeThis == nullptr || ! accepted)
+            return;
 
-                                 auto points = safeThis->processor.getPoints (curve);
+        auto points = safeThis->processor.getPoints (curve);
 
-                                 if (index >= (int) points.size())
-                                     return;
+        if (index >= (int) points.size())
+            return;
 
-                                 const auto hzText = window->getTextEditorContents ("hz");
-                                 const auto dbText = window->getTextEditorContents ("db");
+        if (fancy::isValueText (values[0]))
+            points[(size_t) index].hz = (double) fancy::parseHz (values[0]);
 
-                                 if (fancy::isValueText (hzText))
-                                     points[(size_t) index].hz = (double) fancy::parseHz (hzText);
+        if (fancy::isValueText (values[1]))
+            points[(size_t) index].db = (double) fancy::parseNumber (values[1]);
 
-                                 if (fancy::isValueText (dbText))
-                                     points[(size_t) index].db = (double) fancy::parseNumber (dbText);
-
-                                 safeThis->processor.setPoints (curve, points);
-                             }),
-                             true);
+        safeThis->processor.setPoints (curve, points);
+    });
 }
 
 void FirGraph::typeAxis (bool top)
 {
     auto& parameter = *processor.getApvts().getParameter (top ? "graphTop" : "graphFloor");
 
-    auto* window = new juce::AlertWindow (top ? "Graph top" : "Analysis floor", {}, juce::MessageBoxIconType::NoIcon, this);
-    window->addTextEditor ("db", parameter.getCurrentValueAsText(), "dB");
-    window->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
-    window->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    fancy::ui::DialogSpec spec;
+    spec.title = top ? "Graph top" : "Analysis floor";
+    spec.action = "Set";
+    spec.fields.push_back ({ "Level", parameter.getCurrentValueAsText() });
 
-    window->enterModalState (true,
-                             juce::ModalCallbackFunction::create ([&parameter, window] (int result)
-                             {
-                                 const auto text = window->getTextEditorContents ("db");
+    fancy::ui::showDialog (*this, std::move (spec), [&parameter] (bool accepted, const juce::StringArray& values)
+    {
+        if (! accepted || ! fancy::isValueText (values[0]))
+            return;
 
-                                 if (result != 1 || ! fancy::isValueText (text))
-                                     return;
-
-                                 parameter.beginChangeGesture();
-                                 parameter.setValueNotifyingHost (parameter.convertTo0to1 (fancy::parseNumber (text)));
-                                 parameter.endChangeGesture();
-                             }),
-                             true);
+        parameter.beginChangeGesture();
+        parameter.setValueNotifyingHost (parameter.convertTo0to1 (fancy::parseNumber (values[0])));
+        parameter.endChangeGesture();
+    });
 }

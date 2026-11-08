@@ -6,6 +6,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <atomic>
+
 namespace fancy
 {
 
@@ -56,6 +58,11 @@ public:
     // Runs after a factory preset sets its parameters, with the preset's data string.
     virtual void factoryPresetLoaded (const juce::String& data) { juce::ignoreUnused (data); }
 
+    // A plugin calls this when the user changes state outside the parameters, such as Verb's
+    // chain or FIR's curves, so the preset dropdown can mark the preset as changed.
+    void noteEdited() noexcept { edits.fetch_add (1, std::memory_order_relaxed); }
+    int getEditCount() const noexcept { return edits.load (std::memory_order_relaxed); }
+
     juce::AudioProcessorValueTreeState& getApvts() noexcept { return apvts; }
     PresetManager& getPresets() noexcept { return presets; }
     const PresetManager& getPresets() const noexcept { return presets; }
@@ -65,6 +72,7 @@ public:
 
 private:
     juce::String name;
+    std::atomic<int> edits { 0 };
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presets;
 

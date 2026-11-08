@@ -238,6 +238,9 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
     for (auto* checkbox : { &spectrumCheckbox, &linkCheckbox, &gridCheckbox, &limitCheckbox })
         checkbox->setLabelHeight (labelHeight);
 
+    detectorDropdown.addSection (0, "Main input");
+    detectorDropdown.addSection (3, "Sidechain");
+
     linkCheckbox.setTooltip ("Moves all bands together. Hold Alt to edit one.");
 
     styleLabel (crossoverLabel, "Crossover", colours::textSecondary, juce::Justification::centredRight, labelHeight);
@@ -324,6 +327,18 @@ void MultiCompEditor::addBand()
 
 void MultiCompEditor::removeSelectedBand()
 {
+    if (multiProcessor().getNumBands() <= 1)
+        return;
+
+    // The crossover belongs to the split, not the band's settings.
+    const auto changed = differsFromDefault (MultiCompProcessor::id (selectedBand, ""), { "top" });
+
+    confirmThen ("Delete band " + juce::String (selectedBand + 1) + "?", "Its settings will be lost.", "Delete", changed,
+                 [this] { removeBandNow(); });
+}
+
+void MultiCompEditor::removeBandNow()
+{
     auto& processor = multiProcessor();
 
     if (processor.getNumBands() <= 1)
@@ -406,4 +421,20 @@ void MultiCompEditor::showPreview (bool drawerOpen)
     outMeter.show (-6.0f, -4.2f);
 
     drawer.setVisible (drawerOpen);
+}
+
+juce::Colour MultiCompEditor::getAccentColour()
+{
+    return multiBandColour (selectedBand);
+}
+
+std::vector<ShellEditor::PopupOpener> MultiCompEditor::getPopupOpeners()
+{
+    auto openers = ShellEditor::getPopupOpeners();
+    openers.push_back ({ "dropdown-detector", [this] { detectorDropdown.click(); } });
+    openers.push_back ({ "dropdown-crossover", [this] { crossoverDropdown.click(); } });
+    openers.push_back ({ "delete-band", [this] { confirmThen ("Delete band " + juce::String (selectedBand + 1) + "?", "Its settings will be lost.", "Delete", true, [] {}); } });
+    openers.push_back ({ "tooltip-ratio", [this] { auto& knob = bandEditors[(size_t) selectedBand]->getRatioKnob(); showTip (knob, knob.getTooltip()); } });
+    openers.push_back ({ "value-threshold", [this] { bandEditors[(size_t) selectedBand]->getThresholdFader().openValueEditor(); } });
+    return openers;
 }

@@ -24,6 +24,11 @@ inline const juce::Colour accentYellow { 0xfff1c315 }, accentOrange { 0xffe77e23
 inline const juce::Colour uiTeal { 0xff00a985 }, uiTealBright { 0xff1bbc9c }, uiRed { 0xffe74d3d },
     uiBlue { 0xff3598db }, uiPurple { 0xff9a59b5 }, uiEqBlue { 0xff24aec6 },
     uiEqGreen { 0xff0cc08a }, uiEqRed { 0xffc0363c };
+// Pop-ups: menus, tooltips, typed values and dialogs, from reference/phase2_1/16__menus_mockup.png.
+inline const juce::Colour menuPanel { 0xff262626 }, menuBorder { 0xff434343 }, menuHover { 0xff383838 },
+    menuSep { 0xff3a3a3a }, menuText { 0xffededed }, menuHint { 0xff909090 }, textDisabled { 0xff5a5a5a },
+    hintDisabled { 0xff4c4c4c }, tooltipFill { 0xff1e1e1e }, scrollTrack { 0xff1e1e1e }, scrollThumb { 0xff4c4c4c },
+    fieldFill { 0xff141414 }, destructive { 0xffe84e3c };
 } // namespace colours
 
 enum class Weight { regular, medium, semiBold };
@@ -45,7 +50,8 @@ public:
     FancyLookAndFeel();
 
     juce::Typeface::Ptr getTypefaceForFont (const juce::Font&) override;
-    juce::Font getPopupMenuFont() override;
+    void fillTextEditorBackground (juce::Graphics&, int width, int height, juce::TextEditor&) override;
+    void drawTextEditorOutline (juce::Graphics&, int width, int height, juce::TextEditor&) override;
 
 private:
     juce::SharedResourcePointer<Typefaces> typefaces;

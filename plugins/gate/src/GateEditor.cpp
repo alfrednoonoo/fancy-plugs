@@ -312,32 +312,27 @@ void GateEditor::MidiDropdown::refresh()
 
 void GateEditor::MidiDropdown::paint (juce::Graphics& g)
 {
-    paintDropdownBox (g, getLocalBounds().toFloat(), text, 10.0f);
+    paintDropdownBox (g, getLocalBounds().toFloat(), text, 10.0f, isMenuOpen());
 }
 
 void GateEditor::MidiDropdown::mouseUp (const juce::MouseEvent& event)
 {
-    if (! event.mouseWasClicked() || ! isEnabled())
-        return;
+    if (event.mouseWasClicked() && isEnabled())
+        showMenu();
+}
 
+void GateEditor::MidiDropdown::showMenu()
+{
     const auto targets = gateProcessor.readTargets();
+    const auto dot = juce::String (juce::CharPointer_UTF8 (" \xc2\xb7 "));
 
     // Ids: notes 1-128, channels 201-216, windows 301-309.
-    juce::PopupMenu notes, channels, windows;
+    Menu notes, channels, windows;
+    notes.setScrollingList (true);
+    channels.setScrollingList (true);
 
-    for (int octave = -1; octave <= 9; ++octave)
-    {
-        juce::PopupMenu octaveMenu;
-        auto containsCurrent = false;
-
-        for (int note = (octave + 1) * 12; note < juce::jmin (128, (octave + 2) * 12); ++note)
-        {
-            octaveMenu.addItem (1 + note, GateProcessor::noteName (note) + "  (" + juce::String (note) + ")", true, note == targets.note);
-            containsCurrent = containsCurrent || note == targets.note;
-        }
-
-        notes.addSubMenu ("Octave " + juce::String (octave), octaveMenu, true, nullptr, containsCurrent);
-    }
+    for (int note = 0; note < 128; ++note)
+        notes.addItem (1 + note, GateProcessor::noteName (note) + dot + juce::String (note), true, note == targets.note);
 
     for (int channel = 1; channel <= 16; ++channel)
         channels.addItem (200 + channel, "Channel " + juce::String (channel), true, channel == targets.channel);
@@ -348,14 +343,12 @@ void GateEditor::MidiDropdown::mouseUp (const juce::MouseEvent& event)
         windows.addItem (301 + step, fancy::formatFixed ((float) ms, 1) + " ms", true, std::abs (ms - targets.velocityWindowMs) < 0.01);
     }
 
-    juce::PopupMenu menu;
-    menu.addSubMenu ("Note: " + GateProcessor::noteName (targets.note), notes);
-    menu.addSubMenu ("Channel: " + juce::String (targets.channel), channels);
-    menu.addSubMenu ("Velocity window: " + fancy::formatFixed ((float) targets.velocityWindowMs, 1) + " ms", windows);
+    Menu menu;
+    menu.addSubMenu ("Note: " + GateProcessor::noteName (targets.note) + dot + juce::String (targets.note), std::move (notes));
+    menu.addSubMenu ("Channel: " + juce::String (targets.channel), std::move (channels));
+    menu.addSubMenu ("Velocity window: " + fancy::formatFixed ((float) targets.velocityWindowMs, 1) + " ms", std::move (windows));
 
-    juce::Component::SafePointer<MidiDropdown> safe (this);
-
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this), [safe] (int result)
+    menu.show (*this, [safe = juce::Component::SafePointer<MidiDropdown> (this)] (int result)
     {
         if (safe == nullptr || result == 0)
             return;
@@ -440,6 +433,9 @@ GateEditor::GateEditor (GateProcessor& processor)
 
     for (auto* knob : { &attackKnob, &holdKnob, &releaseKnob, &rmsKnob })
         knob->setShowDefaultMark (true);
+
+    detectorDropdown.addSection (0, "Main input");
+    detectorDropdown.addSection (3, "Sidechain");
 
     hysteresisKnob.setTooltip ("How far below Threshold the level must fall before the gate closes. "
                                "It stops chatter on signals that hover around the threshold.");
@@ -585,4 +581,29 @@ void GateEditor::showPreview (bool secondView)
     gainMeter.show (6.8f, 6.8f);
     light.setState (GateDsp::lightOpen);
     outMeter.show (-8.1f, -8.6f);
+}
+
+juce::Colour GateEditor::getAccentColour()
+{
+    return gateYellow;
+}
+
+std::vector<ShellEditor::PopupOpener> GateEditor::getPopupOpeners()
+{
+    auto openers = ShellEditor::getPopupOpeners();
+    openers.push_back ({ "dropdown-detector", [this] { detectorDropdown.click(); } });
+    openers.push_back ({ "midi-menu", [this]
+                         {
+                             midiDropdown.showMenu();
+
+                             if (auto* menu = MenuLayer::findOpen (getRoot()))
+                             {
+                                 auto& panel = menu->getPanel (0);
+                                 panel.setHighlightedRow (0);
+                                 menu->openSubMenu (panel, 0);
+                             }
+                         } });
+    openers.push_back ({ "tooltip-preopen", [this] { showTip (preOpenKnob, preOpenKnob.getTooltip()); } });
+    openers.push_back ({ "value-release", [this] { releaseKnob.openValueEditor(); } });
+    return openers;
 }

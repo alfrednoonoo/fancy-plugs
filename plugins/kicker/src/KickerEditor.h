@@ -10,6 +10,9 @@ class KickerEditor final : public fancy::ui::ShellEditor
 public:
     explicit KickerEditor (KickerProcessor& processor);
 
+    juce::Colour getAccentColour() override;
+    std::vector<PopupOpener> getPopupOpeners() override;
+
     // For rendered screenshots: mockup levels, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
 

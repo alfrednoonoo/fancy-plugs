@@ -264,3 +264,28 @@ void VerbEditor::showPreview (Preview preview)
     onTick (0.0f);
     strip.repaint();
 }
+
+juce::Colour VerbEditor::getAccentColour()
+{
+    return colours::uiPurple;
+}
+
+std::vector<ShellEditor::PopupOpener> VerbEditor::getPopupOpeners()
+{
+    auto openers = ShellEditor::getPopupOpeners();
+    openers.push_back ({ "dropdown-latency", [this] { drawer.setVisible (true); latencyDropdown.click(); } });
+    openers.push_back ({ "dropdown-src-gain", [this]
+                         {
+                             for (const auto& card : rack.getCards())
+                             {
+                                 if (card->getType() == verb::ModuleType::file)
+                                 {
+                                     card->showGainMenu();
+                                     return;
+                                 }
+                             }
+                         } });
+    openers.push_back ({ "delete-module", [this] { confirmThen ("Delete module?", "Its settings will be lost.", "Delete", true, [] {}); } });
+    openers.push_back ({ "value-predelay", [this] { predelayKnob.openValueEditor(); } });
+    return openers;
+}

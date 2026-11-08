@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Popups.h"
 #include "Style.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -31,6 +32,17 @@ public:
     bool isLocked() const noexcept { return locked; }
 
     std::function<void()> onLockedClick;
+
+    // Sees typed text before the parameter does. Returning true means it was handled.
+    std::function<bool (const juce::String&)> onTypedText;
+
+    // Opens the box to type a value, as a click on the value does.
+    void openValueEditor() { showValueEditor(); }
+    bool isValueEditorOpen() const noexcept { return valueEditor != nullptr && valueEditor->isVisible(); }
+    juce::TextEditor* getValueEditor() const noexcept { return valueEditor.get(); }
+
+    // The colour of the typed-value field's border and caret. The plugin's accent by default.
+    virtual juce::Colour getAccentColour() const;
 
 protected:
     float getNormalised() const { return param.convertTo0to1 (value); }
@@ -74,6 +86,9 @@ public:
     void mouseDoubleClick (const juce::MouseEvent&) override {}
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override {}
 
+    // Acts as a click does: toggles, or opens the dropdown's menu.
+    void click() { clicked(); }
+
 protected:
     virtual void clicked();
 };
@@ -114,6 +129,7 @@ public:
     void setStyle (const Style& style);
 
     void paint (juce::Graphics&) override;
+    juce::Colour getAccentColour() const override { return accentColour; }
 
 private:
     juce::Rectangle<int> getValueArea() const override;
@@ -133,6 +149,7 @@ public:
     Fader (juce::RangedAudioParameter& parameter, juce::Colour accent);
 
     void paint (juce::Graphics&) override;
+    juce::Colour getAccentColour() const override { return accentColour; }
 
 private:
     juce::Rectangle<int> getValueArea() const override;
@@ -265,8 +282,8 @@ private:
     float pulseLeft = 0.0f, pulseLength = 1.0f;
 };
 
-// Draws the shared dropdown look, for a control that isn't a ParamDropdown.
-void paintDropdownBox (juce::Graphics&, juce::Rectangle<float> bounds, const juce::String& text, float textHeight);
+// Draws the shared dropdown look, for a control that isn't a ParamDropdown. Lighter while open.
+void paintDropdownBox (juce::Graphics&, juce::Rectangle<float> bounds, const juce::String& text, float textHeight, bool open = false);
 
 // The header's power pill: lit while the plugin is active, grey while bypassed.
 class PowerPill final : public ParamClickControl
@@ -277,10 +294,13 @@ public:
     void paint (juce::Graphics&) override;
 };
 
-class ParamDropdown final : public ParamClickControl
+class ParamDropdown final : public ParamClickControl, public MenuTarget
 {
 public:
     using ParamClickControl::ParamClickControl;
+
+    // Puts a section label before the choice at this index, such as "Sidechain".
+    void addSection (int choiceIndex, const juce::String& label);
 
     // For a long choice in a narrow space. The default is the Figma body size.
     void setTextHeight (float height);
@@ -291,6 +311,7 @@ private:
     void clicked() override;
 
     float textHeight = 14.0f;
+    std::vector<std::pair<int, juce::String>> sections;
 };
 
 class PillButton final : public juce::Component
@@ -309,7 +330,7 @@ private:
 };
 
 // Pill with up/down chevrons at the right.
-class PillDropdown final : public juce::Component
+class PillDropdown final : public juce::Component, public MenuTarget
 {
 public:
     void setText (const juce::String& text);

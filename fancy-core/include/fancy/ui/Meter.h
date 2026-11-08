@@ -108,6 +108,7 @@ public:
     void setCloseDb (float db);
 
     void paint (juce::Graphics&) override;
+    juce::Colour getAccentColour() const override { return meterStyle.accent; }
 
 private:
     float getDragPixels() const override { return meterStyle.wellHeight; }

@@ -1,6 +1,8 @@
 #include "EqGraph.h"
 
 #include <fancy/Decibels.h>
+#include <fancy/plugin/ParamFormat.h>
+#include <fancy/ui/Popups.h>
 #include <fancy/ui/Style.h>
 
 #include <algorithm>
@@ -597,7 +599,7 @@ void EqGraph::mouseDown (const juce::MouseEvent& event)
         if (band >= 0)
         {
             select (band);
-            showBandMenu (band);
+            showBandMenu (band, event.position);
         }
 
         return;
@@ -705,45 +707,75 @@ void EqGraph::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWh
     q.setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, q.getValue() + step));
 }
 
-void EqGraph::showBandMenu (int band)
+void EqGraph::showBandMenu (int band, juce::Point<float> position)
 {
-    constexpr int typeBase = 100, slopeBase = 200, powerItem = 1, deleteItem = 2;
+    constexpr int typeBase = 100, slopeBase = 200, freqItem = 1, gainItem = 2, powerItem = 3, resetItem = 4, deleteItem = 5;
 
     auto& type = bandParameter (band, "type");
     auto& slope = bandParameter (band, "slope");
+    const auto& spec = bands[(size_t) band].spec;
 
     const auto types = type.getAllValueStrings();
     const auto slopes = slope.getAllValueStrings();
+    const auto dot = juce::String (juce::CharPointer_UTF8 (" \xc2\xb7 "));
+    const auto ellipsis = juce::String (juce::CharPointer_UTF8 ("\xe2\x80\xa6"));
 
-    juce::PopupMenu menu;
+    fancy::ui::Menu typeMenu;
 
     for (int i = 0; i < types.size(); ++i)
-        menu.addItem (typeBase + i, types[i], true, types[i] == type.getCurrentValueAsText());
+        typeMenu.addItem (typeBase + i, types[i], true, types[i] == type.getCurrentValueAsText());
 
-    menu.addSeparator();
-
-    juce::PopupMenu slopeMenu;
+    fancy::ui::Menu slopeMenu;
 
     for (int i = 0; i < slopes.size(); ++i)
         slopeMenu.addItem (slopeBase + i, slopes[i], true, slopes[i] == slope.getCurrentValueAsText());
 
-    menu.addSubMenu ("Slope", slopeMenu, eq::hasSlope (bands[(size_t) band].spec.type));
-    menu.addItem (powerItem, "On", true, bands[(size_t) band].spec.on);
+    fancy::ui::Menu menu;
+    menu.addTitle ("Band " + juce::String (band + 1) + dot + type.getCurrentValueAsText() + dot + fancy::formatHz ((float) spec.frequencyHz));
+    menu.addItem (freqItem, "Set frequency" + ellipsis);
+    menu.addItem (gainItem, "Set gain" + ellipsis, eq::hasGain (spec.type));
+    menu.addSubMenu ("Type", std::move (typeMenu));
+
+    if (eq::hasSlope (spec.type))
+        menu.addSubMenu ("Slope", std::move (slopeMenu));
+
+    menu.addItem (powerItem, "Enabled", true, spec.on);
+    menu.addSeparator();
+    menu.addItem (resetItem, "Reset band", true, false, "Double-click");
     menu.addItem (deleteItem, "Delete band");
 
-    menu.showMenuAsync (juce::PopupMenu::Options {}.withTargetComponent (this).withMousePosition(),
-                        [safeThis = juce::Component::SafePointer<EqGraph> (this), band] (int result)
-                        {
-                            if (safeThis == nullptr || result == 0)
-                                return;
+    menu.showAt (*this, position, [safeThis = juce::Component::SafePointer<EqGraph> (this), band] (int result)
+    {
+        if (safeThis == nullptr || result == 0)
+            return;
 
-                            if (result == powerItem)
-                                safeThis->setValue (band, "on", safeThis->bands[(size_t) band].spec.on ? 0.0f : 1.0f);
-                            else if (result == deleteItem)
-                                safeThis->processor.removeBand (band);
-                            else if (result >= slopeBase)
-                                safeThis->setValue (band, "slope", (float) (result - slopeBase));
-                            else
-                                safeThis->setValue (band, "type", (float) (result - typeBase));
-                        });
+        auto& self = *safeThis;
+
+        if (result == freqItem || result == gainItem)
+        {
+            if (self.onTypeValue != nullptr)
+                self.onTypeValue (band, result == freqItem ? "freq" : "gain");
+        }
+        else if (result == powerItem)
+        {
+            self.setValue (band, "on", self.bands[(size_t) band].spec.on ? 0.0f : 1.0f);
+        }
+        else if (result == resetItem)
+        {
+            self.processor.resetBand (band);
+        }
+        else if (result == deleteItem)
+        {
+            if (self.onDeleteBand != nullptr)
+                self.onDeleteBand (band);
+        }
+        else if (result >= slopeBase)
+        {
+            self.setValue (band, "slope", (float) (result - slopeBase));
+        }
+        else
+        {
+            self.setValue (band, "type", (float) (result - typeBase));
+        }
+    });
 }

@@ -14,6 +14,9 @@ class DelayEditor final : public fancy::ui::ShellEditor
 public:
     explicit DelayEditor (DelayProcessor& processor);
 
+    juce::Colour getAccentColour() override;
+    std::vector<PopupOpener> getPopupOpeners() override;
+
     // For rendered screenshots: mockup values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
 
@@ -42,6 +45,10 @@ private:
 
         void update (int titleX);
         void paint (juce::Graphics&) override;
+
+        fancy::ui::ParamDropdown& getNoteDropdown() noexcept { return noteDropdown; }
+        fancy::ui::Knob& getNoteKnob() noexcept { return noteKnob; }
+        fancy::ui::Knob& getFeedbackKnob() noexcept { return feedbackKnob; }
 
     private:
         juce::String detailText() const;
@@ -75,6 +82,7 @@ private:
     void selectTap (int tap);
     void addTap();
     void removeSelectedTap();
+    void removeTapNow();
     void updateSelection();
 
     Panels panels;

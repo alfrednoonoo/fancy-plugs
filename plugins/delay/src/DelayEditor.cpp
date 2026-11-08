@@ -192,6 +192,29 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
 
     closeButton.onClick = [&owner] { owner.removeSelectedTap(); };
 
+    // "1/8." or "1/8d" also picks dotted, and "1/8t" triplet.
+    noteKnob.onTypedText = [this] (const juce::String& typed)
+    {
+        const auto text = typed.toLowerCase().trim();
+        const auto feel = text.endsWithChar ('.') || text.endsWithChar ('d') ? 1 : text.endsWithChar ('t') ? 2 : -1;
+
+        if (feel < 0)
+            return false;
+
+        auto& note = tapParameter (delayProcessor, tap, "note");
+        auto& feelParameter = tapParameter (delayProcessor, tap, "feel");
+
+        for (auto& [parameter, value] : { std::pair<juce::RangedAudioParameter*, float> { &note, note.getValueForText (text.trimCharactersAtEnd (".dt")) },
+                                          std::pair<juce::RangedAudioParameter*, float> { &feelParameter, feelParameter.convertTo0to1 ((float) feel) } })
+        {
+            parameter->beginChangeGesture();
+            parameter->setValueNotifyingHost (value);
+            parameter->endChangeGesture();
+        }
+
+        return true;
+    };
+
     feedbackKnob.setTooltip ("Up to 100 %, or 110 % with Saturate feedback on.");
     panKnob.setTooltip ("With Ping-pong on, Pan only picks the side the repeats start on.");
 }
@@ -372,6 +395,18 @@ void DelayEditor::addTap()
 
 void DelayEditor::removeSelectedTap()
 {
+    if (delayProcessor().countTaps() <= 1)
+        return;
+
+    // A new tap's length follows the tap before it, so those settings don't count as changes.
+    const auto changed = differsFromDefault (DelayProcessor::id (selectedTap, ""), { "used", "mode", "ms", "note", "feel", "mult" });
+
+    confirmThen ("Delete tap " + juce::String (selectedTap + 1) + "?", "Its settings will be lost.", "Delete", changed,
+                 [this] { removeTapNow(); });
+}
+
+void DelayEditor::removeTapNow()
+{
     auto& processor = delayProcessor();
 
     if (processor.countTaps() <= 1)
@@ -466,4 +501,20 @@ void DelayEditor::showPreview (bool drawerOpen)
     tempoLabel.setText ("120.0 BPM (host)", juce::dontSendNotification);
 
     drawer.setVisible (drawerOpen);
+}
+
+juce::Colour DelayEditor::getAccentColour()
+{
+    return colours::accentYellow;
+}
+
+std::vector<ShellEditor::PopupOpener> DelayEditor::getPopupOpeners()
+{
+    auto openers = ShellEditor::getPopupOpeners();
+    openers.push_back ({ "dropdown-note", [this] { tapEditors[(size_t) selectedTap]->getNoteDropdown().click(); } });
+    openers.push_back ({ "dropdown-multiplier", [this] { drawer.setVisible (true); multiplierDropdowns[(size_t) selectedTap]->click(); } });
+    openers.push_back ({ "delete-tap", [this] { confirmThen ("Delete tap " + juce::String (selectedTap + 1) + "?", "Its settings will be lost.", "Delete", true, [] {}); } });
+    openers.push_back ({ "tooltip-feedback", [this] { auto& knob = tapEditors[(size_t) selectedTap]->getFeedbackKnob(); showTip (knob, knob.getTooltip()); } });
+    openers.push_back ({ "value-note", [this] { tapEditors[(size_t) selectedTap]->getNoteKnob().openValueEditor(); } });
+    return openers;
 }

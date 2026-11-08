@@ -31,7 +31,7 @@ std::unique_ptr<juce::AudioParameterFloat> timeParameter (const char* id, const 
             .withAutomatable (automatable)
             .withLabel ("ms")
             .withStringFromValueFunction ([] (float value, int) { return timeText (value); })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); }));
 }
 
 std::unique_ptr<juce::AudioParameterFloat> dbParameter (const char* id, const char* name, float low, float high, float defaultDb)
@@ -110,7 +110,7 @@ fancy::FancyProcessor::Layout createLayout()
         juce::AudioParameterFloatAttributes {}
             .withLabel ("ms")
             .withStringFromValueFunction ([] (float value, int) { return timeText (value); })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
 
     layout.add (timeParameter ("attack", "Attack", 0.0f, 500.0f, 20.0f, 0.5f));
     layout.add (timeParameter ("hold", "Hold", 0.0f, 2000.0f, 150.0f, 20.0f));
@@ -150,7 +150,7 @@ fancy::FancyProcessor::Layout createLayout()
         juce::AudioParameterFloatAttributes {}
             .withLabel ("ms")
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
 
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
     layout.add (toggle ("bypass", "Bypass", false));

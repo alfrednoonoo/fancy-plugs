@@ -110,9 +110,9 @@ jobs:
         run: |
           $exe = Get-ChildItem -Path build/tools/screens -Recurse -File -Filter 'fancy-screens.exe' | Select-Object -First 1
           if (-not $exe) { throw 'fancy-screens.exe was not built' }
-          & $exe.FullName screens
+          & $exe.FullName screens screens-popups
           if ($LASTEXITCODE -ne 0) { throw "fancy-screens exited with $LASTEXITCODE" }
-          Get-ChildItem -Path screens -File | ForEach-Object { "$($_.Name) $($_.Length)" }
+          Get-ChildItem -Path screens, screens-popups -File | ForEach-Object { "$($_.Name) $($_.Length)" }
 
       - name: Upload VST3 artifact
         uses: actions/upload-artifact@v7
@@ -127,6 +127,14 @@ jobs:
         with:
           name: screens-${{ env.SHORT_SHA }}
           path: screens
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload pop-up screenshots
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-popups-${{ env.SHORT_SHA }}
+          path: screens-popups
           if-no-files-found: error
           retention-days: 14
 

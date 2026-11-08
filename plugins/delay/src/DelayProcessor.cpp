@@ -73,7 +73,7 @@ fancy::FancyProcessor::Layout createLayout()
                                            FloatAttributes {}
                                                .withLabel ("ms")
                                                .withStringFromValueFunction ([] (float value, int) { return lengthText (value); })
-                                               .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+                                               .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
 
         layout.add (std::make_unique<Choice> (juce::ParameterID { DelayProcessor::id (tap, "note"), 1 }, prefix + "Note value",
                                               juce::StringArray { "1/1", "1/2", "1/4", "1/8", "1/16", "1/32", "1/64" }, 3,

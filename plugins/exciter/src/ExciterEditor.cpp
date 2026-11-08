@@ -81,3 +81,16 @@ void ExciterEditor::showPreview (bool drawerOpen)
     meter.show (-5.2f, -6.0f, -5.4f, -6.1f);
     drawer.setVisible (drawerOpen);
 }
+
+juce::Colour ExciterEditor::getAccentColour()
+{
+    return colours::uiRed;
+}
+
+std::vector<ShellEditor::PopupOpener> ExciterEditor::getPopupOpeners()
+{
+    auto openers = ShellEditor::getPopupOpeners();
+    openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); oversamplingDropdown.click(); } });
+    openers.push_back ({ "value-freq", [this] { freqKnob.openValueEditor(); } });
+    return openers;
+}

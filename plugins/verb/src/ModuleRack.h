@@ -53,7 +53,7 @@ private:
         std::unique_ptr<juce::Component> component;
     };
 
-    class CardButton final : public juce::Component
+    class CardButton final : public juce::Component, public fancy::ui::MenuTarget
     {
     public:
         explicit CardButton (const juce::String& text, bool isDropdown = false);
@@ -74,8 +74,14 @@ private:
     void addFileControls();
     void placeKnobs();
 
+public:
     void showFileMenu();
     void showGainMenu();
+
+    // Whether the module's settings differ from a new one's, so deleting it asks first.
+    bool isChanged() const;
+
+private:
     void browse();
     void stepFile (int direction);
 

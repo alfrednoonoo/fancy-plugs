@@ -32,7 +32,7 @@ std::unique_ptr<juce::AudioParameterFloat> timeParameter (const juce::String& id
         juce::AudioParameterFloatAttributes {}
             .withLabel ("ms")
             .withStringFromValueFunction ([] (float value, int) { return (value < 100.0f ? fancy::formatFixed (value, 1) : juce::String (juce::roundToInt (value))) + " ms"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); }));
 }
 
 juce::String ratioText (float ratio)

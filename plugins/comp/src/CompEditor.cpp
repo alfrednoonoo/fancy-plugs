@@ -152,6 +152,10 @@ CompEditor::CompEditor (CompProcessor& processor)
     for (auto* knob : { &ratioKnob, &kneeKnob, &attackKnob, &releaseKnob })
         knob->setValueColour (colours::uiTealBright);
 
+    detectorDropdown.addSection (0, "Main input");
+    detectorDropdown.addSection (3, "Sidechain");
+    detectorDropdown.addSection (6, "Mid/side");
+
     attackKnob.setTooltip ("Time constant: the time to reach about 63 % of the target. Change this in EDIT.");
 }
 
@@ -186,4 +190,14 @@ void CompEditor::showPreview (bool drawerOpen)
     outMeter.show (-4.2f, -5.8f);
 
     drawer.setVisible (drawerOpen);
+}
+
+std::vector<ShellEditor::PopupOpener> CompEditor::getPopupOpeners()
+{
+    auto openers = ShellEditor::getPopupOpeners();
+    openers.push_back ({ "dropdown-detector", [this] { detectorDropdown.click(); } });
+    openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); oversamplingDropdown.click(); } });
+    openers.push_back ({ "tooltip-attack", [this] { showTip (attackKnob, attackKnob.getTooltip()); } });
+    openers.push_back ({ "value-threshold", [this] { thresholdMeter.openValueEditor(); } });
+    return openers;
 }

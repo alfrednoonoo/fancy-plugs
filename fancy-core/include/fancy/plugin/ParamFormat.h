@@ -96,6 +96,14 @@ inline float parseHz (const juce::String& text)
     return text.containsIgnoreCase ("k") ? value * 1000.0f : value;
 }
 
+// A time in milliseconds: "120", "120ms" and "120 ms" are milliseconds, "0.12 s" is seconds.
+inline float parseMs (const juce::String& text)
+{
+    const auto value = parseNumber (text);
+    const auto unit = text.toLowerCase().retainCharacters ("abcdefghijklmnopqrstuvwxyz");
+    return unit == "s" || unit == "sec" || unit == "secs" || unit == "seconds" ? value * 1000.0f : value;
+}
+
 // Accepts 4, 4:1 and 1:4, which all mean the same ratio.
 inline float parseRatio (const juce::String& text, float infiniteRatio)
 {

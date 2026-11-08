@@ -14,6 +14,9 @@ class FirEditor final : public fancy::ui::ShellEditor
 public:
     explicit FirEditor (FirProcessor& processor);
 
+    juce::Colour getAccentColour() override;
+    std::vector<PopupOpener> getPopupOpeners() override;
+
     enum class Preview { subtractLearning, eqCurve, drawer };
 
     // For rendered screenshots.

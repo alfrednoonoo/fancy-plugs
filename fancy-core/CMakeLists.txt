@@ -22,5 +22,6 @@ target_sources(fancy_ui INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}/src/PresetManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Style.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Controls.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Popups.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Meter.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ShellEditor.cpp")

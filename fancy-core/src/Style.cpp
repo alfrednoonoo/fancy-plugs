@@ -28,19 +28,12 @@ juce::Font font (Weight weight, float height)
 
 FancyLookAndFeel::FancyLookAndFeel()
 {
-    setColour (juce::PopupMenu::backgroundColourId, colours::bgBody);
-    setColour (juce::PopupMenu::textColourId, colours::textPrimary);
-    setColour (juce::PopupMenu::highlightedBackgroundColourId, colours::uiTeal);
-    setColour (juce::PopupMenu::highlightedTextColourId, juce::Colours::white);
     setColour (juce::TextEditor::backgroundColourId, colours::bgWell);
     setColour (juce::TextEditor::textColourId, colours::textPrimary);
     setColour (juce::TextEditor::highlightColourId, colours::uiTeal);
     setColour (juce::TextEditor::outlineColourId, colours::grey5);
     setColour (juce::TextEditor::focusedOutlineColourId, colours::uiTeal);
     setColour (juce::CaretComponent::caretColourId, colours::textPrimary);
-    setColour (juce::AlertWindow::backgroundColourId, colours::bgBody);
-    setColour (juce::AlertWindow::textColourId, colours::textPrimary);
-    setColour (juce::AlertWindow::outlineColourId, colours::grey5);
     setColour (juce::TextButton::buttonColourId, colours::bgBody);
     setColour (juce::TextButton::textColourOffId, colours::textPrimary);
     setColour (juce::ResizableWindow::backgroundColourId, colours::bgBody);
@@ -54,9 +47,20 @@ juce::Typeface::Ptr FancyLookAndFeel::getTypefaceForFont (const juce::Font& requ
     return LookAndFeel_V4::getTypefaceForFont (requested);
 }
 
-juce::Font FancyLookAndFeel::getPopupMenuFont()
+void FancyLookAndFeel::fillTextEditorBackground (juce::Graphics& g, int width, int height, juce::TextEditor& editor)
 {
-    return font (Weight::regular, 14.0f);
+    g.setColour (editor.findColour (juce::TextEditor::backgroundColourId));
+    g.fillRoundedRectangle (0.0f, 0.0f, (float) width, (float) height, 4.0f);
+}
+
+void FancyLookAndFeel::drawTextEditorOutline (juce::Graphics& g, int width, int height, juce::TextEditor& editor)
+{
+    if (! editor.isEnabled())
+        return;
+
+    const auto focused = editor.hasKeyboardFocus (true) && ! editor.isReadOnly();
+    g.setColour (editor.findColour (focused ? juce::TextEditor::focusedOutlineColourId : juce::TextEditor::outlineColourId));
+    g.drawRoundedRectangle (0.5f, 0.5f, (float) width - 1.0f, (float) height - 1.0f, 4.0f, 1.0f);
 }
 
 namespace icons

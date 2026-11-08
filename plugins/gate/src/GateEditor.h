@@ -12,6 +12,9 @@ class GateEditor final : public fancy::ui::ShellEditor
 public:
     explicit GateEditor (GateProcessor& processor);
 
+    juce::Colour getAccentColour() override;
+    std::vector<PopupOpener> getPopupOpeners() override;
+
     // For rendered screenshots: mockup values. The second view has Lookahead and MIDI on, and
     // shows the sidechain warning.
     void showPreview (bool secondView);
@@ -69,7 +72,7 @@ private:
     };
 
     // "A4 · ch 1": opens the note, channel and velocity window menus.
-    class MidiDropdown final : public juce::Component, public juce::SettableTooltipClient
+    class MidiDropdown final : public juce::Component, public juce::SettableTooltipClient, public fancy::ui::MenuTarget
     {
     public:
         explicit MidiDropdown (GateProcessor& processor);
@@ -77,6 +80,7 @@ private:
         void refresh();
         void paint (juce::Graphics&) override;
         void mouseUp (const juce::MouseEvent&) override;
+        void showMenu();
 
     private:
         GateProcessor& gateProcessor;

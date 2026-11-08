@@ -31,6 +31,7 @@ void FancyProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("stateVersion", stateVersion, nullptr);
+    presets.addToState (state);
     addToState (state);
 
     if (const auto xml = state.createXml())
@@ -43,7 +44,8 @@ void FancyProcessor::setStateInformation (const void* data, int sizeInBytes)
         return;
 
     if (const auto xml = getXmlFromBinary (data, sizeInBytes))
-        applyState (juce::ValueTree::fromXml (*xml));
+        if (applyState (juce::ValueTree::fromXml (*xml)))
+            presets.stateRestored();
 }
 
 bool FancyProcessor::applyState (const juce::ValueTree& tree)

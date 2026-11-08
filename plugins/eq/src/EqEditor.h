@@ -13,6 +13,9 @@ class EqEditor final : public fancy::ui::ShellEditor
 public:
     explicit EqEditor (EqProcessor& processor);
 
+    juce::Colour getAccentColour() override { return bandColour (selectedBand); }
+    std::vector<PopupOpener> getPopupOpeners() override;
+
     // For rendered screenshots: mockup values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
     void showCompactPreview();
@@ -53,10 +56,11 @@ private:
         void resized() override;
 
     private:
-        class TypeDropdown final : public fancy::ui::ParamClickControl
+    public:
+        class TypeDropdown final : public fancy::ui::ParamClickControl, public fancy::ui::MenuTarget
         {
         public:
-            using ParamClickControl::ParamClickControl;
+            TypeDropdown (juce::RangedAudioParameter& type, juce::RangedAudioParameter& slope);
 
             void paint (juce::Graphics&) override;
 
@@ -64,7 +68,15 @@ private:
 
         private:
             void clicked() override;
+
+            juce::RangedAudioParameter& slopeParameter;
         };
+
+        TypeDropdown& getTypeDropdown() noexcept { return typeDropdown; }
+        fancy::ui::Knob& getFrequencyKnob() noexcept { return frequencyKnob; }
+        fancy::ui::Knob& getGainKnob() noexcept { return gainKnob; }
+
+    private:
 
         EqProcessor& eqProcessor;
         const int band;
@@ -85,6 +97,7 @@ private:
     void selectBand (int band);
     void addBand();
     void removeSelectedBand();
+    void removeBandNow();
     void updateSelection();
     void layoutEditors();
     void applyPreviewValues();

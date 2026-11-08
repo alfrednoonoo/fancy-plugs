@@ -57,7 +57,17 @@ void FirEditor::Panels::paint (juce::Graphics& g)
 FirEditor::LearnCard::LearnCard (FirProcessor& processor)
     : firProcessor (processor)
 {
-    clearButton.onClick = [this] { firProcessor.clearProfile(); };
+    clearButton.onClick = [this]
+    {
+        auto& owner = firProcessor;
+        const auto clear = [&owner] { owner.clearProfile(); };
+
+        if (auto* editor = findParentComponentOfClass<ShellEditor>())
+            editor->confirmThen ("Clear the noise profile?", "The learned profile will be removed. You can learn it again from a section with only noise.",
+                                 "Clear", true, clear);
+        else
+            clear();
+    };
     relearnButton.onClick = [this] { firProcessor.startLearning(); };
 
     addChildComponent (clearButton);
@@ -428,4 +438,21 @@ void FirEditor::showPreview (Preview preview)
     latencyLabel.setText ("Latency 2048 smp " + juce::String::charToString (0x00b7) + " 42.7 ms", juce::dontSendNotification);
 
     drawer.setVisible (preview == Preview::drawer);
+}
+
+juce::Colour FirEditor::getAccentColour()
+{
+    return modeColour (firProcessor().getMode());
+}
+
+std::vector<ShellEditor::PopupOpener> FirEditor::getPopupOpeners()
+{
+    auto openers = ShellEditor::getPopupOpeners();
+    openers.push_back ({ "dropdown-edit", [this] { editDropdown.click(); } });
+    openers.push_back ({ "dropdown-fft", [this] { fftDropdown.click(); } });
+    openers.push_back ({ "point-prompt", [this] { if (! firProcessor().getPoints (juce::jmin (firProcessor().getMode(), numCurves - 1)).empty()) graph.typePoint (0); } });
+    openers.push_back ({ "axis-prompt", [this] { graph.typeAxis (true); } });
+    openers.push_back ({ "clear-profile", [this] { confirmThen ("Clear the noise profile?", "The learned profile will be removed. You can learn it again from a section with only noise.", "Clear", true, [] {}); } });
+    openers.push_back ({ "tooltip-low-latency", [this] { showTip (lowLatencyCheckbox, lowLatencyCheckbox.getTooltip()); } });
+    return openers;
 }

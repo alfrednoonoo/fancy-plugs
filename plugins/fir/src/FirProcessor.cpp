@@ -30,7 +30,7 @@ std::unique_ptr<juce::AudioParameterFloat> timeParameter (const juce::String& id
         juce::AudioParameterFloatAttributes {}
             .withLabel ("ms")
             .withStringFromValueFunction ([] (float value, int) { return (value < 100.0f ? fancy::formatFixed (value, 1) : juce::String (juce::roundToInt (value))) + " ms"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); }));
 }
 
 std::unique_ptr<juce::AudioParameterFloat> dbParameter (const juce::String& id, const juce::String& name, float low, float high, float defaultDb,
@@ -322,6 +322,7 @@ void FirProcessor::loadCurves (const juce::ValueTree& tree)
 
 void FirProcessor::setPoints (int curve, std::vector<CurvePoint> newPoints)
 {
+    noteEdited();
     for (auto& point : newPoints)
     {
         point.hz = std::clamp (point.hz, curveLowHz, curveHighHz);
@@ -341,6 +342,7 @@ void FirProcessor::setPoints (int curve, std::vector<CurvePoint> newPoints)
 
 void FirProcessor::setFreehand (int curve, const std::array<float, curvePoints>& table)
 {
+    noteEdited();
     freehand[(size_t) curve] = table;
 
     publishCurve (curve);
@@ -349,6 +351,7 @@ void FirProcessor::setFreehand (int curve, const std::array<float, curvePoints>&
 
 void FirProcessor::resetCurve (int curve)
 {
+    noteEdited();
     points[(size_t) curve].clear();
     freehand[(size_t) curve].fill ((float) defaultCurveDb (curve));
 
@@ -377,6 +380,7 @@ void FirProcessor::parameterChanged (const juce::String&, float newValue)
 
 void FirProcessor::startLearning()
 {
+    noteEdited();
     const auto rate = getSampleRate() > 0.0 ? getSampleRate() : 48000.0;
 
     dsp.shared.learnTarget.store ((int) std::lround ((double) read ("learnLength") * rate));
@@ -386,6 +390,7 @@ void FirProcessor::startLearning()
 
 void FirProcessor::clearProfile()
 {
+    noteEdited();
     dsp.shared.learnRequested.store (false);
     dsp.shared.learning.store (false);
     dsp.shared.hasProfile.store (false);

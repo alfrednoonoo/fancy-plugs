@@ -1,6 +1,7 @@
 #include "ModuleRack.h"
 
 #include <fancy/plugin/ParamHelpers.h>
+#include <fancy/ui/ShellEditor.h>
 
 #include <cmath>
 
@@ -108,7 +109,7 @@ void ModuleCard::CardButton::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
 
-    g.setColour (colours::grey5);
+    g.setColour (isMenuOpen() ? colours::menuHover : colours::grey5);
     g.fillRoundedRectangle (bounds, 5.0f);
 
     g.setColour (textColour);
@@ -348,6 +349,21 @@ void ModuleCard::stepFile (int direction)
     processor.loadFile (uid, files[(index + direction + files.size()) % files.size()]);
 }
 
+bool ModuleCard::isChanged() const
+{
+    const auto fresh = verb::makeModule (type, uid);
+
+    for (int i = 0; i < tree.getNumProperties(); ++i)
+    {
+        const auto name = tree.getPropertyName (i);
+
+        if (name != verb::ids::uid && fresh.getProperty (name) != tree.getProperty (name))
+            return true;
+    }
+
+    return false;
+}
+
 void ModuleCard::showFileMenu()
 {
     const auto current = currentFile();
@@ -360,37 +376,37 @@ void ModuleCard::showFileMenu()
 
     const auto files = verb::audioFilesBeside (current);
 
-    juce::PopupMenu menu;
+    fancy::ui::Menu menu;
+    menu.setScrollingList (true);
 
     for (int i = 0; i < files.size(); ++i)
         menu.addItem (i + 1, files[i].getFileName(), true, files[i] == current);
 
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (fileDropdown),
-                        [this, files] (int chosen)
-                        {
-                            if (chosen > 0)
-                                processor.loadFile (uid, files[chosen - 1]);
-                        });
+    menu.show (fileDropdown, [safeThis = juce::Component::SafePointer<ModuleCard> (this), files] (int chosen)
+    {
+        if (safeThis != nullptr && chosen > 0)
+            safeThis->processor.loadFile (safeThis->uid, files[chosen - 1]);
+    });
 }
 
 void ModuleCard::showGainMenu()
 {
     const auto current = (int) tree.getProperty (verb::ids::gainMode, 3);
 
-    juce::PopupMenu menu;
+    fancy::ui::Menu menu;
+    menu.setScrollingList (true);
 
     for (int mode = 0; mode < verb::numGainModes; ++mode)
         menu.addItem (mode + 1, verb::gainModeName (mode), true, mode == current);
 
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (gainDropdown),
-                        [this] (int chosen)
-                        {
-                            if (chosen > 0)
-                            {
-                                processor.setModuleValue (uid, verb::ids::gainMode, chosen - 1);
-                                refresh();
-                            }
-                        });
+    menu.show (gainDropdown, [safeThis = juce::Component::SafePointer<ModuleCard> (this)] (int chosen)
+    {
+        if (safeThis != nullptr && chosen > 0)
+        {
+            safeThis->processor.setModuleValue (safeThis->uid, verb::ids::gainMode, chosen - 1);
+            safeThis->refresh();
+        }
+    });
 }
 
 juce::Rectangle<int> ModuleCard::powerArea() const { return { 12, 13, 24, 24 }; }
@@ -481,7 +497,15 @@ void ModuleCard::mouseUp (const juce::MouseEvent& event)
     }
     else if (closeArea().contains (position))
     {
-        processor.removeModule (uid);
+        auto* editor = findParentComponentOfClass<fancy::ui::ShellEditor>();
+        auto& verbProcessor = processor;
+        const auto moduleUid = uid;
+        const auto remove = [&verbProcessor, moduleUid] { verbProcessor.removeModule (moduleUid); };
+
+        if (editor != nullptr)
+            editor->confirmThen ("Delete module?", "Its settings will be lost.", "Delete", isChanged(), remove);
+        else
+            remove();
     }
     else if (plusArea().contains (position))
     {

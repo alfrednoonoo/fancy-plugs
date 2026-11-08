@@ -1,8 +1,10 @@
 // Renders each plugin's editor offscreen to PNG at 100 % and 200 %, plus a gallery of the
-// fancy-core controls that the finished plugins don't exercise yet.
-// Usage: fancy-screens <output-directory>
+// fancy-core controls that the finished plugins don't exercise yet. With a second directory,
+// it also renders every pop-up each plugin lists (Phase 2.1 item S) into it.
+// Usage: fancy-screens <output-directory> [<popups-directory>]
 
 #include <fancy/ui/Controls.h>
+#include <fancy/ui/ShellEditor.h>
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -164,6 +166,98 @@ bool renderFir (const juce::File& outputDir)
 }
 #endif
 
+// Opens each pop-up the editor lists, and saves the window with it open.
+template <typename Processor, typename Editor, typename Setup>
+bool renderPopups (const juce::String& slug, const juce::File& outputDir, Setup setup)
+{
+    Processor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<Editor*> (base.get());
+
+    if (editor == nullptr)
+        return false;
+
+    setup (*editor);
+
+    auto ok = true;
+
+    for (const auto& opener : editor->getPopupOpeners())
+    {
+        editor->closePopups();
+        opener.open();
+
+        // Shows the hover state on the row after the ticked one, as the mockup does.
+        if (auto* menu = fancy::ui::MenuLayer::findOpen (editor->getPopupParent()))
+        {
+            auto& panel = menu->getPanel (0);
+            const auto& items = panel.getMenu().getItems();
+
+            if (panel.getHighlightedRow() < 0)
+            {
+                for (int row = 0; row < (int) items.size(); ++row)
+                    if (items[(size_t) row].ticked)
+                        panel.setHighlightedRow (row);
+
+                panel.moveHighlight (1);
+            }
+        }
+
+        if (! writeBothScales (*editor, slug + "-" + opener.name, outputDir))
+        {
+            std::cerr << "cannot render " << slug << "-" << opener.name << "\n";
+            ok = false;
+        }
+    }
+
+    editor->closePopups();
+    return ok;
+}
+
+bool renderAllPopups (const juce::File& outputDir)
+{
+    auto ok = true;
+    const auto plain = [] (auto& editor) { editor.showPreview (false); };
+    juce::ignoreUnused (plain);
+
+   #if FANCY_HAS_KICKER
+    ok = renderPopups<KickerProcessor, KickerEditor> ("kicker", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_EXCITER
+    ok = renderPopups<ExciterProcessor, ExciterEditor> ("exciter", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_COMP
+    ok = renderPopups<CompProcessor, CompEditor> ("comp", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_EQ
+    ok = renderPopups<EqProcessor, EqEditor> ("eq", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_VERB
+    ok = renderPopups<VerbProcessor, VerbEditor> ("verb", outputDir, [] (VerbEditor& editor) { editor.showPreview (VerbEditor::Preview::rack); }) && ok;
+   #endif
+
+   #if FANCY_HAS_DELAY
+    ok = renderPopups<DelayProcessor, DelayEditor> ("delay", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_MULTICOMP
+    ok = renderPopups<MultiCompProcessor, MultiCompEditor> ("multicomp", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_FIR
+    ok = renderPopups<FirProcessor, FirEditor> ("fir", outputDir, [] (FirEditor& editor) { editor.showPreview (FirEditor::Preview::eqCurve); }) && ok;
+   #endif
+
+   #if FANCY_HAS_GATE
+    ok = renderPopups<GateProcessor, GateEditor> ("gate", outputDir, plain) && ok;
+   #endif
+
+    return ok;
+}
+
 class Gallery final : public juce::Component
 {
 public:
@@ -213,9 +307,9 @@ private:
 
 int main (int argc, char** argv)
 {
-    if (argc != 2)
+    if (argc != 2 && argc != 3)
     {
-        std::cerr << "usage: fancy-screens <output-directory>\n";
+        std::cerr << "usage: fancy-screens <output-directory> [<popups-directory>]\n";
         return 2;
     }
 
@@ -270,6 +364,19 @@ int main (int argc, char** argv)
 
     Gallery gallery;
     ok = writeBothScales (gallery, "gallery", outputDir) && ok;
+
+    if (argc == 3)
+    {
+        const auto popupsDir = juce::File::getCurrentWorkingDirectory().getChildFile (argv[2]);
+
+        if (! popupsDir.createDirectory())
+        {
+            std::cerr << "cannot create " << argv[2] << "\n";
+            return 1;
+        }
+
+        ok = renderAllPopups (popupsDir) && ok;
+    }
 
     return ok ? 0 : 1;
 }

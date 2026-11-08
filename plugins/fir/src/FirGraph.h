@@ -13,6 +13,10 @@ juce::Colour modeColour (int mode);
 class FirGraph final : public juce::Component
 {
 public:
+    // Prompts for a point's frequency and gain, or for the graph's top or analysis floor.
+    void typePoint (int index);
+    void typeAxis (bool top);
+
     explicit FirGraph (FirProcessor& processor);
     ~FirGraph() override;
 
@@ -60,8 +64,7 @@ private:
     void paintModeLayer (juce::Graphics&);
     void paintLegend (juce::Graphics&);
 
-    void typePoint (int index);
-    void typeAxis (bool top);
+
     void drawFreehand (juce::Point<float> from, juce::Point<float> to);
 
     FirProcessor& processor;

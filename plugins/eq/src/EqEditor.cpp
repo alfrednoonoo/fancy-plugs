@@ -165,14 +165,19 @@ void EqEditor::TabStrip::mouseDown (const juce::MouseEvent& event)
 
 // BandEditor parts ------------------------------------------------------------
 
+EqEditor::BandEditor::TypeDropdown::TypeDropdown (juce::RangedAudioParameter& type, juce::RangedAudioParameter& slope)
+    : ParamClickControl (type), slopeParameter (slope)
+{
+}
+
 void EqEditor::BandEditor::TypeDropdown::paint (juce::Graphics& g)
 {
     const auto bounds = getLocalBounds().toFloat();
 
-    if (! compact)
+    if (! compact || isMenuOpen())
     {
-        g.setColour (colours::grey5);
-        g.fillRoundedRectangle (bounds, 5.0f);
+        g.setColour (isMenuOpen() ? colours::menuHover : colours::grey5);
+        g.fillRoundedRectangle (bounds, compact ? 3.0f : 5.0f);
     }
 
     const auto type = (eq::BandType) juce::roundToInt (param.convertFrom0to1 (param.getValue()));
@@ -195,20 +200,75 @@ void EqEditor::BandEditor::TypeDropdown::paint (juce::Graphics& g)
 
 void EqEditor::BandEditor::TypeDropdown::clicked()
 {
-    const auto choices = param.getAllValueStrings();
-    const auto last = juce::jmax (1, choices.size() - 1);
+    // The mockup's order: the gain types, then the filters, with a slope submenu on the two
+    // that have one. Ids: 1 + type, then 100 + slope for Low pass and 200 + slope for High pass.
+    const auto types = param.getAllValueStrings();
+    const auto slopes = slopeParameter.getAllValueStrings();
+    const auto current = (int) juce::roundToInt (param.convertFrom0to1 (param.getValue()));
+    const auto currentSlope = (int) juce::roundToInt (slopeParameter.convertFrom0to1 (slopeParameter.getValue()));
 
-    juce::PopupMenu menu;
+    const auto icon = [] (eq::BandType type)
+    {
+        return [type] (juce::Graphics& g, juce::Rectangle<float> area, juce::Colour ink)
+        {
+            g.setColour (ink);
+            g.strokePath (typeIcon (type, area), juce::PathStrokeType (1.2f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        };
+    };
 
-    for (int i = 0; i < choices.size(); ++i)
-        menu.addItem (i + 1, choices[i], true, choices[i] == getValueText());
+    fancy::ui::Menu menu;
 
-    menu.showMenuAsync (juce::PopupMenu::Options {}.withTargetComponent (this),
-                        [safeThis = juce::Component::SafePointer<TypeDropdown> (this), last] (int result)
-                        {
-                            if (safeThis != nullptr && result > 0)
-                                safeThis->setDenormalised (safeThis->param.convertFrom0to1 ((float) (result - 1) / (float) last));
-                        });
+    const auto addType = [&] (eq::BandType type)
+    {
+        const auto index = (int) type;
+
+        if (! eq::hasSlope (type))
+        {
+            menu.addItem (1 + index, types[index], true, index == current).withIcon (icon (type));
+            return;
+        }
+
+        fancy::ui::Menu slopeMenu;
+        const auto base = type == eq::BandType::lowPass ? 100 : 200;
+
+        for (int i = 0; i < slopes.size(); ++i)
+            slopeMenu.addItem (base + i, slopes[i], true, index == current && i == currentSlope);
+
+        menu.addSubMenu (types[index], std::move (slopeMenu), true, index == current).withIcon (icon (type));
+    };
+
+    for (const auto type : { eq::BandType::lowShelf, eq::BandType::band, eq::BandType::highShelf, eq::BandType::notch })
+        addType (type);
+
+    menu.addSeparator();
+
+    for (const auto type : { eq::BandType::lowPass, eq::BandType::highPass, eq::BandType::bandPass, eq::BandType::allPass, eq::BandType::tilt })
+        addType (type);
+
+    menu.show (*this, [safeThis = juce::Component::SafePointer<TypeDropdown> (this)] (int result)
+    {
+        if (safeThis == nullptr || result <= 0)
+            return;
+
+        auto& self = *safeThis;
+
+        const auto set = [] (juce::RangedAudioParameter& parameter, float plain)
+        {
+            parameter.beginChangeGesture();
+            parameter.setValueNotifyingHost (parameter.convertTo0to1 (plain));
+            parameter.endChangeGesture();
+        };
+
+        if (result >= 100)
+        {
+            set (self.param, (float) (int) (result >= 200 ? eq::BandType::highPass : eq::BandType::lowPass));
+            set (self.slopeParameter, (float) (result % 100));
+        }
+        else
+        {
+            set (self.param, (float) (result - 1));
+        }
+    });
 }
 
 // BandEditor ------------------------------------------------------------------
@@ -216,7 +276,8 @@ void EqEditor::BandEditor::TypeDropdown::clicked()
 EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEditor& owner)
     : eqProcessor (processor),
       band (bandIndex),
-      typeDropdown (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "type"))),
+      typeDropdown (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "type")),
+                    *processor.getApvts().getParameter (EqProcessor::id (bandIndex, "slope"))),
       frequencyKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "freq")), "Freq", bandColour (bandIndex), Knob::mediumStyle),
       gainKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "gain")), "Gain", bandColour (bandIndex), Knob::mediumStyle, true),
       qKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "q")), "Q", bandColour (bandIndex), Knob::mediumStyle),
@@ -334,6 +395,17 @@ EqEditor::EqEditor (EqProcessor& processor)
     }
 
     graph.onBandSelected = [this] (int band) { selectBand (band); };
+    graph.onDeleteBand = [this] (int band)
+    {
+        selectBand (band);
+        removeSelectedBand();
+    };
+    graph.onTypeValue = [this] (int band, const juce::String& suffix)
+    {
+        selectBand (band);
+        auto& editor = *bandEditors[(size_t) band];
+        (suffix == "gain" ? editor.getGainKnob() : editor.getFrequencyKnob()).openValueEditor();
+    };
     tabs.onSelect = [this] (int band) { selectBand (band); };
 
     getRoot().addAndMakeVisible (editLink);
@@ -444,6 +516,17 @@ void EqEditor::addBand()
 }
 
 void EqEditor::removeSelectedBand()
+{
+    // A band added with the + button or a double-click needs no confirm: its frequency and gain
+    // are set where it was added, and the rest are as a new band has them.
+    const auto prefix = EqProcessor::id (selectedBand, "");
+    const auto changed = differsFromDefault (prefix, { "used", "freq", "gain" }, { { "type", 2.0f } });
+
+    confirmThen ("Delete band " + juce::String (selectedBand + 1) + "?",
+                 "Its settings will be lost.", "Delete", changed, [this] { removeBandNow(); });
+}
+
+void EqEditor::removeBandNow()
 {
     auto& processor = eqProcessor();
 
@@ -627,4 +710,36 @@ void EqEditor::showCompactPreview()
 
     bandEditors[(size_t) selectedBand]->update();
     graph.update();
+}
+
+std::vector<fancy::ui::ShellEditor::PopupOpener> EqEditor::getPopupOpeners()
+{
+    auto openers = ShellEditor::getPopupOpeners();
+
+    openers.push_back ({ "band-type", [this] { bandEditors[(size_t) selectedBand]->getTypeDropdown().click(); } });
+    openers.push_back ({ "band-menu", [this]
+                         {
+                             const auto handle = graph.getHandlePosition (selectedBand);
+                             graph.showBandMenu (selectedBand, handle);
+
+                             if (auto* menu = fancy::ui::MenuLayer::findOpen (getRoot()))
+                             {
+                                 auto& panel = menu->getPanel (0);
+                                 const auto& items = panel.getMenu().getItems();
+
+                                 for (int row = 0; row < (int) items.size(); ++row)
+                                 {
+                                     if (items[(size_t) row].text == "Type")
+                                     {
+                                         panel.setHighlightedRow (row);
+                                         menu->openSubMenu (panel, row);
+                                     }
+                                 }
+                             }
+                         } });
+    openers.push_back ({ "delete-band", [this] { confirmThen ("Delete band " + juce::String (selectedBand + 1) + "?", "Its settings will be lost.", "Delete", true, [] {}); } });
+    openers.push_back ({ "dropdown-phase", [this] { drawer.setVisible (true); phaseDropdown.click(); } });
+    openers.push_back ({ "value-freq", [this] { bandEditors[(size_t) selectedBand]->getFrequencyKnob().openValueEditor(); } });
+
+    return openers;
 }

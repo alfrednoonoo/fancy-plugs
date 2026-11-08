@@ -14,6 +14,9 @@ public:
 
     explicit VerbEditor (VerbProcessor& processor);
 
+    juce::Colour getAccentColour() override;
+    std::vector<PopupOpener> getPopupOpeners() override;
+
     // Set the Figma values, for CI screenshots.
     void showPreview (Preview preview);
     void showEmptyPreview();
