@@ -15,7 +15,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42451899318 (commit `72c5de2`), Fancy Gate: 272 test cases passed, and all nine plugins passed pluginval.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42452843623 (commit `58d9717`), Fancy Gate: 272 test cases passed, and all nine plugins passed pluginval.
 
 ## Phase 2
 
@@ -135,7 +135,7 @@ Gate deviations from the mockup:
 Fixed during the build:
 
 - **Range from -inf to 0 dB** was 0.8 dB short after 100 ms, because it was smoothed in dB from -120. It's now smoothed as a linear gain.
-- **Clipped labels** in the first render: "Threshol", "close -4", "MIDI on open/clos" and "A4 · c...". The I/O pill read "2 in 2 out" in renders, because the shell's first header refresh runs before the plugin's override exists. In a host the 30 Hz refresh corrects it at once.
+- **Clipped labels** in the first render: "Threshol", "close -4", "MIDI on open/clos" and "A4 · c...". The I/O pill read "2 in 2 out" in renders, because the shell's first header refresh runs before the plugin's override exists. In a host the 30 Hz refresh corrects it at once. The fix also corrects the FIR and MultiComp renders, which now read "4 in 2 out" like their mockups. Their committed screenshots changed only there.
 - **Line endings:** three commits turned seven files into CRLF, and the next commit puts them back to LF. Write files with `newline=''` or bytes in Python here.
 
 ## Market research and Phase 3 draft
