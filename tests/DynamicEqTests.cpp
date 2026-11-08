@@ -268,7 +268,7 @@ TEST_CASE ("Dynamic EQ: Below mode acts on quiet signals only", "[eq][dynamic]")
     const auto dynamicOut = render (targets (spec, settings), loud);
     const auto staticOut = render (targets (spec), loud);
 
-    CHECK (finalChange (targets (spec, settings), loud) == 0.0);
+    CHECK (finalChange (targets (spec, settings), sine (1000.0, -12.0, (int) rate * 3)) == 0.0); // after Release has run its course
     CHECK (std::abs (levelAt (dynamicOut.left, (int) (rate / 2), 1000.0) - levelAt (staticOut.left, (int) (rate / 2), 1000.0)) < 0.001);
 }
 
