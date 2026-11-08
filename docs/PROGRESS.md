@@ -15,7 +15,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42528662854, Phase 2.1 W: 317 test cases, Steinberg's validator, pluginval and the host harness passed for all nine plugins.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42535427188, Phase 2.1 D: 329 test cases, Steinberg's validator, pluginval and the host harness passed for all nine plugins.
 
 ## Phase 2
 
@@ -38,7 +38,7 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
    - S: styled menus, dropdown lists, tooltips, typed values and dialogs, built once in `fancy-core`. Mockup `reference/phase2_1/16__menus_mockup.png`, which also sets their exact styling. **Done.** The user reported the REAPER checks passed on 8 November 2026. Audit and design: `docs/phase2_1-S.md`.
    - H: **built, and green in CI**; waiting for the user's host checks (`docs/host-compat.md`); the FIR frame-grid question is decided (below). Design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
    - W: **built, and green in CI**; the user approved both decisions on 8 November 2026 (below) and asked to start D. Its REAPER checks are still to run. Undo and redo, A/B, and level-matched Compare, for all nine plugins. Design note `docs/phase2_1-W.md`.
-   - D: dynamic EQ.
+   - D: dynamic EQ. **Built, and green in CI**; waiting for the user's REAPER checks (`docs/eq-checklist.md`, "Dynamic bands"). Design note `docs/phase2_1-D.md`.
    - U: upward compression in MultiComp.
    - A: adaptive noise tracking in FIR.
 
@@ -258,6 +258,40 @@ Decisions, both approved by the user on 8 November 2026 ("Approve both, keep the
 
 1. **Header layout.** Built as recommended, so it can be judged from the screenshots: compact labels and a narrower preset dropdown on EQ, Delay, FIR, MultiComp and Gate; MultiComp's "Detector" label is now its dropdown's tooltip; FIR's latency label shows milliseconds only; Compare's gain shows inside the lit button. Each is a small change to undo.
 2. **A/B crossfade.** The brief asks for the old and new settings rendered in parallel for 20 ms. Built instead: the plugins' own parameter smoothing glides to the other settings, and the click test shows no jump in any plugin. A parallel render would need a second copy of each plugin's DSP.
+
+## Phase 2.1 D: dynamic EQ
+
+Design note: `docs/phase2_1-D.md`. Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42535427188. The user chose, on 8 November 2026, a dynamic notch that works as a dynamic cut, and Freq, Gain and Q shrinking in the normal Details panel while DYN is on.
+
+What changed:
+
+- **Parameters:** per band `bNdyn`, `bNthresh`, `bNrange`, `bNattack`, `bNrelease`, `bNdynMode`, `bNdynSc` (112 in all), appended after every existing parameter, defaults as in §D.2. Deleting or resetting a band resets them too.
+- **Bus:** an optional stereo Sidechain input, inactive by default; the I/O pill reads 4/2. `SidechainWatch` warns when a band with Sidechain ticked hears nothing.
+- **DSP (`EqDsp`):** a detector per dynamic band on the pre-EQ input or the sidechain: a band pass at Freq and Q used twice (4th order), or a 2nd-order low or high pass for shelves and tilt; 5 ms RMS, stereo-linked; 6 dB soft knee, full Range 12 dB past Threshold. The gain computer and Attack/Release run every 8 host samples, counted from the start of playback. The change rides the band's 16-sample redesign with interpolated coefficients, skipping changes under 0.01 dB but always applying a return to exactly 0. A dynamic notch is a bell that only cuts. Linear phase runs dynamic bands static.
+- **State:** `stateVersion` 3. In `FancyProcessor::applyState`, for all nine plugins, a parameter missing from a state now takes its default, so older projects and presets keep every band static even when loaded into an edited instance.
+- **UI:** a DYN chip under the type; with DYN on, Threshold, Range, Attack, Release, Above | Below and Sidechain right of Q after a separator, in the band colour; the Compact-mode card widens to 720 px. Linear phase greys them, with the tooltip "Dynamic bands need Minimum phase". The graph draws each dynamic band's reach as a lighter fill with a dashed edge, the white total curve includes the live change, and the corner reads "reach −6 dB · now −3.6 dB". Screenshots `eq-dynamic` and `eq-dynamic-compact`, checked against panel 3 by eye.
+- **Docs:** "Dynamic bands" and "How to sidechain" in the EQ manual, a checklist section, and a pointer in `docs/eq.md`.
+
+Results:
+
+| Check (§D.4) | Result |
+|---|---|
+| 1. 20 dB under Threshold | Bit-identical to the static band |
+| 2. 12 dB over, Range -6 dB | Within 0.2 dB of -6 dB, from the DSP and in the output; 63 % within 1.2 × a 50 ms Attack |
+| 3. Two octaves away, 12 dB over | Under 0.1 dB, above and below |
+| 4. Level sweeping across Threshold | THD+N within 3 dB of the same band redesigned every sample |
+| 5. Below mode, Sidechain | Below acts on quiet and lets go to exactly 0 when loud; the sidechain moves the band and the main input doesn't, and without Sidechain ticked the main input does |
+| Shelves, notch, Linear phase | A low shelf hears below Freq only; a dynamic notch passes when quiet, cuts by Range when loud, never boosts; Linear renders bit-identically to static |
+| Compatibility | A state without the new IDs loads with every band static, even into an edited instance, and renders bit-identically |
+| Host (H) | Offline render with dynamic bands, Above and Below, automated: bit-identical with random blocks and in real time. Sidechain inactive, mono and stereo, with the warning. Flood: no NaN, no allocation |
+| 6. CPU, 8 dynamic bands | 0.979 % against < 1.5 % (1.77 × Comp's default in the same run); 8 static bells 0.399 %. `docs/measurements/eq-dynamic.txt` |
+
+Notes:
+
+- **The detector's band pass is 4th order.** The brief's single band pass at Q 1 leaves a tone two octaves away only 12 dB down, which would move the band by about 0.4 dB against test 3's 0.1 dB.
+- **Test 2's timing uses a 50 ms Attack.** At the 5 ms default, the 5 ms level window takes about half the allowed time by itself.
+- **A render starts from silence**, which Below mode treats as quiet, so a Below band acts for the first milliseconds of playback and then lets go.
+- **The first build measured 1.75 % CPU**, with the gain computer per sample; the 8-sample control rate and the 0.01 dB redesign step brought it to 0.98 %.
 
 ## Market research and Phase 3 draft
 

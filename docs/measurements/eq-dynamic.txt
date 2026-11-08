@@ -1,0 +1,6 @@
+# Phase 2.1 D, run 42535427188 (§0.4: median of 5 runs in one build).
+# 8 bells at 100 Hz-12.8 kHz on stereo noise whose level swells at 1 Hz, so the dynamic bands keep crossing Threshold.
+dynamic eq cpu (median of 5, 48 kHz, 128 samples, stereo): 8 static bells 0.399 %, 8 dynamic bells 0.979 % (target < 1.5 %)
+workflow cpu reference: Fancy Comp default 0.554 % (median of 5, 48 kHz, 128 samples, stereo)
+# Ratio to Comp: 8 dynamic bells 1.77 x, 8 static bells 0.72 x.
+# The first build, with the gain computer per sample and every 16-sample redesign, measured 1.750 %.
