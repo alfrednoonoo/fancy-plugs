@@ -1,0 +1,12 @@
+Fancy Gate CPU at 48 kHz, 128-sample blocks, stereo, median of 5 measurements in one CI build (method: BUILD_PROMPT_PHASE2_1.md section 0.4)
+
+Run 42451899318, commit 72c5de2:
+gate cpu (median of 5): default 0.375 %, filters + RMS, Lookahead off (target < 0.5 %) 0.385 %, lookahead + filters + MIDI + noise, unlinked 0.403 %
+gate cpu reference: Fancy Comp default 0.388 % in the same run; gate default / comp = 0.97, filters + RMS / comp = 0.99, busy / comp = 1.04
+
+Run 42450914598, commit 7d776c8 (before the target case was measured on its own):
+gate cpu (median of 5): default 0.469 %, lookahead + filters + MIDI + noise, unlinked 0.513 %
+gate cpu reference: Fancy Comp default 0.448 % in the same run; gate default / comp = 1.05, busy / comp = 1.14
+
+The absolute figures move about 20 % between runners. The ratio to Fancy Comp in the same run stays near 1.
+Latency: 0 samples with Lookahead off; 50 ms with it on (2400 samples at 48 kHz), at every sample rate.

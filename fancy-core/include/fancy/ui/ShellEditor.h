@@ -93,8 +93,9 @@ protected:
     FancyProcessor& getFancyProcessor() noexcept { return fancyProcessor; }
     juce::RangedAudioParameter& parameter (const juce::String& id);
 
-    // Stops the 30 Hz updates, so a rendered screenshot keeps its preview levels.
-    void stopUpdates() { stopTimer(); }
+    // Stops the 30 Hz updates, so a rendered screenshot keeps its preview levels. The header is
+    // refreshed once more, because the constructor's refresh can't see a plugin's overrides.
+    void stopUpdates() { stopTimer(); refreshHeader(); }
 
     virtual void onTick (float seconds) { juce::ignoreUnused (seconds); }
 
@@ -106,6 +107,7 @@ private:
     };
 
     void timerCallback() override;
+    void refreshHeader();
     void applyScale (float scale);
     void showPresetMenu();
     void showSavePrompt();

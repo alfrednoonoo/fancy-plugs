@@ -228,6 +228,12 @@ void ShellEditor::setPresetDropdownWidth (int newWidth)
 
 void ShellEditor::timerCallback()
 {
+    refreshHeader();
+    onTick (1.0f / (float) timerHz);
+}
+
+void ShellEditor::refreshHeader()
+{
     const auto bypassed = fancyProcessor.getBypassParameter()->getValue() >= 0.5f;
     body.setAlpha (bypassed ? 0.5f : 1.0f);
 
@@ -238,8 +244,6 @@ void ShellEditor::timerCallback()
 
     ioPill.setText (headerStyle == HeaderStyle::compact ? inputs + "/" + outputs
                                                         : inputs + " in " + outputs + " out");
-
-    onTick (1.0f / (float) timerHz);
 }
 
 void ShellEditor::showPresetMenu()
