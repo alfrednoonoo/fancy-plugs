@@ -37,7 +37,8 @@ public:
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
     void setCurrentProgram (int) override {}
-    const juce::String getProgramName (int) override { return {}; }
+    // VST3 hosts see one program; Steinberg's validator requires it to have a name.
+    const juce::String getProgramName (int) override { return "Default"; }
     void changeProgramName (int, const juce::String&) override {}
 
     juce::AudioProcessorParameter* getBypassParameter() const override;
