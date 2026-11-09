@@ -6,6 +6,12 @@ get_property(fancy_screen_defs GLOBAL PROPERTY FANCY_SCREEN_DEFS)
 
 target_sources(fancy-tests PRIVATE DecibelsTests.cpp ValueEntryTests.cpp PopupTests.cpp HostRenderTests.cpp HostTests.cpp WorkflowTests.cpp ${fancy_screen_sources})
 
+# FancyBench's analysis and test-file code (Phase 3 Q1), tested without its hosting.
+target_sources(fancy-tests PRIVATE BenchTests.cpp
+    ${CMAKE_SOURCE_DIR}/tools/bench/src/Analysis.cpp
+    ${CMAKE_SOURCE_DIR}/tools/bench/src/TestFile.cpp)
+target_include_directories(fancy-tests PRIVATE ${CMAKE_SOURCE_DIR}/tools/bench/src)
+
 if("FANCY_HAS_KICKER=1" IN_LIST fancy_screen_defs)
     target_sources(fancy-tests PRIVATE KickerTests.cpp)
 endif()

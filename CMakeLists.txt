@@ -34,6 +34,7 @@ enable_testing()
 add_subdirectory(tests)
 add_subdirectory(tools/screens)
 add_subdirectory(tools/hosttest)
+add_subdirectory(tools/bench)
 
 # JUCE's AudioPluginHost, for checking sidechain and MIDI routing by hand (Phase 2.1 H.7.3).
 # Only built when asked for: CI builds it once per JUCE version and caches it.

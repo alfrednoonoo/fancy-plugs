@@ -1,0 +1,33 @@
+{
+  "name": "EQ, +6 dB bell at 1 kHz",
+  "notes": "Fancy EQ against TDR Nova (free). Paid entries are disabled: set \"disabled\" to false if you own or trial them. Competitors' parameter names are guesses until checked with FancyBench params; one that doesn't resolve is skipped with its todo note.",
+  "sampleRate": 48000,
+  "blockSizes": [128],
+  "plugins": [
+    {
+      "label": "Fancy EQ",
+      "path": "%FANCY_VST3%/Fancy EQ.vst3",
+      "params": { "Band 2 Freq": "1000", "Band 2 Gain": "6", "Band 2 Q": "1" }
+    },
+    {
+      "label": "TDR Nova",
+      "path": "%COMMONPROGRAMFILES%/VST3/TDR Nova.vst3",
+      "todo": "free from tokyodawn.net; check the parameter names with FancyBench params",
+      "params": { "Band 2 Active": "On", "Band 2 Frequency": "1000", "Band 2 Gain": "6", "Band 2 Q": "1" }
+    },
+    {
+      "label": "FabFilter Pro-Q 4",
+      "path": "%COMMONPROGRAMFILES%/VST3/FabFilter Pro-Q 4.vst3",
+      "disabled": true,
+      "todo": "paid; check the path and parameter names",
+      "params": { "Band 1 Used": "Used", "Band 1 Frequency": "1000", "Band 1 Gain": "6", "Band 1 Q": "1" }
+    }
+  ],
+  "tests": {
+    "cpu": { "seconds": 20, "repeats": 5 },
+    "latency": {},
+    "response": { "level": -20 },
+    "thd": { "frequencies": [100, 1000, 5000], "levels": [-20, 0] },
+    "clicks": { "param": "Band 2 Gain", "from": "0", "to": "12", "period": 0.05 }
+  }
+}

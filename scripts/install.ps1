@@ -26,13 +26,29 @@ foreach ($bundle in $bundles) {
     Write-Host "Installed $($bundle.Name)"
 }
 
+$toolsTarget = Join-Path $env:USERPROFILE 'VST3-Dev-Tools'
+
 # JUCE's AudioPluginHost, for checking sidechain and MIDI routing without a DAW.
 $pluginHost = Join-Path $Source 'tools\AudioPluginHost.exe'
 if (Test-Path $pluginHost) {
-    $toolsTarget = Join-Path $env:USERPROFILE 'VST3-Dev-Tools'
     New-Item -ItemType Directory -Force -Path $toolsTarget | Out-Null
     Copy-Item -Path $pluginHost -Destination $toolsTarget -Force
     Write-Host "Installed AudioPluginHost.exe in $toolsTarget"
+}
+
+# FancyBench, for measuring our plugins against others (docs/bench.md). The example test files are
+# only copied if they aren't there yet, so edited ones are kept.
+$bench = Join-Path $Source 'tools\FancyBench.exe'
+if (Test-Path $bench) {
+    New-Item -ItemType Directory -Force -Path $toolsTarget | Out-Null
+    Copy-Item -Path $bench -Destination $toolsTarget -Force
+    $examplesTarget = Join-Path $toolsTarget 'examples'
+    New-Item -ItemType Directory -Force -Path $examplesTarget | Out-Null
+    foreach ($example in @(Get-ChildItem -Path (Join-Path $Source 'tools\examples') -Filter '*.json' -ErrorAction SilentlyContinue)) {
+        $destination = Join-Path $examplesTarget $example.Name
+        if (-not (Test-Path $destination)) { Copy-Item -Path $example.FullName -Destination $destination }
+    }
+    Write-Host "Installed FancyBench.exe and its examples in $toolsTarget"
 }
 
 Write-Host 'Done - in REAPER: Options > Preferences > Plug-ins > VST > Re-scan'

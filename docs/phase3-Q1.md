@@ -10,7 +10,7 @@ This note is the design. The how-to, `docs/bench.md`, is written with the code.
 
 - **Hosting:** JUCE's `VST3PluginFormat`, as `tools/hosttest` already does. Any `.vst3` loads by path. It only reads plugin files where they're installed, and never copies, ships or bundles a third-party binary.
 - **No new dependencies.** JSON via `juce::JSON`, FFTs via `juce::dsp::FFT`, plots drawn with `juce::Graphics` and saved with `PNGImageFormat`. All are JUCE modules the project already uses.
-- **A crash can't lose the session.** Each plugin is measured in a child process (FancyBench running itself with `--one`), so a plugin that crashes or hangs (60 s timeout) is reported as failed and the rest carry on.
+- **A crash can't lose the session.** Each plugin is measured in a child process (FancyBench running itself with `--one`), so a plugin that crashes, or stops writing progress for 120 s, is reported as failed and the rest carry on.
 
 ## 2. Commands
 
@@ -66,7 +66,7 @@ Every test runs each plugin from a fresh instance, after a 2 s pre-roll so smoot
 | **Frequency response** | Exponential sine sweep, 20 Hz to 20 kHz, 10 s, at `level` | Magnitude and phase from the deconvolved impulse response (Farina), with the reported latency removed, at 1/24-octave points, from 20 Hz to 20 kHz. CSV, and one PNG with every plugin overlaid |
 | **THD and THD+N** | A sine at each frequency and level, 1 s settled then 1 s analysed, with a 4-term Blackman-Harris window | THD from harmonics 2 to 10 below Nyquist; THD+N from everything but the fundamental between 20 Hz and 20 kHz. Both in % and dB. PNG: THD against level |
 | **Aliasing** | A sine at each frequency, at `level` (0 dBFS by default) | The loudest component that isn't a harmonic (k × f below Nyquist) and isn't the noise floor, in dBFS and relative to the fundamental, and the total of such components. PNG: the spectrum with harmonics and aliases marked |
-| **Null** | Pink noise at −18 dBFS, then a 1 kHz sine at −6 dBFS | The output minus the input delayed by the reported latency, as RMS and peak in dBFS. For plugins set to neutral; a figure below −120 dBFS reads "null" |
+| **Null** | Pink noise at −18 dBFS, then a 1 kHz sine at −6 dBFS, 3 s each, analysed after 1 s | The output minus the input delayed by the reported latency, as RMS and peak in dBFS, and relative to the input. For plugins set to neutral; a figure below −120 dBFS reads "null" |
 | **Clicks** | A 1 kHz sine at −12 dBFS, with `param` jumping between `from` and `to` every `period` seconds, at the block size, in 32-sample blocks | The output with the sine removed (a narrow notch) and high-passed at 4 kHz, against the same with no automation: the loudest burst in dBFS and the count of bursts over −60 dBFS. A click-free plugin reads close to its static figure |
 
 Signals are generated with fixed seeds, so a run repeats exactly, apart from CPU.
@@ -83,27 +83,27 @@ Signals are generated with fixed seeds, so a run repeats exactly, apart from CPU
 
 **Catch2 (`tests/BenchTests.cpp`)**, on the analysis code alone, with synthetic signals whose answers are known. The analysis lives in `tools/bench/src/Analysis.{h,cpp}` so the test runner can link it:
 
-1. **Latency:** a delay of 0, 1, 64 and 1234 samples, plain and through a band-pass, measures exactly.
+1. **Latency:** a delay of 0, 1, 64 and 1234 samples measures exactly; through a 31-tap linear-phase band-pass the peak lands at the delay plus 15; a silent output reads as silent.
 2. **Response:** a known biquad (a +6 dB bell at 1 kHz, Q 1) measures within 0.05 dB and 1° of its analytic response from 20 Hz to 20 kHz.
 3. **THD:** `tanh` at known drives matches the THD from its series to 0.1 dB; a clean sine reads below −140 dB.
 4. **Aliasing:** a hard clipper at 15 kHz, 48 kHz with no oversampling, finds the alias at 48 − 3 × 15 = 3 kHz at its computed level, within 0.5 dB.
 5. **Null:** identical signals read null, and a 0.1 dB gain difference reads −38.8 dB within 0.1 dB.
-6. **Clicks:** a gain step on a sine counts one burst per step, and a 20 ms ramp counts none.
+6. **Clicks:** a gain step on a sine counts one burst per step, and a 20 ms raised-cosine ramp counts none.
 7. **Test files:** a parameter by name, by index and as `=0.5`; an unknown name; a missing plugin; a bad file gives a message, not a crash.
 
 **CI (`FancyBench smoke dist`)**, on our nine plugins, after the measurement step. It fails the build if:
 
-1. **Every plugin's** measured latency differs from what it reports. Ours are exact, at defaults and with FIR at FFT 4096.
-2. **Fancy EQ** with band 2 at +6 dB, 1 kHz, Q 1 differs by more than 0.1 dB from the analytic response of the bell the EQ designs. This checks the bench end to end against a known answer.
+1. **Every plugin's** measured latency is more than 3 samples after what it reports, or at all before it, at defaults and with FIR at FFT 1024 (its default is 4096). The cross-correlation peak can sit a few samples after the reported latency through minimum-phase filtering, such as MultiComp's crossovers.
+2. **Fancy EQ** with band 2 at +6 dB, 1 kHz, Q 1 differs by more than 0.1 dB from the response of the bell the EQ designs, which a hidden Catch2 case prints into the measurements from `eq::design`. This checks the bench end to end against a known answer.
 3. **Neutral settings** don't null where they should: Fancy EQ at defaults, and Comp with Wet at −inf and Dry at 0 dB.
-4. **CPU ratios** to Fancy Comp, from the bench, differ by more than 25 % from the Catch2 measurements' ratios in the same run, for Comp, EQ, MultiComp and Delay. The two time the same plugins differently (hosted against direct), so this checks the bench's timing rather than the runner.
+4. **CPU ratios** to Fancy Comp, from the bench, differ by more than 25 % from W's Catch2 measurement's ratios in the same run (`workflow cpu:` lines), for Comp, EQ, MultiComp and Delay, on the same uniform noise, unpaced. The two time the same plugins differently (hosted against direct), so this checks the bench's timing rather than the runner.
 5. **The three example files** run against our plugins without errors, with the competitors skipped as not installed.
 
 The smoke results upload with the measurements, and the figures go to `docs/measurements/bench.txt`.
 
 ## 7. Example test files
 
-In `tools/bench/examples/`, each with Fancy's plugin and the free leaders from the market report, which the user can install at no cost. Paid ones are listed in comments as "add if you own or trial it". The competitors' parameter names are filled in from `FancyBench params` once the user has them installed. Until then each competitor entry carries a `"todo"` note, and the run skips it if a name doesn't resolve:
+In `tools/bench/examples/`, each with Fancy's plugin and the free leaders from the market report, which the user can install at no cost. JSON has no comments, so paid ones are entries with `"disabled": true`, to switch on if the user owns or trials one. The competitors' parameter names are filled in from `FancyBench params` once the user has them installed. Until then each competitor entry carries a `"todo"` note, and the run skips it if a name doesn't resolve. `install.ps1` copies the examples only when they aren't there, so the user's edits survive an update:
 
 | File | Ours | Free | Paid (as comments) |
 |---|---|---|---|

@@ -1,0 +1,51 @@
+{
+  "name": "Delay, one 375 ms tap with 40 % feedback",
+  "notes": "Fancy Delay against TAL-Dub-X and Valhalla Freq Echo (both free). Paid entries are disabled: set \"disabled\" to false if you own or trial them. Competitors' parameter names are guesses until checked with FancyBench params; one that doesn't resolve is skipped with its todo note.",
+  "sampleRate": 48000,
+  "blockSizes": [128],
+  "tempo": 120,
+  "plugins": [
+    {
+      "label": "Fancy Delay",
+      "path": "%FANCY_VST3%/Fancy Delay.vst3",
+      "params": { "Tap 1 Length": "375", "Tap 1 Feedback": "40" }
+    },
+    {
+      "label": "TAL-Dub-X",
+      "path": "%COMMONPROGRAMFILES%/VST3/TAL-Dub-X.vst3",
+      "todo": "free from tal-software.com; check the path and parameter names with FancyBench params",
+      "params": { "Delay": "375", "Feedback": "40" }
+    },
+    {
+      "label": "Valhalla Freq Echo",
+      "path": "%COMMONPROGRAMFILES%/VST3/ValhallaFreqEcho.vst3",
+      "todo": "free from valhalladsp.com; check the path and parameter names with FancyBench params",
+      "params": { "Delay": "375", "Feedback": "40" }
+    },
+    {
+      "label": "Soundtoys EchoBoy",
+      "path": "%COMMONPROGRAMFILES%/VST3/EchoBoy.vst3",
+      "disabled": true,
+      "todo": "paid; check the path and parameter names"
+    },
+    {
+      "label": "FabFilter Timeless 3",
+      "path": "%COMMONPROGRAMFILES%/VST3/FabFilter Timeless 3.vst3",
+      "disabled": true,
+      "todo": "paid; check the path and parameter names"
+    },
+    {
+      "label": "Valhalla Delay",
+      "path": "%COMMONPROGRAMFILES%/VST3/ValhallaDelay.vst3",
+      "disabled": true,
+      "todo": "paid; check the path and parameter names"
+    }
+  ],
+  "tests": {
+    "cpu": { "seconds": 20, "repeats": 5 },
+    "latency": {},
+    "thd": { "frequencies": [100, 1000], "levels": [-20, -6, 0] },
+    "aliasing": { "frequencies": [5000, 10000], "level": -6 },
+    "clicks": { "param": "Tap 1 Length", "from": "250", "to": "500", "period": 0.25 }
+  }
+}

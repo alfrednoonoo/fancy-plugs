@@ -153,6 +153,18 @@ jobs:
           & $exe.FullName dist | Tee-Object -FilePath measurements/hosttest.txt
           if ($LASTEXITCODE -ne 0) { throw "fancy-hosttest exited with $LASTEXITCODE" }
 
+      # FancyBench (Phase 3 Q1): checks against known answers on our own plugins, and runs the
+      # example test files with the competitors skipped. Needs every plugin built.
+      - name: Run FancyBench smoke checks
+        if: env.PLUGIN == 'all'
+        shell: pwsh
+        timeout-minutes: 25
+        run: |
+          $exe = Get-ChildItem -Path build/tools/bench -Recurse -File -Filter 'FancyBench.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'FancyBench.exe was not built' }
+          & $exe.FullName smoke dist measurements/measurements.txt measurements/bench tools/bench/examples | Tee-Object -FilePath measurements/bench.txt
+          if ($LASTEXITCODE -ne 0) { throw "FancyBench smoke exited with $LASTEXITCODE" }
+
       # A test host for the user's PC (Phase 2.1 H.7.3), built once per JUCE version.
       - name: Cache AudioPluginHost
         id: pluginhost-cache
@@ -172,11 +184,16 @@ jobs:
           if (-not $exe) { throw 'AudioPluginHost.exe was not built' }
           Copy-Item $exe.FullName pluginhost-bin/
 
-      - name: Add AudioPluginHost to the artifact
+      - name: Add AudioPluginHost and FancyBench to the artifact
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist/tools | Out-Null
           Copy-Item pluginhost-bin/AudioPluginHost.exe dist/tools/
+          $bench = Get-ChildItem -Path build/tools/bench -Recurse -File -Filter 'FancyBench.exe' | Select-Object -First 1
+          if (-not $bench) { throw 'FancyBench.exe was not built' }
+          Copy-Item $bench.FullName dist/tools/
+          New-Item -ItemType Directory -Force -Path dist/tools/examples | Out-Null
+          Copy-Item tools/bench/examples/*.json dist/tools/examples/
 
       - name: Render UI screenshots
         shell: pwsh
