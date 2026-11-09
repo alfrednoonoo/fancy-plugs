@@ -312,6 +312,7 @@ juce::AudioProcessorParameter* findParameter (juce::AudioProcessor& processor, c
 juce::Result resolveValue (juce::AudioProcessorParameter& parameter, const juce::String& requestedText, ParamSetting& setting)
 {
     const auto requested = requestedText.trim();
+    setting = {};
     setting.parameter = &parameter;
     setting.name = nameOf (parameter);
     setting.requested = requested;
