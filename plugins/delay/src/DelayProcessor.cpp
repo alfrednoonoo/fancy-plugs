@@ -153,7 +153,7 @@ constexpr float straightFeel = 0.0f, dottedFeel = 1.0f, tripletFeel = 2.0f;
 
 std::vector<fancy::FactoryPreset> createPresets()
 {
-    return {
+    std::vector<fancy::FactoryPreset> presets {
         { "Default", {} },
         { "Slapback", { { "t1mode", msMode }, { "t1ms", 110.0f }, { "t1fb", 10.0f }, { "t1lp", 5000.0f }, { "wet", -6.0f } } },
         { "1/8 dotted", { { "t1note", note8 }, { "t1feel", dottedFeel }, { "t1fb", 35.0f }, { "t1lp", 6000.0f }, { "wet", -6.0f } } },
@@ -164,6 +164,18 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Haas widener", { { "t1mode", msMode }, { "t1ms", 8.0f }, { "t1pan", -100.0f },
                             { "t2used", 1.0f }, { "t2mode", msMode }, { "t2ms", 13.0f }, { "t2pan", 100.0f }, { "wet", -6.0f } } },
     };
+
+    // Phase 3 Q2.1: the preset browser's categories.
+    fancy::setCategories (presets, {
+        { "Slapback", "Short" },
+        { "Haas widener", "Short" },
+        { "1/8 dotted", "Tempo" },
+        { "1/4 ping-pong", "Tempo" },
+        { "Triplet echo", "Tempo" },
+        { "Lo-fi tape", "Character" },
+    });
+
+    return presets;
 }
 } // namespace
 

@@ -38,13 +38,23 @@ fancy::FancyProcessor::Layout createLayout()
 
 std::vector<fancy::FactoryPreset> createPresets()
 {
-    return {
+    std::vector<fancy::FactoryPreset> presets {
         { "Default", {} },
         { "Tight Kick", { { "freq", 60.0f }, { "wet", -9.0f }, { "q", 1.5f } } },
         { "Deep Sub", { { "freq", 42.0f }, { "wet", -6.0f }, { "q", 3.0f }, { "monoBelow", 1.0f } } },
         { "Bass Lift", { { "freq", 90.0f }, { "wet", -12.0f }, { "q", 1.0f } } },
         { "Safe Boom", { { "freq", 50.0f }, { "wet", 0.0f }, { "dry", -3.0f }, { "softClip", 1.0f } } },
     };
+
+    // Phase 3 Q2.1: the preset browser's categories.
+    fancy::setCategories (presets, {
+        { "Tight Kick", "Kick" },
+        { "Safe Boom", "Kick" },
+        { "Deep Sub", "Bass" },
+        { "Bass Lift", "Bass" },
+    });
+
+    return presets;
 }
 
 } // namespace

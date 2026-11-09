@@ -14,6 +14,7 @@ const juce::Identifier uiWidthProperty ("uiWidth");
 const juce::Identifier uiHeightProperty ("uiHeight");
 constexpr int timerHz = 30;
 constexpr float scales[] { 1.0f, 1.25f, 1.5f, 2.0f };
+constexpr float minimumScale = 1.0f, maximumScale = 2.0f;
 constexpr int scaleItemBase = 1000;
 constexpr int aboutItem = 2000;
 constexpr int saveItem = 10001, reloadItem = 10002, renameItem = 10003, deleteItem = 10004, folderItem = 10005;
@@ -128,6 +129,7 @@ ShellEditor::ShellEditor (FancyProcessor& processor, int baseWidth, int baseHeig
 {
     setLookAndFeel (&lookAndFeel.get());
 
+    addAndMakeVisible (titleStrip);
     addAndMakeVisible (root);
     root.addAndMakeVisible (body);
 
@@ -159,12 +161,18 @@ ShellEditor::ShellEditor (FancyProcessor& processor, int baseWidth, int baseHeig
     root.addChildComponent (sidechainNotice);
     root.addChildComponent (tooltips);
 
-    presetDropdown.onClick = [this] { showPresetMenu(); };
+    presetDropdown.onOpen = [this] { showPresetMenu(); };
+    presetDropdown.onPrevious = [this] { stepPreset (-1); };
+    presetDropdown.onNext = [this] { stepPreset (1); };
     saveButton.onClick = [this] { showSavePrompt(); };
     parameterButton.onClick = [this] { showParameterMenu(); };
 
+    // Every window resizes from 100 % to 200 % (Phase 3 Q2.1). enableResizing lets a layout
+    // reflow instead.
+    setResizable (true, false);
+
     const auto savedScale = (float) (double) processor.getApvts().state.getProperty (uiScaleProperty, 1.0);
-    applyScale (std::find (std::begin (scales), std::end (scales), savedScale) != std::end (scales) ? savedScale : 1.0f);
+    applyScale (savedScale >= minimumScale && savedScale <= maximumScale ? savedScale : 1.0f);
 
     timerCallback();
     startTimerHz (timerHz);
@@ -240,6 +248,9 @@ void ShellEditor::closePopups()
     if (auto* dialog = DialogLayer::findOpen (root))
         dialog->cancel();
 
+    if (auto* browser = PresetBrowser::findOpen (root))
+        browser->close();
+
     tooltips.hide();
 
     if (sidechainNoticeForced)
@@ -277,7 +288,37 @@ bool ShellEditor::keyPressed (const juce::KeyPress& key)
 std::vector<ShellEditor::PopupOpener> ShellEditor::getPopupOpeners()
 {
     return {
-        { "preset-menu", [this] { showPresetMenu(); } },
+        { "preset-menu", [this] { browserFilter = {}; showPresetMenu(); } },
+        { "preset-browser-search", [this]
+          {
+              // The second factory preset's first word, cut short, as someone would type it.
+              browserFilter = {};
+              showPresetMenu();
+              const auto names = fancyProcessor.getPresets().getFactoryNames();
+              const auto word = names[juce::jmin (1, names.size() - 1)].upToFirstOccurrenceOf (" ", false, false);
+
+              if (auto* browser = getPresetBrowser())
+                  browser->setSearch (word.substring (0, juce::jmax (1, word.length() - 1)));
+          } },
+        { "preset-browser-categories", [this]
+          {
+              browserFilter = {};
+              showPresetMenu();
+
+              if (auto* browser = getPresetBrowser())
+                  browser->showCategoryMenu();
+          } },
+        { "preset-browser-empty", [this]
+          {
+              browserFilter = {};
+              showPresetMenu();
+
+              if (auto* browser = getPresetBrowser())
+              {
+                  browser->setCategory (PresetManager::Filter::Kind::all);
+                  browser->setSearch ("zzz");
+              }
+          } },
         { "preset-save", [this] { showSavePrompt(); } },
         { "preset-delete", [this] { showDeletePrompt ("Church choir mic"); } },
         { "parameter-menu", [this]
@@ -322,40 +363,88 @@ void ShellEditor::enableResizing (int minWidth, int minHeight, int maxWidth, int
     height = juce::jlimit (minHeight, maxHeight, (int) state.getProperty (uiHeightProperty, height));
 
     resizable = true;
-    setResizable (true, false);
     applyScale (uiScale);
+}
+
+void ShellEditor::applyTransforms()
+{
+    const auto transform = juce::AffineTransform::scale (uiScale);
+    titleStrip.setTransform (transform);
+    root.setTransform (transform);
 }
 
 void ShellEditor::applyScale (float scale)
 {
-    const auto baseWidth = width, baseHeight = height;
+    const auto baseWidth = width, baseHeight = height + titleHeight;
 
-    uiScale = scale;
-    root.setTransform (juce::AffineTransform::scale (scale));
+    uiScale = juce::jlimit (minimumScale, maximumScale, scale);
+    applyTransforms();
 
-    if (resizable)
-        setResizeLimits (juce::roundToInt ((float) minimumWidth * scale), juce::roundToInt ((float) minimumHeight * scale),
-                         juce::roundToInt ((float) maximumWidth * scale), juce::roundToInt ((float) maximumHeight * scale));
+    if (auto* constrainer = getConstrainer())
+    {
+        if (resizable)
+        {
+            // The layout reflows: any shape between its limits, at this scale.
+            constrainer->setFixedAspectRatio (0.0);
+            setResizeLimits (juce::roundToInt ((float) minimumWidth * uiScale), juce::roundToInt ((float) (minimumHeight + titleHeight) * uiScale),
+                             juce::roundToInt ((float) maximumWidth * uiScale), juce::roundToInt ((float) (maximumHeight + titleHeight) * uiScale));
+        }
+        else
+        {
+            // A fixed layout scales as a whole, from 100 % to 200 %, keeping its shape.
+            setResizeLimits (juce::roundToInt ((float) baseWidth * minimumScale), juce::roundToInt ((float) baseHeight * minimumScale),
+                             juce::roundToInt ((float) baseWidth * maximumScale), juce::roundToInt ((float) baseHeight * maximumScale));
+            constrainer->setFixedAspectRatio ((double) baseWidth / (double) baseHeight);
+        }
+    }
 
-    setSize (juce::roundToInt ((float) baseWidth * scale), juce::roundToInt ((float) baseHeight * scale));
+    setSize (juce::roundToInt ((float) baseWidth * uiScale), juce::roundToInt ((float) baseHeight * uiScale));
 }
 
 void ShellEditor::resized()
 {
+    auto& state = fancyProcessor.getApvts().state;
+
     if (resizable)
     {
         width = juce::roundToInt ((float) getWidth() / uiScale);
-        height = juce::roundToInt ((float) getHeight() / uiScale);
+        height = juce::roundToInt ((float) getHeight() / uiScale) - titleHeight;
 
-        auto& state = fancyProcessor.getApvts().state;
         state.setProperty (uiWidthProperty, width, nullptr);
         state.setProperty (uiHeightProperty, height, nullptr);
     }
+    else if (width > 0)
+    {
+        // The host or the user dragged the window's edge: the scale follows its width.
+        const auto scale = juce::jlimit (minimumScale, maximumScale, (float) getWidth() / (float) width);
 
-    root.setBounds (0, 0, width, height);
+        if (std::abs (scale - uiScale) > 1.0e-4f)
+        {
+            uiScale = scale;
+            applyTransforms();
+            state.setProperty (uiScaleProperty, std::round (uiScale * 100.0f) / 100.0f, nullptr);
+        }
+    }
+
+    titleStrip.setBounds (0, 0, width, titleHeight);
+    root.setBounds (0, titleHeight, width, height);
     body.setBounds (0, headerHeight, width, height - headerHeight);
     layoutHeader();
     bodyResized();
+
+    if (auto* browser = PresetBrowser::findOpen (root))
+        browser->refresh();
+}
+
+void ShellEditor::setTitleColour (juce::Colour colour)
+{
+    titleColour = colour;
+    refreshTitle();
+}
+
+void ShellEditor::refreshTitle()
+{
+    titleStrip.setTitle (fancyProcessor.getName(), titleColour.value_or (getAccentColour()));
 }
 
 void ShellEditor::layoutHeader()
@@ -574,6 +663,11 @@ void ShellEditor::refreshHeader()
     const auto& presets = fancyProcessor.getPresets();
     presetDropdown.setText (presets.getCurrentName() + (presets.isModified() ? changedMark : juce::String()));
 
+    if (auto* browser = PresetBrowser::findOpen (root))
+        browser->refreshFooter();
+
+    refreshTitle();
+
     const auto inputs = juce::String (getShownInputs());
     const auto outputs = juce::String (fancyProcessor.getMainBusNumOutputChannels());
 
@@ -585,95 +679,124 @@ void ShellEditor::refreshHeader()
 
 void ShellEditor::showPresetMenu()
 {
-    auto& presets = fancyProcessor.getPresets();
-    const auto factoryNames = presets.getFactoryNames();
-    const auto userNames = presets.getUserNames();
-    const auto current = presets.getCurrentName();
-    const auto userLoaded = presets.isUserPresetLoaded();
+    closePopups();
 
-    Menu menu;
-    menu.addSection ("Factory");
+    PresetBrowser::Actions actions;
+    const auto safe = juce::Component::SafePointer<ShellEditor> (this);
 
-    for (int i = 0; i < factoryNames.size(); ++i)
-        menu.addItem (1 + i, factoryNames[i], true, ! userLoaded && factoryNames[i] == current);
-
-    if (! userNames.isEmpty())
+    actions.save = [safe] { if (safe != nullptr) safe->showSavePrompt(); };
+    actions.reload = [safe] { if (safe != nullptr) safe->fancyProcessor.getPresets().reload(); };
+    actions.rename = [safe] { if (safe != nullptr) safe->showRenamePrompt(); };
+    actions.remove = [safe]
     {
-        menu.addSection ("User");
+        if (safe != nullptr)
+            safe->showDeletePrompt (safe->fancyProcessor.getPresets().getCurrentName());
+    };
+    actions.openFolder = [safe] { if (safe != nullptr) safe->fancyProcessor.getPresets().openUserDirectory(); };
+    actions.changed = [safe] { if (safe != nullptr) safe->refreshHeader(); };
 
-        for (int i = 0; i < userNames.size(); ++i)
-            menu.addItem (1 + factoryNames.size() + i, userNames[i], true, userLoaded && userNames[i] == current);
-    }
+    auto browser = std::make_unique<PresetBrowser> (fancyProcessor.getPresets(), browserFilter, presetDropdown, std::move (actions));
+    auto* raw = browser.get();
+    adoptPopup (std::move (browser));
+    raw->refresh();
 
-    menu.addSeparator();
-    menu.addItem (saveItem, "Save as new preset" + ellipsis, true, false, "Ctrl+S");
+    if (raw->isShowing())
+        raw->getSearchField().grabKeyboardFocus();
+}
 
-    if (presets.isModified())
-        menu.addItem (reloadItem, "Reload " + quoted (current), true, false, "discard changes");
+PresetBrowser* ShellEditor::getPresetBrowser()
+{
+    return PresetBrowser::findOpen (root);
+}
 
-    menu.addItem (renameItem, "Rename" + ellipsis, userLoaded);
-    menu.addItem (deleteItem, "Delete" + ellipsis, userLoaded);
-    menu.addItem (folderItem, "Open preset folder");
+void ShellEditor::stepPreset (int direction)
+{
+    fancyProcessor.getPresets().step (direction, browserFilter);
 
-    menu.show (presetDropdown, [safeThis = juce::Component::SafePointer<ShellEditor> (this)] (int result)
-    {
-        if (safeThis == nullptr || result <= 0)
-            return;
+    if (auto* browser = PresetBrowser::findOpen (root))
+        browser->refresh();
 
-        auto& self = *safeThis;
-        auto& manager = self.fancyProcessor.getPresets();
-
-        switch (result)
-        {
-            case saveItem: self.showSavePrompt(); break;
-            case reloadItem: manager.reload(); break;
-            case renameItem: self.showRenamePrompt(); break;
-            case deleteItem: self.showDeletePrompt (manager.getCurrentName()); break;
-            case folderItem: manager.openUserDirectory(); break;
-            default: manager.load (result - 1); break;
-        }
-
-        self.refreshHeader();
-    });
+    refreshHeader();
 }
 
 namespace
 {
-std::function<juce::String (const juce::StringArray&)> nameCheck (PresetManager& presets, const juce::String& allowed)
+// Names may repeat across categories (Phase 3 Q2.1), but not within one. The category is the
+// dialog's second field, or a fixed one when renaming.
+std::function<juce::String (const juce::StringArray&)> nameCheck (PresetManager& presets, const juce::String& allowed,
+                                                                  std::optional<juce::String> fixedCategory)
 {
-    return [&presets, allowed] (const juce::StringArray& values)
+    return [&presets, allowed, fixedCategory] (const juce::StringArray& values)
     {
         const auto name = juce::File::createLegalFileName (values[0]).trim();
+        const auto category = fixedCategory.value_or (values[1]).trim();
 
         if (name.isEmpty())
             return juce::String ("Type a name for the preset.");
 
-        if (name != allowed && presets.nameExists (name))
-            return "There" + apostrophe + "s already a preset called " + quoted (name) + ".";
+        if (name != allowed && presets.userPresetExists (name, category))
+            return "There" + apostrophe + "s already a preset called " + quoted (name)
+                   + (category.isEmpty() ? juce::String() : " in " + category) + ".";
 
         return juce::String();
+    };
+}
+
+// Completes a category as it's typed, from the ones that exist: the rest is selected, so
+// typing on replaces it.
+void completeCategories (juce::TextEditor& field, juce::StringArray categories)
+{
+    categories.removeString (PresetManager::userCategory);
+
+    field.onTextChange = [&field, categories, lastLength = field.getText().length()] () mutable
+    {
+        const auto text = field.getText();
+        const auto grew = text.length() > lastLength;
+        lastLength = text.length();
+
+        if (! grew || text.isEmpty() || field.getHighlightedRegion().getLength() > 0)
+            return;
+
+        for (const auto& category : categories)
+        {
+            if (category.length() > text.length() && category.startsWithIgnoreCase (text))
+            {
+                field.setText (text + category.substring (text.length()), false);
+                field.setHighlightedRegion ({ text.length(), category.length() });
+                lastLength = text.length();
+                return;
+            }
+        }
     };
 }
 } // namespace
 
 void ShellEditor::showSavePrompt()
 {
+    if (auto* browser = PresetBrowser::findOpen (root))
+        browser->close();
+
     auto& presets = fancyProcessor.getPresets();
 
     DialogSpec spec;
     spec.title = "Save as new preset";
     spec.action = "Save";
     spec.fields.push_back ({ "Name", presets.isUserPresetLoaded() ? presets.getCurrentName() : juce::String() });
-    spec.validate = nameCheck (presets, {});
+    spec.fields.push_back ({ "Category (optional)", presets.getCurrentCategory() });
+    spec.validate = nameCheck (presets, {}, std::nullopt);
 
     showDialog (root, std::move (spec), [safeThis = juce::Component::SafePointer<ShellEditor> (this)] (bool accepted, const juce::StringArray& values)
     {
         if (safeThis != nullptr && accepted)
         {
-            safeThis->fancyProcessor.getPresets().saveUser (values[0]);
+            safeThis->fancyProcessor.getPresets().saveUser (values[0], values[1]);
             safeThis->refreshHeader();
         }
     });
+
+    if (auto* dialog = DialogLayer::findOpen (root))
+        if (auto* field = dialog->getField (1))
+            completeCategories (*field, presets.getUserCategories());
 }
 
 void ShellEditor::showRenamePrompt()
@@ -689,7 +812,7 @@ void ShellEditor::showRenamePrompt()
     spec.title = "Rename preset";
     spec.action = "Rename";
     spec.fields.push_back ({ "Name", current });
-    spec.validate = nameCheck (presets, current);
+    spec.validate = nameCheck (presets, current, presets.getCurrentCategory());
 
     showDialog (root, std::move (spec), [safeThis = juce::Component::SafePointer<ShellEditor> (this)] (bool accepted, const juce::StringArray& values)
     {
@@ -766,7 +889,7 @@ void ShellEditor::showParameterMenu()
     Menu sizes;
 
     for (int i = 0; i < (int) std::size (scales); ++i)
-        sizes.addItem (scaleItemBase + i, juce::String (juce::roundToInt (scales[i] * 100.0f)) + " %", true, scales[i] == uiScale);
+        sizes.addItem (scaleItemBase + i, juce::String (juce::roundToInt (scales[i] * 100.0f)) + " %", true, std::abs (scales[i] - uiScale) < 0.005f);
 
     menu.addSubMenu ("UI size", std::move (sizes));
     menu.addItem (aboutItem, "About");

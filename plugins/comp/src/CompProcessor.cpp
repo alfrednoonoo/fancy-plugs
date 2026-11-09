@@ -105,7 +105,7 @@ fancy::FancyProcessor::Layout createLayout()
 
 std::vector<fancy::FactoryPreset> createPresets()
 {
-    return {
+    std::vector<fancy::FactoryPreset> presets {
         { "Default", {} },
         { "Gentle Glue", { { "threshold", -18.0f }, { "ratio", 2.0f }, { "knee", 6.0f }, { "attack", 30.0f }, { "release", 300.0f }, { "makeup", 1.0f } } },
         { "Vocal Control", { { "threshold", -20.0f }, { "ratio", 4.0f }, { "knee", 3.0f }, { "attack", 5.0f }, { "release", 120.0f }, { "makeup", 1.0f } } },
@@ -113,6 +113,17 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Parallel Crush", { { "threshold", -36.0f }, { "ratio", 10.0f }, { "attack", 1.0f }, { "release", 80.0f }, { "wet", -6.0f }, { "dry", 0.0f }, { "makeup", 1.0f } } },
         { "Brickwall", { { "threshold", -6.0f }, { "ratio", (float) CompDsp::infiniteRatio }, { "attack", 0.5f }, { "release", 80.0f }, { "precomp", 2.0f }, { "rms", 0.0f }, { "limit", 1.0f } } },
     };
+
+    // Phase 3 Q2.1: the preset browser's categories.
+    fancy::setCategories (presets, {
+        { "Gentle Glue", "Bus" },
+        { "Vocal Control", "Vocals" },
+        { "Drum Punch", "Drums" },
+        { "Parallel Crush", "Drums" },
+        { "Brickwall", "Limiting" },
+    });
+
+    return presets;
 }
 } // namespace
 

@@ -349,6 +349,9 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
       logCheckbox (parameter ("logFreq"), "Log-scale automated freq."),
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle)
 {
+    // The title strip keeps one colour while the accent follows the selection.
+    setTitleColour (multiBandColour (0));
+
     auto& body = getBody();
 
     // Phase 2.1 W.1: room in the header for undo, redo, A/B and Compare.

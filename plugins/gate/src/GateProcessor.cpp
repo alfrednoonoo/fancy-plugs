@@ -162,7 +162,7 @@ std::vector<fancy::FactoryPreset> createPresets()
 {
     constexpr float duck = 1.0f, sidechainLR = 3.0f;
 
-    return {
+    std::vector<fancy::FactoryPreset> presets {
         { "Default", {} },
         { "Vocal clean-up", { { "threshold", -45.0f }, { "hysteresis", -6.0f }, { "attack", 2.0f }, { "hold", 60.0f }, { "release", 200.0f },
                               { "range", -18.0f }, { "highpass", 100.0f } } },
@@ -176,6 +176,17 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Drum trigger to MIDI", { { "midi", 1.0f }, { "velocity", 1.0f }, { "threshold", -24.0f }, { "hold", 20.0f }, { "release", 50.0f } } },
         { "Gentle expander", { { "threshold", -50.0f }, { "hysteresis", -6.0f }, { "range", -12.0f }, { "attack", 5.0f }, { "release", 250.0f } } },
     };
+
+    // Phase 3 Q2.1: the preset browser's categories.
+    fancy::setCategories (presets, {
+        { "Vocal clean-up", "Clean-up" },
+        { "Gentle expander", "Clean-up" },
+        { "Kick tight", "Drums" },
+        { "Duck under kick", "Sidechain" },
+        { "Drum trigger to MIDI", "Sidechain" },
+    });
+
+    return presets;
 }
 } // namespace
 

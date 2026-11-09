@@ -4,7 +4,7 @@ Brief: §Q2.1 of `docs/BUILD_PROMPT_PHASE3.md`. Both features are built once, in
 
 Q2.1 adds no host parameter and no DSP. Nothing on the audio thread changes, so saved projects load and render bit-identical, and CPU doesn't change. The saved state gains nothing a project needs: favourites and categories live in the preset folder, and the window size uses the existing `uiScale`, `uiWidth` and `uiHeight` properties. `stateVersion` stays at its current value.
 
-**Status:** the user accepted every recommended decision in §5 on 9 November 2026 and asked for a mockup first. The same day the user added the plugin's name at the top of every window, and chose a title strip (§3.2, option 2 of 3). Mockups: `reference/phase3/17a__preset_browser_kicker.png`, `17b__preset_browser_comp.png`, `17c__preset_browser_closeups.png` and `18__title_strip.png`, source `design/phase3-mockup-src/preset-browser.html`. No code until the mockup is approved.
+**Status:** the user accepted every recommended decision in §5 on 9 November 2026 and asked for a mockup first. The same day the user added the plugin's name at the top of every window, and chose a title strip (§3.2, option 2 of 3). Mockups: `reference/phase3/17a__preset_browser_kicker.png`, `17b__preset_browser_comp.png`, `17c__preset_browser_closeups.png` and `18__title_strip.png`, source `design/phase3-mockup-src/preset-browser.html`. **The user approved the mockups on 9 November 2026.**
 
 ## 1. Where the plugins stand
 
@@ -150,4 +150,4 @@ The REAPER checklist, `docs/presets-checklist.md`, covers the browser, the arrow
 3. **The browser replaces the menu** (§2.1). The alternative keeps today's menu and adds "Browse…" to it, which costs an extra click every time.
 4. **Scaling, not reflowing, for the eight fixed layouts** (§3.1). Reflowing them the way EQ does would change eight layouts and need eight new designs. Scaling is what "between its minimum and 200 %" reads as.
 5. **The factory categories** in §2.4.
-6. **Kicker and Exciter's bottom caption.** With the name in the title strip, their grey "Fancy Kicker" / "Fancy Exciter" caption from the Figma design says it twice. Keep it, as the Figma design has it, or remove it. Open.
+6. **Kicker and Exciter's bottom caption.** With the name in the title strip, their grey "Fancy Kicker" / "Fancy Exciter" caption from the Figma design says it twice. Keep it, as the Figma design has it, or remove it. **Decided 9 November 2026: keep it.**

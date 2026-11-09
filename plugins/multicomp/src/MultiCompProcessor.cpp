@@ -211,7 +211,7 @@ std::vector<fancy::FactoryPreset> createPresets()
         return values;
     };
 
-    return {
+    std::vector<fancy::FactoryPreset> presets {
         { "Default", {} },
         { "Gentle Glue", everyBand ({ { "thr", -24.0f }, { "ratio", 1.5f }, { "knee", 12.0f }, { "att", 30.0f }, { "rel", 200.0f }, { "mk", 1.0f } }) },
         { "Drum Bus", with (everyBand ({ { "thr", -20.0f }, { "ratio", 3.0f }, { "att", 15.0f }, { "rel", 120.0f } }),
@@ -227,6 +227,18 @@ std::vector<fancy::FactoryPreset> createPresets()
                                            { "up", 1.0f }, { "uthr", -40.0f }, { "uratio", 4.0f }, { "lift", 18.0f }, { "floor", -70.0f } }),
                               { { "bands", 3.0f }, { "b1top", 88.0f }, { "b2top", 2500.0f }, { "depth", 100.0f } }) },
     };
+
+    // Phase 3 Q2.1: the preset browser's categories.
+    fancy::setCategories (presets, {
+        { "Gentle Glue", "Bus" },
+        { "Drum Bus", "Drums" },
+        { "Vocal Smoother", "Vocals" },
+        { "Master Linear", "Mastering" },
+        { "Multiband Limiter", "Mastering" },
+        { "Big squash", "Character" },
+    });
+
+    return presets;
 }
 } // namespace
 

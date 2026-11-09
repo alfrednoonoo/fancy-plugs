@@ -85,7 +85,8 @@ bool somethingOpen (ShellEditor& editor)
 {
     auto& parent = editor.getPopupParent();
 
-    if (MenuLayer::findOpen (parent) != nullptr || DialogLayer::findOpen (parent) != nullptr)
+    if (MenuLayer::findOpen (parent) != nullptr || DialogLayer::findOpen (parent) != nullptr
+        || PresetBrowser::findOpen (parent) != nullptr)
         return true;
 
     if (editor.getTooltips().isVisible() && editor.getTooltips().getShownText().isNotEmpty())
@@ -139,6 +140,12 @@ void checkEveryPopup (Setup setup)
             // Every panel fits inside the plugin window.
             for (int i = 0; i < menu->getNumPanels(); ++i)
                 CHECK (editor->getPopupParent().getLocalBounds().contains (menu->getPanel (i).getBounds()));
+        }
+
+        if (auto* browser = PresetBrowser::findOpen (editor->getPopupParent()))
+        {
+            CHECK (browser->getParentComponent() == &editor->getPopupParent());
+            CHECK (editor->getPopupParent().getLocalBounds().contains (browser->getPanelBounds()));
         }
 
         if (auto* dialog = DialogLayer::findOpen (editor->getPopupParent()))
@@ -440,6 +447,15 @@ TEST_CASE ("Presets: Default at defaults, a mark once changed, and reload discar
     CHECK (presets.isModified());
 }
 
+static fancy::PresetManager::Entry userEntryFor (const fancy::PresetManager& presets, const juce::String& name)
+{
+    for (const auto& entry : presets.getEntries())
+        if (entry.isUser && entry.name == name)
+            return entry;
+
+    return {};
+}
+
 TEST_CASE ("Presets: save, rename and delete a user preset", "[popups][presets]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInitialiser;
@@ -462,8 +478,14 @@ TEST_CASE ("Presets: save, rename and delete a user preset", "[popups][presets]"
     CHECK_FALSE (presets.getUserNames().contains (name));
     CHECK (presets.getUserNames().contains (renamed));
 
-    // A factory name can't be taken.
-    CHECK_FALSE (presets.renameUser ("Default"));
+    // Names can repeat across categories (Phase 3 Q2.1); within one, a taken name is refused.
+    REQUIRE (presets.saveUser (name + " other"));
+    presets.load (userEntryFor (presets, renamed));
+    CHECK (presets.getCurrentName() == renamed);
+    CHECK_FALSE (presets.renameUser (name + " other"));
+    presets.load (userEntryFor (presets, name + " other"));
+    REQUIRE (presets.deleteUser());
+    presets.load (userEntryFor (presets, renamed));
 
     REQUIRE (presets.deleteUser());
     CHECK_FALSE (presets.getUserNames().contains (renamed));

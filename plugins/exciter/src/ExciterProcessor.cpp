@@ -34,13 +34,23 @@ fancy::FancyProcessor::Layout createLayout()
 
 std::vector<fancy::FactoryPreset> createPresets()
 {
-    return {
+    std::vector<fancy::FactoryPreset> presets {
         { "Default", {} },
         { "Gentle Air", { { "freq", 6000.0f }, { "clipBoost", 3.0f }, { "harmonics", 30.0f }, { "mixBack", -9.0f } } },
         { "Vocal Presence", { { "freq", 3000.0f }, { "clipBoost", 6.0f }, { "harmonics", 35.0f }, { "mixBack", -9.0f } } },
         { "Drum Snap", { { "freq", 2000.0f }, { "clipBoost", 9.0f }, { "harmonics", 50.0f } } },
         { "Warm Top", { { "freq", 5000.0f }, { "clipBoost", 6.0f }, { "harmonics", 40.0f }, { "character", 0.0f } } },
     };
+
+    // Phase 3 Q2.1: the preset browser's categories.
+    fancy::setCategories (presets, {
+        { "Gentle Air", "Mix" },
+        { "Warm Top", "Mix" },
+        { "Vocal Presence", "Vocals" },
+        { "Drum Snap", "Drums" },
+    });
+
+    return presets;
 }
 } // namespace
 

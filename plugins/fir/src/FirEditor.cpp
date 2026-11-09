@@ -280,6 +280,9 @@ FirEditor::FirEditor (FirProcessor& processor)
       learnLengthKnob (parameter ("learnLength"), "Learn length", modeColour (subtract), Knob::smallStyle),
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle)
 {
+    // The title strip keeps one colour while the accent follows the selection.
+    setTitleColour (modeColour (eq));
+
     auto& body = getBody();
 
     panels.setInterceptsMouseClicks (false, false);

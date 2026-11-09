@@ -19,6 +19,7 @@ target_link_libraries(fancy_ui INTERFACE fancy_core FancyFonts)
 target_sources(fancy_ui INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Analyzer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/FancyProcessor.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/PresetBrowser.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/PresetManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Workflow.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Style.cpp"

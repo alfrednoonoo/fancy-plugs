@@ -69,7 +69,7 @@ std::vector<fancy::FactoryPreset> factoryPresets()
 {
     using Values = std::vector<std::pair<juce::String, float>>;
 
-    return {
+    std::vector<fancy::FactoryPreset> presets {
         { "Empty", Values {}, "empty" },
         { "Small Room", Values { { "wet", -9.0f } }, "room" },
         { "Plate", Values { { "predelay", 12.0f }, { "wet", -10.0f } }, "plate" },
@@ -77,6 +77,17 @@ std::vector<fancy::FactoryPreset> factoryPresets()
         { "Long Tail", Values { { "predelay", 40.0f }, { "wet", -14.0f } }, "long" },
         { "Slapback", Values { { "wet", -6.0f } }, "slap" },
     };
+
+    // Phase 3 Q2.1: the preset browser's categories.
+    fancy::setCategories (presets, {
+        { "Small Room", "Rooms" },
+        { "Plate", "Plates" },
+        { "Hall", "Halls" },
+        { "Long Tail", "Halls" },
+        { "Slapback", "Echo" },
+    });
+
+    return presets;
 }
 
 void addFactoryModule (juce::ValueTree& chain, ModuleType type, std::initializer_list<std::pair<const char*, float>> values)

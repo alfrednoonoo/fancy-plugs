@@ -1,9 +1,12 @@
 #pragma once
 
 #include "Controls.h"
+#include "PresetBrowser.h"
 #include "WorkflowControls.h"
 
 #include <fancy/plugin/FancyProcessor.h>
+
+#include <optional>
 
 namespace fancy::ui
 {
@@ -51,8 +54,8 @@ private:
     PillButton closeButton { "Done" };
 };
 
-// Header bar, scaling, bypass dimming, the preset and Parameter menus, and the layer that
-// menus, tooltips and dialogs are drawn on. Subclasses add their controls to getBody() and
+// Title strip, header bar, scaling and resizing, bypass dimming, the preset browser and
+// Parameter menu, and the layer that menus, tooltips and dialogs are drawn on. Subclasses add their controls to getBody() and
 // put 30 Hz work in onTick().
 class ShellEditor : public juce::AudioProcessorEditor, public PopupHost, private juce::Timer
 {
@@ -60,6 +63,10 @@ public:
     enum class HeaderStyle { compact, full };
 
     static constexpr int headerHeight = 53;
+
+    // The strip with the plugin's name above the header (Phase 3 Q2.1). The window is this much
+    // taller than the size a plugin gives; the body and header keep their positions in getRoot().
+    static constexpr int titleHeight = TitleStrip::height;
 
     ShellEditor (FancyProcessor& processor, int baseWidth, int baseHeight, HeaderStyle style);
     ~ShellEditor() override;
@@ -106,7 +113,16 @@ public:
 
 
     // The header's menus and prompts, public so the gallery and the tests can open them.
+    // showPresetMenu opens the preset browser (Phase 3 Q2.1).
     void showPresetMenu();
+    PresetBrowser* getPresetBrowser();
+
+    // The preset pill's arrows: the next or previous preset in the browser's list.
+    void stepPreset (int direction);
+    PresetManager::Filter& getBrowserFilter() noexcept { return browserFilter; }
+
+    // The plugin's own size, 1.0 to 2.0 (the size menu, or dragging the window's edge).
+    float getUiScale() const noexcept { return uiScale; }
     void showSavePrompt();
     void showRenamePrompt();
     void showDeletePrompt (const juce::String& presetName);
@@ -122,8 +138,9 @@ public:
     bool isCompareOn() const noexcept { return fancyProcessor.compare.isOn(); }
 
 protected:
-    // Lets the host resize the window between these sizes, in 100 % units. Call this at the
-    // end of the subclass's constructor. The size is saved with the plugin's state.
+    // Lets the layout reflow between these sizes, in 100 % units, as Fancy EQ's does. Call this
+    // at the end of the subclass's constructor. The size is saved with the plugin's state.
+    // Without it, the window still resizes from 100 % to 200 %, scaling the layout as a whole.
     void enableResizing (int minWidth, int minHeight, int maxWidth, int maxHeight);
 
     int getBaseWidth() const noexcept { return width; }
@@ -131,6 +148,9 @@ protected:
 
     // Shows a tooltip at once, beside a control, without waiting for the mouse to hover.
     void showTip (juce::Component& near, const juce::String& text);
+
+    // The title strip's colour, for a plugin whose accent follows a selection (EQ, MultiComp, FIR).
+    void setTitleColour (juce::Colour colour);
 
     // Narrows the preset dropdown, to make room for controls in the header row.
     void setPresetDropdownWidth (int newWidth);
@@ -188,7 +208,9 @@ private:
     void refreshHeader();
     void refreshWorkflow();
     void applyScale (float scale);
+    void applyTransforms();
     void layoutHeader();
+    void refreshTitle();
 
     juce::SharedResourcePointer<Typefaces> typefaces;
     juce::SharedResourcePointer<FancyLookAndFeel> lookAndFeel;
@@ -201,9 +223,12 @@ private:
     float uiScale = 1.0f;
     int presetWidth = 0;
 
+    TitleStrip titleStrip;
+    std::optional<juce::Colour> titleColour;
+    PresetManager::Filter browserFilter;
     Root root;
     juce::Component body;
-    PillDropdown presetDropdown;
+    PresetPill presetDropdown;
     PillButton saveButton, parameterButton, ioPill;
     HeaderIconButton undoButton { HeaderIconButton::Icon::undo }, redoButton { HeaderIconButton::Icon::redo },
         copyButton { HeaderIconButton::Icon::copy };

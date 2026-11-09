@@ -135,7 +135,7 @@ fancy::FancyProcessor::Layout createLayout()
 
 std::vector<fancy::FactoryPreset> createPresets()
 {
-    return {
+    std::vector<fancy::FactoryPreset> presets {
         { "Default", {} },
         { "Gentle Tilt", {}, "tilt" },
         { "De-mud", {}, "demud" },
@@ -143,6 +143,17 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Spectral Gate", { { "mode", (float) gate }, { "gateFloor", -30.0f }, { "gateRelease", 120.0f } }, "gate" },
         { "Spectral Compressor", { { "mode", (float) compressor }, { "compRatio", 3.0f }, { "compAttack", 10.0f }, { "compRelease", 150.0f } }, "compressor" },
     };
+
+    // Phase 3 Q2.1: the preset browser's categories.
+    fancy::setCategories (presets, {
+        { "Gentle Tilt", "Tone" },
+        { "De-mud", "Tone" },
+        { "Noise Reduction", "Restoration" },
+        { "Spectral Gate", "Restoration" },
+        { "Spectral Compressor", "Dynamics" },
+    });
+
+    return presets;
 }
 
 juce::String pointsToText (const std::vector<CurvePoint>& curve)

@@ -1,7 +1,8 @@
 // Renders each plugin's editor offscreen to PNG at 100 % and 200 %, plus a gallery of the
 // fancy-core controls that the finished plugins don't exercise yet. With a second directory,
 // it also renders every pop-up each plugin lists (Phase 2.1 item S) into it. With a third, it
-// renders each editor, and its preset menu, at the host scales 1.25, 1.5 and 2.0 (item H.3).
+// renders each editor, and its preset menu, at the host scales 1.25, 1.5 and 2.0 (item H.3), and
+// each window at its smallest and largest size (Phase 3 Q2.1).
 // Usage: fancy-screens <output-directory> [<popups-directory> [<host-scale-directory>]]
 
 #include <fancy/ui/Controls.h>
@@ -251,6 +252,22 @@ bool renderHostScales (const juce::String& slug, const juce::File& outputDir, Se
 
         editor->showPresetMenu();
         ok = writeSnapshot (*editor, scale, outputDir.getChildFile (slug + "-preset-menu" + suffix + ".png")) && ok;
+    }
+
+    // Phase 3 Q2.1: the window at its smallest and largest, as dragging its edge leaves it.
+    editor->setScaleFactor (1.0f);
+    editor->closePopups();
+
+    if (auto* constrainer = editor->getConstrainer())
+    {
+        editor->setSize (constrainer->getMinimumWidth(), constrainer->getMinimumHeight());
+        ok = writeSnapshot (*editor, 1.0f, outputDir.getChildFile (slug + "@min.png")) && ok;
+
+        editor->setSize (constrainer->getMaximumWidth(), constrainer->getMaximumHeight());
+        ok = writeSnapshot (*editor, 1.0f, outputDir.getChildFile (slug + "@max.png")) && ok;
+
+        editor->showPresetMenu();
+        ok = writeSnapshot (*editor, 1.0f, outputDir.getChildFile (slug + "-preset-menu@max.png")) && ok;
     }
 
     editor->closePopups();

@@ -135,7 +135,7 @@ constexpr float slope24 = 3.0f;
 
 std::vector<fancy::FactoryPreset> createPresets()
 {
-    return {
+    std::vector<fancy::FactoryPreset> presets {
         { "Default", {} },
         { "Low Cut", { { "b1type", highPass }, { "b1freq", 80.0f }, { "b1slope", slope24 } } },
         { "Vocal Presence", { { "b1type", highPass }, { "b1freq", 90.0f }, { "b2freq", 300.0f }, { "b2gain", -2.0f }, { "b2q", 1.2f },
@@ -147,6 +147,18 @@ std::vector<fancy::FactoryPreset> createPresets()
                          { "b4type", lowPass }, { "b4freq", 3400.0f }, { "b4slope", slope24 } } },
         { "Linear Master", { { "phase", 1.0f }, { "b1type", highPass }, { "b1freq", 25.0f }, { "b1slope", slope24 }, { "b4type", highShelf }, { "b4freq", 10000.0f }, { "b4gain", 1.0f } } },
     };
+
+    // Phase 3 Q2.1: the preset browser's categories.
+    fancy::setCategories (presets, {
+        { "Low Cut", "Clean-up" },
+        { "Vocal Presence", "Vocals" },
+        { "Smile", "Tone" },
+        { "Air", "Tone" },
+        { "Telephone", "Effects" },
+        { "Linear Master", "Mastering" },
+    });
+
+    return presets;
 }
 } // namespace
 
