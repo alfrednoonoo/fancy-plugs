@@ -46,7 +46,7 @@ public:
     struct Timing
     {
         std::vector<double> blockLoads; // time / block duration
-        double totalSeconds = 0.0, processCpuSeconds = 0.0;
+        double totalSeconds = 0.0, otherThreadsCpuSeconds = 0.0;
     };
 
     // Renders `input` in real-time mode and times each block; with `pace`, one block per block duration.

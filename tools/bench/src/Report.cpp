@@ -256,7 +256,7 @@ void cpu (Writer& w)
 
     w.line ("## CPU\n");
     w.line ("Percent of one core: the time spent in the plugin's process call against the audio's duration, at time-critical priority. "
-            "\"All threads\" is the whole process's CPU time over the same audio, which includes background threads. "
+            "\"All threads\" adds the CPU time of the process's other threads over the same audio, such as a plugin's background workers. "
             "Mean and 99th percentile are the median over the runs; worst block is the worst in any run.\n");
 
     const auto hasReference = w.reference.isObject() && w.reference.hasProperty ("cpu");

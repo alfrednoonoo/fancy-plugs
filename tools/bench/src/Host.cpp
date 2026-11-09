@@ -58,6 +58,16 @@ juce::uint64 ticks (const FILETIME& time)
     return ((juce::uint64) time.dwHighDateTime << 32) | time.dwLowDateTime;
 }
 
+double threadCpuSeconds()
+{
+    FILETIME created, exited, kernel, user;
+
+    if (! GetThreadTimes (GetCurrentThread(), &created, &exited, &kernel, &user))
+        return 0.0;
+
+    return (double) (ticks (kernel) + ticks (user)) * 1.0e-7;
+}
+
 double processCpuSeconds()
 {
     FILETIME created, exited, kernel, user;
@@ -599,6 +609,7 @@ Rig::Timing Rig::time (const Signal& input, int block, bool pace)
 
     SetThreadPriority (GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
     const auto cpuBefore = processCpuSeconds();
+    const auto threadBefore = threadCpuSeconds();
     const auto start = Clock::now();
 
     for (int position = 0; position < (int) input.size();)
@@ -626,7 +637,8 @@ Rig::Timing Rig::time (const Signal& input, int block, bool pace)
         }
     }
 
-    timing.processCpuSeconds = processCpuSeconds() - cpuBefore;
+    // Other threads only: this thread's own time includes the pacing wait, not just the plugin.
+    timing.otherThreadsCpuSeconds = std::max (0.0, (processCpuSeconds() - cpuBefore) - (threadCpuSeconds() - threadBefore));
     SetThreadPriority (GetCurrentThread(), THREAD_PRIORITY_NORMAL);
     return timing;
 }
@@ -653,8 +665,9 @@ CpuFigures measureCpu (Rig& rig, int block, double seconds, int repeats, bool pa
         const auto mean = 100.0 * timing.totalSeconds / audioSeconds;
         const auto p99 = 100.0 * percentile (timing.blockLoads, 0.99);
         const auto worst = 100.0 * *std::max_element (timing.blockLoads.begin(), timing.blockLoads.end());
-        // GetProcessTimes counts in 15.6 ms ticks: under a tenth of a second it can read zero.
-        const auto all = timing.processCpuSeconds >= 0.1 ? 100.0 * timing.processCpuSeconds / audioSeconds : -1.0;
+        // The process call's own time plus every other thread's, such as a plugin's workers.
+        // GetProcessTimes counts in 15.6 ms ticks, so a run under 5 s is too short to say.
+        const auto all = audioSeconds >= 5.0 ? mean + 100.0 * timing.otherThreadsCpuSeconds / audioSeconds : -1.0;
 
         means.push_back (mean);
         p99s.push_back (p99);
