@@ -545,8 +545,8 @@ void aliasingSection (Writer& w, const TestSpec& spec)
         return;
 
     w.line ("## Aliasing\n");
-    w.line ("A sine at each frequency. An alias is any component more than 30 dB over the noise floor that isn't a harmonic below Nyquist "
-            "or near DC. Relative levels are against the output's fundamental.\n");
+    w.line ("A sine at each frequency. An alias is any component more than 30 dB over the noise floor and above -160 dBFS that isn't within "
+            "25 Hz of a harmonic below Nyquist, or near DC. Relative levels are against the output's fundamental.\n");
     w.line ("| Plugin | Frequency | Level | Aliases | Loudest alias | at | Relative | All aliases, relative |");
     w.line ("|---|---|---|---|---|---|---|---|");
 
