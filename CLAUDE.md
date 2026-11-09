@@ -29,7 +29,7 @@ Phase 2.0.1, from `docs/BUILD_PROMPT_PHASE2_0_1.md`, done:
 
 10. Fancy Gate (reuses Fancy Comp's detector, detector filters, Threshold-over-meter fader and reduction meter)
 
-Phase 2.1, from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. It builds no new plugin: it changes the nine that exist, Fancy Gate included. Each item gets its own design note, `docs/phase2_1-<item>.md`, before any code, and its own commit, green run and `docs/PROGRESS.md` entry:
+Phase 2.1, from `docs/BUILD_PROMPT_PHASE2_1.md`, done and released as v1.2.0, in the order S, H, W, D, U, A. It builds no new plugin: it changes the nine that exist, Fancy Gate included. Each item gets its own design note, `docs/phase2_1-<item>.md`, before any code, and its own commit, green run and `docs/PROGRESS.md` entry:
 
 11. S: styled menus, dropdown lists, tooltips, typed values and dialogs, in `fancy-core`. The mockup `reference/phase2_1/16__menus_mockup.png` sets their exact styling. Start with the pop-up audit in `docs/phase2_1-S.md`
 12. H: host compatibility: offline rendering, keyboard pass-through, scaling, sidechain and MIDI buses, latency changes, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with checklists for the user's hosts
