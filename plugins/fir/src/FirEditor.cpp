@@ -55,8 +55,24 @@ void FirEditor::Panels::paint (juce::Graphics& g)
 // LearnCard ---------------------------------------------------------------------
 
 FirEditor::LearnCard::LearnCard (FirProcessor& processor)
-    : firProcessor (processor)
+    : firProcessor (processor),
+      sourceSwitch (*processor.getApvts().getParameter ("source"), modeColour (subtract), colours::textPrimary),
+      adaptKnob (*processor.getApvts().getParameter ("adaptSpeed"), {}, modeColour (subtract), Knob::compactStyle)
 {
+    // Phase 2.1 A: the switch takes the title's row, which the card is too narrow to share.
+    sourceSwitch.setTextHeight (11.0f);
+    sourceSwitch.setBounds (8, 4, 162, 20);
+    sourceSwitch.setTooltip ("Noise profile: learned once, tracked while playing (Adaptive), or the larger of the two (Both).");
+    addAndMakeVisible (sourceSwitch);
+
+    adaptKnob.setBounds (6, 34, 66, 76);
+    adaptKnob.setTooltip ("Adapt speed: how quickly the estimate follows a change in the noise.");
+    addChildComponent (adaptKnob);
+
+    bothLearnButton.setBounds (78, 82, 92, 22);
+    bothLearnButton.onClick = [this] { firProcessor.startLearning(); };
+    addChildComponent (bothLearnButton);
+
     clearButton.onClick = [this]
     {
         auto& owner = firProcessor;
@@ -91,14 +107,71 @@ void FirEditor::LearnCard::update()
     seconds = progress * totalSeconds;
     capturedSeconds = shared.profileSeconds.load();
 
-    const auto showButtons = hasProfile && ! learning;
+    if (! frozen)
+    {
+        source = juce::jlimit (0, 2, juce::roundToInt (firProcessor.getApvts().getRawParameterValue ("source")->load()));
+        tracking = shared.hasAdaptive.load();
+        floorDb = shared.adaptiveFloorDb.load() + firProcessor.getApvts().getRawParameterValue ("offset")->load();
+        held = shared.heldFraction.load() > 0.02f;
+    }
+
+    const auto learned = source == fir::learnedSource;
+    const auto showButtons = learned && hasProfile && ! learning;
 
     clearButton.setBounds (12, 58, 70, 24);
     relearnButton.setBounds (90, 58, getWidth() - 102, 24);
     clearButton.setVisible (showButtons);
     relearnButton.setVisible (showButtons);
 
+    adaptKnob.setVisible (! learned);
+    bothLearnButton.setVisible (source == fir::bothSources);
+    bothLearnButton.setText (learning ? "Learning " + fancy::formatFixed (seconds, 1) + " s" : hasProfile ? juce::String ("Re-learn") : juce::String ("Learn"));
+
     repaint();
+}
+
+void FirEditor::LearnCard::showTracking (float shownFloorDb, bool isHeld)
+{
+    frozen = true;
+    source = fir::adaptiveSource;
+    tracking = true;
+    floorDb = shownFloorDb;
+    held = isHeld;
+    learning = false;
+
+    clearButton.setVisible (false);
+    relearnButton.setVisible (false);
+    adaptKnob.setVisible (true);
+    bothLearnButton.setVisible (false);
+    repaint();
+}
+
+void FirEditor::LearnCard::paintTracking (juce::Graphics& g, int x, bool compact)
+{
+    const auto width = getWidth() - x - 6;
+    const auto approx = juce::String (juce::CharPointer_UTF8 (" \xe2\x89\x88 "));
+    const auto minus = juce::String (juce::CharPointer_UTF8 ("\xe2\x88\x92"));
+
+    g.setColour (tracking ? juce::Colour (0xff0dfc90) : colours::textSecondary);
+    g.fillEllipse ((float) x, 37.0f, 7.0f, 7.0f);
+
+    g.setFont (font (Weight::regular, 12.0f));
+    g.setColour (colours::textPrimary);
+    g.drawText (tracking ? (compact && held ? "Holding" : "Tracking") : juce::String ("Starting") + juce::String::charToString (0x2026),
+                x + 11, 32, width - 11, 16, juce::Justification::centredLeft, false);
+
+    g.setFont (font (Weight::regular, 10.5f));
+    g.setColour (colours::textSecondary);
+
+    if (tracking)
+    {
+        const auto rounded = juce::roundToInt (floorDb);
+        g.drawText ((compact ? "Floor" : "Noise floor") + approx + (rounded < 0 ? minus : juce::String()) + juce::String (std::abs (rounded)) + " dB",
+                    x, 50, width, 14, juce::Justification::centredLeft, false);
+    }
+
+    if (held && ! compact)
+        g.drawFittedText ("Speech/music held, not learned", x, 66, width, 28, juce::Justification::topLeft, 2, 0.9f);
 }
 
 void FirEditor::LearnCard::showLearning (float shownSeconds, float total)
@@ -118,9 +191,16 @@ void FirEditor::LearnCard::paint (juce::Graphics& g)
 {
     const auto red = modeColour (subtract);
 
-    g.setColour (colours::textSecondary);
-    g.setFont (font (Weight::semiBold, 11.0f).withExtraKerningFactor (0.06f));
-    g.drawText ("NOISE PROFILE", 12, 6, getWidth() - 24, 16, juce::Justification::centredLeft, false);
+    // Adaptive and Both: Adapt speed, and the tracker's status (Phase 2.1 A).
+    if (source != fir::learnedSource)
+    {
+        g.setColour (colours::textSecondary);
+        g.setFont (font (Weight::regular, 10.5f));
+        g.drawText ("Adapt speed", 6, 24, 66, 12, juce::Justification::centred, false);
+
+        paintTracking (g, 78, source == fir::bothSources);
+        return;
+    }
 
     g.setFont (font (Weight::regular, labelHeight));
 
@@ -164,7 +244,7 @@ void FirEditor::LearnCard::paint (juce::Graphics& g)
 
 void FirEditor::LearnCard::mouseUp (const juce::MouseEvent& event)
 {
-    if (! (hasProfile && ! learning) && ! learning && learnButtonBounds().contains (event.getPosition()))
+    if (source == fir::learnedSource && ! (hasProfile && ! learning) && ! learning && learnButtonBounds().contains (event.getPosition()))
         firProcessor.startLearning();
 }
 
@@ -433,10 +513,29 @@ void FirEditor::showPreview (Preview preview)
     shared.hasProfile.store (true);
     shared.profileVersion.fetch_add (1);
 
+    // Phase 2.1 A, panel 5: Adaptive, the tracked profile a little under the learned one.
+    if (preview == Preview::subtractAdaptive)
+    {
+        setValue (parameter ("source"), (float) fir::adaptiveSource);
+
+        for (int i = 0; i < profilePoints; ++i)
+        {
+            const auto hz = juce::jmax (22.0, profileHz (i));
+            const auto noise = -66.0 - 7.0 * (std::log10 (hz) - 1.5) + 2.0 * std::sin (hz / 900.0);
+            shared.adaptive[(size_t) i].store ((float) (std::pow (10.0, noise / 10.0) / scale));
+        }
+
+        shared.hasAdaptive.store (true);
+    }
+
     updateMode();
     graph.update();
     graph.showPreviewSpectra();
-    learnCard.showLearning (1.6f, 2.0f);
+
+    if (preview == Preview::subtractAdaptive)
+        learnCard.showTracking (-52.0f, true);
+    else
+        learnCard.showLearning (1.6f, 2.0f);
 
     outMeter.show (-10.4f, -9.8f);
 

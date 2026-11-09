@@ -114,6 +114,8 @@ The message thread renders the active curve of each mode to 512 log-spaced value
 
 "ReaFir 0.x compatibility mode" is dropped, as P4.3 says.
 
+Phase 2.1 A appends `source` (Learned, Adaptive, Both) and `adaptSpeed` (0.5-10 s, default 2 s) after everything above. Their design is in `docs/phase2_1-A.md`.
+
 ## Controls the mockup doesn't show
 
 - **Learn length:** P4.2 asks for it and the mockup has no control. It's a small knob in an EDIT drawer, opened from an `EDIT` link at the right of the footer, as on the Delay.

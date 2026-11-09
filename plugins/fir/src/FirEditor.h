@@ -17,7 +17,7 @@ public:
     juce::Colour getAccentColour() override;
     std::vector<PopupOpener> getPopupOpeners() override;
 
-    enum class Preview { subtractLearning, eqCurve, drawer };
+    enum class Preview { subtractLearning, eqCurve, drawer, subtractAdaptive };
 
     // For rendered screenshots.
     void showPreview (bool drawerOpen);
@@ -42,11 +42,23 @@ private:
         void paint (juce::Graphics&) override;
         void mouseUp (const juce::MouseEvent&) override;
 
+        // For rendered screenshots: Adaptive, tracking at -52 dB, holding.
+        void showTracking (float floorDb, bool held);
+
     private:
         juce::Rectangle<int> learnButtonBounds() const;
+        void paintTracking (juce::Graphics&, int x, bool compact);
 
         FirProcessor& firProcessor;
         fancy::ui::PillButton clearButton { "Clear" }, relearnButton { "Re-learn" };
+
+        // Phase 2.1 A: Learned | Adaptive | Both, Adapt speed, and Both's Learn button.
+        fancy::ui::ParamSegments sourceSwitch;
+        fancy::ui::Knob adaptKnob;
+        fancy::ui::PillButton bothLearnButton { "Learn" };
+        int source = fir::learnedSource;
+        float floorDb = -200.0f;
+        bool held = false, tracking = false, frozen = false;
 
         bool learning = false, hasProfile = false;
         float progress = 0.0f, seconds = 0.0f, totalSeconds = 2.0f, capturedSeconds = 0.0f;

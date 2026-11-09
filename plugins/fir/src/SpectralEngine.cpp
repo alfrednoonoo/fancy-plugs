@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
+#include <limits>
 #include <numbers>
 
 namespace fir
@@ -17,6 +19,31 @@ constexpr double powerFloor = 1.0e-20;
 // A sine covers about five bins of the analysis window. Each bin's detector takes the loudest
 // within this many bins either side, so the whole of a sine opens or ducks together.
 constexpr int detectorReach = 2;
+
+// Martin (2001), Table III: M(D), for the bias of the minimum of D frames.
+double martinM (double d) noexcept
+{
+    constexpr double table[][2] { { 1, 0.0 }, { 2, 0.26 }, { 5, 0.48 }, { 8, 0.58 }, { 10, 0.61 }, { 15, 0.668 }, { 20, 0.705 },
+                                  { 30, 0.762 }, { 40, 0.8 }, { 60, 0.841 }, { 80, 0.865 }, { 120, 0.89 }, { 140, 0.9 }, { 160, 0.91 } };
+
+    if (d >= 160.0)
+        return 0.91;
+
+    for (size_t i = 1; i < std::size (table); ++i)
+        if (d <= table[i][0])
+            return table[i - 1][1] + (d - table[i - 1][0]) / (table[i][0] - table[i - 1][0]) * (table[i][1] - table[i - 1][1]);
+
+    return 0.0;
+}
+
+// Martin's bias compensation B_min(D, Q_eq), with 1/Q_eq as given.
+double martinBias (double frames, double qInverse) noexcept
+{
+    const auto m = martinM (frames);
+    const auto qEq = 1.0 / std::max (qInverse, 1.0e-9);
+    const auto qTilde = std::max (2.0, (qEq - 2.0 * m) / (1.0 - m));
+    return 1.0 + 2.0 * (frames - 1.0) / qTilde;
+}
 
 int nextPowerOfTwo (int value) noexcept
 {
@@ -146,6 +173,13 @@ SpectralEngine::SpectralEngine (const Config& config, double sampleRate, Shared&
 
     profilePower.assign ((size_t) bins, 0.0f);
     scratch.assign ((size_t) bins, 0.0f);
+
+    for (auto* track : { &trackPower, &trackSmoothed, &trackNoise_, &trackMoment1, &trackMoment2, &trackQInverse,
+                         &trackActMin, &trackSubMin, &trackRingMin, &trackRatio, &trackSort })
+        track->assign ((size_t) bins, 0.0f);
+
+    trackRing.assign ((size_t) bins * trackSubwindows, 0.0f);
+    trackHold.assign ((size_t) bins, 0);
     detectorLevels.assign ((size_t) bins, 0.0f);
     learnSum.assign ((size_t) bins, 0.0);
 }
@@ -336,6 +370,249 @@ void SpectralEngine::learnFrame() noexcept
     shared.learning.store (false, std::memory_order_release);
 }
 
+void SpectralEngine::startTracking() noexcept
+{
+    // From the estimate a previous engine published, else the learned profile, else this frame.
+    const auto fromShared = shared.hasAdaptive.load (std::memory_order_acquire);
+    const auto step = profileHighHz / (double) (profilePoints - 1);
+
+    for (int k = 0; k < bins; ++k)
+    {
+        auto start = (double) trackPower[(size_t) k];
+
+        if (fromShared || profileReady)
+        {
+            const auto position = std::min ((double) binHz[(size_t) k] / step, (double) (profilePoints - 1));
+            const auto index = std::min ((int) position, profilePoints - 2);
+            const auto fraction = position - (double) index;
+
+            if (fromShared)
+            {
+                const auto low = (double) shared.adaptive[(size_t) index].load (std::memory_order_relaxed);
+                const auto high = (double) shared.adaptive[(size_t) index + 1].load (std::memory_order_relaxed);
+                start = low + fraction * (high - low);
+            }
+            else
+            {
+                start = (double) profilePower[(size_t) k];
+            }
+        }
+
+        start = std::max (start, powerFloor);
+
+        trackNoise_[(size_t) k] = (float) start;
+        trackSmoothed[(size_t) k] = (float) start;
+        trackMoment1[(size_t) k] = (float) start;
+        trackMoment2[(size_t) k] = (float) (start * start);
+        trackActMin[(size_t) k] = std::numeric_limits<float>::max();
+        trackSubMin[(size_t) k] = std::numeric_limits<float>::max();
+        trackRingMin[(size_t) k] = (float) start;
+        trackHold[(size_t) k] = 0;
+
+        for (int u = 0; u < trackSubwindows; ++u)
+            trackRing[(size_t) (u * bins + k)] = (float) start;
+    }
+
+    trackAlphaC = 1.0;
+    trackSubFrames = 0;
+    trackRingIndex = 0;
+    trackPublishCountdown = 0;
+    trackStarted = true;
+}
+
+void SpectralEngine::trackNoise (bool publishes) noexcept
+{
+    const auto& settings = frameSettings;
+    const auto hopSeconds = (double) hop / rate;
+
+    // Martin's constants are for a 16 ms hop; each is re-derived from its time constant.
+    const auto alphaMax = std::exp (-hopSeconds / 0.392);
+    const auto alphaMin = std::exp (-hopSeconds / 0.0133);
+    const auto betaMax = std::exp (-hopSeconds / 0.0717);
+    const auto frames = std::max ((double) trackSubwindows, std::round (settings.adaptSeconds / hopSeconds));
+    const auto hangover = (int) std::ceil (0.3 / hopSeconds);
+
+    // The power of this frame, averaged over the channels, in the profile's units.
+    auto sumPower = 0.0;
+
+    for (int k = 0; k < bins; ++k)
+    {
+        auto power = 0.0;
+
+        for (int ch = 0; ch < frameChannels; ++ch)
+            power += (double) binPower (spectra[ch], k);
+
+        trackPower[(size_t) k] = (float) (power * powerScale / (double) frameChannels);
+        sumPower += (double) trackPower[(size_t) k];
+    }
+
+    if (! trackStarted)
+        startTracking();
+
+    // Global smoothing correction.
+    {
+        auto sumSmoothed = 0.0;
+
+        for (int k = 0; k < bins; ++k)
+            sumSmoothed += (double) trackSmoothed[(size_t) k];
+
+        const auto ratio = sumSmoothed / std::max (sumPower, powerFloor);
+        const auto alphaCTilde = 1.0 / (1.0 + (ratio - 1.0) * (ratio - 1.0));
+        trackAlphaC = 0.7 * trackAlphaC + 0.3 * std::max (alphaCTilde, 0.7);
+    }
+
+    // Pass 1: optimally smoothed power, its moments, and 1/Q_eq.
+    auto sumQInverse = 0.0;
+
+    for (int k = 0; k < bins; ++k)
+    {
+        const auto noise = std::max ((double) trackNoise_[(size_t) k], powerFloor);
+        auto smoothed = (double) trackSmoothed[(size_t) k];
+        const auto ratio = smoothed / noise - 1.0;
+        const auto alpha = std::clamp (trackAlphaC * alphaMax / (1.0 + ratio * ratio), alphaMin, alphaMax);
+
+        smoothed = alpha * smoothed + (1.0 - alpha) * (double) trackPower[(size_t) k];
+
+        const auto beta = std::min (alpha * alpha, betaMax);
+        const auto moment1 = beta * (double) trackMoment1[(size_t) k] + (1.0 - beta) * smoothed;
+        const auto moment2 = beta * (double) trackMoment2[(size_t) k] + (1.0 - beta) * smoothed * smoothed;
+        const auto variance = std::max (0.0, moment2 - moment1 * moment1);
+        const auto qInverse = std::min (0.5, variance / (2.0 * noise * noise));
+
+        trackSmoothed[(size_t) k] = (float) smoothed;
+        trackMoment1[(size_t) k] = (float) moment1;
+        trackMoment2[(size_t) k] = (float) moment2;
+        trackQInverse[(size_t) k] = (float) qInverse;
+        trackRatio[(size_t) k] = (float) (smoothed / noise);
+        sumQInverse += qInverse;
+    }
+
+    // The median ratio, to tell a rise in the whole noise from a tone standing out.
+    std::copy (trackRatio.begin(), trackRatio.end(), trackSort.begin());
+    const auto middle = trackSort.begin() + bins / 2;
+    std::nth_element (trackSort.begin(), middle, trackSort.end());
+    const auto median = (double) *middle;
+
+    const auto biasGlobal = 1.0 + 2.12 * std::sqrt (sumQInverse / (double) bins);
+    const auto subwindowFrames = (double) trackSubLength;
+    const auto boundary = trackSubFrames + 1 >= trackSubLength;
+
+    auto heldBelow8k = 0, binsBelow8k = 0;
+
+    // Pass 2: holding, the minimum search and the estimate.
+    for (int k = 0; k < bins; ++k)
+    {
+        const auto ratio = (double) trackRatio[(size_t) k];
+        auto& hold = trackHold[(size_t) k];
+
+        if (ratio > 4.0 && ratio > 4.0 * median)
+            hold = hangover;
+        else if (hold > 0)
+            --hold;
+
+        const auto hz = binHz[(size_t) k];
+
+        if (hz >= curveLowHz && hz < 8000.0f)
+        {
+            ++binsBelow8k;
+            heldBelow8k += hold > 0 ? 1 : 0;
+        }
+
+        auto& actMin = trackActMin[(size_t) k];
+        auto& subMin = trackSubMin[(size_t) k];
+
+        // A held bin doesn't feed the search, so it keeps the estimate it had.
+        if (hold == 0)
+        {
+            const auto qInverse = (double) trackQInverse[(size_t) k];
+            const auto smoothed = (double) trackSmoothed[(size_t) k];
+
+            actMin = std::min (actMin, (float) (smoothed * martinBias (frames, qInverse) * biasGlobal));
+            subMin = std::min (subMin, (float) (smoothed * martinBias (subwindowFrames, qInverse) * biasGlobal));
+        }
+
+        auto& noise = trackNoise_[(size_t) k];
+
+        if (boundary)
+        {
+            const auto value = actMin < std::numeric_limits<float>::max() ? actMin : noise;
+            trackRing[(size_t) (trackRingIndex * bins + k)] = value;
+
+            auto lowest = std::numeric_limits<float>::max();
+
+            for (int u = 0; u < trackSubwindows; ++u)
+                lowest = std::min (lowest, trackRing[(size_t) (u * bins + k)]);
+
+            trackRingMin[(size_t) k] = lowest;
+            noise = std::max ((float) powerFloor, lowest);
+            actMin = std::numeric_limits<float>::max();
+            subMin = std::numeric_limits<float>::max();
+        }
+        else if (hold == 0)
+        {
+            noise = std::max ((float) powerFloor, std::min (trackRingMin[(size_t) k], subMin));
+        }
+    }
+
+    if (boundary)
+    {
+        trackRingIndex = (trackRingIndex + 1) % trackSubwindows;
+        trackSubFrames = 0;
+        trackSubLength = std::max (1, (int) std::lround (frames / (double) trackSubwindows));
+    }
+    else
+    {
+        ++trackSubFrames;
+    }
+
+    if (publishes)
+    {
+        shared.heldFraction.store (binsBelow8k > 0 ? (float) heldBelow8k / (float) binsBelow8k : 0.0f, std::memory_order_relaxed);
+
+        // At most every 20 ms: the grid is 2049 points.
+        if (--trackPublishCountdown <= 0)
+        {
+            publishTracking();
+            trackPublishCountdown = std::max (1, (int) std::lround (0.02 / hopSeconds));
+        }
+    }
+}
+
+void SpectralEngine::publishTracking() noexcept
+{
+    const auto binStep = rate / (double) fftLength;
+
+    for (int j = 0; j < profilePoints; ++j)
+    {
+        const auto position = std::min (profileHz (j) / binStep, (double) (bins - 1));
+        const auto index = std::min ((int) position, bins - 2);
+        const auto fraction = position - (double) index;
+        const auto value = (double) trackNoise_[(size_t) index] + fraction * ((double) trackNoise_[(size_t) index + 1] - (double) trackNoise_[(size_t) index]);
+
+        shared.adaptive[(size_t) j].store ((float) value, std::memory_order_relaxed);
+    }
+
+    // The average from 100 Hz to 8 kHz, in the graph's dB.
+    const auto displayScale = levelScale * levelScale / powerScale;
+    auto sum = 0.0;
+    auto count = 0;
+
+    for (int k = 0; k < bins; ++k)
+    {
+        const auto hz = (double) binHz[(size_t) k];
+
+        if (hz >= 100.0 && hz <= 8000.0)
+        {
+            sum += 10.0 * std::log10 (std::max ((double) trackNoise_[(size_t) k] * displayScale, powerFloor));
+            ++count;
+        }
+    }
+
+    shared.adaptiveFloorDb.store (count > 0 ? (float) (sum / count) : -200.0f, std::memory_order_relaxed);
+    shared.hasAdaptive.store (true, std::memory_order_release);
+    shared.adaptiveVersion.fetch_add (1, std::memory_order_acq_rel);
+}
+
 void SpectralEngine::computeMasks() noexcept
 {
     const auto& settings = frameSettings;
@@ -347,6 +624,22 @@ void SpectralEngine::computeMasks() noexcept
         refreshCurve (curve);
 
     refreshProfile();
+
+    // Phase 2.1 A: the adaptive estimate runs only when it's used, in Subtract. Back on Learned,
+    // the heard engine lets it go, so it starts again from the learned profile next time.
+    const auto tracking = settings.mode == subtract && settings.source != learnedSource;
+
+    if (tracking)
+    {
+        trackNoise (frameLearns);
+    }
+    else if (trackStarted)
+    {
+        trackStarted = false;
+
+        if (frameLearns)
+            shared.hasAdaptive.store (false, std::memory_order_release);
+    }
 
     const auto useKey = frameKey && settings.sidechain && settings.mode != eq;
 
@@ -415,7 +708,7 @@ void SpectralEngine::computeMasks() noexcept
         }
         else if (settings.mode == subtract)
         {
-            if (! profileReady && ! useKey)
+            if (! profileReady && ! useKey && ! tracking)
             {
                 std::fill (result.begin(), result.end(), 1.0f);
                 continue;
@@ -453,9 +746,18 @@ void SpectralEngine::computeMasks() noexcept
                     smoothed += (float) (((double) binPower (key, k) * powerScale - (double) smoothed) * keyCoefficient);
                     noise = (double) smoothed;
                 }
-                else
+                else if (! tracking)
                 {
                     noise = (double) profilePower[(size_t) k] * settings.offsetPower;
+                }
+                else if (settings.source == adaptiveSource || ! profileReady)
+                {
+                    noise = (double) trackNoise_[(size_t) k] * settings.offsetPower;
+                }
+                else
+                {
+                    // Both: the learned profile is the floor under the adaptive estimate.
+                    noise = std::max ((double) profilePower[(size_t) k], (double) trackNoise_[(size_t) k]) * settings.offsetPower;
                 }
 
                 noise = std::max (noise, powerFloor);

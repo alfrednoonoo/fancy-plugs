@@ -170,7 +170,11 @@ bool renderFir (const juce::File& outputDir)
     ok = writeBothScales (*editor, "fir-eq", outputDir) && ok;
 
     editor->showPreview (FirEditor::Preview::drawer);
-    return writeBothScales (*editor, "fir-edit", outputDir) && ok;
+    ok = writeBothScales (*editor, "fir-edit", outputDir) && ok;
+
+    // Phase 2.1 A: Adaptive, as panel 5 of the mockup.
+    editor->showPreview (FirEditor::Preview::subtractAdaptive);
+    return writeBothScales (*editor, "fir-adaptive", outputDir) && ok;
 }
 #endif
 

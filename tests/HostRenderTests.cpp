@@ -432,6 +432,13 @@ TEST_CASE ("MultiComp: an offline render matches playback", "[host][offline]")
 #endif
 
 #if FANCY_HAS_FIR
+// Phase 2.1 A: Subtract, tracking the noise, with Adapt speed automated.
+TEST_CASE ("FIR: an offline render in Adaptive matches playback", "[host][offline]")
+{
+    Plan plan { { { "mode", 3.0f }, { "source", 1.0f } }, join ({ alternate ("adaptSpeed", 1.0f, 4.0f), alternate ("reduction", -24.0f, -12.0f, 777) }), {}, true };
+    checkRenders<FirProcessor> ("FIR, Subtract adaptive", plan);
+}
+
 TEST_CASE ("FIR: an offline render matches playback, through an FFT-size change", "[host][offline]")
 {
     const auto mode = GENERATE (0.0f, 1.0f, 2.0f, 3.0f, 4.0f);

@@ -72,6 +72,20 @@ The profile is saved with the project. **Clear** removes it, and **Re-learn** ca
 
 Start with Reduction at -12 to -18 dB. Going deeper removes more, but sounds more processed.
 
+### Learned, Adaptive or Both
+
+The switch at the top of the card chooses where the noise profile comes from:
+
+- **Learned** (the default): learned once from a section with only noise, as above.
+- **Adaptive:** the plugin keeps estimating the noise while audio plays, so it follows noise that changes: a fan speeding up, room tone, traffic. There's nothing to learn. The card shows **Adapt speed** and a status: "Tracking", the estimated noise floor ("Noise floor ≈ −52 dB", the average from 100 Hz to 8 kHz) and, while it's holding back, "Speech/music held, not learned". On the graph the tracked profile is the dashed line.
+- **Both:** each frequency uses whichever is higher, the learned profile or the tracked one, so the learned profile is a floor that tracking can only add to. The card has Learn and Adapt speed.
+
+**Adapt speed** (0.5-10 s, default 2 s) is how quickly the estimate follows a change. After the noise gets louder, the estimate catches up in about that time; when it gets quieter, it follows at once. Faster follows changing noise better; slower is steadier.
+
+The estimate looks for the quietest level at each frequency over the last Adapt speed, so speech and music, which come and go, aren't taken for noise. A tone or a held note that stands out from the frequencies around it is held, not learned, even if it lasts a long time. A sound that sits at the same level as the noise for longer than Adapt speed, such as a steady pad with no gaps, can be taken for noise: use Learned for that material.
+
+The tracked estimate isn't saved with the project. It starts from the learned profile if there is one, or from the first few seconds of audio otherwise, and it carries over when you change FFT size. Reduction, Offset, Smoothing and Release work the same in all three.
+
 ## Sidechain detector
 
 In Gate, Compressor and Subtract, the plugin's channels 3 and 4 are used to make the decisions:

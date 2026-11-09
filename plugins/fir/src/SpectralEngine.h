@@ -18,6 +18,10 @@ struct FrameSettings
     double compSlope = 0.5, compAttackMs = 5.0, compReleaseMs = 80.0;
     double reductionGain = 0.125, offsetPower = 1.0, smoothing = 0.35, subReleaseMs = 80.0;
     bool reduceArtifacts = true, listen = false, sidechain = false;
+
+    // Phase 2.1 A: Learned, Adaptive or Both, and the minimum search's window in seconds.
+    int source = learnedSource;
+    double adaptSeconds = 2.0;
 };
 
 // One short-time Fourier transform engine. See docs/fir.md.
@@ -65,6 +69,11 @@ private:
     void refreshCurve (int curve) noexcept;
     void refreshProfile() noexcept;
     void learnFrame() noexcept;
+
+    // Phase 2.1 A: Martin's minimum statistics, once per frame. See docs/phase2_1-A.md.
+    void trackNoise (bool publishes) noexcept;
+    void startTracking() noexcept;
+    void publishTracking() noexcept;
     void publishReduction() noexcept;
 
     double perHop (double milliseconds) const noexcept;
@@ -103,6 +112,16 @@ private:
 
     std::vector<double> learnSum;
     int learnFrames = 0;
+
+    // The adaptive estimator's state, per bin. ring holds the last trackSubwindows sub-window
+    // minima, bin after bin.
+    static constexpr int trackSubwindows = 8;
+    std::vector<float> trackPower, trackSmoothed, trackNoise_, trackMoment1, trackMoment2, trackQInverse,
+        trackActMin, trackSubMin, trackRingMin, trackRing, trackRatio, trackSort;
+    std::vector<int> trackHold;
+    double trackAlphaC = 1.0;
+    int trackSubFrames = 0, trackSubLength = 1, trackRingIndex = 0, trackPublishCountdown = 0;
+    bool trackStarted = false;
 
     std::vector<int> binColumn;
 };

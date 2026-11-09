@@ -115,6 +115,21 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
     layout.add (toggle ("bypass", "Bypass", false));
 
+    // Phase 2.1 A, appended after everything above: Learned keeps Subtract as it was.
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "source", 1 }, "Profile source",
+                                                              juce::StringArray { "Learned", "Adaptive", "Both" }, 0));
+
+    layout.add (fancy::floatParameter (
+        "adaptSpeed", "Adapt speed", fancy::logRange (0.5f, 10.0f, 0.01f), 2.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("s")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " s"; })
+            .withValueFromStringFunction ([] (const juce::String& text)
+                                          {
+                                              const auto value = fancy::parseNumber (text);
+                                              return text.containsIgnoreCase ("ms") ? value / 1000.0f : value;
+                                          })));
+
     return layout;
 }
 
@@ -234,6 +249,8 @@ FirDsp::Targets FirProcessor::readTargets() const
     frame.reduceArtifacts = isOn ("reduce");
     frame.listen = isOn ("listen") && frame.mode != eq && frame.mode != convolve;
     frame.sidechain = isOn ("sidechain");
+    frame.source = juce::jlimit (0, 2, juce::roundToInt (read ("source")));
+    frame.adaptSeconds = (double) read ("adaptSpeed");
 
     targets.engine.fftSize = getFftSize();
     targets.engine.lowLatency = isOn ("lowLatency");

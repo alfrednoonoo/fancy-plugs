@@ -10,6 +10,9 @@ namespace fir
 {
 
 enum Mode { eq, gate, compressor, subtract, convolve };
+
+// Subtract's noise profile (Phase 2.1 A).
+enum Source { learnedSource, adaptiveSource, bothSources };
 enum EditMode { smoothPoints, flatPoints, freehand };
 
 constexpr int numCurves = 3; // EQ, Gate and Compressor
@@ -62,6 +65,9 @@ struct Shared
 
         for (auto& value : reduction)
             value.store (0.0f);
+
+        for (auto& value : adaptive)
+            value.store (0.0f);
     }
 
     // The active curve of each mode, in dB at curveHz (i).
@@ -80,6 +86,17 @@ struct Shared
 
     // Gain reduction in dB, the most in each of displayColumns log-spaced bands.
     std::array<std::atomic<float>, displayColumns> reduction;
+
+    // Phase 2.1 A: the adaptive noise estimate, on the profile's grid and in its units, written
+    // by the engine that's heard. Not saved. A new engine (after an FFT size change) starts
+    // from it while hasAdaptive is set.
+    std::array<std::atomic<float>, profilePoints> adaptive;
+    std::atomic<bool> hasAdaptive { false };
+    std::atomic<int> adaptiveVersion { 0 };
+
+    // For the card: the estimate's average from 100 Hz to 8 kHz in the graph's dB, and the share
+    // of bins below 8 kHz being held as signal.
+    std::atomic<float> adaptiveFloorDb { -200.0f }, heldFraction { 0.0f };
 };
 
 } // namespace fir

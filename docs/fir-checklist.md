@@ -87,3 +87,13 @@
 - [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
 - [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
 - [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
+
+## Adaptive noise tracking (Phase 2.1 A)
+
+- [ ] In Subtract, the top of the left card has **Learned | Adaptive | Both** in red. Learned is selected, and the card works as before.
+- [ ] Open an older project that uses Subtract: it's on Learned and sounds as before.
+- [ ] Choose **Adaptive** on a recording with steady noise: the Learn button goes, Adapt speed and "Tracking" appear, with a noise floor in dB. The dashed line on the graph settles on the noise, and the noise is reduced without learning anything.
+- [ ] On a recording whose noise changes (a fan, traffic), the dashed line follows it within about the Adapt speed, and reduction keeps up.
+- [ ] Play speech or a held note over the noise: "Speech/music held, not learned" appears while it plays, and the voice or note isn't eaten away over time.
+- [ ] Choose **Both** with a learned profile: the dashed line never sits below the solid one where it matters, and Learn is still there.
+- [ ] Change FFT size while Adaptive: the dashed line stays where it was.

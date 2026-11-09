@@ -62,6 +62,8 @@ private:
     void paintGrid (juce::Graphics&);
     void paintAnalysis (juce::Graphics&);
     void paintModeLayer (juce::Graphics&);
+    void paintAdaptive (juce::Graphics&);
+    bool showsAdaptive() const;
     void paintLegend (juce::Graphics&);
 
 

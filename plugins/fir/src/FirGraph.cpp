@@ -397,7 +397,13 @@ void FirGraph::paintLegend (juce::Graphics& g)
     else if (mode == gate || mode == compressor)
         items.push_back ({ "threshold", modeColour (mode) });
     else if (mode == subtract)
-        items.push_back ({ "noise profile", modeColour (mode) });
+    {
+        if (processor.getShared().hasProfile.load() || ! showsAdaptive())
+            items.push_back ({ "noise profile", modeColour (mode) });
+
+        if (showsAdaptive())
+            items.push_back ({ "tracked profile (dashed)", modeColour (mode) });
+    }
 
     if (mode == compressor)
         items.push_back ({ "reduction", colours::accentYellow });
@@ -436,7 +442,52 @@ void FirGraph::paint (juce::Graphics& g)
         paintAnalysis (g);
 
     paintModeLayer (g);
+    paintAdaptive (g);
     paintLegend (g);
+}
+
+bool FirGraph::showsAdaptive() const
+{
+    return mode == subtract && processor.getApvts().getRawParameterValue ("source")->load() >= 0.5f
+        && processor.getShared().hasAdaptive.load();
+}
+
+// Phase 2.1 A: the adaptive estimate, dashed in the mode colour, over the learned profile.
+void FirGraph::paintAdaptive (juce::Graphics& g)
+{
+    if (! showsAdaptive())
+        return;
+
+    auto& shared = processor.getShared();
+    const auto width = (float) getWidth();
+    const auto bottom = (float) getHeight() - plotBottom;
+    const auto offset = (double) processor.getApvts().getRawParameterValue ("offset")->load();
+    const auto scale = profileToLevelScale (processor.getFftSize());
+    const auto step = profileHighHz / (double) (profilePoints - 1);
+
+    juce::Path line;
+
+    for (auto x = plotLeft; x <= width - plotRight; x += 1.0f)
+    {
+        const auto position = juce::jlimit (0.0, (double) (profilePoints - 1), hzForX (x, width) / step);
+        const auto index = juce::jmin ((int) position, profilePoints - 2);
+        const auto fraction = position - (double) index;
+        const auto power = (double) shared.adaptive[(size_t) index].load() + fraction * (double) (shared.adaptive[(size_t) index + 1].load() - shared.adaptive[(size_t) index].load());
+        const auto db = (float) (10.0 * std::log10 (std::max (power * scale, 1.0e-20)) + offset);
+        const auto y = juce::jlimit (plotTop, bottom, yFor (db));
+
+        if (x == plotLeft)
+            line.startNewSubPath (x, y);
+        else
+            line.lineTo (x, y);
+    }
+
+    juce::Path dashed;
+    const float dashes[] { 4.0f, 3.0f };
+    juce::PathStrokeType (2.0f).createDashedStroke (dashed, line, dashes, 2);
+
+    g.setColour (modeColour (subtract));
+    g.fillPath (dashed);
 }
 
 // Editing ---------------------------------------------------------------------------------------
