@@ -117,7 +117,8 @@ private:
     // minima, bin after bin.
     static constexpr int trackSubwindows = 8;
     std::vector<float> trackPower, trackSmoothed, trackNoise_, trackMoment1, trackMoment2, trackQInverse,
-        trackActMin, trackSubMin, trackRingMin, trackRing, trackRatio, trackSort;
+        trackActMin, trackSubMin, trackRingMin, trackRing, trackRatio, trackSort, trackPresence;
+    std::vector<double> trackPrefix;
     std::vector<int> trackHold;
     double trackAlphaC = 1.0;
     int trackSubFrames = 0, trackSubLength = 1, trackRingIndex = 0, trackPublishCountdown = 0;

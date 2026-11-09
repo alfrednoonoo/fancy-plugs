@@ -175,8 +175,10 @@ SpectralEngine::SpectralEngine (const Config& config, double sampleRate, Shared&
     scratch.assign ((size_t) bins, 0.0f);
 
     for (auto* track : { &trackPower, &trackSmoothed, &trackNoise_, &trackMoment1, &trackMoment2, &trackQInverse,
-                         &trackActMin, &trackSubMin, &trackRingMin, &trackRatio, &trackSort })
+                         &trackActMin, &trackSubMin, &trackRingMin, &trackRatio, &trackSort, &trackPresence })
         track->assign ((size_t) bins, 0.0f);
+
+    trackPrefix.assign ((size_t) bins + 1, 0.0);
 
     trackRing.assign ((size_t) bins * trackSubwindows, 0.0f);
     trackHold.assign ((size_t) bins, 0);
@@ -424,6 +426,7 @@ void SpectralEngine::startTracking() noexcept
         trackActMin[(size_t) k] = std::numeric_limits<float>::max();
         trackSubMin[(size_t) k] = std::numeric_limits<float>::max();
         trackRingMin[(size_t) k] = (float) start;
+        trackPresence[(size_t) k] = (float) start;
         trackHold[(size_t) k] = 0;
 
         for (int u = 0; u < trackSubwindows; ++u)
@@ -504,11 +507,28 @@ void SpectralEngine::trackNoise (bool publishes) noexcept
         sumQInverse += qInverse;
     }
 
-    // The median ratio, to tell a rise in the whole noise from a tone standing out.
-    std::copy (trackRatio.begin(), trackRatio.end(), trackSort.begin());
-    const auto middle = trackSort.begin() + bins / 2;
-    std::nth_element (trackSort.begin(), middle, trackSort.end());
-    const auto median = (double) *middle;
+    // Holding: the power over 200 ms, against the average 4 to 16 bins below and 4 to 16 bins
+    // above. A tone or a note stands over both; noise, even steeply sloped, and a rise in the
+    // whole noise don't. It doesn't look at the estimate, so its dips can't cause a hold.
+    {
+        const auto presenceCoefficient = std::exp (-hopSeconds / 0.2);
+
+        trackPrefix[0] = 0.0;
+
+        for (int k = 0; k < bins; ++k)
+        {
+            auto& presence = trackPresence[(size_t) k];
+            presence = (float) (presenceCoefficient * (double) presence + (1.0 - presenceCoefficient) * (double) trackPower[(size_t) k]);
+            trackPrefix[(size_t) k + 1] = trackPrefix[(size_t) k] + (double) presence;
+        }
+    }
+
+    const auto sideMean = [this] (int first, int last)
+    {
+        first = std::max (0, first);
+        last = std::min (bins - 1, last);
+        return last >= first ? (trackPrefix[(size_t) last + 1] - trackPrefix[(size_t) first]) / (double) (last - first + 1) : 0.0;
+    };
 
     // Martin's B_c, times a measured calibration: with B_min as published, the estimate reads
     // 3.9-4.5 dB low on white and pink noise at FFT 1024-8192 here, because at 75 % overlap the
@@ -524,10 +544,10 @@ void SpectralEngine::trackNoise (bool publishes) noexcept
     // Pass 2: holding, the minimum search and the estimate.
     for (int k = 0; k < bins; ++k)
     {
-        const auto ratio = (double) trackRatio[(size_t) k];
         auto& hold = trackHold[(size_t) k];
+        const auto reference = std::max (sideMean (k - 16, k - 4), sideMean (k + 4, k + 16));
 
-        if (ratio > 4.0 && ratio > 4.0 * median)
+        if (reference > 0.0 && (double) trackPresence[(size_t) k] > 4.0 * reference)
             hold = hangover;
         else if (hold > 0)
             --hold;
