@@ -69,6 +69,7 @@ jobs:
           -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
 
       - name: Build
+        id: build
         run: cmake --build build -- -k 0
 
       - name: Run DSP tests
@@ -196,6 +197,8 @@ jobs:
           Copy-Item tools/bench/examples/*.json dist/tools/examples/
 
       - name: Render UI screenshots
+        # Even when a check above failed, so the UI can still be compared (Phase 3 Q2.1).
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         shell: pwsh
         timeout-minutes: 5
         run: |
@@ -214,6 +217,7 @@ jobs:
           retention-days: 14
 
       - name: Upload screenshots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: screens-${{ env.SHORT_SHA }}
@@ -222,6 +226,7 @@ jobs:
           retention-days: 14
 
       - name: Upload pop-up screenshots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: screens-popups-${{ env.SHORT_SHA }}
@@ -230,6 +235,7 @@ jobs:
           retention-days: 14
 
       - name: Upload host-scale screenshots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: screens-hostscale-${{ env.SHORT_SHA }}
