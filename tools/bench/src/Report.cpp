@@ -43,12 +43,33 @@ juce::String number (double value, int decimals)
     return juce::String (value, decimals);
 }
 
+// juce::String (x, 0) prints every digit, so whole numbers go through roundToInt.
+juce::String fixed (double value, int decimals)
+{
+    return decimals <= 0 ? juce::String (juce::roundToInt (value)) : juce::String (value, decimals);
+}
+
+// "1 kHz", "5.5 kHz", "100 Hz", for text.
 juce::String hzText (double hz)
 {
     if (hz >= 1000.0)
-        return juce::String (hz / 1000.0, hz >= 10000.0 || std::fmod (hz, 1000.0) == 0.0 ? 0 : 1) + "k";
+    {
+        const auto khz = hz / 1000.0;
+        return fixed (khz, std::abs (khz - std::round (khz)) < 0.05 ? 0 : 1) + " kHz";
+    }
 
-    return juce::String (juce::roundToInt (hz));
+    return fixed (hz, 0) + " Hz";
+}
+
+// "1k", "20k", "500", for axis ticks.
+juce::String hzTick (double hz)
+{
+    return hz >= 1000.0 ? fixed (hz / 1000.0, std::abs (hz / 1000.0 - std::round (hz / 1000.0)) < 1.0e-6 ? 0 : 1) + "k" : fixed (hz, 0);
+}
+
+juce::String tickText (double tick)
+{
+    return fixed (tick, std::abs (tick - std::round (tick)) < 1.0e-6 ? 0 : (std::abs (tick * 10.0 - std::round (tick * 10.0)) < 1.0e-6 ? 1 : 2));
 }
 
 std::vector<double> linearTicks (double low, double high)
@@ -259,7 +280,7 @@ void cpu (Writer& w)
 
             w.line ("| " + Writer::label (result) + " | " + juce::String (block) + " | " + juce::String (mean, 3) + " | "
                     + juce::String ((double) row["p99"], 3) + " | " + juce::String ((double) row["worst"], 2) + " | "
-                    + juce::String ((double) row["allThreads"], 3) + " |" + (hasReference ? " " + juce::String (ratio, 2) + " |" : ""));
+                    + ((double) row["allThreads"] >= 0.0 ? juce::String ((double) row["allThreads"], 3) : juce::String ("-")) + " |" + (hasReference ? " " + juce::String (ratio, 2) + " |" : ""));
 
             rows.add (Writer::label (result).quoted() + "," + juce::String (block) + "," + row["mean"].toString() + "," + row["p99"].toString() + ","
                       + row["worst"].toString() + "," + row["allThreads"].toString() + "," + juce::String (ratio, 3));
@@ -281,53 +302,57 @@ void cpu (Writer& w)
     const auto rowHeight = 34;
     const auto width = 1200, height = 110 + rowHeight * (int) bars.size();
     juce::Image picture (juce::Image::ARGB, width, height, true);
-    juce::Graphics g (picture);
-    g.fillAll (surface);
-    g.setColour (textPrimary);
-    g.setFont (font (18.0f, true));
-    g.drawText ("CPU, mean % of one core", 24, 16, width - 48, 26, juce::Justification::centredLeft);
 
-    auto top = 0.0;
-
-    for (const auto& bar : bars)
-        top = std::max (top, bar.second.first);
-
-    top = niceCeiling (top * 1.15);
-
-    const juce::Rectangle<float> area (300.0f, 60.0f, width - 360.0f, (float) (rowHeight * (int) bars.size()));
-
-    g.setFont (font (12.0f));
-
-    for (const auto tick : linearTicks (0.0, top))
+    // JUCE 8 finishes drawing into an image when its Graphics goes away, so draw in a scope.
     {
-        const auto x = area.getX() + (float) (tick / top) * area.getWidth();
-        g.setColour (grid);
-        g.drawVerticalLine ((int) x, area.getY(), area.getBottom());
+        juce::Graphics g (picture);
+        g.fillAll (surface);
+        g.setColour (textPrimary);
+        g.setFont (font (18.0f, true));
+        g.drawText ("CPU, mean % of one core", 24, 16, width - 48, 26, juce::Justification::centredLeft);
+
+        auto top = 0.0;
+
+        for (const auto& bar : bars)
+            top = std::max (top, bar.second.first);
+
+        top = niceCeiling (top * 1.15);
+
+        const juce::Rectangle<float> area (300.0f, 60.0f, width - 360.0f, (float) (rowHeight * (int) bars.size()));
+
+        g.setFont (font (12.0f));
+
+        for (const auto tick : linearTicks (0.0, top))
+        {
+            const auto x = area.getX() + (float) (tick / top) * area.getWidth();
+            g.setColour (grid);
+            g.drawVerticalLine ((int) x, area.getY(), area.getBottom());
+            g.setColour (textSecondary);
+            g.drawText (tickText (tick), juce::Rectangle<float> (x - 40.0f, area.getBottom() + 6.0f, 80.0f, 16.0f), juce::Justification::centred);
+        }
+
+        for (size_t i = 0; i < bars.size(); ++i)
+        {
+            const auto y = area.getY() + (float) i * rowHeight;
+            const auto value = bars[i].second.first;
+            const auto length = (float) (value / top) * area.getWidth();
+
+            g.setColour (textPrimary);
+            g.setFont (font (13.0f));
+            g.drawText (bars[i].first, juce::Rectangle<float> (24.0f, y, area.getX() - 36.0f, (float) rowHeight), juce::Justification::centredRight, true);
+
+            g.setColour (colourFor (bars[i].second.second));
+            g.fillRoundedRectangle (juce::Rectangle<float> (area.getX(), y + 8.0f, std::max (2.0f, length), rowHeight - 16.0f), 4.0f);
+            g.fillRect (juce::Rectangle<float> (area.getX(), y + 8.0f, std::min (4.0f, std::max (2.0f, length)), rowHeight - 16.0f));
+
+            g.setColour (textPrimary);
+            g.drawText (juce::String (value, 3) + " %", juce::Rectangle<float> (area.getX() + length + 8.0f, y, 100.0f, (float) rowHeight),
+                        juce::Justification::centredLeft);
+        }
+
         g.setColour (textSecondary);
-        g.drawText (juce::String (tick, tick < 1.0 ? 2 : 1), juce::Rectangle<float> (x - 40.0f, area.getBottom() + 6.0f, 80.0f, 16.0f), juce::Justification::centred);
+        g.drawText ("% of one core", juce::Rectangle<float> (area.getX(), area.getBottom() + 24.0f, area.getWidth(), 16.0f), juce::Justification::centred);
     }
-
-    for (size_t i = 0; i < bars.size(); ++i)
-    {
-        const auto y = area.getY() + (float) i * rowHeight;
-        const auto value = bars[i].second.first;
-        const auto length = (float) (value / top) * area.getWidth();
-
-        g.setColour (textPrimary);
-        g.setFont (font (13.0f));
-        g.drawText (bars[i].first, juce::Rectangle<float> (24.0f, y, area.getX() - 36.0f, (float) rowHeight), juce::Justification::centredRight, true);
-
-        g.setColour (colourFor (bars[i].second.second));
-        g.fillRoundedRectangle (juce::Rectangle<float> (area.getX(), y + 8.0f, std::max (2.0f, length), rowHeight - 16.0f), 4.0f);
-        g.fillRect (juce::Rectangle<float> (area.getX(), y + 8.0f, std::min (4.0f, std::max (2.0f, length)), rowHeight - 16.0f));
-
-        g.setColour (textPrimary);
-        g.drawText (juce::String (value, 3) + " %", juce::Rectangle<float> (area.getX() + length + 8.0f, y, 100.0f, (float) rowHeight),
-                    juce::Justification::centredLeft);
-    }
-
-    g.setColour (textSecondary);
-    g.drawText ("% of one core", juce::Rectangle<float> (area.getX(), area.getBottom() + 24.0f, area.getWidth(), 16.0f), juce::Justification::centred);
 
     w.image ("cpu.png", picture, "CPU, mean percent of one core");
 }
@@ -471,7 +496,7 @@ void thd (Writer& w)
         for (const auto& row : *(*result)["thd"].getArray())
         {
             const auto hz = (double) row["hz"];
-            w.line ("| " + Writer::label (*result) + " | " + hzText (hz) + " Hz | " + number ((double) row["level"], 1) + " dBFS | "
+            w.line ("| " + Writer::label (*result) + " | " + hzText (hz) + " | " + number ((double) row["level"], 1) + " dBFS | "
                     + number ((double) row["outputDbfs"], 1) + " dBFS | " + juce::String ((double) row["thdPercent"], 5) + " | "
                     + number ((double) row["thdDb"], 1) + " | " + juce::String ((double) row["thdnPercent"], 5) + " | " + number ((double) row["thdnDb"], 1) + " |");
 
@@ -507,8 +532,8 @@ void thd (Writer& w)
         const auto top = std::max (bottom + 40.0, std::ceil (high / 20.0) * 20.0 + 10.0);
 
         w.image ("thd-" + juce::String (juce::roundToInt (hz)) + ".png",
-                 drawPlot ({ "THD at " + hzText (hz) + " Hz against input level", "Input level (dBFS)", "THD (dB)", false, left - 2.0, right + 2.0, bottom, top }, series),
-                 "THD at " + hzText (hz) + " Hz");
+                 drawPlot ({ "THD at " + hzText (hz) + " against input level", "Input level (dBFS)", "THD (dB)", false, left - 2.0, right + 2.0, bottom, top }, series),
+                 "THD at " + hzText (hz) + "");
     }
 }
 
@@ -535,8 +560,8 @@ void aliasingSection (Writer& w, const TestSpec& spec)
             const auto hz = (double) row["hz"];
             const auto count = (int) row["aliases"];
 
-            w.line ("| " + Writer::label (*result) + " | " + hzText (hz) + " Hz | " + number ((double) row["level"], 1) + " dBFS | " + juce::String (count) + " | "
-                    + (count > 0 ? number ((double) row["worstDbfs"], 1) + " dBFS | " + hzText ((double) row["worstHz"]) + " Hz | "
+            w.line ("| " + Writer::label (*result) + " | " + hzText (hz) + " | " + number ((double) row["level"], 1) + " dBFS | " + juce::String (count) + " | "
+                    + (count > 0 ? number ((double) row["worstDbfs"], 1) + " dBFS | " + hzText ((double) row["worstHz"]) + " | "
                                        + number ((double) row["worstRelativeDb"], 1) + " dB | " + number ((double) row["totalRelativeDb"], 1) + " dB |"
                                  : juce::String ("none | - | - | - |")));
 
@@ -560,8 +585,8 @@ void aliasingSection (Writer& w, const TestSpec& spec)
 
     for (const auto& [hz, series] : byFrequency)
         w.image ("aliasing-" + juce::String (juce::roundToInt (hz)) + ".png",
-                 drawPlot ({ "Spectrum of a " + hzText (hz) + " Hz sine", "Frequency (Hz)", "Level (dBFS)", false, 0.0, spec.sampleRate / 2.0, -180.0, 10.0 }, series),
-                 "Spectrum at " + hzText (hz) + " Hz");
+                 drawPlot ({ "Spectrum of a " + hzText (hz) + " sine", "Frequency (Hz)", "Level (dBFS)", false, 0.0, spec.sampleRate / 2.0, -180.0, 10.0 }, series),
+                 "Spectrum at " + hzText (hz) + "");
 }
 
 void nullSection (Writer& w)
@@ -677,7 +702,7 @@ juce::Image drawPlot (const PlotSpec& spec, const std::vector<Series>& series)
         g.setColour (grid);
         g.drawHorizontalLine ((int) y, area.getX(), area.getRight());
         g.setColour (textSecondary);
-        g.drawText (juce::String (tick, std::abs (tick - std::round (tick)) < 1.0e-6 ? 0 : 1), juce::Rectangle<float> (area.getX() - 60.0f, y - 8.0f, 52.0f, 16.0f),
+        g.drawText (tickText (tick), juce::Rectangle<float> (area.getX() - 60.0f, y - 8.0f, 52.0f, 16.0f),
                     juce::Justification::centredRight);
     }
 
@@ -687,7 +712,7 @@ juce::Image drawPlot (const PlotSpec& spec, const std::vector<Series>& series)
         g.setColour (grid);
         g.drawVerticalLine ((int) x, area.getY(), area.getBottom());
         g.setColour (textSecondary);
-        g.drawText (spec.logX || spec.xMax >= 1000.0 ? hzText (tick) : juce::String (tick, std::abs (tick - std::round (tick)) < 1.0e-6 ? 0 : 1),
+        g.drawText (spec.logX || spec.xMax >= 1000.0 ? hzTick (tick) : tickText (tick),
                     juce::Rectangle<float> (x - 40.0f, area.getBottom() + 6.0f, 80.0f, 16.0f), juce::Justification::centred);
     }
 

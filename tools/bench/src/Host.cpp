@@ -250,7 +250,7 @@ juce::var thdTest (const TestSpec& spec, const PluginEntry& entry, const Log& lo
             set (row, "thdnPercent", rounded (result.thdnPercent, 1.0e-6));
             rows.add (row);
 
-            log ("thd: " + juce::String (hz, 0) + " Hz at " + juce::String (level, 1) + " dBFS: THD " + juce::String (result.thdDb, 1)
+            log ("thd: " + juce::String (juce::roundToInt (hz)) + " Hz at " + juce::String (level, 1) + " dBFS: THD " + juce::String (result.thdDb, 1)
                  + " dB, THD+N " + juce::String (result.thdnDb, 1) + " dB");
         }
     }
@@ -312,7 +312,7 @@ juce::var aliasingTest (const TestSpec& spec, const PluginEntry& entry, const Lo
         set (row, "spectrum", spectrum);
         rows.add (row);
 
-        log ("aliasing: " + juce::String (hz, 0) + " Hz: " + juce::String (result.count) + " aliases, worst "
+        log ("aliasing: " + juce::String (juce::roundToInt (hz)) + " Hz: " + juce::String (result.count) + " aliases, worst "
              + juce::String (result.worstDbfs, 1) + " dBFS at " + juce::String (result.worstHz, 0) + " Hz");
     }
 
@@ -653,7 +653,8 @@ CpuFigures measureCpu (Rig& rig, int block, double seconds, int repeats, bool pa
         const auto mean = 100.0 * timing.totalSeconds / audioSeconds;
         const auto p99 = 100.0 * percentile (timing.blockLoads, 0.99);
         const auto worst = 100.0 * *std::max_element (timing.blockLoads.begin(), timing.blockLoads.end());
-        const auto all = 100.0 * timing.processCpuSeconds / audioSeconds;
+        // GetProcessTimes counts in 15.6 ms ticks: under a tenth of a second it can read zero.
+        const auto all = timing.processCpuSeconds >= 0.1 ? 100.0 * timing.processCpuSeconds / audioSeconds : -1.0;
 
         means.push_back (mean);
         p99s.push_back (p99);
@@ -663,7 +664,8 @@ CpuFigures measureCpu (Rig& rig, int block, double seconds, int repeats, bool pa
 
         if (log != nullptr)
             log ("run " + juce::String (run + 1) + " of " + juce::String (repeats) + ": mean " + juce::String (mean, 3) + " %, 99th "
-                 + juce::String (p99, 3) + " %, worst " + juce::String (worst, 2) + " %, all threads " + juce::String (all, 3) + " %");
+                 + juce::String (p99, 3) + " %, worst " + juce::String (worst, 2) + " %, all threads "
+                 + (all >= 0.0 ? juce::String (all, 3) + " %" : juce::String ("too short to measure")));
     }
 
     figures.mean = median (means);

@@ -489,11 +489,13 @@ Aliasing aliasing (const Signal& output, double hz, double rate)
     if (fundamental <= 0.0)
         return result;
 
-    // Bins that are harmonics below Nyquist, or near DC, aren't aliases.
+    // Bins within 25 Hz of a harmonic below Nyquist, which takes in the skirt a gain that's still
+    // settling leaves, or near DC, aren't aliases.
     std::vector<bool> excluded ((size_t) nyquistBin + 1, false);
+    const auto skirt = std::max (5, (int) std::ceil (25.0 * s.size / rate));
 
-    for (int m = 1; m * bin - 5 <= nyquistBin; ++m)
-        for (int k = std::max (0, m * bin - 5); k <= std::min (nyquistBin, m * bin + 5); ++k)
+    for (int m = 1; m * bin - skirt <= nyquistBin; ++m)
+        for (int k = std::max (0, m * bin - skirt); k <= std::min (nyquistBin, m * bin + skirt); ++k)
             excluded[(size_t) k] = true;
 
     for (int k = 0; k <= std::min (nyquistBin, (int) std::ceil (10.0 * s.size / rate) + 4); ++k)
