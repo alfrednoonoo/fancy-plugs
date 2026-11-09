@@ -14,9 +14,9 @@
 - Release: [v1.2.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.2.0), with all nine plugins and Phase 2.1 (S, H, W, D, U, A). [v1.1.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.1.0) added Fancy Delay, Fancy MultiComp and Fancy FIR, and v1.0.1 typed values. The repo is private, so the releases are too.
 - `README.md` shows each plugin's current design, from CI screenshots copied into `docs/images/`. Refresh them when a layout changes.
 
-Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
+Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42576245019 (commit `a613f77`, version 1.2.0, tag `v1.2.0`): 344 test cases passed, and all nine plugins passed Steinberg's validator, pluginval and the host harness. The release zip is that run's `FancyPlugs-VST3` artifact, zipped as it is, `tools/AudioPluginHost.exe` included.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42546277128, Phase 2.1 A, with the shortened status label in FIR's card: 344 test cases, Steinberg's validator, pluginval and the host harness passed for all nine plugins.
+Latest run: the release run above.
 
 ## Phase 2
 
