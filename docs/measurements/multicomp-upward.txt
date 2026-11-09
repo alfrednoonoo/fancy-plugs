@@ -1,0 +1,5 @@
+# Phase 2.1 U, run 42539096844 (§0.4: median of 5 runs in one build).
+upward cpu (median of 5, 48 kHz, 128 samples, stereo, 4 bands LR 24): Upward off 2.252 %, Upward on 2.277 %
+workflow cpu reference: Fancy Comp default 0.559 % (median of 5, 48 kHz, 128 samples, stereo)
+# Ratio to Comp: 4.03 x with Upward off, 4.07 x with Upward on; Upward costs about 1 %.
+# Big squash with Limit output: peak 1.0000 on pink noise (12 samples at the ceiling) and on the drum loop (2).

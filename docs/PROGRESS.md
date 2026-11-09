@@ -15,7 +15,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42535427188, Phase 2.1 D: 329 test cases, Steinberg's validator, pluginval and the host harness passed for all nine plugins.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42539096844, Phase 2.1 U: 337 test cases, Steinberg's validator, pluginval and the host harness passed for all nine plugins.
 
 ## Phase 2
 
@@ -39,7 +39,7 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
    - H: **built, and green in CI**; waiting for the user's host checks (`docs/host-compat.md`); the FIR frame-grid question is decided (below). Design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
    - W: **built, and green in CI**; the user approved both decisions on 8 November 2026 (below) and asked to start D. Its REAPER checks are still to run. Undo and redo, A/B, and level-matched Compare, for all nine plugins. Design note `docs/phase2_1-W.md`.
    - D: dynamic EQ. **Built, and green in CI**; waiting for the user's REAPER checks (`docs/eq-checklist.md`, "Dynamic bands"). Design note `docs/phase2_1-D.md`.
-   - U: upward compression in MultiComp.
+   - U: upward compression in MultiComp. **Built, and green in CI**; waiting for the user's REAPER checks (`docs/multicomp-checklist.md`, "Upward, Depth and Time"). Design note `docs/phase2_1-U.md`.
    - A: adaptive noise tracking in FIR.
 
    The controls mockup is `reference/phase2_1/14__phase2_1_controls.png`, and both mockups' source is in `design/phase2_1-mockup-src/`. The brief cites `docs/2026-11-market-report-detailed.md`, where the report is actually `docs/research/2026-11-market-report-detailed.md`.
@@ -292,6 +292,35 @@ Notes:
 - **Test 2's timing uses a 50 ms Attack.** At the 5 ms default, the 5 ms level window takes about half the allowed time by itself.
 - **A render starts from silence**, which Below mode treats as quiet, so a Below band acts for the first milliseconds of playback and then lets go.
 - **The first build measured 1.75 % CPU**, with the gain computer per sample; the 8-sample control rate and the 0.01 dB redesign step brought it to 0.98 %.
+
+## Phase 2.1 U: upward compression, Depth and Time
+
+Design note: `docs/phase2_1-U.md`. Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42539096844. The user approved the taller window and leaving out the "Downward" label on 8 November 2026.
+
+What changed:
+
+- **Parameters:** per band `bNup`, `bNuthr`, `bNuratio`, `bNlift`, `bNfloor`; global `depth`, `time`; appended. Split, merge, copy and reset carry them; Link bands moves Up threshold too.
+- **DSP:** the brief's lift formula on the band's detector level, Up threshold clamped to Threshold, the Floor fade over 8 dB, its own follower on the band's ballistics. Gain = Gain + Depth × (lift − reduction), with Auto make-up scaled by Depth; Time multiplies attack and release. With Upward off and Depth and Time at 100 % the gain is the old expression, to the bit.
+- **UI:** an UPWARD row under the band card (Up thresh, Up ratio, Max lift, Floor, Upward on, transfer curve with Floor, Up threshold and Threshold guides and a "clamped" note); Depth and Time above Wet/Dry. The window is 760 × 589. Screenshot checked against panel 4.
+- **Preset:** Big squash.
+- **Docs:** manual sections "Upward compression" (with the noise-floor warning) and "Depth and Time", a checklist section, a pointer in `docs/multicomp.md`.
+
+Results:
+
+| Check (§U.4) | Result |
+|---|---|
+| 1. Upward off, Depth and Time 100 % | A state without the new IDs loads with those defaults and renders bit-identically |
+| 2. Static curve, -90 to 0 dB in 2 dB steps | Within 0.3 dB of the formula, including Max lift and the Floor fade; clamp test passes |
+| 3. Depth 0 % | Within 0.01 dB of the band sum with heavy down and up settings |
+| 4. Time 200 % | Attack and release 63 % times double, within 10 % |
+| 5. Silence and -90 dB noise | Silence stays exactly silent; the noise isn't raised |
+| 6. Big squash, Limit output | Finite on pink noise and a drum loop; never over 0 dBFS (see the note) |
+| Host | Offline render with upward bands and Depth and Time automated: bit-identical with random blocks and in real time |
+| CPU, 4 bands | Upward off 2.25 %, on 2.28 %: 4.03 × and 4.07 × Comp's default. `docs/measurements/multicomp-upward.txt` |
+
+Notes:
+
+- **"Below 0 dBFS":** the shared true-peak limiter's ceiling is exactly 1.0, with a final clamp there, so Big squash's loudest samples sit at 0 dBFS (12 samples in 6 s of loud pink noise, 2 in the drum loop) and never over. Lowering the ceiling would change projects that use Limit output in Comp and MultiComp, so the test requires "never over".
 
 ## Market research and Phase 3 draft
 
