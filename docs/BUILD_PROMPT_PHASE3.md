@@ -1,13 +1,6 @@
 # Phase 3.0: close the gaps to the market leaders
 
-> **Order changed, 7 November 2026.** Fancy Gate (Phase 2.0.1) and Phase 2.1 now come before this phase. Phase 2.1 covers four items from this draft:
->
-> - undo and redo, A/B and level-matched Compare, from Q2.1;
-> - dynamic EQ, from Q2.4;
-> - MultiComp's upward compression, from Q2.6;
-> - FIR's adaptive profile, from Q2.7.
->
-> Leave those out here. This draft is trimmed with the user before Phase 3 starts.
+> **Trimmed 9 November 2026.** Fancy Gate (Phase 2.0.1) and Phase 2.1 came before this phase and are released as v1.2.0. Phase 2.1 built four items this draft once had, so they're removed below: undo and redo, A/B and level-matched Compare (Q2.1), dynamic EQ (Q2.4), MultiComp's upward compression (Q2.6) and FIR's adaptive profile (Q2.7). The suite has nine plugins, Fancy Gate included. This is still a draft until the user approves it.
 
 This extends `docs/BUILD_PROMPT.md` and `docs/BUILD_PROMPT_PHASE2.md`. **Every rule in them still applies**, including:
 
@@ -15,25 +8,25 @@ This extends `docs/BUILD_PROMPT.md` and `docs/BUILD_PROMPT_PHASE2.md`. **Every r
 - the design system and the shared `fancy-core` components;
 - the real-time rules (§4) and the acceptance checks (§7 and P5);
 - typed values on every knob and fader;
-- "ask before changing the parameter list or layout".
+- "ask before changing the parameter list or layout";
+- Phase 2.1's rules: appended parameters with defaults that keep the old sound, `stateVersion` migrations, and the §0.4 CPU method (median of five runs, ratio to Fancy Comp at its defaults).
 
-The evidence behind this phase is in `docs/research/2026-11-market-report-summary.md` and `2026-11-market-report-detailed.md`. Read the summary first. Phase 3 starts only after Fancy FIR passes its REAPER check, unless the user says otherwise.
+The evidence behind this phase is in `docs/research/2026-11-market-report-summary.md` and `2026-11-market-report-detailed.md`. Read the summary first, including its "Phase 2.1 results" section. Phase 3 starts when the user approves this brief.
 
 ## Q0. Decisions for the user before starting
 
 Ask these together, once, before writing any code. Record the answers in `docs/PROGRESS.md`.
 
-**Answers so far (7 November 2026):**
+**Answers (7 November 2026):**
 
 - **Platform:** Windows first, until it's a concrete, finished version. Mac is wanted after that, as a later phase.
 - **New plugins:** a limiter, a de-esser and a saturator. The user's main concern is that their design matches the suite, so every new plugin goes through Q5 first. The others (transient shaper, chorus or modulation, algorithmic reverb) are for Phase 4.
-- **Release:** v1.1.0 comes first, once Fancy FIR has passed its REAPER check.
 - **Order:** the user approved the order in Q2's preamble. They use the EQ, Comp and Verb most, so those are improved first.
 
-1. **Platform.** Stay Windows VST3 only, as the original brief says, or add CLAP, macOS or AU? Anything beyond Windows VST3 matters only if other people will use the plugins. It changes the CI matrix, costs macOS runner minutes, which are about 10 times Windows ones, and brings signing and notarisation questions.
-2. **New plugins.** The suite has no limiter or maximiser, de-esser, saturator, transient shaper, chorus or other modulation effect, or algorithmic reverb. These are common in the "essential plugins" lists. Phase 3.0 doesn't add any unless the user picks some. If they do, each gets a P2-style section written and approved first.
-3. **Order.** The default order is in Q2. The user may reorder or drop items.
-4. **Phase 1 versus Phase 2.** Whether to cut a v1.1.0 release with Phase 2 before Phase 3 starts. The recommendation is yes, once FIR is signed off.
+Still open, to ask together before any code:
+
+1. **EQ Match** (Q2.4): keep it in Phase 3 or drop it.
+2. **The later plugin order** (Q2, step 3.4): confirm once EQ, Comp and Verb are done.
 
 ## Q1. The benchmark host (first, before any DSP work)
 
@@ -52,7 +45,7 @@ The research couldn't compare our plugins with the leaders head to head, because
   - Click detection under fast automation of a chosen parameter.
 - **How it's driven:** the user picks parameters by name or index, and sets their values in a small JSON test file. That way "Pro-C 3 at 4:1, -20 dB" and "Fancy Comp at 4:1, -20 dB" run the same test.
 - **What it writes:** Markdown and CSV into `bench-results/`, with plots as PNGs.
-- **Tests:** CI runs it against our own eight plugins as a smoke test, and checks the numbers match `docs/measurements` within the runners' variation. The user runs it on their PC against plugins they own or trial.
+- **Tests:** CI runs it against our own nine plugins as a smoke test, and checks the numbers match `docs/measurements` within the runners' variation. The user runs it on their PC against plugins they own or trial.
 - **Docs:** `docs/bench.md`, a how-to with three ready-made comparison files: compressor, EQ and delay.
 
 ## Q2. Improvements, in order
@@ -73,13 +66,12 @@ The sections below keep their numbers. Follow the order above, not the numbering
 
 Each item needs its design-note section, in `docs/<plugin>.md`, written and approved first, because each changes the parameter list or layout. New controls go in EDIT drawers or popovers unless the user approves a layout change. Every new knob and fader uses the shared components, so typed values come with them.
 
-### Q2.1 Shared, in `fancy-core`, for all eight plugins
+### Q2.1 Shared, in `fancy-core`, for all nine plugins
+
+Undo and redo, A/B and level-matched Compare are done (Phase 2.1 W). The preset browser's preset loads must stay single undo steps, as W made them.
 
 | Feature | Detail | Test |
 |---|---|---|
-| A/B compare | Two parameter snapshots with a header toggle, and copy A to B. Non-parameter state, such as curves, profiles and chains, goes with the snapshot | Switching is bit-exact. Automation still writes to the active slot |
-| Undo and redo | Inside the plugin, for parameter gestures and state edits, 50 steps, with Ctrl+Z and Ctrl+Shift+Z | Undo restores the exact value. Host automation isn't recorded as edits |
-| Level-matched bypass | Optional. Bypass is matched to the processed signal's loudness over a sliding 3 s window, so a comparison isn't fooled by level | The level difference is within 0.5 dB on pink noise |
 | Preset browser | Categories, search, favourites, and next and previous arrows. The factory presets get categories | Loads and saves round-trip. A damaged preset file is ignored |
 | Free resizing | Every editor resizes between its minimum and 200 %, as Fancy EQ does now | The layouts render at the minimum and maximum without clipping, checked from the CI screenshots |
 
@@ -109,38 +101,38 @@ The research found the category is bought for two things the Kicker can't do.
 - **Groove:** swing for Note-mode taps.
 - **CPU:** the "everything on" figure for 4 taps must come below 2 %. Saturate's `tanh` is the main cost, and an approximation is allowed if it holds the 0 dBFS guarantee.
 
-### Q2.4 Fancy EQ: dynamic EQ and mid/side
+### Q2.4 Fancy EQ: mid/side and more bands
 
-- **Dynamic bands:** each band gains Threshold, Range, Attack, Release and an optional external sidechain.
-  - Use a TPT filter with the gain changed per sample, as the EQ already smooths.
-  - Test: the band's gain follows the level with the set times. With Range at 0 it's bit-exact with today.
-- **Channel per band:** Stereo, Left, Right, Mid or Side.
-- **Up to 24 bands.** This changes the state format, so migration from 16 is needed, with `stateVersion` 2.
+Dynamic bands are done (Phase 2.1 D).
+
+- **Channel per band:** Stereo, Left, Right, Mid or Side, dynamic bands included (their detector reads the same channel).
+- **Up to 24 bands.** Bands 17-24 are appended with their dynamic parameters, and `stateVersion` is bumped from 3 with a migration, so 16-band states load unchanged.
 - **EQ Match:** learn a reference spectrum, from the sidechain or a captured section, and fit the bands to it. Optional, and only if Q0 doesn't drop it.
 
 ### Q2.5 Fancy Comp: character and upward compression
 
 - **Character:** a saturation stage, pre or post, with Warm and Bright original curves and a drive control. It runs at the oversampled rate.
-- **Upward compression:** for levels below the threshold, a Ratio below 1:1, with a Range control. This shares MultiComp's expansion code.
+- **Upward compression:** reuse MultiComp's upward stage from Phase 2.1 U, with the same controls (Up threshold, Up ratio, Max lift, Floor) and the same static curve, moved into `fancy-core` so both plugins share it.
 - **Auto threshold:** keeps the gain reduction steady across input level changes.
 - **Sidechain EQ:** a 3-band EQ on the detector, replacing the high-pass and low-pass. It reuses Fancy EQ's matched filters.
 - **Oversampling to 8x.**
 
-### Q2.6 Fancy MultiComp: upward compression, lookahead and CPU
+### Q2.6 Fancy MultiComp: lookahead, mid/side and CPU
 
-- **Upward and downward per band**, with a separate threshold for each, as in the OTT style. A preset reproduces an aggressive three-band upward and downward sound, as an original setting.
+Upward compression, Depth, Time and the "Big squash" preset are done (Phase 2.1 U).
+
 - **Lookahead:** 0-10 ms, reported as latency.
 - **Mid/side per band.**
-- **CPU:** 4 bands in LR 24 below 1.5 %. The main cost is `log10` and `pow` on every sample of every band. Compute the detector and gain every 4 samples and interpolate, or use fast approximations.
-  - Test: the gain differs by under 0.05 dB from today's per-sample path on the existing tests.
+- **CPU:** 4 bands in LR 24, about 2.3 % today, below 1.5 %. The main cost is `log10` and `pow` on every sample of every band. Compute the detector and gain every 4 samples and interpolate, or use fast approximations.
+  - Test: the gain differs by under 0.05 dB from today's per-sample path on the existing tests, upward compression included.
 
-### Q2.7 Fancy FIR: adaptive noise and resonance
+### Q2.7 Fancy FIR: resonance
 
-- **Adaptive profile:** an optional minimum-statistics noise tracker that follows noise as it changes, for real-time use.
-  - Test: noise that steps up by 6 dB is followed within 2 s, and speech isn't learned as noise.
+The adaptive noise profile is done (Phase 2.1 A).
+
 - **Resonance mode:** a sixth mode that finds narrow peaks against a smoothed spectral envelope and turns them down by Depth, with Sharpness, Attack and Release.
   - Test: a 3 kHz resonance 12 dB above a noise bed is reduced by the set depth, and broadband material changes by under 0.5 dB.
-- **CPU stability:** find the cause of the large differences between CI runs. Run the benchmark at high priority, as the Verb's does, and report the 99th percentile.
+- **CPU stability:** Phase 2.1's §0.4 method makes comparisons within a run reliable, but absolute figures still vary between CI runs. Find the cause, run the benchmark at high priority, as the Verb's does, and report the 99th percentile.
 
 ### Q2.8 Fancy Verb: content, true stereo and modulation
 
@@ -154,13 +146,14 @@ The research found the category is bought for two things the Kicker can't do.
 
 There's no designer mockup for a new plugin type. It's designed in three steps, and the user approves each before the next.
 
-1. **Design rules.** Before the first new plugin, write `docs/DESIGN_SYSTEM.md` from the eight finished plugins:
-   - the header;
+1. **Design rules.** Before the first new plugin, write `docs/DESIGN_SYSTEM.md` from the nine finished plugins:
+   - the header, with its undo, A/B and Compare controls;
    - the page and card colours;
    - card radius and spacing;
    - the 12 px label size;
    - the shared knob styles and the right-hand column of meter and faders;
    - the tabs and segment switches;
+   - the styled menus, dropdowns, tooltips and dialogs from Phase 2.1 S;
    - the footer row of checkboxes and the EDIT drawer for extras;
    - the accent colour of each plugin.
 
@@ -176,7 +169,7 @@ Each item passes §7 and P5. In addition:
 
 - **Benchmark host:** the user has run `FancyBench.exe` on their PC against at least one competitor they own or trial in each improved category. The results go into `docs/research/bench-<date>.md`, and the research summary is updated with real head-to-head numbers.
 - **Each improved plugin:** its manual, checklist and `docs/measurements` file are updated, and the CI screenshots are compared with the previous version as well as the mockup.
-- **State compatibility:** every plugin's saved state from v1.1.0 loads in Phase 3 with the same sound, tested with saved state files kept in `tests/data/`.
+- **State compatibility:** every plugin's saved state from v1.1.0 and v1.2.0 loads in Phase 3 with the same sound, tested with saved state files kept in `tests/data/`.
 
 ## Q4. Out of scope unless the user asks
 

@@ -7,7 +7,7 @@ Nine VST3 effects for Windows 10 and 11 (x64), built for personal use and signed
 | Fancy Kicker | Parallel low-frequency enhancer: one big Freq knob, Wet and Dry |
 | Fancy Exciter | Parallel high-frequency exciter with clip boost and a mix-back control |
 | Fancy Comp | Compressor with a Threshold fader over the input meter, a filtered detector, a sidechain and an output limiter |
-| Fancy EQ | Four-band EQ with draggable handles, a live analyzer and, new in 1.2.0, dynamic bands |
+| Fancy EQ | Up to 16 bands with draggable handles, a live analyzer and, new in 1.2.0, dynamic bands |
 | Fancy Verb | Convolution reverb built from a chain of modules: impulse file, filters, echo generator, normalize |
 | Fancy Delay | Up to 16 delay taps, each with its own feedback, loop filters, bit crush, width, pan and ping-pong |
 | Fancy MultiComp | Up to 8 bands of compression behind flat-summing crossovers and, new in 1.2.0, upward compression |
