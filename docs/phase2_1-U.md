@@ -67,6 +67,6 @@ The window grows from 760 × 470 to 760 × 589, the height of the new row, so no
 3. **Depth 0 %:** output equals the Dry path (band sum) within 0.01 dB, with compression and upward on.
 4. **Time 200 %:** measured 63 % attack and release times double, ±10 %.
 5. **Floor:** silence, and noise at -90 dB, with Upward on: the output isn't raised.
-6. **Big squash:** on pink noise and a drum-like loop, with Limit output on: no NaN or inf, and the output stays below 0 dBFS.
+6. **Big squash:** on pink noise and a drum-like loop, with Limit output on: no NaN or inf, and the output never goes over 0 dBFS. The shared true-peak limiter's ceiling is exactly 1.0, with a final clamp there, so its loudest samples sit at 0 dBFS rather than under it; lowering the ceiling would change existing projects that use Limit output in Comp and MultiComp.
 7. **Host:** H's offline-render test with upward bands and Depth and Time automated; the flood test covers the new parameters.
 8. **Clamp:** an Up threshold above Threshold acts as Threshold.

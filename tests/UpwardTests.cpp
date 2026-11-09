@@ -249,7 +249,7 @@ TEST_CASE ("Upward: the Floor keeps silence and noise at -90 dB where they are",
     CHECK (rmsDb (output.left, (int) (rate / 2), output.size()) - rmsDb (input.left, (int) (rate / 2), input.size()) < 0.01);
 }
 
-TEST_CASE ("Upward: Big squash on pink noise and a drum loop stays finite and under 0 dBFS with Limit output", "[multicomp][upward]")
+TEST_CASE ("Upward: Big squash on pink noise and a drum loop stays finite and never over 0 dBFS with Limit output", "[multicomp][upward]")
 {
     MultiCompProcessor processor;
     const auto names = processor.getPresets().getFactoryNames();
@@ -271,6 +271,7 @@ TEST_CASE ("Upward: Big squash on pink noise and a drum loop stays finite and un
     {
         auto finite = true;
         auto peak = 0.0f;
+        auto atCeiling = 0;
         juce::AudioBuffer<float> block (juce::jmax (2, processor.getTotalNumInputChannels()), 512);
         juce::MidiBuffer midi;
 
@@ -288,9 +289,12 @@ TEST_CASE ("Upward: Big squash on pink noise and a drum loop stays finite and un
                 {
                     finite = finite && std::isfinite (block.getSample (ch, i));
                     peak = std::max (peak, std::abs (block.getSample (ch, i)));
+                    atCeiling += std::abs (block.getSample (ch, i)) >= 1.0f ? 1 : 0;
                 }
         }
 
+        std::printf ("big squash: peak %.4f, %d samples at the 0 dBFS ceiling
+", peak, atCeiling);
         return std::make_pair (finite, peak);
     };
 
@@ -321,8 +325,9 @@ TEST_CASE ("Upward: Big squash on pink noise and a drum loop stays finite and un
 
     CHECK (pinkFinite);
     CHECK (drumFinite);
-    CHECK (pinkPeak < 1.0f);
-    CHECK (drumPeak < 1.0f);
+    // The shared limiter's ceiling is exactly 0 dBFS, with a final clamp there: never over it.
+    CHECK (pinkPeak <= 1.0f);
+    CHECK (drumPeak <= 1.0f);
 
     processor.releaseResources();
 }
