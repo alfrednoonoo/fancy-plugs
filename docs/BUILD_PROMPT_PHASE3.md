@@ -21,12 +21,10 @@ Ask these together, once, before writing any code. Record the answers in `docs/P
 
 - **Platform:** Windows first, until it's a concrete, finished version. Mac is wanted after that, as a later phase.
 - **New plugins:** a limiter, a de-esser and a saturator. The user's main concern is that their design matches the suite, so every new plugin goes through Q5 first. The others (transient shaper, chorus or modulation, algorithmic reverb) are for Phase 4.
+- **EQ Match:** kept in Phase 3 (9 November 2026).
 - **Order:** the user approved the order in Q2's preamble. They use the EQ, Comp and Verb most, so those are improved first.
 
-Still open, to ask together before any code:
-
-1. **EQ Match** (Q2.4): keep it in Phase 3 or drop it.
-2. **The later plugin order** (Q2, step 3.4): confirm once EQ, Comp and Verb are done.
+Still open: **the later plugin order** (Q2, step 3.4), to confirm once EQ, Comp and Verb are done.
 
 ## Q1. The benchmark host (first, before any DSP work)
 
@@ -107,7 +105,7 @@ Dynamic bands are done (Phase 2.1 D).
 
 - **Channel per band:** Stereo, Left, Right, Mid or Side, dynamic bands included (their detector reads the same channel).
 - **Up to 24 bands.** Bands 17-24 are appended with their dynamic parameters, and `stateVersion` is bumped from 3 with a migration, so 16-band states load unchanged.
-- **EQ Match:** learn a reference spectrum, from the sidechain or a captured section, and fit the bands to it. Optional, and only if Q0 doesn't drop it.
+- **EQ Match:** learn a reference spectrum, from the sidechain or a captured section, and fit the bands to it. In scope: the user kept it on 9 November 2026.
 
 ### Q2.5 Fancy Comp: character and upward compression
 
