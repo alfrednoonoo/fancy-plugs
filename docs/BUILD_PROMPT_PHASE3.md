@@ -1,6 +1,6 @@
 # Phase 3.0: close the gaps to the market leaders
 
-> **Trimmed 9 November 2026.** Fancy Gate (Phase 2.0.1) and Phase 2.1 came before this phase and are released as v1.2.0. Phase 2.1 built four items this draft once had, so they're removed below: undo and redo, A/B and level-matched Compare (Q2.1), dynamic EQ (Q2.4), MultiComp's upward compression (Q2.6) and FIR's adaptive profile (Q2.7). The suite has nine plugins, Fancy Gate included. This is still a draft until the user approves it.
+> **Trimmed 9 November 2026.** Fancy Gate (Phase 2.0.1) and Phase 2.1 came before this phase and are released as v1.2.0. Phase 2.1 built four items this draft once had, so they're removed below: undo and redo, A/B and level-matched Compare (Q2.1), dynamic EQ (Q2.4), MultiComp's upward compression (Q2.6) and FIR's adaptive profile (Q2.7). The suite has nine plugins, Fancy Gate included. **Approved by the user on 9 November 2026.**
 
 This extends `docs/BUILD_PROMPT.md` and `docs/BUILD_PROMPT_PHASE2.md`. **Every rule in them still applies**, including:
 

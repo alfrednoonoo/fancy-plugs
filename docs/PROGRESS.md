@@ -43,10 +43,10 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
    - U: upward compression in MultiComp. **Done.** The user reported the REAPER checks (`docs/multicomp-checklist.md`, "Upward, Depth and Time") passed on 9 November 2026. Design note `docs/phase2_1-U.md`.
    - A: adaptive noise tracking in FIR. **Done.** The user reported the REAPER checks (`docs/fir-checklist.md`, "Adaptive noise tracking") passed on 9 November 2026. Design note `docs/phase2_1-A.md`.
 
-   Phase 2.1 is finished: all six items are built, green and passed in REAPER, and released as v1.2.0. Phase 3's draft brief still needs the user's approval; the user put it off on 9 November 2026. The "Phase 2.1 results" section of `docs/research/2026-11-market-report-summary.md` records which gaps are closed.
+   Phase 2.1 is finished: all six items are built, green and passed in REAPER, and released as v1.2.0. Phase 3's brief was trimmed and approved by the user on 9 November 2026. The "Phase 2.1 results" section of `docs/research/2026-11-market-report-summary.md` records which gaps are closed.
 
    The controls mockup is `reference/phase2_1/14__phase2_1_controls.png`, and both mockups' source is in `design/phase2_1-mockup-src/`. The brief cites `docs/2026-11-market-report-detailed.md`, where the report is actually `docs/research/2026-11-market-report-detailed.md`.
-3. **Phase 3:** from `docs/BUILD_PROMPT_PHASE3.md`, a draft. Phase 2.1 now covers four of its items, so it keeps what's left:
+3. **Phase 3:** from `docs/BUILD_PROMPT_PHASE3.md`, **approved 9 November 2026**, with EQ Match kept. Phase 2.1 covered four of its items, so it has what's left:
    - the benchmark host;
    - the preset browser and free resizing;
    - EQ mid/side, 24 bands and Match;
@@ -55,7 +55,7 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
    - FIR's resonance mode;
    - Fancy Limiter, Fancy De-esser and Fancy Saturator.
 
-   Mac comes after Windows is finished. Trim the draft with the user before Phase 3 starts.
+   Mac comes after Windows is finished. First up is Q1, the benchmark host (`tools/bench`, `FancyBench.exe`), starting with its design note. Still to confirm with the user once EQ, Comp and Verb are done: the order for MultiComp, Delay, FIR and Kicker.
 
 Changes to shared code since v1.0.1, which the next release should include:
 
@@ -362,7 +362,7 @@ Layout note: the Subtract card is 178 px wide, too narrow for both "NOISE PROFIL
 
 - **Reports:** `docs/research/2026-11-market-report-summary.md` and `2026-11-market-report-detailed.md` compare the suite with the 2026 leaders in each category. They use our CI measurements and the leaders' published documentation. No competitor was run.
 - **User's answers, 7 November 2026:** Windows first, and Mac later. New plugin types are wanted, but which ones isn't decided. Release v1.1.0 once FIR passes in REAPER. Order approved: benchmark host, shared features and design rules, then EQ, Comp and Verb first, as the plugins the user uses most, then new types, then Mac. New plugin types for Phase 3: limiter, de-esser and saturator. The others (transient shaper, chorus or modulation, algorithmic reverb) move to Phase 4.
-- **Phase 3.0:** `docs/BUILD_PROMPT_PHASE3.md` is a draft. Its section Q0 lists the decisions the user makes before any work starts, and it isn't in `AGENTS.md` or `CLAUDE.md` until they approve it.
+- **Phase 3.0:** `docs/BUILD_PROMPT_PHASE3.md`, approved on 9 November 2026 and now in `AGENTS.md` and `CLAUDE.md`. Its section Q0 records the user's decisions.
 
 ## FIR acceptance (§7, P5)
 

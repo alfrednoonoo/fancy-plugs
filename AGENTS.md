@@ -40,7 +40,7 @@ Phase 2.1, from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. 
 
 Saved projects from the current release must load and render bit-identical after every item. New parameters are appended, with defaults that keep the old sound, and `stateVersion` is bumped with a migration. Measure CPU with §0.4 of the Phase 2.1 brief: five runs in one build, the median, and the ratio to Fancy Comp at its defaults.
 
-Phase 3, from `docs/BUILD_PROMPT_PHASE3.md`, after Phase 2.1. It's a draft until the user approves it, and it drops whatever Phase 2.1 now covers.
+Phase 3, from `docs/BUILD_PROMPT_PHASE3.md`, approved by the user on 9 November 2026, with what Phase 2.1 built trimmed out. Its order is in Q2: the benchmark host (Q1), then the shared features and design rules, then EQ, Comp and Verb, then the rest, then the new Limiter, De-esser and Saturator. Each item gets its design note approved before any code, and every new plugin goes through Q5's design rules and HTML mockup first.
 
 Write `docs/<plugin>.md` before coding each plugin: DSP algorithm, parameters (range, default, unit, skew), latency, state format, and how each §5 fix is handled.
 
