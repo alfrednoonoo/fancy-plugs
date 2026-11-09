@@ -28,8 +28,13 @@ foreach ($bundle in $bundles) {
 
 $toolsTarget = Join-Path $env:USERPROFILE 'VST3-Dev-Tools'
 
+# The tools folder sits beside the bundles: directly under -Source in the release zip, one level
+# down in what scripts\get-latest.ps1 downloads.
+$toolsSource = Get-ChildItem -Path $Source -Recurse -Directory -Filter 'tools' | Where-Object { $_.FullName -notmatch '\.vst3' } | Select-Object -First 1
+$toolsSource = if ($toolsSource) { $toolsSource.FullName } else { Join-Path $Source 'tools' }
+
 # JUCE's AudioPluginHost, for checking sidechain and MIDI routing without a DAW.
-$pluginHost = Join-Path $Source 'tools\AudioPluginHost.exe'
+$pluginHost = Join-Path $toolsSource 'AudioPluginHost.exe'
 if (Test-Path $pluginHost) {
     New-Item -ItemType Directory -Force -Path $toolsTarget | Out-Null
     Copy-Item -Path $pluginHost -Destination $toolsTarget -Force
@@ -38,13 +43,13 @@ if (Test-Path $pluginHost) {
 
 # FancyBench, for measuring our plugins against others (docs/bench.md). The example test files are
 # only copied if they aren't there yet, so edited ones are kept.
-$bench = Join-Path $Source 'tools\FancyBench.exe'
+$bench = Join-Path $toolsSource 'FancyBench.exe'
 if (Test-Path $bench) {
     New-Item -ItemType Directory -Force -Path $toolsTarget | Out-Null
     Copy-Item -Path $bench -Destination $toolsTarget -Force
     $examplesTarget = Join-Path $toolsTarget 'examples'
     New-Item -ItemType Directory -Force -Path $examplesTarget | Out-Null
-    foreach ($example in @(Get-ChildItem -Path (Join-Path $Source 'tools\examples') -Filter '*.json' -ErrorAction SilentlyContinue)) {
+    foreach ($example in @(Get-ChildItem -Path (Join-Path $toolsSource 'examples') -Filter '*.json' -ErrorAction SilentlyContinue)) {
         $destination = Join-Path $examplesTarget $example.Name
         if (-not (Test-Path $destination)) { Copy-Item -Path $example.FullName -Destination $destination }
     }
