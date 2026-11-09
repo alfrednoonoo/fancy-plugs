@@ -1,0 +1,158 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Phase 3, item Q2.1: preset browser and next/previous arrows. Styling follows
+     design/phase2_1-mockup-src/menus.html and §S.2 of docs/BUILD_PROMPT_PHASE2_1.md.
+     The windows behind the pop-ups are CI screenshots (img/), at 100 %. -->
+<style>
+@font-face{font-family:Inter;src:url(../../assets/fonts/Inter-Regular.ttf);font-weight:400}
+@font-face{font-family:Inter;src:url(../../assets/fonts/Inter-Medium.ttf);font-weight:500}
+@font-face{font-family:Inter;src:url(../../assets/fonts/Inter-SemiBold.ttf);font-weight:600}
+.sheet{background:#121212;padding:8px 4px;display:flex;flex-direction:column;gap:22px}
+.h{font-size:13px;font-weight:700;color:#fff;margin:4px 0 2px}
+.n{font-size:11px;color:#909090;margin-bottom:10px;line-height:1.45;max-width:900px}
+.plug{position:relative;background-size:100% 100%;border-radius:4px;overflow:hidden;flex:none}
+/* preset pill with arrows, drawn over the screenshot's own pill */
+.pill{position:absolute;top:13px;left:16px;height:24px;background:#303030;border-radius:3px;display:flex;align-items:center;font-size:12px;color:#fff}
+.pill.open{background:#383838}
+.pill .ar{width:18px;height:24px;display:flex;align-items:center;justify-content:center;flex:none;border-radius:3px}
+.pill .ar svg{stroke:rgba(255,255,255,.4)}
+.pill .ar.hov{background:#424242}.pill .ar.hov svg{stroke:#fff}
+.pill .nm{flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* browser panel = menu panel from S.2 */
+.br{position:absolute;background:#262626;border:1px solid #434343;border-radius:6px;padding:4px;box-shadow:0 10px 28px rgba(0,0,0,.55);font-size:11.5px;color:#EDEDED;display:flex;flex-direction:column}
+.top{display:flex;gap:6px;padding:4px 4px 6px}
+.search{flex:1;height:24px;background:#141414;border:1px solid #434343;border-radius:4px;display:flex;align-items:center;gap:6px;padding:0 7px;font-size:11.5px;color:#EDEDED}
+.search.f{border-color:var(--a)}
+.search .ph{color:#5A5A5A}
+.search .caret{display:inline-block;width:1px;height:12px;background:var(--a);margin-left:-5px}
+.search .x{margin-left:auto;color:#909090;font-size:12px}
+.cat{height:24px;background:#303030;border-radius:3px;display:flex;align-items:center;padding:0 8px;font-size:11.5px;color:#fff;gap:8px;flex:none}
+.cat.open{background:#383838}
+.cat:after{content:"";width:7px;height:10px;margin-left:auto;background:no-repeat center/7px 10px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='10'%3E%3Cpath d='M.5 3.5 3.5.8l3 2.7M.5 6.5l3 2.7 3-2.7' fill='none' stroke='%23999' stroke-width='1'/%3E%3C/svg%3E")}
+.sepl{height:1px;background:#3a3a3a;margin:4px 6px}
+.sec{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#909090;padding:6px 10px 3px 26px;font-weight:600}
+.mi{height:26px;display:flex;align-items:center;padding:0 6px 0 26px;border-radius:4px;position:relative;white-space:nowrap;gap:8px;flex:none}
+.mi .c{margin-left:auto;color:#909090;font-size:10.5px}
+.mi .st{width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex:none}
+.mi .st svg{fill:none;stroke:#5A5A5A;stroke-width:1.1}
+.mi .st.fav svg{fill:var(--a);stroke:var(--a)}
+.mi.hov{background:#383838}
+.mi.hov .st svg{stroke:#909090}.mi.hov .st.fav svg{stroke:var(--a)}
+.mi.hov:before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;border-radius:1px;background:var(--a)}
+.mi.chk:after{content:"";position:absolute;left:10px;top:8px;width:4px;height:8px;border:solid var(--a);border-width:0 1.8px 1.8px 0;transform:rotate(45deg)}
+.mi.dis{color:#5A5A5A}
+.mi b{font-weight:600;color:#fff}
+.foot{display:flex;gap:6px;padding:4px 4px 2px;flex-wrap:nowrap}
+.fb{height:24px;background:#303030;border-radius:3px;padding:0 9px;display:flex;align-items:center;font-size:11.5px;color:#fff;white-space:nowrap}
+.fb.dis{color:#5A5A5A}
+.fb.ic{margin-left:auto;width:28px;padding:0;justify-content:center}
+.pn{white-space:nowrap}
+.fb .k{color:#909090;font-size:10.5px;margin-left:6px}
+.empty{padding:22px 16px;text-align:center;color:#909090;font-size:11px;line-height:1.5}
+.empty u{color:var(--a);text-decoration:none}
+.menu{background:#262626;border:1px solid #434343;border-radius:6px;padding:4px;box-shadow:0 10px 28px rgba(0,0,0,.55);font-size:11.5px;color:#EDEDED}
+.menu .mi{padding-right:10px}
+.dlg{background:#262626;border:1px solid #434343;border-radius:8px;padding:16px;width:300px;box-shadow:0 14px 36px rgba(0,0,0,.6)}
+.fl{font-size:11px;color:#909090;margin:0 0 4px}
+.fld{height:26px;background:#141414;border:1px solid #434343;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:11.5px;color:#EDEDED;margin-bottom:10px}
+.fld.f{border-color:var(--a)}
+.b2{border-radius:4px;padding:6px 14px;font-size:11px}
+.row{display:flex;gap:28px;align-items:flex-start}
+.lab{font-size:10.5px;color:#909090;margin-bottom:6px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="star" viewBox="0 0 16 16"><path d="M8 1.8l1.85 3.9 4.25.5-3.15 2.9.85 4.2L8 11.2l-3.8 2.1.85-4.2L1.9 6.2l4.25-.5z" stroke-linejoin="round"/></symbol>
+<symbol id="lt" viewBox="0 0 8 10"><path d="M5.5 1 2 5l3.5 4" fill="none" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="rt" viewBox="0 0 8 10"><path d="M2.5 1 6 5 2.5 9" fill="none" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="fold" viewBox="0 0 14 12"><path d="M1 2.2c0-.6.4-1 1-1h3.3l1.4 1.5H12c.6 0 1 .4 1 1V10c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1z" fill="none" stroke="#C8C8C8" stroke-width="1.1" stroke-linejoin="round"/></symbol>
+<symbol id="mag" viewBox="0 0 12 12"><circle cx="5" cy="5" r="3.6" fill="none" stroke="#909090" stroke-width="1.2"/><path d="M7.7 7.7 10.8 10.8" stroke="#909090" stroke-width="1.3" stroke-linecap="round"/></symbol>
+</defs></svg>
+
+<div class="sheet">
+
+<!-- 1 · Kicker -->
+<div><div class="h">1 · Fancy Kicker (narrowest window, 392 × 472): browser open, category All</div>
+<div class="n">Clicking the preset name opens the browser 4 px under the pill. In a narrow window it's the window's width minus 16 px (here 376), and it never covers the header. The search field has focus, so typing filters at once. Factory and User sections as in today's menu; ✓ marks the loaded preset; the category is grey on the right; ★ toggles a favourite without loading. Hover: lighter row and a 2 px bar in the plugin's accent (Kicker red). The footer holds the actions that were at the bottom of the old menu: Save as new… (Ctrl+S, in its tooltip), Reload when changed, Rename…, Delete…, and a folder icon that opens the preset folder.</div>
+<div class="row">
+<div class="plug" style="width:392px;height:472px;background-image:url(img/kicker@2x.png);--a:#E74D3D">
+ <div class="pill open" style="width:110px"><div class="ar"><svg width="8" height="10"><use href="#lt"/></svg></div><div class="nm">Tight Kick</div><div class="ar"><svg width="8" height="10"><use href="#rt"/></svg></div></div>
+ <div class="br" style="left:8px;top:41px;width:376px">
+  <div class="top"><div class="search f"><svg width="12" height="12"><use href="#mag"/></svg><span class="caret"></span><span class="ph">Search presets</span></div><div class="cat" style="width:118px">All</div></div>
+  <div class="sepl" style="margin-top:0"></div>
+  <div class="sec">Factory</div>
+  <div class="mi"><span class="pn">Default</span><span class="c"></span><span class="st"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="mi chk"><span class="pn">Tight Kick</span><span class="c">Kick</span><span class="st fav"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="mi"><span class="pn">Safe Boom</span><span class="c">Kick</span><span class="st"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="mi hov"><span class="pn">Deep Sub</span><span class="c">Bass</span><span class="st"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="mi"><span class="pn">Bass Lift</span><span class="c">Bass</span><span class="st"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="sec">User</div>
+  <div class="mi"><span class="pn">Club 808</span><span class="c">808s</span><span class="st fav"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="mi"><span class="pn">Trap long tail</span><span class="c">808s</span><span class="st"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="mi"><span class="pn">Rock kick lift</span><span class="c">User</span><span class="st"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="sepl"></div>
+  <div class="foot"><div class="fb">Save as new…</div><div class="fb dis">Rename…</div><div class="fb dis">Delete…</div><div class="fb ic" title="Open preset folder"><svg width="14" height="12"><use href="#fold"/></svg></div></div>
+ </div>
+</div>
+<div style="display:flex;flex-direction:column;gap:18px;--a:#E74D3D">
+ <div><div class="lab">The category dropdown, open (same styled menu as every dropdown)</div>
+ <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px"><div class="cat open" style="width:118px">All</div>
+ <div class="menu" style="width:180px">
+  <div class="mi chk"><span class="pn">All</div><div class="mi">★ Favourites</span><span class="c" style="margin-left:auto">2</span></div>
+  <div class="sec">Factory</div><div class="mi hov">Kick</div><div class="mi">Bass</div>
+  <div class="sec">User</div><div class="mi"><span class="pn">User</span><span class="c" style="margin-left:auto">1</span></div><div class="mi"><span class="pn">808s</span><span class="c" style="margin-left:auto">2</span></div>
+ </div></div></div>
+ <div><div class="lab">Favourites with none set yet</div>
+ <div class="br" style="position:relative;width:300px">
+  <div class="top"><div class="search"><svg width="12" height="12"><use href="#mag"/></svg><span class="ph">Search presets</span></div><div class="cat" style="width:118px">★ Favourites</div></div>
+  <div class="sepl" style="margin-top:0"></div>
+  <div class="empty">No favourites yet.<br>Click ☆ beside a preset to add it here.</div>
+ </div></div>
+</div>
+</div></div>
+
+<!-- 2 · Comp -->
+<div><div class="h">2 · Fancy Comp (934 × 527): searching “drum”, current settings changed</div>
+<div class="n">In a wider window the browser is 420 px wide, left-aligned with the pill. The search matches the starts of words in the name and category, so “drum” also finds Parallel Crush, which is in Drums. Sections with no matches are hidden. The settings have changed since Drum Punch loaded (• in the pill), so the footer also offers Reload. Rename and Delete stay greyed because a factory preset is loaded. Accent: teal.</div>
+<div class="plug" style="width:934px;height:527px;background-image:url(img/comp@2x.png);--a:#00A884">
+ <div class="pill open" style="width:246px"><div class="ar"><svg width="8" height="10"><use href="#lt"/></svg></div><div class="nm">Drum Punch •</div><div class="ar"><svg width="8" height="10"><use href="#rt"/></svg></div></div>
+ <div class="br" style="left:16px;top:41px;width:420px">
+  <div class="top"><div class="search f">
+   <svg width="12" height="12"><use href="#mag"/></svg><span>drum</span><span class="caret" style="margin-left:-6px"></span><span class="x">✕</span></div><div class="cat" style="width:130px">All</div></div>
+  <div class="sepl" style="margin-top:0"></div>
+  <div class="sec">Factory</div>
+  <div class="mi chk"><span class="pn"><b>Drum</b> Punch</span><span class="c">Drums</span><span class="st fav"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="mi hov"><span class="pn">Parallel Crush</span><span class="c"><b style="color:#EDEDED;font-weight:600">Drum</b>s</span><span class="st"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="sec">User</div>
+  <div class="mi"><span class="pn"><b>Drum</b> room squash</span><span class="c">User</span><span class="st"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="mi"><span class="pn">Snare crack</span><span class="c"><b style="color:#EDEDED;font-weight:600">Drum</b>s</span><span class="st"><svg width="13" height="13"><use href="#star"/></svg></span></div>
+  <div class="sepl"></div>
+  <div class="foot"><div class="fb">Save as new…</div><div class="fb">Reload</div><div class="fb dis">Rename…</div><div class="fb dis">Delete…</div><div class="fb ic" title="Open preset folder"><svg width="14" height="12"><use href="#fold"/></svg></div></div>
+ </div>
+</div></div>
+
+<!-- 3 · close-ups -->
+<div><div class="h">3 · Close-ups: the preset pill, no matches, and the Save dialog</div>
+<div class="n">The ‹ and › arrows sit inside the pill's ends, so the header's widths don't change; the up/down chevron is replaced by them. Each arrow highlights on hover and has a tooltip. The name is centred and still opens the browser. Arrows step through the list the browser would show, wrapping at the ends; each step is one undo step. The Save dialog is the existing one with a Category field, which suggests existing user categories as you type.</div>
+<div class="row">
+ <div style="display:flex;flex-direction:column;gap:14px">
+  <div><div class="lab">Compact header (Kicker, Exciter), 110 px</div><div style="position:relative;width:142px;height:50px;background:#1E1E1E;border-radius:4px"><div class="pill" style="width:110px"><div class="ar"><svg width="8" height="10"><use href="#lt"/></svg></div><div class="nm">Default</div><div class="ar"><svg width="8" height="10"><use href="#rt"/></svg></div></div></div></div>
+  <div><div class="lab">Hovering ›, with its tooltip; settings changed (•)</div><div style="position:relative;width:200px;height:92px;background:#1E1E1E;border-radius:4px"><div class="pill" style="width:110px"><div class="ar"><svg width="8" height="10"><use href="#lt"/></svg></div><div class="nm">Safe Boom •</div><div class="ar hov"><svg width="8" height="10"><use href="#rt"/></svg></div></div>
+   <div style="position:absolute;left:96px;top:44px;background:#1E1E1E;border:1px solid #434343;border-radius:5px;padding:7px 10px;font-size:10.5px;color:#EDEDED;box-shadow:0 6px 18px rgba(0,0,0,.5);white-space:nowrap">Next preset</div></div></div>
+  <div><div class="lab">Full header, 246 px</div><div style="position:relative;width:278px;height:50px;background:#1E1E1E;border-radius:4px"><div class="pill" style="width:246px"><div class="ar"><svg width="8" height="10"><use href="#lt"/></svg></div><div class="nm">Vocal Control</div><div class="ar"><svg width="8" height="10"><use href="#rt"/></svg></div></div></div></div>
+ </div>
+ <div style="--a:#00A884"><div class="lab">No matches</div>
+  <div class="br" style="position:relative;width:300px">
+   <div class="top"><div class="search f"><svg width="12" height="12"><use href="#mag"/></svg><span>sidechain duck</span><span class="caret" style="margin-left:-6px"></span><span class="x">✕</span></div><div class="cat" style="width:90px">Vocals</div></div>
+   <div class="sepl" style="margin-top:0"></div>
+   <div class="empty">No presets in Vocals match “sidechain duck”.<br><u>Search all categories</u></div>
+   <div class="sepl"></div>
+   <div class="foot"><div class="fb">Save as new…</div><div class="fb dis">Rename…</div><div class="fb dis">Delete…</div></div>
+  </div></div>
+ <div style="--a:#00A884"><div class="lab">Save as new preset, with Category</div>
+  <div class="dlg"><div style="font-size:12.5px;font-weight:600;margin-bottom:12px">Save as new preset</div>
+   <div class="fl">Name</div><div class="fld">Snare crack 2</div>
+   <div class="fl">Category <span style="color:#5A5A5A">(optional)</span></div><div class="fld f">Dru<span style="display:inline-block;width:1px;height:12px;background:#00A884"></span><span style="color:#5A5A5A">ms</span></div>
+   <div style="font-size:10.5px;color:#909090;margin:-4px 0 14px">Saved in Presets\Drums\ beside your other presets.</div>
+   <div style="display:flex;justify-content:flex-end;gap:8px"><div class="b2" style="background:#383838">Cancel</div><div class="b2" style="background:#00A884;color:#fff;font-weight:600">Save</div></div></div></div>
+</div></div>
+
+</div></body></html>

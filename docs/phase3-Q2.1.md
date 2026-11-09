@@ -4,7 +4,7 @@ Brief: §Q2.1 of `docs/BUILD_PROMPT_PHASE3.md`. Both features are built once, in
 
 Q2.1 adds no host parameter and no DSP. Nothing on the audio thread changes, so saved projects load and render bit-identical, and CPU doesn't change. The saved state gains nothing a project needs: favourites and categories live in the preset folder, and the window size uses the existing `uiScale`, `uiWidth` and `uiHeight` properties. `stateVersion` stays at its current value.
 
-**Status: draft for the user's approval.** Section 5 lists the decisions.
+**Status:** the user accepted every recommended decision in §5 on 9 November 2026 and asked for a mockup first. Mockup: `reference/phase3/17__preset_browser_mockup.png`, source `design/phase3-mockup-src/preset-browser.html`. No code until the mockup is approved.
 
 ## 1. Where the plugins stand
 
@@ -25,23 +25,26 @@ One layout works for every window, from Kicker (392 wide) up:
 
 ```
 ┌──────────────────────────────────────────────┐
-│ [🔍 Search presets          ] [All        ▾] │  search field, category dropdown
+│ [🔍 Search presets          ] [All        ⇕] │  search field, category dropdown
 ├──────────────────────────────────────────────┤
-│ ☆  Default                                    │
-│ ★  Gentle Glue                     Bus        │  star, name, category (grey)
-│ ☆  Vocal Control                   Vocals   ✓ │  tick on the loaded preset
-│ ☆  Drum Punch                      Drums      │
-│ ☆  My vocal chain                  User       │
-│                    …                          │  scrolls, like a long menu
+│   FACTORY                                    │  section labels, as in the menu
+│   Default                                 ☆  │
+│ ✓ Gentle Glue                     Bus     ★  │  tick, name, category (grey), star
+│   Drum Punch                      Drums   ☆  │
+│   USER                                       │
+│   My vocal chain                  Vocals  ☆  │
+│                    …                         │  scrolls, like a long menu
 ├──────────────────────────────────────────────┤
-│ Save as new…  Rename…  Delete…   Open folder  │  footer actions
+│ Save as new…  Reload  Rename…  Delete…   📁  │  footer actions
 └──────────────────────────────────────────────┘
 ```
 
 - **Width:** 420 px, or the window width minus 16 px if that's smaller. **Height:** from below the header to 8 px above the window's bottom edge, or shorter if the list is short.
 - **Category dropdown:** All, Favourites, the factory categories in the order in §2.4, then User and each user category. It's the shared `PillDropdown` with its styled menu.
-- **Rows:** the star toggles a favourite without loading. The name loads on click, the way today's menu does. The category is shown in grey on the right when the dropdown is set to All or Favourites.
-- **Footer:** the actions that are in today's menu: Save as new… (Ctrl+S), Rename…, Delete…, Open preset folder, plus Reload "<name>" when it's changed. Rename and Delete are greyed unless a user preset is loaded, as now. They open the existing styled dialogs.
+- **Rows:** as menu rows (§S.2): the ✓ for the loaded preset is at the left, and Factory and User have section labels. Sections with nothing to show are hidden. The star, at the right end, toggles a favourite without loading: an outline in `#5A5A5A`, filled in the accent colour when on. The name loads on click, the way today's menu does. The category is shown in grey on the right when the dropdown is set to All or Favourites.
+- **Footer:** the actions that are in today's menu: Save as new… (Ctrl+S, shown in its tooltip), Reload when the settings have changed, Rename…, Delete…, and a folder icon at the right that opens the preset folder. They're `PillButton`s, so five fit in Kicker's 376 px. Rename and Delete are greyed unless a user preset is loaded, as now. They open the existing styled dialogs.
+- **Empty states:** "No favourites yet. Click ☆ beside a preset to add it here." and "No presets in <category> match “<text>”.", with a link to search all categories.
+- **Search matches** are drawn in semibold in the name and the category.
 - **Keyboard:** the search field takes focus when the browser opens, so typing filters at once. Up and Down move the highlight, Enter loads, Esc closes. When the browser closes, focus goes back to nowhere, so keys reach the host again as H requires.
 
 ### 2.3 Search
@@ -66,7 +69,7 @@ The search matches the starts of words in the name and the category, case-insens
 
 Names and categories are what Q2.1 adds. New factory presets come with each plugin's own Phase 3 item.
 
-**User presets** are categorised by folder: a preset in `Presets\Vocals\` is in the user category "Vocals", and one directly in `Presets\` is just "User". The Save dialog gets a second field, Category, which starts on the loaded user preset's category, and can be left empty. A folder the user makes in Explorer appears as a category. Only one level of folders is read.
+**User presets** are categorised by folder: a preset in `Presets\Vocals\` is in the user category "Vocals", and one directly in `Presets\` is just "User". The Save dialog gets a second field, Category (optional), which starts on the loaded user preset's category, suggests existing user categories as you type, and can be left empty. A folder the user makes in Explorer appears as a category. Only one level of folders is read.
 
 Factory and user names can now repeat across categories, so a user preset is identified by its path relative to `Presets\`, such as `Vocals/My chain`. The project keeps storing the preset's name as now, and from Q2.1 the relative path, so an old project's name still finds its file.
 
@@ -76,7 +79,7 @@ Favourites are stored per plugin in `%APPDATA%\Fancy Plugs\<plugin>\favourites.x
 
 ### 2.6 Next and previous arrows
 
-Two small arrows, `‹` and `›`, sit inside the preset pill, at its left and right ends, so the header's layout and widths don't change. The name is centred between them and still opens the browser.
+Two small arrows, `‹` and `›`, sit inside the preset pill, at its left and right ends, so the header's layout and widths don't change. They replace the pill's up/down chevron. Each is 18 px wide and turns `#424242` with a white arrow on hover. The name is centred between them and still opens the browser.
 
 - They step through the list the browser would show with its current category and search, and wrap around at the ends. With no filter set, that's every preset: Default and the factory presets in category order, then the user presets.
 - Each step is one preset load, so it's one undo step, as W made preset loads.
