@@ -449,7 +449,10 @@ void SpectralEngine::trackNoise (bool publishes) noexcept
     const auto alphaMax = std::exp (-hopSeconds / 0.392);
     const auto alphaMin = std::exp (-hopSeconds / 0.0133);
     const auto betaMax = std::exp (-hopSeconds / 0.0717);
-    const auto frames = std::max ((double) trackSubwindows, std::round (settings.adaptSeconds / hopSeconds));
+    // Following a rise takes the 8 sub-windows plus the one the change landed in, the frame and
+    // the smoothing: about 9.5 sub-windows. So each is Adapt speed / 9.5, and a rise is followed
+    // in about Adapt speed at every FFT size.
+    const auto frames = std::max ((double) trackSubwindows, std::round (settings.adaptSeconds * (double) trackSubwindows / 9.5 / hopSeconds));
     const auto hangover = (int) std::ceil (0.3 / hopSeconds);
 
     // The power of this frame, averaged over the channels, in the profile's units.
