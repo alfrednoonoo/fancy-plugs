@@ -533,7 +533,20 @@ juce::Result Rig::apply (const PluginEntry& entry, std::vector<ParamSetting>& se
         if (! preset.loadFileAsData (data))
             return juce::Result::fail ("can't read the preset " + preset.getFullPathName());
 
-        if (! juce::VST3PluginFormat::setStateFromVSTPresetFile (instance.get(), data))
+        // JUCE 8 loads a .vstpreset through the instance's VST3 extensions.
+        struct PresetLoader final : public juce::ExtensionsVisitor
+        {
+            const juce::MemoryBlock& preset;
+            bool loaded = false;
+
+            explicit PresetLoader (const juce::MemoryBlock& block) : preset (block) {}
+            void visitVST3Client (const VST3Client& client) override { loaded = client.setPreset (preset); }
+        };
+
+        PresetLoader loader (data);
+        instance->getExtensions (loader);
+
+        if (! loader.loaded)
             return juce::Result::fail ("the plugin didn't accept the preset " + preset.getFullPathName());
     }
 
