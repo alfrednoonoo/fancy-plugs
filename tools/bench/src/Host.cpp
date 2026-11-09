@@ -122,7 +122,10 @@ Opened openRig (const TestSpec& spec, const PluginEntry& entry, bool realtime, b
     }
 
     if (prepare)
+    {
         opened.rig->prepare();
+        opened.rig->settle (spec.settle);
+    }
 
     return opened;
 }
@@ -247,7 +250,9 @@ juce::var thdTest (const TestSpec& spec, const PluginEntry& entry, const Log& lo
         for (const auto level : optionList (settings, "levels", { -20.0, -6.0, 0.0 }))
         {
             const auto output = rig.render (sine (preroll + length, actual, rate, level), spec.blockSizes.front());
-            const auto result = distortion (tail (output, preroll), actual, rate);
+            const auto analysed = tail (output, preroll);
+            const auto result = distortion (analysed, actual, rate);
+            const auto change = levelChangeDb (analysed);
 
             auto row = makeObject();
             set (row, "hz", hz);
@@ -258,6 +263,7 @@ juce::var thdTest (const TestSpec& spec, const PluginEntry& entry, const Log& lo
             set (row, "thdPercent", rounded (result.thdPercent, 1.0e-6));
             set (row, "thdnDb", rounded (result.thdnDb));
             set (row, "thdnPercent", rounded (result.thdnPercent, 1.0e-6));
+            set (row, "levelChangeDb", rounded (change));
             rows.add (row);
 
             log ("thd: " + juce::String (juce::roundToInt (hz)) + " Hz at " + juce::String (level, 1) + " dBFS: THD " + juce::String (result.thdDb, 1)
@@ -291,7 +297,8 @@ juce::var aliasingTest (const TestSpec& spec, const PluginEntry& entry, const Lo
 
         const auto actual = binCentred (hz, rate);
         const auto output = rig.render (sine (preroll + length, actual, rate, level), spec.blockSizes.front());
-        const auto result = aliasing (tail (output, preroll), actual, rate);
+        const auto analysed = tail (output, preroll);
+        const auto result = aliasing (analysed, actual, rate);
 
         // The spectrum, reduced to at most 2048 points by keeping each group's loudest bin.
         const auto bins = (int) result.spectrumDbfs.size();
@@ -318,6 +325,7 @@ juce::var aliasingTest (const TestSpec& spec, const PluginEntry& entry, const Lo
         set (row, "worstDbfs", rounded (result.worstDbfs));
         set (row, "worstRelativeDb", rounded (result.worstRelativeDb));
         set (row, "totalRelativeDb", rounded (result.totalRelativeDb));
+        set (row, "levelChangeDb", rounded (levelChangeDb (analysed)));
         set (row, "spectrumStepHz", group * rate / length);
         set (row, "spectrum", spectrum);
         rows.add (row);
@@ -358,6 +366,7 @@ juce::var nullTestFor (const TestSpec& spec, const PluginEntry& entry, const Log
 juce::var clicksTest (const TestSpec& spec, const PluginEntry& entry, const RunOptions& options, const Log& log)
 {
     const auto settings = spec.options ("clicks");
+    const auto pick = [&settings, &entry] (const char* name) { return entry.clicks.hasProperty (name) ? entry.clicks[name] : settings[name]; };
     const auto rate = spec.sampleRate;
     const auto period = std::max (0.005, option (settings, "period", 0.05));
     const auto seconds = options.quick ? 1.0 : option (settings, "seconds", 2.0);
@@ -375,13 +384,13 @@ juce::var clicksTest (const TestSpec& spec, const PluginEntry& entry, const RunO
             throw std::runtime_error (opened.error.toStdString());
 
         juce::String error;
-        auto* parameter = findParameter (opened.rig->plugin(), settings["param"].toString(), error);
+        auto* parameter = findParameter (opened.rig->plugin(), pick ("param").toString(), error);
 
         if (parameter == nullptr)
             throw std::runtime_error (error.toStdString());
 
-        for (auto [setting, text] : { std::pair<ParamSetting*, juce::String> { &from, settings["from"].toString() },
-                                      std::pair<ParamSetting*, juce::String> { &to, settings["to"].toString() } })
+        for (auto [setting, text] : { std::pair<ParamSetting*, juce::String> { &from, pick ("from").toString() },
+                                      std::pair<ParamSetting*, juce::String> { &to, pick ("to").toString() } })
         {
             const auto resolved = resolveValue (*parameter, text, *setting);
 
@@ -391,6 +400,7 @@ juce::var clicksTest (const TestSpec& spec, const PluginEntry& entry, const RunO
 
         parameter->setValue (from.normalised);
         opened.rig->prepare();
+        opened.rig->settle (spec.settle);
 
         auto current = from.normalised;
         const auto output = opened.rig->render (input, 32, [&] (int position)
@@ -553,6 +563,12 @@ juce::Result Rig::apply (const PluginEntry& entry, std::vector<ParamSetting>& se
     const auto result = applyParams (*instance, entry.params, settings);
     pump (50);
     return result;
+}
+
+void Rig::settle (double seconds)
+{
+    if (seconds > 0.0)
+        render (Signal ((size_t) (seconds * rate), 0.0f), maxBlock);
 }
 
 void Rig::prepare()

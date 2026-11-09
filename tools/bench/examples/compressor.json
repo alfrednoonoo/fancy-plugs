@@ -1,34 +1,78 @@
 {
   "name": "Compressor, 4:1 at -20 dB",
-  "notes": "Fancy Comp against TDR Kotelnikov (free). Paid entries are disabled: set \"disabled\" to false if you own or trial them. Competitors' parameter names are guesses until checked with FancyBench params; one that doesn't resolve is skipped with its todo note.",
+  "notes": "Fancy Comp against TDR Kotelnikov (free; parameter names checked on 9 November 2026). Paid entries are disabled: set \"disabled\" to false if you own or trial them, and check their names with FancyBench params.",
   "sampleRate": 48000,
-  "blockSizes": [128],
+  "blockSizes": [
+    128
+  ],
   "plugins": [
     {
       "label": "Fancy Comp",
       "path": "%FANCY_VST3%/Fancy Comp.vst3",
-      "params": { "Threshold": "-20", "Ratio": "4", "Knee": "6", "Attack": "10", "Release": "100" }
+      "params": {
+        "Threshold": "-20",
+        "Ratio": "4",
+        "Knee": "6",
+        "Attack": "10",
+        "Release": "100"
+      }
     },
     {
       "label": "TDR Kotelnikov",
       "path": "%COMMONPROGRAMFILES%/VST3/TDR Kotelnikov.vst3",
-      "todo": "free from tokyodawn.net; check the parameter names with FancyBench params",
-      "params": { "Threshold": "-20", "Ratio": "4", "Attack": "10", "Release Peak": "100" }
+      "params": {
+        "Threshold": "-20",
+        "Ratio": "4",
+        "Attack": "10",
+        "Release Peak": "100"
+      }
     },
     {
       "label": "FabFilter Pro-C 3",
       "path": "%COMMONPROGRAMFILES%/VST3/FabFilter Pro-C 3.vst3",
       "disabled": true,
       "todo": "paid; check the path and parameter names",
-      "params": { "Threshold": "-20", "Ratio": "4", "Attack": "10", "Release": "100" }
+      "params": {
+        "Threshold": "-20",
+        "Ratio": "4",
+        "Attack": "10",
+        "Release": "100"
+      }
     }
   ],
   "tests": {
-    "cpu": { "seconds": 20, "repeats": 5 },
+    "cpu": {
+      "seconds": 20,
+      "repeats": 5
+    },
     "latency": {},
-    "response": { "level": -10 },
-    "thd": { "frequencies": [100, 1000], "levels": [-30, -20, -10, 0] },
-    "aliasing": { "frequencies": [5000, 10000], "level": 0 },
-    "clicks": { "param": "Threshold", "from": "-40", "to": "-10", "period": 0.05 }
+    "response": {
+      "level": -10
+    },
+    "thd": {
+      "frequencies": [
+        100,
+        1000
+      ],
+      "levels": [
+        -30,
+        -20,
+        -10,
+        0
+      ]
+    },
+    "aliasing": {
+      "frequencies": [
+        5000,
+        10000
+      ],
+      "level": 0
+    },
+    "clicks": {
+      "param": "Threshold",
+      "from": "-40",
+      "to": "-10",
+      "period": 0.05
+    }
   }
 }

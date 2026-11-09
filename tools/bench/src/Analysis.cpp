@@ -607,6 +607,26 @@ Clicks clicks (const Signal& output, double sineHz, double rate, double threshol
     return result;
 }
 
+double levelChangeDb (const Signal& signal)
+{
+    const auto half = signal.size() / 2;
+    double first = 0.0, second = 0.0;
+
+    for (size_t i = 0; i < half; ++i)
+        first += (double) signal[i] * signal[i];
+
+    for (size_t i = half; i < 2 * half; ++i)
+        second += (double) signal[i] * signal[i];
+
+    if (first <= 0.0 && second <= 0.0)
+        return 0.0;
+
+    if (first <= 0.0 || second <= 0.0)
+        return 400.0;
+
+    return std::abs (10.0 * std::log10 (second / first));
+}
+
 double percentile (std::vector<double> values, double fraction)
 {
     if (values.empty())

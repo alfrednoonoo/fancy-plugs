@@ -389,7 +389,65 @@ public:
     void setStateInformation (const void*, int) override {}
 };
 
+// Shows its current value whatever value it's asked about, as some plugins do, and can't parse.
+class StubbornParameter final : public juce::AudioProcessorParameter
+{
+public:
+    static float msFor (float normalised) { return 1.0f + 1999.0f * normalised; }
+
+    float getValue() const override { return value; }
+    void setValue (float newValue) override { value = newValue; }
+    float getDefaultValue() const override { return 0.5f; }
+    juce::String getName (int) const override { return "Time"; }
+    juce::String getLabel() const override { return "ms"; }
+    juce::String getText (float, int) const override { return juce::String (msFor (value), 1) + " ms"; }
+    float getValueForText (const juce::String&) const override { return 0.0f; }
+
+private:
+    float value = 0.5f;
+};
+
 } // namespace
+
+TEST_CASE ("Bench: a parameter that only shows its current value is applied and read back", "[bench]")
+{
+    StubbornParameter stubborn;
+    ParamSetting setting;
+
+    REQUIRE (resolveValue (stubborn, "375", setting).wasOk());
+    CHECK (setting.shown == "375.0 ms");
+    CHECK (setting.note == "read back; found by search");
+
+    // Resolving doesn't leave the value behind: the caller applies it.
+    CHECK (stubborn.getValue() == 0.5f);
+    stubborn.setValue (setting.normalised);
+    CHECK (StubbornParameter::msFor (stubborn.getValue()) == Catch::Approx (375.0f).margin (0.1f));
+}
+
+TEST_CASE ("Bench: each plugin can name its own clicks parameter", "[bench]")
+{
+    TestSpec spec;
+
+    CHECK (parseTestFile (R"({ "plugins": [ { "path": "a.vst3", "clicks": { "param": "Delay", "from": "1", "to": "2" } } ],
+                               "tests": { "clicks": {} } })", spec).wasOk());
+    CHECK (parseTestFile (R"({ "plugins": [ { "path": "a.vst3", "clicks": { "param": "Delay" } } ],
+                               "tests": { "clicks": { "from": "1", "to": "2" } } })", spec).wasOk());
+    CHECK (parseTestFile (R"({ "plugins": [ { "path": "a.vst3" }, { "path": "b.vst3", "clicks": { "param": "Delay", "from": "1", "to": "2" } } ],
+                               "tests": { "clicks": {} } })", spec).failed());
+    CHECK (parseTestFile (R"({ "plugins": [ { "path": "a.vst3" } ], "settle": 40, "tests": { "cpu": {} } })", spec).failed());
+}
+
+TEST_CASE ("Bench: steadiness", "[bench]")
+{
+    CHECK (levelChangeDb (sine (48000, 1000.0, rate, -6.0)) < 0.001);
+
+    auto rising = sine (48000, 1000.0, rate, -6.0);
+
+    for (size_t i = 24000; i < rising.size(); ++i)
+        rising[i] *= 1.5f;
+
+    CHECK (std::abs (levelChangeDb (rising) - 20.0 * std::log10 (1.5)) < 0.01);
+}
 
 TEST_CASE ("Bench: parameters by name, index and normalised value", "[bench]")
 {

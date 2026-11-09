@@ -108,6 +108,14 @@ juce::Result parseTestFile (const juce::String& text, TestSpec& spec)
         }
     }
 
+    if (root.hasProperty ("settle"))
+    {
+        spec.settle = (double) root["settle"];
+
+        if (spec.settle < 0.0 || spec.settle > 30.0)
+            return fail ("settle must be between 0 and 30 seconds");
+    }
+
     if (root.hasProperty ("tempo"))
     {
         spec.tempo = (double) root["tempo"];
@@ -141,6 +149,10 @@ juce::Result parseTestFile (const juce::String& text, TestSpec& spec)
         entry.preset = item["preset"].toString();
         entry.todo = item["todo"].toString();
         entry.params = item["params"];
+        entry.clicks = item["clicks"];
+
+        if (! entry.clicks.isVoid() && ! entry.clicks.isObject())
+            return fail (entry.label + ": \"clicks\" must be an object, such as { \"param\": \"Delay\", \"from\": \"250\", \"to\": \"500\" }");
 
         if (! entry.params.isVoid() && ! entry.params.isObject())
             return fail (entry.label + ": \"params\" must be an object, such as { \"Ratio\": \"4\" }");
@@ -171,8 +183,14 @@ juce::Result parseTestFile (const juce::String& text, TestSpec& spec)
     {
         const auto clicks = spec.options ("clicks");
 
-        if (clicks["param"].toString().isEmpty() || clicks["from"].isVoid() || clicks["to"].isVoid())
-            return fail ("the clicks test needs \"param\", \"from\" and \"to\"");
+        // Each plugin can name its own parameter, since plugins name the same control differently.
+        for (const auto& entry : spec.plugins)
+        {
+            const auto value = [&] (const char* name) { return entry.clicks.hasProperty (name) ? entry.clicks[name] : clicks[name]; };
+
+            if (value ("param").toString().isEmpty() || value ("from").isVoid() || value ("to").isVoid())
+                return fail ("the clicks test needs \"param\", \"from\" and \"to\", in the test or in " + entry.label + "'s \"clicks\"");
+        }
     }
 
     return juce::Result::ok();
@@ -317,7 +335,27 @@ juce::Result resolveValue (juce::AudioProcessorParameter& parameter, const juce:
     setting.name = nameOf (parameter);
     setting.requested = requested;
 
-    const auto show = [&parameter] (float value) { return parameter.getText (value, 64).trim(); };
+    // Some plugins display their current value whatever value they're asked about. Then each
+    // candidate is applied and read back instead.
+    const auto original = parameter.getValue();
+    const auto applyToRead = parameter.getNumSteps() != 1
+                          && parameter.getText (0.0f, 64) == parameter.getText (1.0f, 64)
+                          && parameter.getText (0.0f, 64) == parameter.getText (0.5f, 64);
+
+    const auto show = [&parameter, applyToRead] (float value)
+    {
+        if (! applyToRead)
+            return parameter.getText (value, 64).trim();
+
+        parameter.setValue (value);
+        return parameter.getText (parameter.getValue(), 64).trim();
+    };
+
+    // Leaves the parameter as it was: the caller sets the resolved value.
+    const juce::ScopeGuard restore { [&parameter, applyToRead, original] { if (applyToRead) parameter.setValue (original); } };
+
+    if (applyToRead)
+        setting.note = "read back";
 
     if (requested.startsWithChar ('='))
     {
@@ -338,6 +376,8 @@ juce::Result resolveValue (juce::AudioProcessorParameter& parameter, const juce:
     if (! numeric && setting.shown.equalsIgnoreCase (requested))
         return juce::Result::ok();
 
+    const juce::String prefix (applyToRead ? "read back; " : "");
+
     // The plugin didn't parse it: search its range for the display that matches.
     const auto points = samplePoints (parameter);
 
@@ -354,7 +394,7 @@ juce::Result resolveValue (juce::AudioProcessorParameter& parameter, const juce:
                 {
                     setting.normalised = value;
                     setting.shown = text;
-                    setting.note = "found by search";
+                    setting.note = prefix + "found by search";
                     return juce::Result::ok();
                 }
             }
@@ -435,7 +475,7 @@ juce::Result resolveValue (juce::AudioProcessorParameter& parameter, const juce:
 
     double finalValue = 0.0;
     parseDisplayNumber (setting.shown, finalValue);
-    setting.note = closeEnough (target, finalValue) ? "found by search" : "the closest this plugin offers";
+    setting.note = prefix + (closeEnough (target, finalValue) ? "found by search" : "the closest this plugin offers");
     return juce::Result::ok();
 }
 

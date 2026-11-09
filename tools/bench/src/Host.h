@@ -40,6 +40,9 @@ public:
     juce::Result apply (const PluginEntry& entry, std::vector<ParamSetting>& settings);
     void prepare();
 
+    // Renders silence, so a plugin's glides and parameter smoothing finish before measuring.
+    void settle (double seconds);
+
     // Feeds `input` to every main input channel and returns the first output channel.
     Signal render (const Signal& input, int block, const std::function<void (int position)>& beforeBlock = {});
 

@@ -159,6 +159,14 @@ void drawLegend (juce::Graphics& g, const std::vector<juce::String>& names, floa
     }
 }
 
+// A reading taken while the output was still changing, by more than 0.1 dB between the two halves
+// of the analysis, is marked: a plugin still gliding, or echoes still arriving.
+juce::String steadiness (const juce::var& row)
+{
+    const auto change = (double) row.getProperty ("levelChangeDb", 0.0);
+    return change > 0.1 ? " (not steady: " + juce::String (change, 1) + " dB)" : juce::String();
+}
+
 // Report building ---------------------------------------------------------------------------
 
 struct Writer
@@ -482,7 +490,8 @@ void thd (Writer& w)
     w.line ("## THD and THD+N\n");
     w.line ("A sine at each frequency and level, 1 s settled, then analysed with a Blackman-Harris window over about 1.4 s. "
             "THD counts harmonics 2 to 10 below Nyquist; THD+N everything but the fundamental from 20 Hz to 20 kHz. "
-            "Frequencies are moved to the nearest analysis bin.\n");
+            "Frequencies are moved to the nearest analysis bin. A reading marked \"not steady\" was taken while the output level was still "
+            "changing, such as a delay's echoes still arriving, and doesn't measure distortion.\n");
     w.line ("| Plugin | Frequency | Level in | Level out | THD % | THD dB | THD+N % | THD+N dB |");
     w.line ("|---|---|---|---|---|---|---|---|");
 
@@ -497,7 +506,7 @@ void thd (Writer& w)
         {
             const auto hz = (double) row["hz"];
             w.line ("| " + Writer::label (*result) + " | " + hzText (hz) + " | " + number ((double) row["level"], 1) + " dBFS | "
-                    + number ((double) row["outputDbfs"], 1) + " dBFS | " + juce::String ((double) row["thdPercent"], 5) + " | "
+                    + number ((double) row["outputDbfs"], 1) + " dBFS" + steadiness (row) + " | " + juce::String ((double) row["thdPercent"], 5) + " | "
                     + number ((double) row["thdDb"], 1) + " | " + juce::String ((double) row["thdnPercent"], 5) + " | " + number ((double) row["thdnDb"], 1) + " |");
 
             rows.add (Writer::label (*result).quoted() + "," + row["hz"].toString() + "," + row["actualHz"].toString() + "," + row["level"].toString() + ","
@@ -546,7 +555,8 @@ void aliasingSection (Writer& w, const TestSpec& spec)
 
     w.line ("## Aliasing\n");
     w.line ("A sine at each frequency. An alias is any component more than 30 dB over the noise floor and above -160 dBFS that isn't within "
-            "25 Hz of a harmonic below Nyquist, or near DC. Relative levels are against the output's fundamental.\n");
+            "25 Hz of a harmonic below Nyquist, or near DC. Relative levels are against the output's fundamental. A reading marked "
+            "\"not steady\" was taken while the output level was still changing.\n");
     w.line ("| Plugin | Frequency | Level | Aliases | Loudest alias | at | Relative | All aliases, relative |");
     w.line ("|---|---|---|---|---|---|---|---|");
 
@@ -560,7 +570,7 @@ void aliasingSection (Writer& w, const TestSpec& spec)
             const auto hz = (double) row["hz"];
             const auto count = (int) row["aliases"];
 
-            w.line ("| " + Writer::label (*result) + " | " + hzText (hz) + " | " + number ((double) row["level"], 1) + " dBFS | " + juce::String (count) + " | "
+            w.line ("| " + Writer::label (*result) + " | " + hzText (hz) + " | " + number ((double) row["level"], 1) + " dBFS" + steadiness (row) + " | " + juce::String (count) + " | "
                     + (count > 0 ? number ((double) row["worstDbfs"], 1) + " dBFS | " + hzText ((double) row["worstHz"]) + " | "
                                        + number ((double) row["worstRelativeDb"], 1) + " dB | " + number ((double) row["totalRelativeDb"], 1) + " dB |"
                                  : juce::String ("none | - | - | - |")));

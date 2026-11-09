@@ -13,6 +13,7 @@ struct PluginEntry
 {
     juce::String label, path, name, preset, todo;
     juce::var params; // an object: parameter name or "#index" -> value text, or "=0.5" normalised
+    juce::var clicks; // optional: this plugin's own "param", "from" and "to" for the clicks test
 };
 
 struct TestSpec
@@ -21,6 +22,7 @@ struct TestSpec
     double sampleRate = 48000.0;
     std::vector<int> blockSizes { 128 };
     double tempo = 120.0;
+    double settle = 2.0; // seconds of silence after the settings, so glides and smoothing finish
     std::vector<PluginEntry> plugins;
     juce::var tests; // an object: test name -> options
     juce::var source; // the whole file, as parsed

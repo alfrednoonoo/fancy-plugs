@@ -98,6 +98,10 @@ struct Clicks
 // bursts over thresholdDb, bursts closer than 10 ms counted as one. The first 100 ms is skipped.
 Clicks clicks (const Signal& output, double sineHz, double rate, double thresholdDb);
 
+// How much the RMS level of the second half differs from the first, in dB. A steady output reads
+// near 0; a plugin still gliding, or echoes still arriving, reads more.
+double levelChangeDb (const Signal& signal);
+
 double percentile (std::vector<double> values, double fraction);
 double median (std::vector<double> values);
 

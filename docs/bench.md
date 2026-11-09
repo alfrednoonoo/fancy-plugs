@@ -8,7 +8,7 @@ FancyBench measures our plugins and any other VST3 the same way, at the same set
 
 ```
 VST3-Dev-Tools\FancyBench.exe
-VST3-Dev-Tools\examples\compressor.json, eq.json, delay.json
+VST3-Dev-Tools\examples\compressor.json, eq.json, delay.json, delay-echo.json
 ```
 
 Install copies the example files only when they aren't already there, so your edits are kept. To get a fresh copy, delete the file and install again.
@@ -66,11 +66,13 @@ A plugin that isn't installed is skipped and listed as such. A plugin that crash
   - `"4"` for 4:1, `"-20"` for -20 dB, `"2.5k"` or `"2500"` for 2.5 kHz, or `"Warm"` for a choice.
   - `"=0.5"` sets the raw 0-1 value instead.
 
-  If the plugin can't parse the text, FancyBench searches the parameter's range for the value whose display matches. The report shows what each plugin actually displayed, so a setting that didn't take is easy to spot.
+  If the plugin can't parse the text, FancyBench searches the parameter's range for the value whose display matches. Some plugins, such as Valhalla's, display their current value whatever they're asked about; FancyBench detects that and applies each value it tries, then reads the display back. The report shows what each plugin displayed, and notes "found by search" or "read back" where it had to.
+- **`clicks`** in a plugin's entry: its own `param`, `from` and `to` for the clicks test, since plugins name the same control differently ("Tap 1 Length", "delay", "Time Ms").
 - **`preset`**: a `.vstpreset` file to load before `params`, for settings that are easier to save from REAPER (the FX window's `+` menu > Export VST preset).
 - **`name`**: picks one plugin from a bundle that holds several.
 - **`disabled`** leaves an entry out. **`todo`** is a note, shown if the entry is skipped.
 - **`blockSizes`**: CPU runs at each. The other tests use the first.
+- **`settle`** (2 s): silence rendered after the settings are applied and before any measurement, so a plugin that glides to a new delay time, or smooths its parameters, has finished.
 
 ## The tests
 
@@ -84,12 +86,13 @@ Every test starts each plugin fresh, in stereo with no sidechain, after a settli
 | `thd` | `frequencies` (100, 1000, 5000), `levels` (-20, -6, 0) | THD (harmonics 2-10) and THD+N, in % and dB |
 | `aliasing` | `frequencies` (5000, 10000, 15000), `level` (0) | The loudest non-harmonic component, the number of them, and their total, against the fundamental. Plots the spectrum |
 | `null` | | Output minus input, on pink noise and on a sine. For plugins set to be neutral; below -120 dBFS is a null |
-| `clicks` | `param`, `from`, `to`, `period` (0.05 s), `seconds` (2) | A 1 kHz sine while the parameter jumps between two values. Counts bursts over the plugin's own static figure; a click-free plugin reads close to it |
+| `clicks` | `param`, `from`, `to` (here or per plugin), `period` (0.05 s), `seconds` (2) | A 1 kHz sine while the parameter jumps between two values. Counts bursts over the plugin's own static figure; a click-free plugin reads close to it |
 
 ## Reading the results
 
 - **CPU:** compare the ratio column, or plugins from the same session. Absolute figures change with the PC and its load. Close other programs first.
 - **Response and THD** are level-dependent for dynamics plugins: set the levels to match how you use them.
+- **"Not steady"** beside a THD or aliasing reading means the output level changed by more than 0.1 dB during the analysis, so the figure doesn't measure distortion. A delay with feedback is the usual cause, since its echoes keep arriving: measure delays with `delay-echo.json`, which has no feedback and no dry signal.
 - **The report measures; it doesn't rank.** It doesn't say which plugin sounds better.
 
 After a session, send me the `bench-results` folder, or paste `report.md`. The results go into `docs/research/bench-<date>.md` and the market summary.

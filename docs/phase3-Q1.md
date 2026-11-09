@@ -54,6 +54,11 @@ A test file names the plugins, their settings and the tests. The same settings a
 - **Presets:** `"preset": "<file.vstpreset>"` loads a preset before `params` apply, for settings that are easier to save from REAPER.
 - **Paths:** environment variables expand. A plugin that isn't installed is skipped with a note, so the example files work for whoever owns whichever plugins.
 - **Host context:** stereo in and out, no sidechain, and a playhead that's playing at `tempo`, so tempo-synced delays work.
+- **Added after the first runs on the user's PC (9 November 2026):**
+  - `settle` renders 2 s of silence after the settings, because Valhalla and Deelay glide to a new delay time.
+  - A plugin entry can carry its own `clicks` parameter, because each delay names its time differently.
+  - A parameter whose display ignores the value asked about (Valhalla's) is applied and read back during the search.
+  - THD and aliasing readings carry the level change between the two halves of the analysis, and the report marks any over 0.1 dB as "not steady".
 
 ## 4. Measurements
 

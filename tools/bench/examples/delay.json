@@ -1,26 +1,78 @@
 {
-  "name": "Delay, one 375 ms tap with 40 % feedback",
-  "notes": "Fancy Delay against TAL-Dub-X and Valhalla Freq Echo (both free). Paid entries are disabled: set \"disabled\" to false if you own or trial them. Competitors' parameter names are guesses until checked with FancyBench params; one that doesn't resolve is skipped with its todo note.",
+  "name": "Delay, 375 ms with 40 % feedback",
+  "notes": "CPU, latency and clicks while the delay time changes. Fancy Delay against Valhalla Freq Echo and Deelay (both free; names checked on 9 November 2026) and TAL-Dub-X. Each plugin names its own delay-time parameter for the clicks test. Valhalla only displays its current value, so FancyBench applies and reads back its values. Distortion and aliasing are in delay-echo.json, because echoes still arriving make them meaningless here.",
   "sampleRate": 48000,
-  "blockSizes": [128],
+  "blockSizes": [
+    128
+  ],
   "tempo": 120,
   "plugins": [
     {
       "label": "Fancy Delay",
       "path": "%FANCY_VST3%/Fancy Delay.vst3",
-      "params": { "Tap 1 Length": "375", "Tap 1 Feedback": "40" }
+      "params": {
+        "Tap 1 Length": "375",
+        "Tap 1 Feedback": "40"
+      },
+      "clicks": {
+        "param": "Tap 1 Length",
+        "from": "250",
+        "to": "500"
+      }
+    },
+    {
+      "label": "Valhalla Freq Echo",
+      "path": "%COMMONPROGRAMFILES%/VST3/ValhallaFreqEcho.vst3",
+      "params": {
+        "delay": "375",
+        "feedback": "40",
+        "shift": "0",
+        "lowCut": "=0",
+        "highCut": "=1",
+        "wetDry": "50"
+      },
+      "clicks": {
+        "param": "delay",
+        "from": "250",
+        "to": "500"
+      }
+    },
+    {
+      "label": "Deelay",
+      "path": "%COMMONPROGRAMFILES%/VST3/Deelay.vst3",
+      "params": {
+        "Time Mode": "ms",
+        "Time Ms": "375",
+        "Feedback": "40",
+        "Low Cut": "=0",
+        "High Cut": "=1",
+        "Tape": "0",
+        "Distortion": "0",
+        "Modulation Amount": "0",
+        "Diffusion Amount": "0",
+        "Duck": "0",
+        "Dry": "100",
+        "Wet": "100"
+      },
+      "clicks": {
+        "param": "Time Ms",
+        "from": "250",
+        "to": "500"
+      }
     },
     {
       "label": "TAL-Dub-X",
       "path": "%COMMONPROGRAMFILES%/VST3/TAL-Dub-X.vst3",
       "todo": "free from tal-software.com; check the path and parameter names with FancyBench params",
-      "params": { "Delay": "375", "Feedback": "40" }
-    },
-    {
-      "label": "Valhalla Freq Echo",
-      "path": "%COMMONPROGRAMFILES%/VST3/ValhallaFreqEcho.vst3",
-      "todo": "free from valhalladsp.com; check the path and parameter names with FancyBench params",
-      "params": { "Delay": "375", "Feedback": "40" }
+      "params": {
+        "Delay": "375",
+        "Feedback": "40"
+      },
+      "clicks": {
+        "param": "Delay",
+        "from": "250",
+        "to": "500"
+      }
     },
     {
       "label": "Soundtoys EchoBoy",
@@ -42,10 +94,13 @@
     }
   ],
   "tests": {
-    "cpu": { "seconds": 20, "repeats": 5 },
+    "cpu": {
+      "seconds": 20,
+      "repeats": 5
+    },
     "latency": {},
-    "thd": { "frequencies": [100, 1000], "levels": [-20, -6, 0] },
-    "aliasing": { "frequencies": [5000, 10000], "level": -6 },
-    "clicks": { "param": "Tap 1 Length", "from": "250", "to": "500", "period": 0.25 }
+    "clicks": {
+      "period": 0.25
+    }
   }
 }

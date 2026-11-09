@@ -1,0 +1,82 @@
+{
+  "name": "Delay, echo path only: 375 ms, no feedback, wet only",
+  "notes": "Distortion and aliasing of the echo itself. With no feedback and no dry signal, the output settles to one delayed copy, so THD and aliasing measure the echo path rather than echoes still arriving.",
+  "sampleRate": 48000,
+  "blockSizes": [
+    128
+  ],
+  "tempo": 120,
+  "plugins": [
+    {
+      "label": "Fancy Delay",
+      "path": "%FANCY_VST3%/Fancy Delay.vst3",
+      "params": {
+        "Tap 1 Length": "375",
+        "Tap 1 Feedback": "0",
+        "Dry": "=0",
+        "Wet": "0"
+      }
+    },
+    {
+      "label": "Valhalla Freq Echo",
+      "path": "%COMMONPROGRAMFILES%/VST3/ValhallaFreqEcho.vst3",
+      "params": {
+        "delay": "375",
+        "feedback": "0",
+        "shift": "0",
+        "lowCut": "=0",
+        "highCut": "=1",
+        "wetDry": "=1"
+      }
+    },
+    {
+      "label": "Deelay",
+      "path": "%COMMONPROGRAMFILES%/VST3/Deelay.vst3",
+      "params": {
+        "Time Mode": "ms",
+        "Time Ms": "375",
+        "Feedback": "0",
+        "Low Cut": "=0",
+        "High Cut": "=1",
+        "Tape": "0",
+        "Distortion": "0",
+        "Modulation Amount": "0",
+        "Diffusion Amount": "0",
+        "Duck": "0",
+        "Dry": "0",
+        "Wet": "100"
+      }
+    },
+    {
+      "label": "TAL-Dub-X",
+      "path": "%COMMONPROGRAMFILES%/VST3/TAL-Dub-X.vst3",
+      "todo": "free from tal-software.com; check the path and parameter names with FancyBench params",
+      "params": {
+        "Delay": "375",
+        "Feedback": "0"
+      }
+    }
+  ],
+  "tests": {
+    "thd": {
+      "frequencies": [
+        100,
+        1000,
+        5000
+      ],
+      "levels": [
+        -20,
+        -6,
+        0
+      ]
+    },
+    "aliasing": {
+      "frequencies": [
+        5000,
+        10000,
+        15000
+      ],
+      "level": 0
+    }
+  }
+}
