@@ -7,7 +7,7 @@ November 2026. The full evidence and sources are in `2026-11-market-report-detai
 - **What was compared:** our numbers, measured in CI and recorded in `docs/measurements/`, against the leaders' own manuals and product pages, independent reviews, and user reports.
 - **Not head to head.** No competitor was run beside ours. They're commercial binaries that can't be installed on the CI runners, and nobody publishes CPU figures measured the same way, so CPU can't be ranked.
 - **The rankings are soft.** Most "best of 2026" lists are affiliate pages. The vendors' own documentation is treated as stronger evidence, and the lists only as a sign of what's popular.
-- **Phase 3 can fix this.** It proposes a small benchmark host that runs on your PC, so plugins you own or trial can be measured against ours in the same session.
+- **Phase 3 can fix this.** It proposes a small benchmark host that runs on your PC, so plugins you own or trial can be measured against ours in the same session. Done: see "Head to head (Phase 3 Q1)" below.
 
 ## The leaders, by category
 
@@ -75,6 +75,20 @@ Phase 2.1 closed the gaps the report found in §5, §8, §9 and §10, with numbe
 | §10 | Host compatibility (not in the report) | Offline rendering checked against playback, keys passed to the host, sidechain and latency handling, Steinberg's validator and a host harness in CI | Every plugin passes the validator's 47 tests and the harness's checks |
 
 Still open, as before: EQ mid/side, EQ Match and Natural Phase; MultiComp lookahead and mid/side (its CPU, about 2.3 % for 4 bands, is unchanged); FIR's machine-learning and resonance suppression; the Kicker, Exciter, Comp, Verb and Delay gaps; platforms other than Windows VST3. Phase 3 picks these up.
+
+## Head to head (Phase 3 Q1)
+
+On 9 November 2026 the user ran FancyBench on their PC against the free leaders. The details are in `bench-2026-11-09.md`.
+
+| Category | Competitor | CPU, ours against theirs | Notes |
+|---|---|---|---|
+| Compressor | TDR Kotelnikov | 0.79 % against 3.56 % | Fancy Comp distorts less while compressing in three of four cases; Kotelnikov's detector ignores bass by design |
+| EQ | TDR Nova | 0.49 % against 1.11 % | Identical bells; Nova clicks on sudden gain jumps (38 bursts), Fancy EQ doesn't; Nova has auto gain on by default |
+| Delay | Valhalla Freq Echo, Deelay | 0.49 % against 0.33 % and 0.65 % | Fancy Delay and Deelay are bit-clean; Valhalla adds slight analogue-style colour |
+
+- **CPU, which the report couldn't rank:** in these categories ours is as cheap as the free leader or cheaper.
+- **All report their latency exactly.** Ours add none; Kotelnikov and Nova add 3.8 ms each.
+- **Still open:** the paid leaders, and MultiComp, Verb and FIR.
 
 ## What Phase 3.0 should do
 

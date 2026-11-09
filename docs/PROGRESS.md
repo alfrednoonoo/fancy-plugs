@@ -16,7 +16,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42576245019 (commit `a613f77`, version 1.2.0, tag `v1.2.0`): 344 test cases passed, and all nine plugins passed Steinberg's validator, pluginval and the host harness. The release zip is that run's `FancyPlugs-VST3` artifact, zipped as it is, `tools/AudioPluginHost.exe` included.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42601745059, Phase 3 Q1 (FancyBench): 353 test cases, Steinberg's validator, pluginval, the host harness and FancyBench's 20 smoke checks passed.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42624812843, Phase 3 Q1 (FancyBench, after the user's first runs): 356 test cases, Steinberg's validator, pluginval, the host harness and FancyBench's 21 smoke checks passed.
 
 ## Phase 2
 
@@ -56,7 +56,7 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
    - Fancy Limiter, Fancy De-esser and Fancy Saturator.
 
    Mac comes after Windows is finished.
-   - Q1, the benchmark host: **built, and green in CI**; waiting for the user to run it against at least one competitor per category (compressor, EQ, delay). Design note `docs/phase3-Q1.md`, approved 9 November 2026 (console only; the free competitors first). How-to `docs/bench.md`. Still to confirm with the user once EQ, Comp and Verb are done: the order for MultiComp, Delay, FIR and Kicker.
+   - Q1, the benchmark host: **Done.** The user ran it on 9 November 2026 against TDR Kotelnikov, TDR Nova, Valhalla Freq Echo and Deelay; results in `docs/research/bench-2026-11-09.md` and the market summary's "Head to head" section. Design note `docs/phase3-Q1.md`; how-to `docs/bench.md`. Next: Q2.1 (preset browser, free resizing) and Q5's design rules. Still to confirm with the user once EQ, Comp and Verb are done: the order for MultiComp, Delay, FIR and Kicker.
 
 Changes to shared code since v1.0.1, which the next release should include:
 
@@ -386,6 +386,16 @@ How it got there (five builds):
 3. **JUCE names a console app's exe after its target**, so the target is `FancyBench`.
 4. **The CPU chart came out blank.** JUCE 8 finishes drawing into an image when its `Graphics` is destroyed, and the bars were saved inside its scope.
 5. **Aliasing counted the compressor's settling skirt next to the fundamental.** Components within 25 Hz of a harmonic are now left out, and whole numbers no longer print every digit.
+
+After the user's first runs (9 November 2026), in run 42624812843:
+- **`install.ps1` never installed the tools through `get-latest.ps1`.** It looked for `tools\` only directly under the download folder, so AudioPluginHost (since H) and FancyBench were missing. It now searches one level down.
+- **"All threads" counted FancyBench's own pacing wait,** so it read about 41 % for every plugin. It's now the process call's time plus the other threads' time.
+- **2 s of settling silence** after the settings, because Valhalla and Deelay glide to a new delay time.
+- **"Not steady" marks** on THD and aliasing readings whose level changes by over 0.1 dB, after a delay with feedback gave meaningless distortion figures.
+- **Per-plugin clicks parameters,** because each delay names its time differently.
+- **Read-back values** for parameters whose display ignores the value asked about (Valhalla's).
+- **Examples:** the Kotelnikov and Nova names are verified, Nova's auto gain is off, Valhalla and Deelay are in `delay.json`, and `delay-echo.json` measures delays' distortion with no feedback.
+- **Still weak:** the clicks test on a delay with feedback. Echoes arriving raise the plugin's static figure (Fancy Delay -43.7 dBFS in CI), so only gross clicks would show.
 
 Changes from the design note, recorded there:
 - The latency test's band-pass is linear-phase, so the expected peak is exact.

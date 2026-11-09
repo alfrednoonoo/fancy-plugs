@@ -1,4 +1,4 @@
-# Phase 3 Q1, run 42601745059: FancyBench smoke checks on the nine plugins (docs/phase3-Q1.md §6).
+# Phase 3 Q1, run 42624812843: FancyBench smoke checks on the nine plugins (docs/phase3-Q1.md §6).
 # CPU: the bench's ratio to Fancy Comp at defaults against W's Catch2 ratio in the same run, uniform noise, 5 s x 5, unpaced.
 PASS  Fancy Comp at defaults: reported latency matches the measured delay (reported 0, measured 0)
 PASS  Fancy Delay at defaults: reported latency matches the measured delay (reported 0, measured 0)
@@ -13,11 +13,12 @@ PASS  Fancy Verb at defaults: reported latency matches the measured delay (repor
 PASS  Fancy EQ bell, +6 dB at 1 kHz, Q 1: measured response within 0.1 dB of its design (240 points, worst 0.0000 dB at 15342.7 Hz)
 PASS  Fancy EQ at defaults: nulls against its input (-400.0 dBFS RMS)
 PASS  Fancy Comp with Wet off and Dry at 0 dB: nulls against its input (-400.0 dBFS RMS)
-PASS  Fancy Comp: CPU ratio to Fancy Comp within 25 % of the Catch2 figure (bench 0.95 x (0.296 %), Catch2 1.00 x)
-PASS  Fancy EQ: CPU ratio to Fancy Comp within 25 % of the Catch2 figure (bench 0.57 x (0.177 %), Catch2 0.56 x)
-PASS  Fancy MultiComp: CPU ratio to Fancy Comp within 25 % of the Catch2 figure (bench 3.75 x (1.168 %), Catch2 4.10 x)
-PASS  Fancy Delay: CPU ratio to Fancy Comp within 25 % of the Catch2 figure (bench 0.38 x (0.117 %), Catch2 0.36 x)
+PASS  Fancy Comp: CPU ratio to Fancy Comp within 25 % of the Catch2 figure (bench 0.99 x (0.593 %), Catch2 1.03 x)
+PASS  Fancy EQ: CPU ratio to Fancy Comp within 25 % of the Catch2 figure (bench 0.64 x (0.384 %), Catch2 0.61 x)
+PASS  Fancy MultiComp: CPU ratio to Fancy Comp within 25 % of the Catch2 figure (bench 3.21 x (1.923 %), Catch2 3.41 x)
+PASS  Fancy Delay: CPU ratio to Fancy Comp within 25 % of the Catch2 figure (bench 0.40 x (0.237 %), Catch2 0.33 x)
 PASS  example compressor.json runs (Fancy Comp: ok )
+PASS  example delay-echo.json runs (Fancy Delay: ok )
 PASS  example delay.json runs (Fancy Delay: ok )
 PASS  example eq.json runs (Fancy EQ: ok )
 All bench checks passed
