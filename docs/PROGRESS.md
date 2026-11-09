@@ -16,7 +16,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42576245019 (commit `a613f77`, version 1.2.0, tag `v1.2.0`): 344 test cases passed, and all nine plugins passed Steinberg's validator, pluginval and the host harness. The release zip is that run's `FancyPlugs-VST3` artifact, zipped as it is, `tools/AudioPluginHost.exe` included.
 
-Latest run: the release run above.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42601745059, Phase 3 Q1 (FancyBench): 353 test cases, Steinberg's validator, pluginval, the host harness and FancyBench's 20 smoke checks passed.
 
 ## Phase 2
 
@@ -55,7 +55,8 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
    - FIR's resonance mode;
    - Fancy Limiter, Fancy De-esser and Fancy Saturator.
 
-   Mac comes after Windows is finished. First up is Q1, the benchmark host (`tools/bench`, `FancyBench.exe`), starting with its design note. Still to confirm with the user once EQ, Comp and Verb are done: the order for MultiComp, Delay, FIR and Kicker.
+   Mac comes after Windows is finished.
+   - Q1, the benchmark host: **built, and green in CI**; waiting for the user to run it against at least one competitor per category (compressor, EQ, delay). Design note `docs/phase3-Q1.md`, approved 9 November 2026 (console only; the free competitors first). How-to `docs/bench.md`. Still to confirm with the user once EQ, Comp and Verb are done: the order for MultiComp, Delay, FIR and Kicker.
 
 Changes to shared code since v1.0.1, which the next release should include:
 
@@ -357,6 +358,40 @@ How it got there (five builds):
 4. **CPU was 1.91 × Learned.** Martin's M(D) table was looked up twice per bin per frame; it depends only on the window, so it's worked out once per frame: 1.13 ×.
 
 Layout note: the Subtract card is 178 px wide, too narrow for both "NOISE PROFILE" and the three-way switch on one row as panel 5 shows, so the switch takes the title's place. The status reads "Floor ≈ −52 dB" rather than "Noise floor" for the same reason.
+
+## Phase 3 Q1: FancyBench, the benchmark host
+
+Design note: `docs/phase3-Q1.md`. How-to: `docs/bench.md`. Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42601745059.
+
+What it is: `FancyBench.exe`, a console program built from `tools/bench`, shipped as `tools/FancyBench.exe` with three example test files, and installed to `%USERPROFILE%\VST3-Dev-Tools`.
+- **Commands:** `params` lists a plugin's parameters; `run` measures every plugin in a JSON test file, each in its own process, and writes `report.md` with PNG plots, CSVs and the file as run.
+- **Tests:** CPU (mean, 99th percentile, worst block, all threads, ratio to Fancy Comp), latency, frequency response, THD and THD+N, aliasing, null, and clicks under automation.
+
+Results:
+
+| Check (§6) | Result |
+|---|---|
+| Catch2: latency, sweep response, THD, aliasing, null, clicks, test files, parameters | All pass. A known bell measures within 0.05 dB and 1°; THD matches tanh's Fourier series within 0.1 dB; a folded third harmonic is found at 3 kHz at its level |
+| Latency, all nine plugins (and FIR at FFT 1024) | Reported equals measured, except MultiComp: reported 0, peak at 1 sample, from its crossovers' phase (allowed: 0 to 3 samples after) |
+| Fancy EQ bell against its design | 240 points, worst 0.0000 dB |
+| Nulls | Fancy EQ at defaults and Comp with Wet off: exact (-400 dBFS, the floor) |
+| CPU ratios against W's Catch2 figures | Comp 0.95 against 1.00, EQ 0.57 against 0.56, MultiComp 3.75 against 4.10, Delay 0.38 against 0.36 (limit 25 %) |
+| Examples | All three run, competitors skipped as not installed |
+
+`docs/measurements/bench.txt` has the smoke output.
+
+How it got there (five builds):
+1. **JUCE 8.0.17 dropped `VST3PluginFormat::setStateFromVSTPresetFile`** and the extensions visitor. Presets now load through `getVST3Client()->setPreset()`.
+2. **A test reused a `ParamSetting`** and saw an earlier call's note; `resolveValue` now starts from a clean one.
+3. **JUCE names a console app's exe after its target**, so the target is `FancyBench`.
+4. **The CPU chart came out blank.** JUCE 8 finishes drawing into an image when its `Graphics` is destroyed, and the bars were saved inside its scope.
+5. **Aliasing counted the compressor's settling skirt next to the fundamental.** Components within 25 Hz of a harmonic are now left out, and whole numbers no longer print every digit.
+
+Changes from the design note, recorded there:
+- The latency test's band-pass is linear-phase, so the expected peak is exact.
+- The smoke check allows the peak 0 to 3 samples after the reported latency, for minimum-phase plugins.
+- The hang timeout is 120 s without progress.
+- Paid competitors are `"disabled"` entries, because JSON has no comments.
 
 ## Market research and Phase 3 draft
 
