@@ -36,10 +36,10 @@ double martinM (double d) noexcept
     return 0.0;
 }
 
-// Martin's bias compensation B_min(D, Q_eq), with 1/Q_eq as given.
-double martinBias (double frames, double qInverse) noexcept
+// Martin's bias compensation B_min(D, Q_eq), with 1/Q_eq as given and M(D) worked out once
+// per frame, since it depends only on the window.
+double martinBias (double frames, double m, double qInverse) noexcept
 {
-    const auto m = martinM (frames);
     const auto qEq = 1.0 / std::max (qInverse, 1.0e-9);
     const auto qTilde = std::max (2.0, (qEq - 2.0 * m) / (1.0 - m));
     return 1.0 + 2.0 * (frames - 1.0) / qTilde;
@@ -506,7 +506,6 @@ void SpectralEngine::trackNoise (bool publishes) noexcept
         trackMoment1[(size_t) k] = (float) moment1;
         trackMoment2[(size_t) k] = (float) moment2;
         trackQInverse[(size_t) k] = (float) qInverse;
-        trackRatio[(size_t) k] = (float) (smoothed / noise);
         sumQInverse += qInverse;
     }
 
@@ -541,6 +540,7 @@ void SpectralEngine::trackNoise (bool publishes) noexcept
     const auto biasGlobal = (1.0 + 2.12 * std::sqrt (sumQInverse / (double) bins)) * calibration;
     const auto subwindowFrames = (double) trackSubLength;
     const auto boundary = trackSubFrames + 1 >= trackSubLength;
+    const auto mWindow = martinM (frames), mSubwindow = martinM (subwindowFrames);
 
     auto heldBelow8k = 0, binsBelow8k = 0;
 
@@ -572,8 +572,8 @@ void SpectralEngine::trackNoise (bool publishes) noexcept
             const auto qInverse = (double) trackQInverse[(size_t) k];
             const auto smoothed = (double) trackSmoothed[(size_t) k];
 
-            actMin = std::min (actMin, (float) (smoothed * martinBias (frames, qInverse) * biasGlobal));
-            subMin = std::min (subMin, (float) (smoothed * martinBias (subwindowFrames, qInverse) * biasGlobal));
+            actMin = std::min (actMin, (float) (smoothed * martinBias (frames, mWindow, qInverse) * biasGlobal));
+            subMin = std::min (subMin, (float) (smoothed * martinBias (subwindowFrames, mSubwindow, qInverse) * biasGlobal));
         }
 
         auto& noise = trackNoise_[(size_t) k];
