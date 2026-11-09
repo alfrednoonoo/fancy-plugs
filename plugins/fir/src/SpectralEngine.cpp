@@ -376,9 +376,26 @@ void SpectralEngine::startTracking() noexcept
     const auto fromShared = shared.hasAdaptive.load (std::memory_order_acquire);
     const auto step = profileHighHz / (double) (profilePoints - 1);
 
+    // With nothing to start from, each bin starts from the median of this frame's power within
+    // 16 bins either side, so a tone or a note in the first frame isn't taken for noise.
+    if (! fromShared && ! profileReady)
+    {
+        constexpr int reach = 16;
+
+        for (int k = 0; k < bins; ++k)
+        {
+            const auto low = std::max (0, k - reach), high = std::min (bins - 1, k + reach);
+            const auto count = high - low + 1;
+
+            std::copy (trackPower.begin() + low, trackPower.begin() + high + 1, trackSort.begin());
+            std::nth_element (trackSort.begin(), trackSort.begin() + count / 2, trackSort.begin() + count);
+            trackRatio[(size_t) k] = std::min (trackPower[(size_t) k], trackSort[(size_t) (count / 2)]);
+        }
+    }
+
     for (int k = 0; k < bins; ++k)
     {
-        auto start = (double) trackPower[(size_t) k];
+        auto start = (! fromShared && ! profileReady) ? (double) trackRatio[(size_t) k] : (double) trackPower[(size_t) k];
 
         if (fromShared || profileReady)
         {
@@ -493,7 +510,12 @@ void SpectralEngine::trackNoise (bool publishes) noexcept
     std::nth_element (trackSort.begin(), middle, trackSort.end());
     const auto median = (double) *middle;
 
-    const auto biasGlobal = 1.0 + 2.12 * std::sqrt (sumQInverse / (double) bins);
+    // Martin's B_c, times a measured calibration: with B_min as published, the estimate reads
+    // 3.9-4.5 dB low on white and pink noise at FFT 1024-8192 here, because at 75 % overlap the
+    // short-memory variance estimate under-reads the variance of the smoothed power. See
+    // docs/phase2_1-A.md.
+    constexpr double calibration = 2.6302679918953817; // 4.2 dB
+    const auto biasGlobal = (1.0 + 2.12 * std::sqrt (sumQInverse / (double) bins)) * calibration;
     const auto subwindowFrames = (double) trackSubLength;
     const auto boundary = trackSubFrames + 1 >= trackSubLength;
 
