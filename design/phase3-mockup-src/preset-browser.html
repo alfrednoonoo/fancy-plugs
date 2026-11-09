@@ -17,6 +17,10 @@
 .pill .ar svg{stroke:rgba(255,255,255,.4)}
 .pill .ar.hov{background:#424242}.pill .ar.hov svg{stroke:#fff}
 .pill .nm{flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plug.ts{background-repeat:no-repeat;background-position:0 20px}
+.ts .pill{top:33px}
+.tstrip{position:absolute;left:0;top:0;right:0;height:20px;background:#141414;border-bottom:1px solid #262626;display:flex;align-items:center;padding:0 16px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;gap:5px;z-index:0}
+.tstrip .f{color:#8D8D8D}.tstrip .p{color:var(--a)}
 /* browser panel = menu panel from S.2 */
 .br{position:absolute;background:#262626;border:1px solid #434343;border-radius:6px;padding:4px;box-shadow:0 10px 28px rgba(0,0,0,.55);font-size:11.5px;color:#EDEDED;display:flex;flex-direction:column}
 .top{display:flex;gap:6px;padding:4px 4px 6px}
@@ -70,12 +74,13 @@
 <div class="sheet">
 
 <!-- 1 · Kicker -->
-<div><div class="h">1 · Fancy Kicker (narrowest window, 392 × 472): browser open, category All</div>
+<div id="s1"><div class="h">1 · Fancy Kicker (narrowest window, 392 × 492 with the title strip): browser open, category All</div>
 <div class="n">Clicking the preset name opens the browser 4 px under the pill. In a narrow window it's the window's width minus 16 px (here 376), and it never covers the header. The search field has focus, so typing filters at once. Factory and User sections as in today's menu; ✓ marks the loaded preset; the category is grey on the right; ★ toggles a favourite without loading. Hover: lighter row and a 2 px bar in the plugin's accent (Kicker red). The footer holds the actions that were at the bottom of the old menu: Save as new… (Ctrl+S, in its tooltip), Reload when changed, Rename…, Delete…, and a folder icon that opens the preset folder.</div>
 <div class="row">
-<div class="plug" style="width:392px;height:472px;background-image:url(img/kicker@2x.png);--a:#E74D3D">
+<div class="plug ts" style="width:392px;height:492px;background-image:url(img/kicker@2x.png);background-size:392px 472px;--a:#E74D3D">
+ <div class="tstrip"><span class="f">Fancy</span><span class="p">Kicker</span></div>
  <div class="pill open" style="width:110px"><div class="ar"><svg width="8" height="10"><use href="#lt"/></svg></div><div class="nm">Tight Kick</div><div class="ar"><svg width="8" height="10"><use href="#rt"/></svg></div></div>
- <div class="br" style="left:8px;top:41px;width:376px">
+ <div class="br" style="left:8px;top:61px;width:376px">
   <div class="top"><div class="search f"><svg width="12" height="12"><use href="#mag"/></svg><span class="caret"></span><span class="ph">Search presets</span></div><div class="cat" style="width:118px">All</div></div>
   <div class="sepl" style="margin-top:0"></div>
   <div class="sec">Factory</div>
@@ -110,11 +115,12 @@
 </div></div>
 
 <!-- 2 · Comp -->
-<div><div class="h">2 · Fancy Comp (934 × 527): searching “drum”, current settings changed</div>
+<div id="s2"><div class="h">2 · Fancy Comp (934 × 547 with the title strip): searching “drum”, current settings changed</div>
 <div class="n">In a wider window the browser is 420 px wide, left-aligned with the pill. The search matches the starts of words in the name and category, so “drum” also finds Parallel Crush, which is in Drums. Sections with no matches are hidden. The settings have changed since Drum Punch loaded (• in the pill), so the footer also offers Reload. Rename and Delete stay greyed because a factory preset is loaded. Accent: teal.</div>
-<div class="plug" style="width:934px;height:527px;background-image:url(img/comp@2x.png);--a:#00A884">
+<div class="plug ts" style="width:934px;height:547px;background-image:url(img/comp@2x.png);background-size:934px 527px;--a:#00A884">
+ <div class="tstrip"><span class="f">Fancy</span><span class="p">Comp</span></div>
  <div class="pill open" style="width:246px"><div class="ar"><svg width="8" height="10"><use href="#lt"/></svg></div><div class="nm">Drum Punch •</div><div class="ar"><svg width="8" height="10"><use href="#rt"/></svg></div></div>
- <div class="br" style="left:16px;top:41px;width:420px">
+ <div class="br" style="left:16px;top:61px;width:420px">
   <div class="top"><div class="search f">
    <svg width="12" height="12"><use href="#mag"/></svg><span>drum</span><span class="caret" style="margin-left:-6px"></span><span class="x">✕</span></div><div class="cat" style="width:130px">All</div></div>
   <div class="sepl" style="margin-top:0"></div>
@@ -129,8 +135,22 @@
  </div>
 </div></div>
 
+<!-- 4 · title strip -->
+<div id="s4"><div class="h">4 · Title strip: the plugin's name at the top of every window</div>
+<div class="n">A 20 px strip above the header, the same on all nine plugins and the three new ones: background #141414 (the well colour), a 1 px #262626 line under it, and the name 16 px from the left, in the section-title style (10 px semibold, caps, 0.08 em spacing): “FANCY” in secondary grey and the plugin's name in its accent colour. Each window grows by 20 px; nothing else moves. Shown on Kicker (compact header), Gate and Comp at 100 %.</div>
+<div class="row" style="align-items:flex-start">
+<div class="plug ts" style="width:392px;height:492px;background-image:url(img/kicker@2x.png);background-size:392px 472px;--a:#E74D3D">
+ <div class="tstrip"><span class="f">Fancy</span><span class="p">Kicker</span></div></div>
+<div class="plug ts" style="width:740px;height:441px;background-image:url(img/gate@2x.png);background-size:740px 421px;--a:#F1C315">
+ <div class="tstrip"><span class="f">Fancy</span><span class="p">Gate</span></div></div>
+</div>
+<div style="height:16px"></div>
+<div class="plug ts" style="width:934px;height:547px;background-image:url(img/comp@2x.png);background-size:934px 527px;--a:#00A884">
+ <div class="tstrip"><span class="f">Fancy</span><span class="p">Comp</span></div></div>
+</div>
+
 <!-- 3 · close-ups -->
-<div><div class="h">3 · Close-ups: the preset pill, no matches, and the Save dialog</div>
+<div id="s3"><div class="h">3 · Close-ups: the preset pill, no matches, and the Save dialog</div>
 <div class="n">The ‹ and › arrows sit inside the pill's ends, so the header's widths don't change; the up/down chevron is replaced by them. Each arrow highlights on hover and has a tooltip. The name is centred and still opens the browser. Arrows step through the list the browser would show, wrapping at the ends; each step is one undo step. The Save dialog is the existing one with a Category field, which suggests existing user categories as you type.</div>
 <div class="row">
  <div style="display:flex;flex-direction:column;gap:14px">
@@ -155,4 +175,6 @@
    <div style="display:flex;justify-content:flex-end;gap:8px"><div class="b2" style="background:#383838">Cancel</div><div class="b2" style="background:#00A884;color:#fff;font-weight:600">Save</div></div></div></div>
 </div></div>
 
-</div></body></html>
+</div>
+<script>if(location.hash)document.querySelectorAll(".sheet>div").forEach(d=>{if("#"+d.id!==location.hash)d.style.display="none"});</script>
+</body></html>

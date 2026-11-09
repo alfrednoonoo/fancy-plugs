@@ -4,7 +4,7 @@ Brief: §Q2.1 of `docs/BUILD_PROMPT_PHASE3.md`. Both features are built once, in
 
 Q2.1 adds no host parameter and no DSP. Nothing on the audio thread changes, so saved projects load and render bit-identical, and CPU doesn't change. The saved state gains nothing a project needs: favourites and categories live in the preset folder, and the window size uses the existing `uiScale`, `uiWidth` and `uiHeight` properties. `stateVersion` stays at its current value.
 
-**Status:** the user accepted every recommended decision in §5 on 9 November 2026 and asked for a mockup first. Mockup: `reference/phase3/17__preset_browser_mockup.png`, source `design/phase3-mockup-src/preset-browser.html`. No code until the mockup is approved.
+**Status:** the user accepted every recommended decision in §5 on 9 November 2026 and asked for a mockup first. The same day the user added the plugin's name at the top of every window, and chose a title strip (§3.3, option 2 of 3). Mockups: `reference/phase3/17a__preset_browser_kicker.png`, `17b__preset_browser_comp.png`, `17c__preset_browser_closeups.png` and `18__title_strip.png`, source `design/phase3-mockup-src/preset-browser.html`. No code until the mockup is approved.
 
 ## 1. Where the plugins stand
 
@@ -100,19 +100,32 @@ The browser lists only user presets that parse as a `.fancypreset` of the right 
 - **Saved size:** the scale is saved in the existing `uiScale` property, now any value from 1.0 to 2.0, rounded to 0.01. A build from before Q2.1 that reads a scale it doesn't list opens at 100 %, which is harmless.
 - **Host scaling:** our scale and the host's multiply, as now. The resize limits are given to the host in its own pixels, so at 150 % Windows scaling a Kicker can be dragged from 588 to 1176 px wide.
 
-### 3.2 Window sizes, in 100 % units
+### 3.2 Title strip
+
+Added by the user on 9 November 2026: every window shows the plugin's name at the top. The header row has no room for it on most plugins, so it gets its own strip above the header, the same on all nine and on the new plugins.
+
+- 20 px tall, across the full width, background `#141414` (the well colour), with a 1 px `#262626` line under it.
+- The name 16 px from the left, aligned with the preset pill, in the section-title style: Inter semibold 10 px, caps, 0.08 em letter spacing. "FANCY" in the secondary grey `#8D8D8D` and the plugin's name in its accent colour (Kicker red, Comp teal, Gate yellow, and so on, as in §S.2).
+- It's drawn by `ShellEditor`, so `headerHeight` stays 53 and a new `titleHeight = 20` sits above it. Every window grows by 20 px, nothing else moves, and pop-ups open from the same places relative to the header.
+- It's not a control: clicking it does nothing, and the host can still drag the window by its own title bar.
+- Kicker and Exciter keep their grey caption at the bottom for now (§5, decision 6).
+- The CI screenshots will differ from the `reference/` images by the 20 px strip. The comparison crops it off before comparing, so the rest must still match.
+
+### 3.3 Window sizes, in 100 % units
+
+With the 20 px title strip included.
 
 | Plugin | 100 % (the minimum) | 200 % |
 |---|---|---|
-| Kicker | 392 × 472 | 784 × 944 |
-| Exciter | 392 × 432 | 784 × 864 |
-| Comp | 934 × 527 | 1868 × 1054 |
-| Verb | 866 × 677 | 1732 × 1354 |
-| Delay | 760 × 428 | 1520 × 856 |
-| MultiComp | 760 × 589 | 1520 × 1178 |
-| FIR | 760 × 445 | 1520 × 890 |
-| Gate | 740 × 421 | 1480 × 842 |
-| EQ | reflows 696 × 464 to 1800 × 1300 | then × the size menu |
+| Kicker | 392 × 492 | 784 × 984 |
+| Exciter | 392 × 452 | 784 × 904 |
+| Comp | 934 × 547 | 1868 × 1094 |
+| Verb | 866 × 697 | 1732 × 1394 |
+| Delay | 760 × 448 | 1520 × 896 |
+| MultiComp | 760 × 609 | 1520 × 1218 |
+| FIR | 760 × 465 | 1520 × 930 |
+| Gate | 740 × 441 | 1480 × 882 |
+| EQ | reflows 696 × 484 to 1800 × 1320 | then × the size menu |
 
 
 ## 4. Tests
@@ -137,3 +150,4 @@ The REAPER checklist, `docs/presets-checklist.md`, covers the browser, the arrow
 3. **The browser replaces the menu** (§2.1). The alternative keeps today's menu and adds "Browse…" to it, which costs an extra click every time.
 4. **Scaling, not reflowing, for the eight fixed layouts** (§3.1). Reflowing them the way EQ does would change eight layouts and need eight new designs. Scaling is what "between its minimum and 200 %" reads as.
 5. **The factory categories** in §2.4.
+6. **Kicker and Exciter's bottom caption.** With the name in the title strip, their grey "Fancy Kicker" / "Fancy Exciter" caption from the Figma design says it twice. Keep it, as the Figma design has it, or remove it. Open.
