@@ -11,7 +11,8 @@
 - Fancy Verb: done, signed off in REAPER by the user. All five plugins are finished.
 
 - Phase 1 is finished. Phase 2 (below) is the work that comes after it.
-- Release: [v1.1.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.1.0), with all eight plugins: the five from v1.0, with the slow-drag fix, and Fancy Delay, Fancy MultiComp and Fancy FIR. v1.0.1 added typed values. The repo is private, so the releases are too.
+- Release: [v1.2.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.2.0), with all nine plugins and Phase 2.1 (S, H, W, D, U, A). [v1.1.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.1.0) added Fancy Delay, Fancy MultiComp and Fancy FIR, and v1.0.1 typed values. The repo is private, so the releases are too.
+- `README.md` shows each plugin's current design, from CI screenshots copied into `docs/images/`. Refresh them when a layout changes.
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
@@ -36,13 +37,13 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
 1. **Phase 2.0.1, Fancy Gate:** done. The updated Phase 2.1 brief treats it as finished, as one of the nine plugins that Phase 2.1 changes. Its REAPER checklist, `docs/gate-checklist.md`, can still be run with the next build.
 2. **Phase 2.1:** from `docs/BUILD_PROMPT_PHASE2_1.md`, in the order S, H, W, D, U, A. It builds no new plugin. Each item has its own design note, `docs/phase2_1-<item>.md`, written before any code.
    - S: styled menus, dropdown lists, tooltips, typed values and dialogs, built once in `fancy-core`. Mockup `reference/phase2_1/16__menus_mockup.png`, which also sets their exact styling. **Done.** The user reported the REAPER checks passed on 8 November 2026. Audit and design: `docs/phase2_1-S.md`.
-   - H: **built, and green in CI**; waiting for the user's host checks (`docs/host-compat.md`); the FIR frame-grid question is decided (below). Design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
+   - H: **Done.** REAPER is the user's only host; the user reported the REAPER checks passed and closed H on 9 November 2026 (`docs/host-compat.md`). The FIR frame-grid question is decided (below). Design note `docs/phase2_1-H.md`. Host compatibility: offline rendering done in-line, keys passed to the host, host scaling, an optional sidechain bus, latency-change notices, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with a checklist per host.
    - W: **Done.** The user approved both decisions on 8 November 2026 (below) and reported the REAPER checks passed on 9 November 2026. Undo and redo, A/B, and level-matched Compare, for all nine plugins. Design note `docs/phase2_1-W.md`.
    - D: dynamic EQ. **Done.** The user reported the REAPER checks (`docs/eq-checklist.md`, "Dynamic bands") passed on 9 November 2026. Design note `docs/phase2_1-D.md`.
    - U: upward compression in MultiComp. **Done.** The user reported the REAPER checks (`docs/multicomp-checklist.md`, "Upward, Depth and Time") passed on 9 November 2026. Design note `docs/phase2_1-U.md`.
    - A: adaptive noise tracking in FIR. **Done.** The user reported the REAPER checks (`docs/fir-checklist.md`, "Adaptive noise tracking") passed on 9 November 2026. Design note `docs/phase2_1-A.md`.
 
-   All six Phase 2.1 items are built and green, and S, W, D, U and A have passed the user's REAPER checks. What's left is H's host checks (`docs/host-compat.md`), then Phase 3's draft brief, which needs the user's approval. The "Phase 2.1 results" section of `docs/research/2026-11-market-report-summary.md` records which gaps are closed.
+   Phase 2.1 is finished: all six items are built, green and passed in REAPER, and released as v1.2.0. Phase 3's draft brief still needs the user's approval; the user put it off on 9 November 2026. The "Phase 2.1 results" section of `docs/research/2026-11-market-report-summary.md` records which gaps are closed.
 
    The controls mockup is `reference/phase2_1/14__phase2_1_controls.png`, and both mockups' source is in `design/phase2_1-mockup-src/`. The brief cites `docs/2026-11-market-report-detailed.md`, where the report is actually `docs/research/2026-11-market-report-detailed.md`.
 3. **Phase 3:** from `docs/BUILD_PROMPT_PHASE3.md`, a draft. Phase 2.1 now covers four of its items, so it keeps what's left:

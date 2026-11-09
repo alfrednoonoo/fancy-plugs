@@ -4,6 +4,8 @@ Phase 2.1 item H. The suite should work in REAPER, Audacity, UA LUNA, Tracktion 
 
 Every cell starts as "untested" and only changes from the user's own results. CI can't run these hosts; what it does check is in "Automated checks" below.
 
+**Closed on 9 November 2026.** REAPER is the user's only host. The user reported the REAPER checks passed and closed H, so the REAPER column reads "pass" and the other hosts "not used". The checklists below stay, for if another host comes into use.
+
 ## Results
 
 Tier 1 hosts are free and get checked after every Phase 2.1 item. Tier 2 hosts are trials, checked once, within one week of the trial, after S and H are both done.
@@ -12,29 +14,29 @@ Tier 1 hosts are free and get checked after every Phase 2.1 item. Tier 2 hosts a
 
 | Plugin | REAPER | Audacity | Waveform Free | LUNA | AudioPluginHost | Live 12 (trial) | Cubase (trial) |
 |---|---|---|---|---|---|---|---|
-| Kicker | untested | untested | untested | untested | untested | untested | untested |
-| Exciter | untested | untested | untested | untested | untested | untested | untested |
-| Comp | untested | untested | untested | untested | untested | untested | untested |
-| EQ | untested | untested | untested | untested | untested | untested | untested |
-| Verb | untested | untested | untested | untested | untested | untested | untested |
-| Delay | untested | untested | untested | untested | untested | untested | untested |
-| MultiComp | untested | untested | untested | untested | untested | untested | untested |
-| FIR | untested | untested | untested | untested | untested | untested | untested |
-| Gate | untested | untested | untested | untested | untested | untested | untested |
+| Kicker | pass | not used | not used | not used | not used | not used | not used |
+| Exciter | pass | not used | not used | not used | not used | not used | not used |
+| Comp | pass | not used | not used | not used | not used | not used | not used |
+| EQ | pass | not used | not used | not used | not used | not used | not used |
+| Verb | pass | not used | not used | not used | not used | not used | not used |
+| Delay | pass | not used | not used | not used | not used | not used | not used |
+| MultiComp | pass | not used | not used | not used | not used | not used | not used |
+| FIR | pass | not used | not used | not used | not used | not used | not used |
+| Gate | pass | not used | not used | not used | not used | not used | not used |
 
 ### Across the suite
 
 | Check | REAPER | Audacity | Waveform Free | LUNA | AudioPluginHost | Live 12 (trial) | Cubase (trial) |
 |---|---|---|---|---|---|---|---|
-| UI and pop-ups look right | untested | untested | untested | untested | untested | untested | untested |
-| Scaling at 150 % | untested | untested | untested | untested | untested | untested | untested |
-| Space bar reaches the host | untested | untested | untested | untested | n/a | untested | untested |
-| Automation writes and plays back | untested | n/a | untested | untested | n/a | untested | untested |
-| Save and reload project | untested | n/a | untested | untested | untested | untested | untested |
-| Offline render or export matches playback | untested | untested | untested | untested | n/a | untested | untested |
-| Sidechain (Comp, MultiComp, FIR, Gate) | untested | n/a: no sidechain routing | untested | untested | untested | untested | untested |
-| MIDI out (Gate) | untested | n/a: no MIDI routing | untested | untested | untested | untested | untested |
-| Latency compensation | untested | n/a | untested | untested | n/a | untested | untested |
+| UI and pop-ups look right | pass | not used | not used | not used | not used | not used | not used |
+| Scaling at 150 % | pass | not used | not used | not used | not used | not used | not used |
+| Space bar reaches the host | pass | not used | not used | not used | n/a | not used | not used |
+| Automation writes and plays back | pass | n/a | not used | not used | n/a | not used | not used |
+| Save and reload project | pass | n/a | not used | not used | not used | not used | not used |
+| Offline render or export matches playback | pass | not used | not used | not used | n/a | not used | not used |
+| Sidechain (Comp, MultiComp, FIR, Gate) | pass | n/a: no sidechain routing | not used | not used | not used | not used | not used |
+| MIDI out (Gate) | pass | n/a: no MIDI routing | not used | not used | not used | not used | not used |
+| Latency compensation | pass | n/a | not used | not used | n/a | not used | not used |
 
 Waveform Pro is covered by Waveform Free; no check below needs a Pro-only feature.
 
