@@ -694,6 +694,10 @@ void EqEditor::updateSelection()
 void EqEditor::bodyResized()
 {
     layoutEditors();
+
+    // The handles and curves follow the new size at once, not on the next tick.
+    if (! bandEditors.empty())
+        graph.update();
 }
 
 void EqEditor::layoutEditors()
@@ -747,7 +751,16 @@ void EqEditor::layoutEditors()
     drawer.toFront (false);
 
     const auto knobRight = width - 16 - 56 - 36;
-    editLink.setBounds (knobRight - 72, 13, 64, 24);
+    const auto linkLeft = knobRight - 72;
+    editLink.setBounds (linkLeft, 13, 64, 24);
+
+    // In a narrow window the preset pill gives up room, so Compare clears the EDIT link
+    // (Phase 3 Q2.1: every size renders without overlaps).
+    constexpr int presetWidest = 170, presetNarrowest = 110;
+    setPresetDropdownWidth (presetWidest);
+
+    if (const auto overlap = getHeaderFreeLeft() - linkLeft; overlap > 0)
+        setPresetDropdownWidth (juce::jmax (presetNarrowest, presetWidest - overlap));
 
     constexpr float ranges[] { 12.0f, 6.0f, 12.0f, 18.0f, 24.0f };
 

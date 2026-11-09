@@ -301,9 +301,19 @@ public:
 
     void paintOverChildren (juce::Graphics& g) override
     {
+        // The outline, from the look and feel.
+        juce::TextEditor::paintOverChildren (g);
+
         paintMagnifier (g, { 12.0f, (float) getHeight() * 0.5f - 1.0f });
 
-        if (! getText().isEmpty())
+        // The placeholder stays while the field has focus, as the mockup shows it.
+        if (getText().isEmpty())
+        {
+            g.setColour (colours::textDisabled);
+            g.setFont (itemFont());
+            g.drawText ("Search presets", getLocalBounds().toFloat().withTrimmedLeft (25.0f), juce::Justification::centredLeft, false);
+        }
+        else
         {
             const auto x = (float) getWidth() - 13.0f, y = (float) getHeight() * 0.5f;
             g.setColour (colours::menuHint);
@@ -723,7 +733,6 @@ public:
         search.setColour (juce::TextEditor::focusedOutlineColourId, owner.accent);
         search.setFont (itemFont());
         search.setIndents (24, 0);
-        search.setTextToShowWhenEmpty ("Search presets", colours::textDisabled);
         search.setEscapeAndReturnKeysConsumed (false);
 
         save.setTooltip ("Save as new preset (Ctrl+S)");

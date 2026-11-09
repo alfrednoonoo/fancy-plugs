@@ -699,6 +699,7 @@ void ShellEditor::showPresetMenu()
     auto* raw = browser.get();
     adoptPopup (std::move (browser));
     raw->refresh();
+    refreshHeader();
 
     if (raw->isShowing())
         raw->getSearchField().grabKeyboardFocus();
