@@ -293,8 +293,7 @@ TEST_CASE ("Upward: Big squash on pink noise and a drum loop stays finite and ne
                 }
         }
 
-        std::printf ("big squash: peak %.4f, %d samples at the 0 dBFS ceiling
-", peak, atCeiling);
+        std::printf ("big squash: peak %.4f, %d samples at the 0 dBFS ceiling\n", peak, atCeiling);
         return std::make_pair (finite, peak);
     };
 
