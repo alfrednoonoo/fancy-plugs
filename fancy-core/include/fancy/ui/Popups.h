@@ -247,9 +247,13 @@ struct DialogSpec
 
     // Checks the fields before the action runs. A non-empty message keeps the dialog open.
     std::function<juce::String (const juce::StringArray&)> validate;
+
+    // A grey line under the fields that follows what's typed, such as where a preset will be
+    // saved (Phase 3 Q2.1).
+    std::function<juce::String (const juce::StringArray&)> note;
 };
 
-class DialogLayer final : public juce::Component
+class DialogLayer final : public juce::Component, private juce::TextEditor::Listener
 {
 public:
     using Callback = std::function<void (bool accepted, const juce::StringArray& fields)>;
@@ -266,6 +270,8 @@ public:
     void cancel();
 
     juce::TextEditor* getField (int index) const;
+    juce::StringArray getValues() const;
+    juce::String getNote() const;
     const DialogSpec& getSpec() const noexcept { return spec; }
     const juce::String& getError() const noexcept { return error; }
 
@@ -273,6 +279,8 @@ public:
 
 private:
     class Button;
+
+    void textEditorTextChanged (juce::TextEditor&) override { repaint(); }
 
     juce::Rectangle<float> panelBounds() const;
     float bodyHeight() const;

@@ -108,6 +108,7 @@ private:
     class FooterButton;
 
     void layoutPanel();
+    void searchChanged();
     juce::String categoryLabel() const;
 
     PresetManager& presets;

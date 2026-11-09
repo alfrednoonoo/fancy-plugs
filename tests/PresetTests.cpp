@@ -129,12 +129,18 @@ void forEachEditor (const std::function<void (fancy::FancyProcessor&, ShellEdito
     });
 }
 
+// Each parameter's value as it means it: a switch set to 0.13 is off, as a state saves it.
 std::vector<float> parameterValues (fancy::FancyProcessor& processor)
 {
     std::vector<float> values;
 
     for (auto* parameter : processor.getParameters())
-        values.push_back (parameter->getValue());
+    {
+        if (auto* ranged = dynamic_cast<juce::RangedAudioParameter*> (parameter))
+            values.push_back (ranged->convertFrom0to1 (ranged->getValue()));
+        else
+            values.push_back (parameter->getValue());
+    }
 
     return values;
 }

@@ -825,12 +825,7 @@ PresetBrowser::PresetBrowser (PresetManager& presetManager, PresetManager::Filte
     addAndMakeVisible (*panel);
 
     panel->search.setText (filter.search, false);
-    panel->search.onTextChange = [this]
-    {
-        filter.search = panel->search.getText();
-        refresh();
-        panel->list.setHighlighted (filter.search.trim().isEmpty() ? -1 : 0);
-    };
+    panel->search.onTextChange = [this] { searchChanged(); };
 
     panel->category.onClick = [this] { showCategoryMenu(); };
 
@@ -1003,7 +998,16 @@ void PresetBrowser::layoutPanel()
 
 void PresetBrowser::setSearch (const juce::String& text)
 {
-    panel->search.setText (text, true);
+    // The field reports its own changes later, from the message loop; this applies at once.
+    panel->search.setText (text, false);
+    searchChanged();
+}
+
+void PresetBrowser::searchChanged()
+{
+    filter.search = panel->search.getText();
+    refresh();
+    panel->list.setHighlighted (filter.search.trim().isEmpty() ? -1 : 0);
 }
 
 void PresetBrowser::setCategory (PresetManager::Filter::Kind kind, const juce::String& category)

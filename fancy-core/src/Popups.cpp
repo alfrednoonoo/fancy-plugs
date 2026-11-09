@@ -1087,6 +1087,7 @@ DialogLayer::DialogLayer (DialogSpec dialogSpec, juce::Colour accent, Callback o
         editor->setSelectAllWhenFocused (true);
         editor->onReturnKey = [this] { accept(); };
         editor->onEscapeKey = [this] { cancel(); };
+        editor->addListener (this);
         addAndMakeVisible (*editor);
         fields.push_back (std::move (editor));
     }
@@ -1118,6 +1119,21 @@ juce::TextEditor* DialogLayer::getField (int index) const
     return index >= 0 && index < (int) fields.size() ? fields[(size_t) index].get() : nullptr;
 }
 
+juce::StringArray DialogLayer::getValues() const
+{
+    juce::StringArray values;
+
+    for (const auto& field : fields)
+        values.add (field->getText());
+
+    return values;
+}
+
+juce::String DialogLayer::getNote() const
+{
+    return spec.note != nullptr ? spec.note (getValues()) : juce::String();
+}
+
 float DialogLayer::bodyHeight() const
 {
     return spec.body.isEmpty() ? 0.0f : bodyLayout (spec.body, colours::menuHint, dialogWidth - 2.0f * dialogPadding).getHeight();
@@ -1131,6 +1147,9 @@ juce::Rectangle<float> DialogLayer::panelBounds() const
         height += bodyHeight() + 14.0f;
 
     height += (float) fields.size() * (fieldLabelHeight + 4.0f + fieldHeight + 10.0f);
+
+    if (spec.note != nullptr)
+        height += 12.0f;
 
     if (error.isNotEmpty())
         height += bodyLayout (error, colours::destructive, dialogWidth - 2.0f * dialogPadding).getHeight() + 10.0f;
@@ -1203,6 +1222,14 @@ void DialogLayer::paint (juce::Graphics& g)
         g.setColour (colours::menuHint);
         g.drawText (spec.fields[i].label, juce::Rectangle<float> (panel.getX() + dialogPadding, y, contentWidth, fieldLabelHeight), juce::Justification::centredLeft, true);
         y += fieldLabelHeight + 4.0f + fieldHeight + 10.0f;
+    }
+
+    if (spec.note != nullptr)
+    {
+        g.setColour (colours::menuHint);
+        g.drawText (getNote(), juce::Rectangle<float> (panel.getX() + dialogPadding, y - 6.0f, contentWidth, 14.0f),
+                    juce::Justification::centredLeft, true);
+        y += 12.0f;
     }
 
     if (error.isNotEmpty())

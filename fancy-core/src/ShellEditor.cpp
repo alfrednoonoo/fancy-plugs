@@ -784,6 +784,15 @@ void ShellEditor::showSavePrompt()
     spec.fields.push_back ({ "Name", presets.isUserPresetLoaded() ? presets.getCurrentName() : juce::String() });
     spec.fields.push_back ({ "Category (optional)", presets.getCurrentCategory() });
     spec.validate = nameCheck (presets, {}, std::nullopt);
+    spec.note = [] (const juce::StringArray& values)
+    {
+        const auto folder = juce::File::createLegalFileName (values[1].trim()).trim();
+
+        if (folder.isEmpty() || folder.equalsIgnoreCase (PresetManager::userCategory))
+            return juce::String ("Saved in your preset folder.");
+
+        return "Saved in Presets\\" + folder + "\\ beside your other presets.";
+    };
 
     showDialog (root, std::move (spec), [safeThis = juce::Component::SafePointer<ShellEditor> (this)] (bool accepted, const juce::StringArray& values)
     {
