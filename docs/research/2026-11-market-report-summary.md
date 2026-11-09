@@ -62,6 +62,20 @@ November 2026. The full evidence and sources are in `2026-11-market-report-detai
 - **Where we can compete:** as free tools. Against TDR Nova, Kotelnikov, OTT and the original ReaPlugs, the suite's polish, consistency, typed values and tested accuracy would stand out, and FIR has no free equal I could find.
 - **Where we're closest to the paid leaders:** FIR's real-time noise reduction, and MultiComp's flat, phase-safe crossovers. Neither would win on its own against RX or Pro-MB.
 
+## Phase 2.1 results
+
+Phase 2.1 closed the gaps the report found in §5, §8, §9 and §10, with numbers from CI (`docs/PROGRESS.md` has every test; CPU by the brief's §0.4 method, as a median of five runs and a ratio in the same run):
+
+| Report section | Gap | Phase 2.1 | Measured |
+|---|---|---|---|
+| §10, across the suite | No undo, A/B or level-matched bypass | **Closed** (W): 100-step undo and redo, A/B with copy, level-matched Compare, in all nine plugins | 50 random edits undo and redo bit-exactly; Compare within 0.5 LU on a +6 dB EQ boost; no click switching A/B; nothing added with the window closed |
+| §5, EQ | No dynamic EQ | **Closed** (D): every bell, shelf, tilt and notch can be dynamic, Above or Below, with a sidechain | Within 0.2 dB of Range, no movement from a tone two octaves away, no zipper noise; 8 dynamic bands 0.98 % (target 1.5 %) |
+| §8, MultiComp | No upward compression, OTT's whole sound | **Closed** (U): upward compression per band with Max lift and Floor, global Depth and Time, a "Big squash" preset | The static curve within 0.3 dB of the formula; Depth 0 % is the plain band sum; upward adds about 1 % CPU on 4 bands |
+| §9, FIR | No adaptive noise tracking | **Closed** (A): Learned, Adaptive or Both, Martin's minimum statistics with tone holding | Follows a 10 dB rise in 2 s ± 25 % at every FFT size; a sustained sine loses under 0.5 dB; 1.13 × Learned's CPU |
+| §10 | Host compatibility (not in the report) | Offline rendering checked against playback, keys passed to the host, sidechain and latency handling, Steinberg's validator and a host harness in CI | Every plugin passes the validator's 47 tests and the harness's checks |
+
+Still open, as before: EQ mid/side, EQ Match and Natural Phase; MultiComp lookahead and mid/side (its CPU, about 2.3 % for 4 bands, is unchanged); FIR's machine-learning and resonance suppression; the Kicker, Exciter, Comp, Verb and Delay gaps; platforms other than Windows VST3. Phase 3 picks these up.
+
 ## What Phase 3.0 should do
 
 The prompt is in `docs/BUILD_PROMPT_PHASE3.md`. In order:

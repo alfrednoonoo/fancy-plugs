@@ -77,7 +77,7 @@ Start with Reduction at -12 to -18 dB. Going deeper removes more, but sounds mor
 The switch at the top of the card chooses where the noise profile comes from:
 
 - **Learned** (the default): learned once from a section with only noise, as above.
-- **Adaptive:** the plugin keeps estimating the noise while audio plays, so it follows noise that changes: a fan speeding up, room tone, traffic. There's nothing to learn. The card shows **Adapt speed** and a status: "Tracking", the estimated noise floor ("Noise floor ≈ −52 dB", the average from 100 Hz to 8 kHz) and, while it's holding back, "Speech/music held, not learned". On the graph the tracked profile is the dashed line.
+- **Adaptive:** the plugin keeps estimating the noise while audio plays, so it follows noise that changes: a fan speeding up, room tone, traffic. There's nothing to learn. The card shows **Adapt speed** and a status: "Tracking", the estimated noise floor ("Floor ≈ −52 dB", the average from 100 Hz to 8 kHz) and, while it's holding back, "Speech/music held, not learned". On the graph the tracked profile is the dashed line.
 - **Both:** each frequency uses whichever is higher, the learned profile or the tracked one, so the learned profile is a floor that tracking can only add to. The card has Learn and Adapt speed.
 
 **Adapt speed** (0.5-10 s, default 2 s) is how quickly the estimate follows a change. After the noise gets louder, the estimate catches up in about that time; when it gets quieter, it follows at once. Faster follows changing noise better; slower is steadier.

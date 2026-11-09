@@ -61,7 +61,7 @@ A sidechain still takes priority as the noise, as today. Reduction, Offset, Smoo
 
 - The Subtract card's title row gets a **Learned | Adaptive | Both** switch in the mode colour.
 - **Learned:** the card as today (Learn button, progress and hint).
-- **Adaptive:** the Learn button is hidden. The card shows an **Adapt speed** knob in the mode colour, and a status beside it: a green dot and "Tracking", "Noise floor ≈ −52 dB" (the estimate's average from 100 Hz to 8 kHz, in the graph's dB), and "Speech/music held, not learned" while bins are held.
+- **Adaptive:** the Learn button is hidden. The card shows an **Adapt speed** knob in the mode colour, and a status beside it: a green dot and "Tracking", "Floor ≈ −52 dB" (the estimate's average from 100 Hz to 8 kHz, in the graph's dB), and "Speech/music held, not learned" while bins are held.
 - **Both:** the Learn button and the Adapt speed knob, side by side, and the status line under them.
 - **Graph:** the adaptive estimate is drawn as a dashed line in the mode colour, above or beside the learned profile, which stays solid. Its legend entry reads "tracked profile".
 

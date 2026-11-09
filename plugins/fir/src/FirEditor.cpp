@@ -166,7 +166,8 @@ void FirEditor::LearnCard::paintTracking (juce::Graphics& g, int x, bool compact
     if (tracking)
     {
         const auto rounded = juce::roundToInt (floorDb);
-        g.drawText ((compact ? "Floor" : "Noise floor") + approx + (rounded < 0 ? minus : juce::String()) + juce::String (std::abs (rounded)) + " dB",
+        // "Floor", not "Noise floor": the card is too narrow for the dB after the longer label.
+        g.drawText (juce::String ("Floor") + approx + (rounded < 0 ? minus : juce::String()) + juce::String (std::abs (rounded)) + " dB",
                     x, 50, width, 14, juce::Justification::centredLeft, false);
     }
 

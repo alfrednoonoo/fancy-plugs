@@ -1,0 +1,4 @@
+# Phase 2.1 A, run 42544889902 (§0.4: median of 5 runs in one build, ratio to Learned in the same run).
+fir adaptive cpu (median of 5, 48 kHz, 128 samples, stereo, FFT 2048): Learned 1.582 %, Adaptive 1.783 % (1.13 x, target < 1.5 x)
+fir adaptive: residual variance, Learned 37.4 dB^2, Adaptive 38.6 dB^2 (limit 1.5 x Learned)
+# Run 42543375262, before M(D) was worked out once per frame: Learned 2.627 %, Adaptive 5.005 % (1.91 x).

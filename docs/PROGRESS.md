@@ -15,7 +15,7 @@
 
 Latest release run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42420703067 (commit `9b1ea24`, version 1.1.0): 230 test cases passed, and all eight plugins passed pluginval at strictness 10.
 
-Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42539096844, Phase 2.1 U: 337 test cases, Steinberg's validator, pluginval and the host harness passed for all nine plugins.
+Latest run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42544889902, Phase 2.1 A: 344 test cases, Steinberg's validator, pluginval and the host harness passed for all nine plugins. One more run follows for a shortened status label in FIR's card.
 
 ## Phase 2
 
@@ -40,7 +40,9 @@ The user set this order on 7 November 2026, and updated Phase 2.1 on 8 November 
    - W: **built, and green in CI**; the user approved both decisions on 8 November 2026 (below) and asked to start D. Its REAPER checks are still to run. Undo and redo, A/B, and level-matched Compare, for all nine plugins. Design note `docs/phase2_1-W.md`.
    - D: dynamic EQ. **Built, and green in CI**; waiting for the user's REAPER checks (`docs/eq-checklist.md`, "Dynamic bands"). Design note `docs/phase2_1-D.md`.
    - U: upward compression in MultiComp. **Built, and green in CI**; waiting for the user's REAPER checks (`docs/multicomp-checklist.md`, "Upward, Depth and Time"). Design note `docs/phase2_1-U.md`.
-   - A: adaptive noise tracking in FIR.
+   - A: adaptive noise tracking in FIR. **Built, and green in CI**; waiting for the user's REAPER checks (`docs/fir-checklist.md`, "Adaptive noise tracking"). Design note `docs/phase2_1-A.md`.
+
+   All six Phase 2.1 items are built and green. What's left is the user's checks: H's hosts (`docs/host-compat.md`), and the REAPER sections for W (every plugin), D (EQ), U (MultiComp) and A (FIR). The "Phase 2.1 results" section of `docs/research/2026-11-market-report-summary.md` records which gaps are closed.
 
    The controls mockup is `reference/phase2_1/14__phase2_1_controls.png`, and both mockups' source is in `design/phase2_1-mockup-src/`. The brief cites `docs/2026-11-market-report-detailed.md`, where the report is actually `docs/research/2026-11-market-report-detailed.md`.
 3. **Phase 3:** from `docs/BUILD_PROMPT_PHASE3.md`, a draft. Phase 2.1 now covers four of its items, so it keeps what's left:
@@ -321,6 +323,39 @@ Results:
 Notes:
 
 - **"Below 0 dBFS":** the shared true-peak limiter's ceiling is exactly 1.0, with a final clamp there, so Big squash's loudest samples sit at 0 dBFS (12 samples in 6 s of loud pink noise, 2 in the drum loop) and never over. Lowering the ceiling would change projects that use Limit output in Comp and MultiComp, so the test requires "never over".
+
+## Phase 2.1 A: adaptive noise tracking
+
+Design note: `docs/phase2_1-A.md`. Run: https://github.com/alfrednoonoo/fancy-plugs/actions/runs/42544889902.
+
+What changed:
+
+- **Parameters:** `source` (Learned, Adaptive, Both; Learned by default) and `adaptSpeed` (0.5-10 s, 2 s), appended.
+- **DSP (`SpectralEngine`):** Martin (2001) minimum statistics per bin, on the channels' average power in the learned profile's units: optimal smoothing, B_min and B_c bias compensation (plus a measured 4.2 dB calibration), and a minimum search over 8 sub-windows sized from Adapt speed in seconds, so it's independent of FFT size and hop. A bin is held while it stands 6 dB over its neighbourhoods on both sides, so tones and notes aren't learned. Both takes the larger of the learned and adaptive profiles per bin. The estimate is published on the profile grid every 20 ms, carried over FFT size changes, and not saved. Learned never runs the tracker.
+- **UI:** in the Subtract card, a Learned | Adaptive | Both switch in place of the title; Adaptive shows Adapt speed, "Tracking", the floor in dB and "Speech/music held, not learned"; Both adds Learn. The graph draws the tracked profile dashed, with a legend entry. Screenshot `fir-adaptive`, checked against panel 5.
+- **Docs:** "Learned, Adaptive or Both" in the FIR manual, a checklist section, a pointer in `docs/fir.md`.
+
+Results:
+
+| Check (§A.4) | Result |
+|---|---|
+| 1. Learned | Bit-identical with any Adapt speed; a state without the new IDs loads as Learned |
+| 2. Tracking, pink noise -50 then -40 dBFS, 2 s | Within 2 dB of the new level in 1.5-2.5 s at FFT 1024, 2048 and 8192; before the step, -50.68 dB against the learned -50.80 dB |
+| 3. Sine at -20 dBFS over -60 dBFS noise, 30 s | Loses under 0.5 dB |
+| 4. 300 ms tone bursts over constant noise | Estimate within 2 dB of the noise throughout |
+| 5. Musical noise | Adaptive 38.6 dB² against Learned 37.4 dB² (limit 1.5 ×) |
+| 6. CPU at FFT 2048 | 1.13 × Learned (limit 1.5 ×). `docs/measurements/fir-adaptive.txt` |
+| FFT size change | The estimate carries over within 1 dB |
+| Host | Offline render in Adaptive with Adapt speed automated: bit-identical with random blocks, and in real time outside the 1 s after each change |
+
+How it got there (five builds):
+
+1. **The estimate read 4 dB low, and a steady sine was learned as noise.** The sine had been in the first frame, which the estimator started from. It now starts each bin from the median of its neighbourhood when there's no profile.
+2. **Still 2.5-3 dB low on pink noise.** A model of the estimator in Python, with 75 % overlap as correlated periodograms, reproduced the CI figure and found the cause: the hold compared Martin's power, which by design stops smoothing when a frame deviates, with the estimate, so about 40 % of plain-noise bins were held at any time, and a held bin can only fall. The hold now compares a 200 ms power with its neighbourhoods instead, which holds none of white noise in the model.
+3. **Following a rise took 2.73 s at FFT 8192.** The window now allows for the sub-window a change lands in and the frame, about 9.5 sub-windows in all, so a rise is followed in Adapt speed at every size.
+4. **CPU was 1.91 × Learned.** Martin's M(D) table was looked up twice per bin per frame; it depends only on the window, so it's worked out once per frame: 1.13 ×.
+
+Layout note: the Subtract card is 178 px wide, too narrow for both "NOISE PROFILE" and the three-way switch on one row as panel 5 shows, so the switch takes the title's place. The status reads "Floor ≈ −52 dB" rather than "Noise floor" for the same reason.
 
 ## Market research and Phase 3 draft
 
