@@ -4,7 +4,7 @@ Brief: §Q2.1 of `docs/BUILD_PROMPT_PHASE3.md`. Both features are built once, in
 
 Q2.1 adds no host parameter and no DSP. Nothing on the audio thread changes, so saved projects load and render bit-identical, and CPU doesn't change. The saved state gains nothing a project needs: favourites and categories live in the preset folder, and the window size uses the existing `uiScale`, `uiWidth` and `uiHeight` properties. `stateVersion` stays at its current value.
 
-**Status:** the user accepted every recommended decision in §5 on 9 November 2026 and asked for a mockup first. The same day the user added the plugin's name at the top of every window, and chose a title strip (§3.3, option 2 of 3). Mockups: `reference/phase3/17a__preset_browser_kicker.png`, `17b__preset_browser_comp.png`, `17c__preset_browser_closeups.png` and `18__title_strip.png`, source `design/phase3-mockup-src/preset-browser.html`. No code until the mockup is approved.
+**Status:** the user accepted every recommended decision in §5 on 9 November 2026 and asked for a mockup first. The same day the user added the plugin's name at the top of every window, and chose a title strip (§3.2, option 2 of 3). Mockups: `reference/phase3/17a__preset_browser_kicker.png`, `17b__preset_browser_comp.png`, `17c__preset_browser_closeups.png` and `18__title_strip.png`, source `design/phase3-mockup-src/preset-browser.html`. No code until the mockup is approved.
 
 ## 1. Where the plugins stand
 
