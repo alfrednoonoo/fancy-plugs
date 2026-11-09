@@ -182,8 +182,9 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Vocal clean-up", "Clean-up" },
         { "Gentle expander", "Clean-up" },
         { "Kick tight", "Drums" },
-        { "Snare (with spill) Â· lookahead", "Drums" },
-        { "Tom (with spill) Â· lookahead", "Drums" },
+        // Written as UTF-8 escapes, as the presets' own names are, for the middle dot.
+        { "Snare (with spill) \xc2\xb7 lookahead", "Drums" },
+        { "Tom (with spill) \xc2\xb7 lookahead", "Drums" },
         { "Duck under kick", "Sidechain" },
         { "Drum trigger to MIDI", "Sidechain" },
     });
