@@ -63,8 +63,8 @@ void setCategories (std::vector<FactoryPreset>& presets, std::initializer_list<s
 {
     for (auto& preset : presets)
         for (const auto& [name, category] : categories)
-            if (preset.name == name)
-                preset.category = category;
+            if (preset.name == juce::String::fromUTF8 (name))
+                preset.category = juce::String::fromUTF8 (category);
 }
 
 juce::String PresetManager::Entry::getKey() const

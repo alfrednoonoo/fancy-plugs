@@ -182,6 +182,8 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Vocal clean-up", "Clean-up" },
         { "Gentle expander", "Clean-up" },
         { "Kick tight", "Drums" },
+        { "Snare (with spill) Â· lookahead", "Drums" },
+        { "Tom (with spill) Â· lookahead", "Drums" },
         { "Duck under kick", "Sidechain" },
         { "Drum trigger to MIDI", "Sidechain" },
     });

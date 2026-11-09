@@ -65,7 +65,7 @@ The search matches the starts of words in the name and the category, case-insens
 | Delay | Short: Slapback, Haas widener. Tempo: 1/8 dotted, 1/4 ping-pong, Triplet echo. Character: Lo-fi tape |
 | MultiComp | Bus: Gentle Glue. Drums: Drum Bus. Vocals: Vocal Smoother. Mastering: Master Linear, Multiband Limiter. Character: Big squash |
 | FIR | Tone: Gentle Tilt, De-mud. Restoration: Noise Reduction, Spectral Gate. Dynamics: Spectral Compressor |
-| Gate | Clean-up: Vocal clean-up, Gentle expander. Drums: Kick tight. Sidechain: Duck under kick, Drum trigger to MIDI |
+| Gate | Clean-up: Vocal clean-up, Gentle expander. Drums: Kick tight, Snare (with spill) · lookahead, Tom (with spill) · lookahead. Sidechain: Duck under kick, Drum trigger to MIDI |
 
 Names and categories are what Q2.1 adds. New factory presets come with each plugin's own Phase 3 item.
 
