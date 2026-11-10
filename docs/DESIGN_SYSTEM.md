@@ -199,14 +199,14 @@ Before its mockup is drawn:
 4. What goes in the footer and in the EDIT drawer.
 5. Its right column: Out, and which faders.
 
-For the mockup (Q5 step 2), draw the body with the Phase 2 kit (`design/phase2-mockup-src/common.css` and `lib.js`). The kit's header is 36 px, not the shared 53 px, and has no title strip, undo, A/B or Compare. So the mockup's top 73 px are a crop of a CI screenshot of a plugin with the same width, as the Q2.1 mockups were drawn over CI screenshots. That way the header in the mockup is the header that gets built.
+For the mockup (Q5 step 2), draw the body with the Phase 2 kit (`design/phase2-mockup-src/common.css` and `lib.js`). Approved 10 November 2026: the kit's header is 36 px, not the shared 53 px, and has no title strip, undo, A/B or Compare. So the mockup's top 73 px are a crop of a CI screenshot of a plugin with the same width, as the Q2.1 mockups were drawn over CI screenshots. That way the header in the mockup is the header that gets built.
 
 Then the CI screenshot is compared side by side with the mockup, and with one existing plugin of similar size (Delay or FIR for the Phase 2 class), as Q5 step 3 asks.
 
-### Proposed accents, for the user to decide
+### Accents of the new plugins (approved 10 November 2026)
 
 | New plugin | Proposed accent | Why |
 |---|---|---|
 | Fancy Saturator | orange `#E77E23` | unused as a plugin accent, and warm, which suits saturation |
 | Fancy De-esser | green `#2DCC70` | unused as a plugin accent, and far from Gate's yellow and Comp's teal on the same track |
-| Fancy Limiter | red `#E74D3D` | Kicker and Exciter use it, but a limiter is about the ceiling and clipping, which the suite already marks in red. Alternative: blue `#3598DB`, though blue means a filter knob elsewhere |
+| Fancy Limiter | red `#E74D3D` | Kicker and Exciter use it, but a limiter is about the ceiling and clipping, which the suite already marks in red. Red chosen over blue, which means a filter knob elsewhere |
