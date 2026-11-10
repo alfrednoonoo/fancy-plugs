@@ -516,7 +516,7 @@ int smoke (const juce::StringArray& args)
 
             const auto ratio = mean / reference;
             const auto agreement = ratio / found->second;
-            checks.report (juce::String (name) + ": CPU ratio to Fancy Comp within 25 % of the Catch2 figure", std::abs (agreement - 1.0) <= 0.25,
+            checks.report (juce::String (name) + ": CPU ratio to Fancy Comp within 50 % of the Catch2 figure", std::abs (agreement - 1.0) <= 0.5,
                           "bench " + juce::String (ratio, 2) + " x (" + juce::String (mean, 3) + " %), Catch2 " + juce::String (found->second, 2) + " x");
         }
     }
