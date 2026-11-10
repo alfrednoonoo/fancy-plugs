@@ -1,0 +1,8 @@
+Fancy DS, CI run 42891911825 (commit bad25b3), 48 kHz, 128-sample blocks, stereo, median of 5 in one build (Phase 2.1 section 0.4)
+ds cpu (median of 5): default (target < 1 %) 0.526 %, linear phase 1.684 %
+ds cpu reference: Fancy Comp default 0.349 % in the same run; ds default / comp = 1.51, linear phase / comp = 4.82
+ds default: bursts -6.64 dB, vowels -0.21 dB (spec: bursts at least 6 dB, vowels under 0.5 dB)
+ds relative: bursts at -30, -18, -6 dBFS cut by -6.64, -6.64, -6.64 dB (spec: within 1 dB)
+ds lookahead: 2 ms, first 1 ms of each burst -6.42 dB (spec: at least 3 dB)
+ds linear phase: bursts -5.26 dB (own test: at least 4 dB)
+latency at 48 kHz: 0 samples by default (measured 0 by the host harness); lookahead 48, 96 or 240; linear-phase split adds 2559

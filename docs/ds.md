@@ -110,7 +110,7 @@ One small addition to `fancy-core`: `ThresholdMeter::setReadoutNote`, a second r
 
 ## Latency
 
-0 by default. Lookahead adds 1, 2 or 5 ms. The linear-phase split adds the crossover's latency (partition + half its length; about 11 ms at 48 kHz in MultiComp's settings). The dry path for bypass is delayed to match. Changes fade out and in, as on Limit.
+0 by default. Lookahead adds 1, 2 or 5 ms. The linear-phase split adds the crossover's latency (partition + half its length: 2559 samples, 53.3 ms, at 48 kHz). The dry path for bypass is delayed to match. Changes fade out and in, as on Limit.
 
 ## State format
 
