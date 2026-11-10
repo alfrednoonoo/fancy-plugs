@@ -241,6 +241,11 @@ void DsDsp::processChunk (float* const* main, int numMain, const float* const* s
 
     std::array<std::array<float, maxChunk>, 2> delayed {};
     std::array<std::array<double, maxChunk>, 2> gains {};
+
+    // The split filter's settings at each sample: step 2 runs after step 1 has moved them on,
+    // and reading them there would tie the sound to where the host's blocks start.
+    std::array<fancy::dsp::SvfCoefficients, maxChunk> splitCoefficients;
+    std::array<double, maxChunk> splitWarped, splitQ;
     auto chunkReduction = 0.0;
 
     // 1. The detector and the gain, and the audio through the lookahead.
@@ -260,6 +265,10 @@ void DsDsp::processChunk (float* const* main, int numMain, const float* const* s
             updateFilters();
             filterCountdown = filterInterval;
         }
+
+        splitCoefficients[(size_t) i] = coefficients;
+        splitWarped[(size_t) i] = warpedFreq;
+        splitQ[(size_t) i] = bandQ;
 
         const auto l = (double) left[i];
         const auto r = right != nullptr ? (double) right[i] : l;
@@ -379,17 +388,18 @@ void DsDsp::processChunk (float* const* main, int numMain, const float* const* s
             }
             else if (activeShelf)
             {
-                band = splits[c].tick (coefficients, reference).high;
+                band = splits[c].tick (splitCoefficients[(size_t) i], reference).high;
             }
             else
             {
                 // The bell widens as it cuts deeper (Q times the square root of the gain), so
                 // Width marks where the cut is half its depth in dB, as an EQ's bell does.
+                const auto warped = splitWarped[(size_t) i];
                 fancy::dsp::SvfCoefficients bell;
-                bell.k = 1.0 / (bandQ * std::sqrt (std::max (gain, 1.0e-6)));
-                bell.a1 = 1.0 / (1.0 + warpedFreq * (warpedFreq + bell.k));
-                bell.a2 = warpedFreq * bell.a1;
-                bell.a3 = warpedFreq * bell.a2;
+                bell.k = 1.0 / (splitQ[(size_t) i] * std::sqrt (std::max (gain, 1.0e-6)));
+                bell.a1 = 1.0 / (1.0 + warped * (warped + bell.k));
+                bell.a2 = warped * bell.a1;
+                bell.a3 = warped * bell.a2;
                 band = bell.k * splits[c].tick (bell, reference).band;
             }
 

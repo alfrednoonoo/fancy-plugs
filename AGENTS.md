@@ -42,6 +42,8 @@ Saved projects from the current release must load and render bit-identical after
 
 Phase 3, from `docs/BUILD_PROMPT_PHASE3.md`, approved by the user on 9 November 2026, with what Phase 2.1 built trimmed out. Its order is in Q2: the benchmark host (Q1), then the shared features and design rules, then EQ, Comp and Verb, then the rest, then the new Limiter, De-esser and Saturator. Each item gets its design note approved before any code, and every new plugin goes through Q5's design rules and HTML mockup first.
 
+Phase 3's new plugins, from `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` (added 10 November 2026), come before EQ, Comp and Verb, in this order: Fancy Limit (done), Fancy DS, Fancy Saturate, Kicker's Sub mode, Fancy Room. Mockups are `reference/phase3/17__ds_mockup.png` to `21__kicker_sub_mockup.png`, with source and the updated kit in `design/phase3-mockup-src/`. Every new plugin follows `docs/DESIGN_SYSTEM.md`.
+
 Write `docs/<plugin>.md` before coding each plugin: DSP algorithm, parameters (range, default, unit, skew), latency, state format, and how each §5 fix is handled.
 
 ## Working rules
@@ -56,7 +58,7 @@ There is no local compiler and there never will be one. Every build runs on GitH
 
 - Loop: edit, commit, push, `gh run watch`; on failure read `gh run view --log-failed`, fix, push.
 - Never say something builds or passes until the Actions run for that commit is green.
-- Batch related changes into one push; the private repo has about 1,200 Windows minutes a month.
+- Batch related changes into one push. The repo has been public since 10 November 2026, so its standard runners cost nothing, but each run still takes 10 to 20 minutes.
 - UI: download `screens-<sha>` with `gh run download` and compare it to `reference/` before claiming a match.
 - Install on the PC with `scripts\get-latest.ps1`, into `%USERPROFILE%\VST3-Dev`. Never write to `C:\Program Files`.
 - The only test on the user's machine is listening in REAPER.
