@@ -101,6 +101,7 @@ private:
 
     // Filters: one detector per channel, and the minimum-phase split per audio channel.
     fancy::dsp::SvfCoefficients coefficients;
+    double warpedFreq = 0.4, bandQ = 1.414;
     std::array<fancy::dsp::Svf, 2> detectors, splits;
     fancy::dsp::Smoother logFreq, width;
     int filterCountdown = 0;

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 
 namespace
 {
@@ -110,6 +111,7 @@ void DsDsp::reset()
     for (auto& follower : followers) follower.reset();
 
     peakDb = { -200.0, -200.0 };
+    filterCountdown = 0;
     meanSquare = { 0.0, 0.0 };
     holdLeft = { 0, 0 };
     holdOffSamples = 0;
@@ -141,7 +143,10 @@ void DsDsp::snapToTargets (const Targets& targets) noexcept
 
 void DsDsp::updateFilters() noexcept
 {
-    coefficients.set (std::exp2 (logFreq.getCurrent()), current.shelf ? 0.7071 : qForWidth (width.getCurrent()), rate);
+    const auto hz = std::exp2 (logFreq.getCurrent());
+    bandQ = current.shelf ? 0.7071 : qForWidth (width.getCurrent());
+    warpedFreq = std::tan (std::numbers::pi * hz / rate);
+    coefficients.set (hz, bandQ, rate);
 }
 
 void DsDsp::updateLinearDesign (const Targets& targets) noexcept
@@ -372,10 +377,20 @@ void DsDsp::processChunk (float* const* main, int numMain, const float* const* s
 
                 band = bandScratch[(size_t) ((1 * 2 + (int) c) * maxChunk + i)];
             }
+            else if (activeShelf)
+            {
+                band = splits[c].tick (coefficients, reference).high;
+            }
             else
             {
-                const auto out = splits[c].tick (coefficients, reference);
-                band = activeShelf ? out.high : coefficients.k * out.band;
+                // The bell widens as it cuts deeper (Q times the square root of the gain), so
+                // Width marks where the cut is half its depth in dB, as an EQ's bell does.
+                fancy::dsp::SvfCoefficients bell;
+                bell.k = 1.0 / (bandQ * std::sqrt (std::max (gain, 1.0e-6)));
+                bell.a1 = 1.0 / (1.0 + warpedFreq * (warpedFreq + bell.k));
+                bell.a2 = warpedFreq * bell.a1;
+                bell.a3 = warpedFreq * bell.a2;
+                band = bell.k * splits[c].tick (bell, reference).band;
             }
 
             // At a gain of exactly 1, (gain - 1) is exactly 0 and the output is the input.
