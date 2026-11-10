@@ -173,6 +173,7 @@ TEST_CASE ("TruePeakLimiter: a shorter window keeps the latency and still holds 
     settings.minWindow = 1;
     settings.window = window;
     settings.shape = shape;
+    settings.alignedSamplePeak = true;
 
     fancy::dsp::TruePeakLimiter limiter;
     limiter.prepare (rate, settings);
@@ -414,6 +415,7 @@ TEST_CASE ("Limit: Listen plays what the limiter removes", "[limit]")
 
     // Limited plus removed is the input pushed up 12 dB, delayed.
     LimitDsp dsp;
+    dsp.setTargets (targets);
     dsp.prepare (rate);
     const auto latency = dsp.getLatencySamples();
     auto worst = 0.0;
@@ -538,7 +540,8 @@ TEST_CASE ("TruePeakMeter: sines read their true amplitude within 0.2 dB", "[lim
     std::vector<float> x (48000);
 
     for (int i = 0; i < (int) x.size(); ++i)
-        x[(size_t) i] = (float) (0.5 * std::sin (2.0 * pi * hz * i / rate + phase));
+        x[(size_t) i] = (float) (0.5 * std::sin (2.0 * pi * hz * i / rate + phase)
+                                 * (i < 960 ? 0.5 - 0.5 * std::cos (pi * i / 960.0) : 1.0));   // faded in, so the onset doesn't ring
 
     meter.process (x.data(), x.data(), (int) x.size());
 

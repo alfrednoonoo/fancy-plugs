@@ -48,6 +48,10 @@ public:
 
         // Off: sample peaks only.
         bool truePeak = true;
+
+        // Also checks the sample the interpolator centres on. Comp's v1.2.0 limiter doesn't, and
+        // leaves a sharp sample peak to its final clamp; Limit does, so the gain catches it.
+        bool alignedSamplePeak = false;
     };
 
     void prepare (double sampleRate)
@@ -411,6 +415,9 @@ private:
         samples[(size_t) historyPosition] = in;
 
         auto peak = std::abs (in);
+
+        if (current.alignedSamplePeak)
+            peak = std::max (peak, std::abs (samples[(size_t) ((historyPosition + historySize - interpolatorDelay) % historySize)]));
 
         for (const auto& phase : taps)
         {

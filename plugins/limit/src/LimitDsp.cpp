@@ -37,6 +37,7 @@ fancy::dsp::TruePeakLimiter::Settings LimitDsp::limiterSettings (const Targets& 
     settings.link = targets.link;
     settings.shape = targets.style == punchy ? Shape::punchy : Shape::smooth;
     settings.truePeak = targets.truePeak;
+    settings.alignedSamplePeak = true;
 
     return settings;
 }
