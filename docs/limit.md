@@ -51,7 +51,7 @@ It gets a `Settings` struct, set from the message thread through an atomic snaps
 
 The spec asks for a smooth, Hann-shaped gain envelope over the lookahead window. A true Hann-weighted average over 5 ms costs one multiply per window sample per output sample: 240 at 48 kHz, 960 at 4× oversampling. That doesn't fit the 2 % CPU target.
 
-**Decision 1 (I recommend A):**
+**Decision 1: A, approved by the user on 10 November 2026.**
 
 - **A. Three cascaded moving averages, each a third of the window.** The result is a quadratic B-spline: a bell with smooth ends like a Hann window, though not identical (the largest difference is about 12 % of the peak, measured), at a fixed cost of three adds per sample, whatever the window length. It keeps the core's guarantee: the sliding minimum covers the whole window, so the gain is at its target when the peak arrives.
 - **B. Exact Hann** with a recursive (sliding-DFT) form. That's O(1) too, but it drifts numerically and needs a periodic exact recompute. It's more code for an audibly identical result.
@@ -120,7 +120,7 @@ Styles only change the core's internal shapes. All four knobs keep working in ev
 | Punchy | two cascaded averages over the last 60 % of Lookahead | as set, with a 1 ms hold-free start | the gain falls later and faster, so a transient's front keeps more of its shape; the ceiling still holds |
 | Dense | as Clean | × 0.5, and Auto release leans to the fast side | more consistent loudness, more density |
 
-**Decision 2:** Punchy as above, where transients come through by starting the gain reduction later in the lookahead window, not by letting anything pass the ceiling. "Lets very short transients through more" can't mean above the ceiling, because the True peak test would fail. I recommend this reading.
+**Decision 2, approved by the user on 10 November 2026:** Punchy as above, where transients come through by starting the gain reduction later in the lookahead window, not by letting anything pass the ceiling. "Lets very short transients through more" can't mean above the ceiling, because the True peak test would fail. I recommend this reading.
 
 ## Auto release
 
