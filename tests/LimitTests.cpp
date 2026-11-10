@@ -460,7 +460,17 @@ struct Segment
     double seconds, dbfs;
 };
 
-fancy::dsp::LoudnessMeter measure (const std::vector<Segment>& segments, double rate = 48000.0)
+struct Reading
+{
+    double momentary, shortTerm, integrated, range;
+
+    double getMomentary() const { return momentary; }
+    double getShortTerm() const { return shortTerm; }
+    double getIntegrated() const { return integrated; }
+    double getRange() const { return range; }
+};
+
+Reading measure (const std::vector<Segment>& segments, double rate = 48000.0)
 {
     fancy::dsp::LoudnessMeter meter;
     meter.prepare (rate);
@@ -488,7 +498,7 @@ fancy::dsp::LoudnessMeter measure (const std::vector<Segment>& segments, double 
         }
     }
 
-    return meter;
+    return { meter.getMomentary(), meter.getShortTerm(), meter.getIntegrated(), meter.getRange() };
 }
 } // namespace
 
