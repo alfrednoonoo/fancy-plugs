@@ -255,6 +255,7 @@ TEST_CASE ("Limit: true peak stays under Ceiling + 0.1 dB, 30 dB over, by an ind
     Stereo input ((int) (seconds * rate));
     std::mt19937 random (7);
     std::normal_distribution<double> noise (0.0, 0.1);
+    double noiseState[2] {};
     const char* names[] { "997 Hz", "11.025 kHz at a quarter-sample phase", "fs/4 at 45 degrees", "square wave", "dense mix" };
 
     for (int i = 0; i < input.size(); ++i)
@@ -269,9 +270,17 @@ TEST_CASE ("Limit: true peak stays under Ceiling + 0.1 dB, 30 dB over, by an ind
             case 2: x = 0.5 * std::sin (2.0 * pi * (rate / 4.0) * t + pi / 4.0); break;
             case 3: x = std::fmod (t * 220.0, 1.0) < 0.5 ? 0.4 : -0.4; break;
             default:
+            {
+                // Noise rolled off above about 10 kHz, as a mix's top end is, not flat to Nyquist.
+                const auto coefficient = 1.0 - std::exp (-2.0 * pi * 10000.0 / rate);
+                const auto white = noise (random) * ((i / 2205) % 3 == 0 ? 1.0 : 0.3);
+                noiseState[0] += (white - noiseState[0]) * coefficient;
+                noiseState[1] += (noiseState[0] - noiseState[1]) * coefficient;
+
                 x = 0.2 * std::sin (2.0 * pi * 55.0 * t) + 0.15 * std::sin (2.0 * pi * 1250.0 * t)
-                  + 0.1 * std::sin (2.0 * pi * 7300.0 * t) + noise (random) * ((i / 2205) % 3 == 0 ? 1.0 : 0.3);
+                  + 0.1 * std::sin (2.0 * pi * 7300.0 * t) + 2.0 * noiseState[1];
                 break;
+            }
         }
 
         input.left[(size_t) i] = (float) x;

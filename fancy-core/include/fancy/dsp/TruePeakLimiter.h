@@ -52,6 +52,11 @@ public:
         // Also checks the sample the interpolator centres on. Comp's v1.2.0 limiter doesn't, and
         // leaves a sharp sample peak to its final clamp; Limit does, so the gain catches it.
         bool alignedSamplePeak = false;
+
+        // The true-peak interpolator: taps (16 or 32) and phases between samples (3 is 4x, 7 is
+        // 8x). Comp's is 16 and 3. Fixed by prepare(): it sets the latency.
+        int interpolatorTaps = 16;
+        int interpolatorPhases = 3;
     };
 
     void prepare (double sampleRate)
@@ -64,6 +69,10 @@ public:
     {
         rate = sampleRate;
         current = settings;
+
+        historySize = settings.interpolatorTaps >= maxTaps ? maxTaps : 16;
+        interpolatorDelay = historySize / 2;
+        phases = std::clamp (settings.interpolatorPhases, 1, maxPhases);
 
         window = resolveWindow (settings);
         maxWindow = std::max (window, settings.maxWindow);
@@ -228,9 +237,9 @@ public:
     }
 
 private:
-    static constexpr int historySize = 16;
-    static constexpr int interpolatorDelay = historySize / 2;
-    static constexpr int phases = 3;
+    static constexpr int maxTaps = 32, maxPhases = 7;
+
+    int historySize = 16, interpolatorDelay = 8, phases = 3;
 
     // Minimum of the last length + 1 values, using a monotonic queue.
     struct SlidingMinimum
@@ -419,8 +428,9 @@ private:
         if (current.alignedSamplePeak)
             peak = std::max (peak, std::abs (samples[(size_t) ((historyPosition + historySize - interpolatorDelay) % historySize)]));
 
-        for (const auto& phase : taps)
+        for (int p = 0; p < phases; ++p)
         {
+            const auto& phase = taps[(size_t) p];
             double sum = 0.0;
 
             for (int tap = 0; tap < historySize; ++tap)
@@ -446,8 +456,8 @@ private:
     std::array<double, 2> sustainCoefficients { 0.0001, 0.001 };
 
     std::array<std::vector<double>, 2> delayLines, gainDelays;
-    std::array<std::array<double, historySize>, 2> history {};
-    std::array<std::array<double, historySize>, phases> taps {};
+    std::array<std::array<double, maxTaps>, 2> history {};
+    std::array<std::array<double, maxTaps>, maxPhases> taps {};
     std::array<Pipeline, 2> pipelines;
     std::array<double, 2> lastGain { 1.0, 1.0 };
 

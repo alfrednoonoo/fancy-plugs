@@ -42,9 +42,24 @@ fancy::dsp::TruePeakLimiter::Settings LimitDsp::limiterSettings (const Targets& 
     return settings;
 }
 
+fancy::dsp::TruePeakLimiter::Settings LimitDsp::guardSettings (const Targets& targets, double baseRate) noexcept
+{
+    fancy::dsp::TruePeakLimiter::Settings settings;
+    settings.window = settings.maxWindow = std::max (1, (int) std::lround (0.001 * baseRate));
+    settings.minWindow = 1;
+    settings.releaseMs = 50.0;
+    settings.shape = fancy::dsp::TruePeakLimiter::Shape::smooth;
+    settings.truePeak = targets.truePeak;
+    settings.alignedSamplePeak = true;
+    settings.interpolatorTaps = 32;
+    settings.interpolatorPhases = 7;
+    return settings;
+}
+
 void LimitDsp::prepare (double sampleRate)
 {
     rate = sampleRate;
+    guard.prepare (sampleRate, guardSettings (current, sampleRate));
 
     for (int index = 0; index < 4; ++index)
     {
@@ -105,7 +120,7 @@ void LimitDsp::prepare (double sampleRate)
 int LimitDsp::latencyFor (int oversamplingIndex, bool linearPhase) const noexcept
 {
     const auto factor = 1 << oversamplingIndex;
-    const auto core = limiters[(size_t) oversamplingIndex].getLatencySamples() / factor;
+    const auto core = limiters[(size_t) oversamplingIndex].getLatencySamples() / factor + guard.getLatencySamples();
 
     if (oversamplingIndex == osOff)
         return core;
@@ -125,6 +140,8 @@ void LimitDsp::reset()
 {
     for (auto& limiter : limiters)
         limiter.reset();
+
+    guard.reset();
 
     for (auto& oversampler : oversamplers)
         if (oversampler != nullptr)
@@ -160,6 +177,7 @@ void LimitDsp::snapToTargets (const Targets& targets) noexcept
 
     const auto factor = 1 << active.oversampling;
     limiterFor (active).setSettings (limiterSettings (targets, rate * factor, factor, rate));
+    guard.setSettings (guardSettings (targets, rate));
 }
 
 void LimitDsp::process (float* const* channels, int numChannels, int numSamples) noexcept
@@ -237,6 +255,7 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
     const auto factor = 1 << active.oversampling;
     auto& limiter = limiterFor (active);
     limiter.setSettings (limiterSettings (settings, rate * factor, factor, rate));
+    guard.setSettings (guardSettings (settings, rate));
 
     const auto margin = settings.truePeak ? dbToGain (-truePeakMarginDb) : 1.0;
     inputGain.setTarget (dbToGain (-settings.thresholdDb));
@@ -302,7 +321,18 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
             limit (a[i], b[i], i);
     }
 
-    // 3. Back to the ceiling's scale, the final clip at Ceiling, then the meters.
+    // 3. The true-peak guard, back to the ceiling's scale, the final clip at Ceiling, then the meters.
+    for (int i = 0; i < numSamples; ++i)
+    {
+        double l = a[i], r = b[i];
+        guard.process (l, r, settings.listen ? 0.0 : 1.0);
+        a[i] = (float) l;
+        b[i] = (float) r;
+
+        const auto gain = (float) std::min (guard.getLastGain (0), guard.getLastGain (1));
+        reductions[(size_t) i] = std::min (reductions[(size_t) i], settings.listen ? 1.0f : gain);
+    }
+
     auto smallestGain = 1.0f;
 
     for (int i = 0; i < numSamples; ++i)

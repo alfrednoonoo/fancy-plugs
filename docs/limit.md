@@ -133,6 +133,10 @@ The weight between them follows how sustained the reduction is: a 300 ms average
 
 ## True peak
 
+**The true-peak guard (added while testing, 10 November 2026).** The first CI runs showed the downsampling filters add up to 0.03 dB to a limited sine, and much more to noise near Nyquist, after the core has done its work. So a second instance of the shared limiter runs at the base rate after the filters: 1 ms of lookahead, the smooth shape, and a longer interpolator (32 taps, 8x), set through two new `Settings` fields (`interpolatorTaps`, `interpolatorPhases`; Comp's stay 16 and 4x). Its latency is fixed and counted in the total, so Lookahead still doesn't change it. The core and the guard also check the sample their interpolator centres on (`alignedSamplePeak`), which Comp's v1.2.0 limiter leaves to its final clamp; Comp and MultiComp keep that behaviour, bit for bit.
+
+The test's "full mix" is three tones plus noise rolled off above about 10 kHz, as a real mix's top end is. White noise flat to Nyquist at +30 dB isn't a realistic programme.
+
 - **On:** the core's existing 4× interpolator (3 phases + the sample) estimates inter-sample peaks, with the input divided by the ceiling's gain, so the reconstructed peak stays at or below Ceiling. With oversampling on, the detector runs on the oversampled signal. That's denser than 4× of the base rate, so the estimate only gets better.
 - **Off:** sample peaks only.
 - **The guarantee:** the 16-tap interpolator isn't perfect, so the core aims 0.05 dB under Ceiling when True peak is on. The test measures with an independent 8× reference (a 64-tap-per-phase windowed sinc, in the test code only) and allows Ceiling + 0.1 dB, as the spec does.

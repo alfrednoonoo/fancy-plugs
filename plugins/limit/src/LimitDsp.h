@@ -70,6 +70,7 @@ public:
 
     // The settings the shared limiter gets for these targets, at this oversampled rate.
     static fancy::dsp::TruePeakLimiter::Settings limiterSettings (const Targets& targets, double rate, int factor, double baseRate) noexcept;
+    static fancy::dsp::TruePeakLimiter::Settings guardSettings (const Targets& targets, double baseRate) noexcept;
 
 private:
     using Oversampler = juce::dsp::Oversampling<float>;
@@ -97,6 +98,10 @@ private:
 
     // One limiter per oversampling factor, each prepared at its own rate.
     std::array<fancy::dsp::TruePeakLimiter, 4> limiters;
+
+    // The true-peak guard: the same shared limiter at the base rate, after the downsampling
+    // filters, with a longer interpolator. It catches the peaks those filters add.
+    fancy::dsp::TruePeakLimiter guard;
     std::array<std::unique_ptr<Oversampler>, 6> oversamplers;   // 2x, 4x, 8x, each minimum and linear phase
     std::array<int, 6> oversamplerLatencies {};
 
