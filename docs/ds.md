@@ -51,7 +51,7 @@ The spec has three level controls: the right column's **Gain** fader, EDIT's **O
 - **Source:** Main L+R, Mid, Side, L or R; or Sidechain L+R, L or R. L+R and Link channels take the louder channel's level. With Link channels off, each channel has its own detector and its own gain (Main L+R and Sidechain L+R only; the single-channel and Mid/Side sources drive both channels).
 - **Filter:** Band is a 2nd-order band-pass at Freq with Width (0.3–3 octaves). Shelf is a 2nd-order high-pass at Freq, and Width is locked with a hint.
 - **Level:** the peak of the filtered signal in dB, held for 1 ms, then released at 20 dB/s, so short "s" transients are caught whole.
-- **Relative threshold** (default on): the level is measured against the **full-band** level of the same source, as a 50 ms RMS in dB. The threshold then means "this many dB below the voice". The meter and its read-out say "dB rel". Off, it's against 0 dBFS. The full-band level has a floor of -60 dBFS, so silence between phrases can't make breath noise look loud.
+- **Relative threshold** (default on): the level is measured against the **full-band** level of the same source, as a 50 ms RMS in dB. The threshold then means "this many dB below the voice". The meter's read-out says "relative" under the value. Off, it's against 0 dBFS. The full-band level has a floor of -60 dBFS, so silence between phrases can't make breath noise look loud.
 
 ## Gain computer
 
@@ -106,7 +106,7 @@ From the mockup at 100 %: **760 × 445** (53 px header + 392 px body), and 465 w
 - **Right column,** 100 px as in the mockup: Out (no scale, as on Delay and FIR) and the teal Gain fader.
 - **EDIT drawer:** Lookahead and Split filter.
 
-One small addition to `fancy-core`: `ThresholdMeter::setReadoutSuffix`, so the read-out can say "-28.0 dB rel". Gate's and Limit's read-outs don't change.
+One small addition to `fancy-core`: `ThresholdMeter::setReadoutNote`, a second read-out line, so the meter says "-28.0 dB" with "relative" under it. "-28.0 dB rel" on one line didn't fit the 66 px column. Gate's and Limit's read-outs don't change.
 
 ## Latency
 

@@ -139,8 +139,8 @@ public:
     // The close threshold drawn dashed, and read out below. Only in the gate style.
     void setCloseDb (float db);
 
-    // Text after the read-out's value in the gate style, such as " rel" (Fancy DS).
-    void setReadoutSuffix (const juce::String& suffix);
+    // A second read-out line in the gate style, such as "relative" (Fancy DS). A close threshold takes its place.
+    void setReadoutNote (const juce::String& note);
 
     void paint (juce::Graphics&) override;
     juce::Colour getAccentColour() const override { return meterStyle.accent; }
@@ -154,7 +154,7 @@ private:
     MeterChannel channels[2];
     bool isCompressing = false;
     float closeDb = -200.0f;
-    juce::String readoutSuffix;
+    juce::String readoutNote;
 };
 
 // Gain reduction falling from the top: a stereo pair with a scale and one readout per channel,

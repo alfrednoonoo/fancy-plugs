@@ -370,7 +370,7 @@ DsEditor::DsEditor (DsProcessor& processor)
     modeSegments.setTooltip ("Split turns down only the sibilance band. Wide turns down the whole signal.");
 
     // Left column.
-    thresholdMeter.setBounds (8, columnY, 66, 282);
+    thresholdMeter.setBounds (8, columnY, 66, 298);
     thresholdMeter.setTooltip ("Threshold: how loud the sibilance band must get before it's turned down.");
     gainMeter.setBounds (78, columnY, 34, 290);
     gainMeter.setBarColour (dsGreen);
@@ -462,7 +462,7 @@ void DsEditor::updateLocks()
 
     widthKnob.setLocked (targets.shelf, widthHint);
     widthKnob.setAlpha (targets.shelf ? 0.5f : 1.0f);
-    thresholdMeter.setReadoutSuffix (targets.relative ? " rel" : juce::String {});
+    thresholdMeter.setReadoutNote (targets.relative ? "relative" : juce::String {});
 }
 
 void DsEditor::onTick (float seconds)

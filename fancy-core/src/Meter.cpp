@@ -397,7 +397,14 @@ void ThresholdMeter::paint (juce::Graphics& g)
 
         g.setFont (font (Weight::regular, style.readoutTextHeight));
         g.setColour (style.accent);
-        g.drawText (getValueText() + readoutSuffix, juce::Rectangle<float> (0.0f, readoutTop, bounds.getWidth(), 14.0f), juce::Justification::centred, false);
+        g.drawText (getValueText(), juce::Rectangle<float> (0.0f, readoutTop, bounds.getWidth(), 14.0f), juce::Justification::centred, false);
+
+        // A note, such as Fancy DS's "relative", takes the second line when there's no close threshold.
+        if (readoutNote.isNotEmpty() && closeDb <= -199.0f)
+        {
+            g.setColour (colours::textSecondary);
+            g.drawText (readoutNote, juce::Rectangle<float> (0.0f, readoutTop + 14.0f, bounds.getWidth(), 14.0f), juce::Justification::centred, false);
+        }
 
         // Fancy Limit has no close threshold, so it never sets one.
         if (closeDb > -199.0f)
@@ -415,11 +422,11 @@ void ThresholdMeter::paint (juce::Graphics& g)
     g.drawText (getValueText(), bounds.withTop (bounds.getBottom() - 23.0f), juce::Justification::centred, false);
 }
 
-void ThresholdMeter::setReadoutSuffix (const juce::String& suffix)
+void ThresholdMeter::setReadoutNote (const juce::String& note)
 {
-    if (suffix != readoutSuffix)
+    if (note != readoutNote)
     {
-        readoutSuffix = suffix;
+        readoutNote = note;
         repaint();
     }
 }
