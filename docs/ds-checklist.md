@@ -15,7 +15,11 @@
 ## De-essing
 
 - [ ] Play the vocal: the GR meter and the green fill at the top of the history move on the "s" sounds, and hardly at all on vowels. The "s" sounds are softer and the voice isn't dull or lispy.
-- [ ] Tick **Listen**: you hear mostly the "s" sounds. Drag the blue handle on the ruler: what you hear moves up and down in pitch. Drag the green bar's edge: the band gets wider or narrower, and Width follows. Untick Listen.
+- [ ] Tick **Listen**: you hear mostly the "s" sounds, the checkbox is filled green, and the title strip reads **FANCY DS** followed by a green **LISTENING** tag. Drag the blue handle on the ruler: what you hear moves up and down in pitch. Drag the green bar's edge: the band gets wider or narrower, and Width follows.
+- [ ] With Listen still on, close the plugin window: the vocal sounds normal again. Open the window: Listen is unticked and the tag is gone.
+- [ ] Tick Listen, save the project, and reopen it: Listen is off. Tick it, pick a preset: Listen is off.
+- [ ] Tick Listen, then press Ctrl+Z and switch A and B: Listen stays on, and Ctrl+Z undoes your last real change instead. Untick Listen.
+- [ ] Open the track's envelope list (the Envelopes button): Listen isn't there.
 - [ ] Click in the history: the green Threshold line jumps there, and the Threshold handle moves with it.
 - [ ] Turn Range to 0 dB: nothing is cut. Back to -12.
 - [ ] Lower the item's volume by 12 dB (its volume handle, which comes before the FX) with Relative threshold on: the "s" sounds are still caught about as much.

@@ -335,7 +335,7 @@ DsEditor::DsEditor (DsProcessor& processor)
       attackKnob (parameter ("attack"), "Attack", dsGreen, Knob::tightStyle),
       releaseKnob (parameter ("release"), "Release", dsGreen, Knob::tightStyle),
       relativeCheckbox (parameter ("relative"), "Relative threshold", dsGreen),
-      listenCheckbox (parameter ("listen"), "Listen", dsGreen),
+      listenCheckbox (getFancyProcessor(), "Listen", dsGreen),
       linkCheckbox (parameter ("link"), "Link channels", dsGreen),
       editLink (dsGreen),
       outMeter (outGeometry),
@@ -402,12 +402,15 @@ DsEditor::DsEditor (DsProcessor& processor)
     linkCheckbox.setBounds (leftX + 248, footerY, 120, 20);
     editLink.setBounds (contentRight - 64, footerY - 2, 64, 24);
 
-    for (auto* checkbox : { &relativeCheckbox, &listenCheckbox, &linkCheckbox })
+    for (auto* checkbox : { &relativeCheckbox, &linkCheckbox })
         checkbox->setLabelHeight (labelHeight);
+
+    listenCheckbox.setLabelHeight (labelHeight);
 
     relativeCheckbox.setTooltip ("Compares the sibilance band with the whole voice, so quiet and loud passages are treated alike. "
                                  "Threshold is then in dB below the voice.");
-    listenCheckbox.setTooltip ("Plays only what's being taken away, so you can hear whether it's catching \"s\" sounds or real consonants.");
+    listenCheckbox.setTooltip ("Plays only what's being taken away, so you can hear whether it's catching \"s\" sounds or real consonants. "
+                               "Turns off when you close this window, and is never saved.");
     linkCheckbox.setTooltip ("Both channels are turned down together, on the louder one.");
 
     // Right column.

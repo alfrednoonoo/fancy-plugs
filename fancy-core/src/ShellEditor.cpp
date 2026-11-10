@@ -128,6 +128,7 @@ ShellEditor::ShellEditor (FancyProcessor& processor, int baseWidth, int baseHeig
       powerPill (*processor.getApvts().getParameter ("bypass"))
 {
     setLookAndFeel (&lookAndFeel.get());
+    processor.editorOpened();
 
     addAndMakeVisible (titleStrip);
     addAndMakeVisible (root);
@@ -186,6 +187,9 @@ ShellEditor::~ShellEditor()
     fancyProcessor.compare.setMeasuring (false);
     fancyProcessor.compare.setOn (false);
     fancyProcessor.getWorkflow().commit();
+
+    // So is a listen or preview switch (§0.3).
+    fancyProcessor.editorClosed();
 
     popups.clear();
     setLookAndFeel (nullptr);
@@ -445,6 +449,7 @@ void ShellEditor::setTitleColour (juce::Colour colour)
 void ShellEditor::refreshTitle()
 {
     titleStrip.setTitle (fancyProcessor.getName(), titleColour.value_or (getAccentColour()));
+    titleStrip.setListening (fancyProcessor.isListening());
 }
 
 void ShellEditor::layoutHeader()

@@ -109,6 +109,23 @@ bool renderPlugin (const juce::String& slug, const juce::File& outputDir)
     return writeBothScales (*editor, slug + "-edit", outputDir) && mainOk;
 }
 
+// The main view with the listen or preview switch on: the filled checkbox and the title strip's
+// LISTENING tag (§0.3 of docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md).
+template <typename Processor, typename Editor>
+bool renderListening (const juce::String& slug, const juce::File& outputDir)
+{
+    Processor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<Editor*> (base.get());
+
+    if (editor == nullptr)
+        return false;
+
+    processor.setListening (true);
+    editor->showPreview (false);
+    return writeBothScales (*editor, slug + "-listening", outputDir);
+}
+
 #if FANCY_HAS_EQ
 bool renderEq (const juce::File& outputDir)
 {
@@ -500,6 +517,7 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_DS
     ok = renderPlugin<DsProcessor, DsEditor> ("ds", outputDir) && ok;
+    ok = renderListening<DsProcessor, DsEditor> ("ds", outputDir) && ok;
    #endif
 
     Gallery gallery;

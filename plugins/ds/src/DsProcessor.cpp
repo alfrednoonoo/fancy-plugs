@@ -67,7 +67,6 @@ fancy::FancyProcessor::Layout createLayout()
 
     layout.add (std::make_unique<Choice> (juce::ParameterID { "mode", 1 }, "Mode", juce::StringArray { "Split", "Wide" }, 0));
     layout.add (toggle ("relative", "Relative threshold", true));
-    layout.add (toggle ("listen", "Listen", false));
     layout.add (toggle ("link", "Link channels", true));
 
     // These change the latency, so they're deliberate settings, not something automation flips.
@@ -151,7 +150,7 @@ DsDsp::Targets DsProcessor::readTargets() const
     targets.detector = juce::roundToInt (read ("detector"));
     targets.wide = isOn ("mode");
     targets.relative = isOn ("relative");
-    targets.listen = isOn ("listen");
+    targets.listen = isListening();
     targets.link = isOn ("link");
     targets.lookahead = juce::roundToInt (read ("lookahead"));
     targets.linearPhase = isOn ("splitPhase");

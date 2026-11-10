@@ -423,6 +423,9 @@ void PresetManager::load (const Entry& entry)
 {
     const FancyProcessor::UserEdit edit (owner, "Load preset");
 
+    // A listen or preview switch is always off after a preset loads (§0.3).
+    owner.setListening (false);
+
     if (! entry.isUser)
     {
         if (entry.factoryIndex < 0 || entry.factoryIndex >= (int) factory.size())

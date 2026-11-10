@@ -9,6 +9,11 @@
 #include <memory>
 #include <vector>
 
+namespace fancy
+{
+class FancyProcessor;
+}
+
 namespace fancy::ui
 {
 
@@ -280,6 +285,33 @@ private:
     juce::Colour accentColour, pulseColour;
     float labelHeight = 14.0f;
     float pulseLeft = 0.0f, pulseLength = 1.0f;
+};
+
+// The checkbox for a plugin's listen or preview switch (FancyProcessor::setListening, §0.3 of
+// docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md). Drawn as ParamCheckbox is, filled with the accent
+// while on, but bound to the switch, not a parameter: it has no host menu, typed value, undo
+// step or automation. Several can show the same switch, as FIR's do in different modes.
+class ListenCheckbox final : public juce::Component, public juce::SettableTooltipClient, private juce::Timer
+{
+public:
+    ListenCheckbox (FancyProcessor& processor, const juce::String& label, juce::Colour accent = colours::uiTeal);
+
+    void setLabelHeight (float height);
+    bool isOn() const noexcept;
+    void click();
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+private:
+    // Repaints when the switch changes elsewhere, such as from another checkbox.
+    void timerCallback() override;
+
+    FancyProcessor& processor;
+    juce::String labelText;
+    juce::Colour accentColour;
+    float labelHeight = 14.0f;
+    bool shownOn = false;
 };
 
 // Adds a line to a control's tooltip for settings that change the plugin's latency, because

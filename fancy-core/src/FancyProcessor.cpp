@@ -67,6 +67,9 @@ void FancyProcessor::setStateInformation (const void* data, int sizeInBytes)
     if (data == nullptr || sizeInBytes <= 0)
         return;
 
+    // A listen or preview switch is always off after a project loads (§0.3).
+    setListening (false);
+
     if (const auto xml = getXmlFromBinary (data, sizeInBytes))
     {
         const auto tree = juce::ValueTree::fromXml (*xml);

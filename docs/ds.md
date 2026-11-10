@@ -17,7 +17,7 @@ sidechain ─► detector source (L+R, L, R) ─────────┴─�
 
 - **Split** (default): only the sibilance band is turned down.
 - **Wide:** the whole signal is turned down by the same gain.
-- **Listen:** plays what's being removed, `input − output`, before the Output gain.
+- **Listen:** plays what's being removed, `input − output`, before the Output gain. It's temporary (brief §0.3, added 10 November 2026): not a parameter, never saved in the state or presets, off after a project or preset loads, not automatable, no undo step, unchanged by A/B, and off when the window closes. While it's on, the checkbox is filled green and the title strip shows a LISTENING tag. It's `FancyProcessor::setListening`, shown by `ListenCheckbox`, both in `fancy-core`, so Limit, Comp, Gate and FIR use the same code.
 - Zero latency by default. Lookahead and the linear-phase split add latency, reported to the host.
 
 ## Shared code it reuses
@@ -75,12 +75,13 @@ A new plugin, so `stateVersion` 1.
 | `detector` | Detector | 8 choices | Main input L+R | | | Sections "Main input", "Sidechain" |
 | `mode` | Mode | Split, Wide | Split | | | Accent segments |
 | `relative` | Relative threshold | off/on | on | | | |
-| `listen` | Listen | off/on | off | | | |
 | `link` | Link channels | off/on | on | | | |
 | `lookahead` | Lookahead | Off, 1, 2, 5 ms | Off | | | Not automatable; latency |
 | `splitPhase` | Split filter | Minimum phase, Linear phase | Minimum phase | | | Not automatable; latency |
 | `output` | Output | −24–+12 | 0 | dB | linear | Header knob and Gain fader (decision 2) |
 | `bypass` | Bypass | off/on | off | | | |
+
+Listen isn't a parameter (§0.3): see the signal path above.
 
 Every knob and fader uses the shared components, so they all take typed values.
 

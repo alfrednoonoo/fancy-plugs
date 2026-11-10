@@ -288,6 +288,31 @@ void TitleStrip::paint (juce::Graphics& g)
 
     g.setColour (restColour);
     g.drawText (rest, area.withX (x), juce::Justification::centredLeft, false);
+
+    if (! listening)
+        return;
+
+    // A filled tag in the title's colour, so a listen switch left on can't be missed.
+    x += juce::GlyphArrangement::getStringWidth (titleFont, rest) + 10.0f;
+
+    const auto tagFont = font (Weight::semiBold, 9.0f).withExtraKerningFactor (0.08f);
+    const auto tag = juce::Rectangle<float> (x, 0.0f, juce::GlyphArrangement::getStringWidth (tagFont, listeningText) + 12.0f, 13.0f)
+                         .withCentre ({ x + (juce::GlyphArrangement::getStringWidth (tagFont, listeningText) + 12.0f) * 0.5f, area.getCentreY() });
+
+    g.setColour (restColour);
+    g.fillRoundedRectangle (tag, 3.0f);
+    g.setFont (tagFont);
+    g.setColour (colours::bgWell);
+    g.drawText (listeningText, tag, juce::Justification::centred, false);
+}
+
+void TitleStrip::setListening (bool shouldShow)
+{
+    if (shouldShow != listening)
+    {
+        listening = shouldShow;
+        repaint();
+    }
 }
 
 // The browser's parts -------------------------------------------------------------

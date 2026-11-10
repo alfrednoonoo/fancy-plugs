@@ -1,5 +1,6 @@
 #include <fancy/ui/Controls.h>
 
+#include <fancy/plugin/FancyProcessor.h>
 #include <fancy/plugin/ParamFormat.h>
 
 #include <cmath>
@@ -801,16 +802,18 @@ void paintDropdownBox (juce::Graphics& g, juce::Rectangle<float> bounds, const j
     paintDropdown (g, bounds, text, textHeight, open);
 }
 
-void ParamCheckbox::paint (juce::Graphics& g)
+namespace
 {
-    constexpr float size = 14.0f;
+constexpr float checkboxSize = 14.0f;
 
-    const auto bounds = getLocalBounds().toFloat();
+void paintCheckboxBox (juce::Graphics& g, juce::Rectangle<float> bounds, bool on, juce::Colour accent)
+{
+    constexpr float size = checkboxSize;
     const auto box = bounds.withWidth (size).withSizeKeepingCentre (size, size);
 
-    if (isOn())
+    if (on)
     {
-        g.setColour (accentColour);
+        g.setColour (accent);
         g.fillRoundedRectangle (box, 3.0f);
 
         juce::Path tick;
@@ -827,6 +830,20 @@ void ParamCheckbox::paint (juce::Graphics& g)
         g.setColour (colours::textSecondary);
         g.drawRoundedRectangle (box.reduced (0.25f), 3.0f, 0.5f);
     }
+}
+
+void paintCheckboxLabel (juce::Graphics& g, juce::Rectangle<float> bounds, const juce::String& text, float height)
+{
+    g.setFont (font (Weight::regular, height));
+    g.setColour (colours::textPrimary);
+    g.drawText (text, bounds.withTrimmedLeft (checkboxSize + 6.0f), juce::Justification::centredLeft, false);
+}
+} // namespace
+
+void ParamCheckbox::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    paintCheckboxBox (g, bounds, isOn(), accentColour);
 
     if (pulseLeft > 0.0f)
     {
@@ -834,9 +851,54 @@ void ParamCheckbox::paint (juce::Graphics& g)
         g.drawRoundedRectangle (bounds.reduced (0.5f), 3.0f, 1.5f);
     }
 
-    g.setFont (font (Weight::regular, labelHeight));
-    g.setColour (colours::textPrimary);
-    g.drawText (labelText, bounds.withTrimmedLeft (size + 6.0f), juce::Justification::centredLeft, false);
+    paintCheckboxLabel (g, bounds, labelText, labelHeight);
+}
+
+// ListenCheckbox --------------------------------------------------------------
+
+ListenCheckbox::ListenCheckbox (FancyProcessor& owner, const juce::String& label, juce::Colour accent)
+    : processor (owner), labelText (label), accentColour (accent), shownOn (owner.isListeningSwitchOn())
+{
+    startTimerHz (10);
+}
+
+void ListenCheckbox::setLabelHeight (float height)
+{
+    labelHeight = height;
+    repaint();
+}
+
+bool ListenCheckbox::isOn() const noexcept
+{
+    return processor.isListeningSwitchOn();
+}
+
+void ListenCheckbox::click()
+{
+    processor.setListening (! isOn());
+    timerCallback();
+}
+
+void ListenCheckbox::mouseDown (const juce::MouseEvent& event)
+{
+    if (! event.mods.isPopupMenu())
+        click();
+}
+
+void ListenCheckbox::timerCallback()
+{
+    if (isOn() != shownOn)
+    {
+        shownOn = isOn();
+        repaint();
+    }
+}
+
+void ListenCheckbox::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    paintCheckboxBox (g, bounds, isOn(), accentColour);
+    paintCheckboxLabel (g, bounds, labelText, labelHeight);
 }
 
 // PowerPill -------------------------------------------------------------------

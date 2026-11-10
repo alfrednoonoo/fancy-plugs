@@ -106,6 +106,28 @@ public:
     // Level-matched Compare (W.4). Not a parameter: the editor turns it on and off.
     dsp::CompareStage compare;
 
+    // The plugin's listen or preview switch, which replaces the output with a diagnostic signal
+    // (§0.3 of docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md). It's temporary: not a parameter, so it's
+    // never saved, automated, undone or switched by A/B, and it only counts while an editor is
+    // open. Closing the last editor turns it off.
+    void setListening (bool shouldListen) noexcept { listening.store (shouldListen, std::memory_order_relaxed); }
+    bool isListeningSwitchOn() const noexcept { return listening.load (std::memory_order_relaxed); }
+
+    // What the audio follows: the switch, while an editor is open.
+    bool isListening() const noexcept
+    {
+        return listening.load (std::memory_order_relaxed) && openEditors.load (std::memory_order_relaxed) > 0;
+    }
+
+    // ShellEditor calls these from its constructor and destructor.
+    void editorOpened() noexcept { openEditors.fetch_add (1, std::memory_order_relaxed); }
+
+    void editorClosed() noexcept
+    {
+        if (openEditors.fetch_sub (1, std::memory_order_relaxed) <= 1)
+            listening.store (false, std::memory_order_relaxed);
+    }
+
     juce::AudioProcessorValueTreeState& getApvts() noexcept { return apvts; }
     PresetManager& getPresets() noexcept { return presets; }
     const PresetManager& getPresets() const noexcept { return presets; }
@@ -119,6 +141,8 @@ public:
 private:
     juce::String name;
     std::atomic<int> edits { 0 };
+    std::atomic<bool> listening { false };
+    std::atomic<int> openEditors { 0 };
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presets;
     std::unique_ptr<Workflow> workflow;

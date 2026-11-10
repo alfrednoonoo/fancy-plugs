@@ -37,9 +37,11 @@ When nothing is being cut, the output is the input, bit for bit.
 | Detector | Main input L+R, Mid, Side, L, R; Sidechain L+R, L, R | Main input L+R | What the detector listens to. Mid and Side catch sibilance in the centre or at the sides |
 | Mode | Split, Wide | Split | See above |
 | Relative threshold | on/off | on | See above |
-| Listen | on/off | off | Plays only what's being removed. Use it to set Freq: sweep until you hear just the "s" sounds |
+| Listen | on/off | off | Plays only what's being removed. Use it to set Freq: sweep until you hear just the "s" sounds. It's temporary: see below |
 | Link channels | on/off | on | Both channels get the same cut. Off, each side is de-essed on its own (Main input L+R and Sidechain L+R only) |
 | Gain | -24 to +12 dB | 0 dB | The output level. The header knob is the same control |
+
+**Listen is temporary,** so it can't end up in an export by mistake. While it's on, the checkbox is filled green and the title strip says **LISTENING**. It turns off when you close the plugin's window, and it's never saved: a project or preset always opens with it off. It isn't automatable, and undo and A/B leave it alone. An offline render only includes it if the window is open and it's on.
 
 ### EDIT drawer
 

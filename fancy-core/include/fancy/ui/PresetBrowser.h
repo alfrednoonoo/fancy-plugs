@@ -47,11 +47,20 @@ public:
     TitleStrip() { setInterceptsMouseClicks (false, false); }
 
     void setTitle (const juce::String& pluginName, juce::Colour colour);
+
+    // A "LISTENING" tag after the name, in the title's colour, while a listen or preview
+    // switch is on (§0.3 of docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md).
+    void setListening (bool shouldShow);
+    bool isListeningShown() const noexcept { return listening; }
+
     void paint (juce::Graphics&) override;
+
+    static constexpr const char* listeningText = "LISTENING";
 
 private:
     juce::String first, rest;
     juce::Colour restColour;
+    bool listening = false;
 };
 
 // The preset browser: search, category, the list with favourites, and the preset actions,

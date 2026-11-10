@@ -88,7 +88,9 @@ private:
     fancy::ui::ParamSegments shapeSegments;
     fancy::ui::Knob freqKnob, widthKnob, rangeKnob, attackKnob, releaseKnob;
 
-    fancy::ui::ParamCheckbox relativeCheckbox, listenCheckbox, linkCheckbox;
+    fancy::ui::ParamCheckbox relativeCheckbox;
+    fancy::ui::ListenCheckbox listenCheckbox;
+    fancy::ui::ParamCheckbox linkCheckbox;
     fancy::ui::EditLink editLink;
 
     fancy::ui::OutMeter outMeter;
