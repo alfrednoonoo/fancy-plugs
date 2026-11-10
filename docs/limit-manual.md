@@ -36,7 +36,7 @@ Inside, it runs at 4x the sample rate by default, then a final true-peak stage c
 | Target | Streaming -14, Podcast -16, Broadcast -23 LUFS, Custom… | Streaming | Moves the red line on the LUFS meter. It doesn't change the sound |
 | True peak | on/off | on | Holds the points between samples under Ceiling too |
 | Auto release | on/off | on | Program-dependent release |
-| Listen to removed | on/off | off | Plays only what the limiter takes away. It's temporary: it turns off when you close the window, it's never saved in a project or preset, and it isn't automatable. While it's on, the title strip shows **LISTENING**. |
+| Listen to removed | on/off | off | Plays only what the limiter takes away |
 
 **Styles** only change how the gain moves; all four knobs keep working in each:
 

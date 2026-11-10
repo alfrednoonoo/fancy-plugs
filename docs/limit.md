@@ -8,7 +8,7 @@ Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §5. Mockup: `reference/phase3/2
 in ─► input gain (−Threshold) ─► oversample up (Off/2×/4×/8×) ─► limiter core ─► down ─► safety clip at Ceiling ─► dither ─► Output knob ─► out
                                                     ▲
                                  true-peak detector (4× interpolator)
-Listen to removed: out = (delayed input × input gain) − limited signal, before dither (a temporary switch, not a parameter: brief §0.3)
+Listen to removed: out = (delayed input × input gain) − limited signal, before dither
 Loudness meter (BS.1770): taps the output after the safety clip, before dither and the Output knob
 ```
 
@@ -97,6 +97,7 @@ Appended in this order (a new plugin, so `stateVersion` 1).
 | `customTarget` | Custom target | −36 to −5 | −14 | LUFS | linear | Typed from "Custom…" |
 | `truePeak` | True peak | off/on | on | | | |
 | `autoRelease` | Auto release | off/on | on | | | |
+| `listen` | Listen to removed | off/on | off | | | |
 | `oversampling` | Oversampling | Off, 2×, 4×, 8× | 4× | | | Changes latency; latency note |
 | `osPhase` | Oversampling filter | Minimum, Linear | Minimum | | | Changes latency |
 | `dither` | Dither | Off, 16-bit, 16-bit shaped, 24-bit, 24-bit shaped | Off | | | |

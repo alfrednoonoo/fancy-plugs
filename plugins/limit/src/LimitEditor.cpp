@@ -373,7 +373,7 @@ LimitEditor::LimitEditor (LimitProcessor& processor)
       linkKnob (parameter ("link"), "Link", limitRed, Knob::tightStyle),
       truePeakCheckbox (parameter ("truePeak"), "True peak", limitRed),
       autoReleaseCheckbox (parameter ("autoRelease"), "Auto release", limitRed),
-      listenCheckbox (getFancyProcessor(), "Listen to removed", limitRed),
+      listenCheckbox (parameter ("listen"), "Listen to removed", limitRed),
       editLink (limitRed),
       outMeter (outGeometry),
       loudnessBar (loudnessGeometry),
@@ -438,14 +438,12 @@ LimitEditor::LimitEditor (LimitProcessor& processor)
     listenCheckbox.setBounds (leftX + 240, footerY, 160, 20);
     editLink.setBounds (contentRight - 64, footerY - 2, 64, 24);
 
-    for (auto* checkbox : { &truePeakCheckbox, &autoReleaseCheckbox })
+    for (auto* checkbox : { &truePeakCheckbox, &autoReleaseCheckbox, &listenCheckbox })
         checkbox->setLabelHeight (labelHeight);
-
-    listenCheckbox.setLabelHeight (labelHeight);
 
     truePeakCheckbox.setTooltip ("Holds the peaks between samples under Ceiling too, so the output stays under it after conversion or encoding.");
     autoReleaseCheckbox.setTooltip ("Recovers fast from short peaks and slowly from sustained limiting, to avoid pumping and bass distortion.");
-    listenCheckbox.setTooltip ("Plays only what the limiter takes away. Turns off when you close this window, and is never saved.");
+    listenCheckbox.setTooltip ("Plays only what the limiter takes away.");
 
     // Right column.
     outMeter.setBounds (rightColumnX + 2, 10, 74, 372);

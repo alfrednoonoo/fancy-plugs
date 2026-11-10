@@ -515,7 +515,6 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_LIMIT
     ok = renderPlugin<LimitProcessor, LimitEditor> ("limit", outputDir) && ok;
-    ok = renderListening<LimitProcessor, LimitEditor> ("limit", outputDir) && ok;
    #endif
 
    #if FANCY_HAS_DS
