@@ -405,6 +405,18 @@ private:
                 taps[(size_t) phase][(size_t) tap] = sinc * window2;
             }
         }
+
+        largestGain = 1.0;
+
+        for (int phase = 0; phase < phases; ++phase)
+        {
+            auto sum = 0.0;
+
+            for (int tap = 0; tap < historySize; ++tap)
+                sum += std::abs (taps[(size_t) phase][(size_t) tap]);
+
+            largestGain = std::max (largestGain, sum);
+        }
     }
 
     double peakOf (int channel, double in) noexcept
@@ -414,27 +426,41 @@ private:
 
         // The sample the interpolator would centre on, so the timing matches.
         auto& samples = history[(size_t) channel];
-        samples[(size_t) historyPosition] = in;
+        samples[(size_t) historyPosition] = samples[(size_t) (historyPosition + historySize)] = in;
         return std::abs (samples[(size_t) ((historyPosition + historySize - interpolatorDelay) % historySize)]);
     }
 
     double truePeak (int channel, double in) noexcept
     {
+        // Each sample is stored twice, historySize apart, so a window reads in one straight run.
         auto& samples = history[(size_t) channel];
-        samples[(size_t) historyPosition] = in;
+        samples[(size_t) historyPosition] = samples[(size_t) (historyPosition + historySize)] = in;
 
         auto peak = std::abs (in);
 
         if (current.alignedSamplePeak)
             peak = std::max (peak, std::abs (samples[(size_t) ((historyPosition + historySize - interpolatorDelay) % historySize)]));
 
+        const auto* window = samples.data() + historyPosition + 1;
+
+        // No point between these samples can reach 1 if the loudest of them, times the
+        // interpolator's largest gain, doesn't. Then the required gain is 1 either way, so
+        // skipping the interpolation changes nothing.
+        auto loudest = 0.0;
+
+        for (int tap = 0; tap < historySize; ++tap)
+            loudest = std::max (loudest, std::abs (window[tap]));
+
+        if (loudest * largestGain <= 1.0 - 1.0e-9)
+            return peak;
+
         for (int p = 0; p < phases; ++p)
         {
-            const auto& phase = taps[(size_t) p];
+            const auto* phase = taps[(size_t) p].data();
             double sum = 0.0;
 
             for (int tap = 0; tap < historySize; ++tap)
-                sum += phase[(size_t) tap] * samples[(size_t) ((historyPosition + 1 + tap) % historySize)];
+                sum += phase[tap] * window[tap];
 
             peak = std::max (peak, std::abs (sum));
         }
@@ -456,7 +482,8 @@ private:
     std::array<double, 2> sustainCoefficients { 0.0001, 0.001 };
 
     std::array<std::vector<double>, 2> delayLines, gainDelays;
-    std::array<std::array<double, maxTaps>, 2> history {};
+    std::array<std::array<double, 2 * maxTaps>, 2> history {};
+    double largestGain = 2.0;
     std::array<std::array<double, maxTaps>, maxPhases> taps {};
     std::array<Pipeline, 2> pipelines;
     std::array<double, 2> lastGain { 1.0, 1.0 };

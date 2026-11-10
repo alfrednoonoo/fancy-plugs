@@ -77,7 +77,7 @@ These are added to `fancy-core` and the screenshot gallery rather than drawn ins
      - integrated loudness, with the −70 LUFS absolute gate and the −10 LU relative gate
      - loudness range, per EBU Tech 3342
    - **All on the audio thread, in fixed storage** (as built): K-weighted squares summed into 100 ms blocks; momentary and short-term from a ring of the last 30 blocks; integrated and range from two histograms of 0.1 LU bins (-70 to +10 LUFS) that keep each bin's summed energy and count, so gating is exact apart from the one bin the relative gate falls in. It keeps measuring in an offline render with no editor open, and has no time limit. Results are atomics.
-2. **`fancy::dsp::TruePeakMeter`:** the BS.1770-4 Annex 2 method, a 4× polyphase interpolator with 48 taps per phase. It's longer than the limiter's 16-tap one, because it's measuring, not steering. It's used for the dBTP read-out and in the tests.
+2. **`fancy::dsp::TruePeakMeter`:** the BS.1770-4 Annex 2 method, a 4× polyphase interpolator with 24 taps per phase (its own coefficients, not the standard's table). It's longer than the limiter's 16-tap one, because it's measuring, not steering. It skips the interpolation when the window's loudest sample can't beat the peak so far. It's used for the dBTP read-out and in the tests.
 3. **Two small additions to existing meters:** `GainReductionMeter::setBarColour` (yellow by default; Limit's is red), and the gate-style `ThresholdMeter` skips its "close" read-out when no close level is set. Gate's screenshots are unchanged.
 4. **`fancy::ui::LoudnessBar`:** a single bar on the meter gradient, with a red marker line at the Target and a readout. It's a sibling of `OutMeter`, with the same well and geometry.
 

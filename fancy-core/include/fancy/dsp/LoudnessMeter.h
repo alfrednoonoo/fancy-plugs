@@ -295,12 +295,12 @@ private:
 };
 
 // The highest true peak of a stereo signal since the last reset: a 4x polyphase windowed-sinc
-// interpolator, 48 taps per phase, as BS.1770-4 Annex 2 describes (its own coefficients, not
+// interpolator, 24 taps per phase, as BS.1770-4 Annex 2 describes (its own coefficients, not
 // the standard's table). Read lock-free.
 class TruePeakMeter
 {
 public:
-    static constexpr int factor = 4, tapsPerPhase = 48;
+    static constexpr int factor = 4, tapsPerPhase = 24;
 
     TruePeakMeter()
     {
@@ -317,6 +317,13 @@ public:
                 const auto w = 0.5 + 0.5 * std::cos (std::numbers::pi * x / (double) half);
                 taps[(size_t) phase][(size_t) tap] = sinc * w;
             }
+
+            auto sum = 0.0;
+
+            for (const auto tap : taps[(size_t) phase])
+                sum += std::abs (tap);
+
+            largestGain = std::max (largestGain, sum);
         }
 
         resetNow();
@@ -366,22 +373,34 @@ private:
 
     void push (int channel, double x) noexcept
     {
+        // Stored twice, tapsPerPhase apart, so the window reads in one straight run.
         auto& h = history[(size_t) channel];
-        h[(size_t) position] = x;
+        h[(size_t) position] = h[(size_t) (position + tapsPerPhase)] = x;
+
+        const auto* window = h.data() + position + 1;
+        auto loudest = 0.0;
+
+        for (int tap = 0; tap < tapsPerPhase; ++tap)
+            loudest = std::max (loudest, std::abs (window[tap]));
+
+        // Nothing between these samples can beat the peak so far.
+        if (loudest * largestGain <= peak)
+            return;
 
         for (const auto& phase : taps)
         {
             double sum = 0.0;
 
             for (int tap = 0; tap < tapsPerPhase; ++tap)
-                sum += phase[(size_t) tap] * h[(size_t) ((position + 1 + tap) % tapsPerPhase)];
+                sum += phase[(size_t) tap] * window[tap];
 
             peak = std::max (peak, std::abs (sum));
         }
     }
 
     std::array<std::array<double, tapsPerPhase>, factor> taps {};
-    std::array<std::array<double, tapsPerPhase>, 2> history {};
+    std::array<std::array<double, 2 * tapsPerPhase>, 2> history {};
+    double largestGain = 1.0;
     double peak = 0.0;
     int position = 0;
     std::atomic<bool> resetRequested { false };
