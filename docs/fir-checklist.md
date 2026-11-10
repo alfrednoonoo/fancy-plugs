@@ -26,6 +26,7 @@
 - [ ] Gate on a drum loop: drag the threshold curve up, and quiet frequencies drop to Floor.
 - [ ] Compressor: yellow shows the reduction at each frequency.
 - [ ] Listen to gain-reduced part plays only what's being removed.
+- [ ] Tick it, close the plugin window, and open it again: it's unticked, the sound is normal, and the title strip has no **LISTENING** tag. While it's ticked, the tag is there.
 - [ ] Route a second track into channels 3 and 4 and tick Sidechain detector: the sidechain's frequencies duck the main track.
 
 ## Subtract

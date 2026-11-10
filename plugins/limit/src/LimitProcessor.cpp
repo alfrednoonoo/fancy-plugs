@@ -70,7 +70,6 @@ fancy::FancyProcessor::Layout createLayout()
 
     layout.add (toggle ("truePeak", "True peak", true));
     layout.add (toggle ("autoRelease", "Auto release", true));
-    layout.add (toggle ("listen", "Listen to removed", false));
 
     // These change the latency, so they are deliberate settings, not something automation flips.
     layout.add (std::make_unique<Choice> (juce::ParameterID { "oversampling", 1 }, "Oversampling",
@@ -147,7 +146,7 @@ LimitDsp::Targets LimitProcessor::readTargets() const
     targets.style = juce::roundToInt (read ("style"));
     targets.truePeak = isOn ("truePeak");
     targets.autoRelease = isOn ("autoRelease");
-    targets.listen = isOn ("listen");
+    targets.listen = isListening();
     targets.oversampling = juce::roundToInt (read ("oversampling"));
     targets.linearPhase = isOn ("osPhase");
     targets.dither = juce::roundToInt (read ("dither"));

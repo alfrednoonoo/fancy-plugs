@@ -91,7 +91,8 @@ private:
     fancy::ui::ParamDropdown fftDropdown;
     fancy::ui::ParamCheckbox reduceCheckbox;
 
-    fancy::ui::ParamCheckbox analysisCheckbox, lowLatencyCheckbox, sidechainCheckbox, listenNoiseCheckbox, listenReducedCheckbox;
+    fancy::ui::ParamCheckbox analysisCheckbox, lowLatencyCheckbox, sidechainCheckbox;
+    fancy::ui::ListenCheckbox listenNoiseCheckbox, listenReducedCheckbox;
     fancy::ui::EditLink editLink;
 
     fancy::ui::OutMeter outMeter;

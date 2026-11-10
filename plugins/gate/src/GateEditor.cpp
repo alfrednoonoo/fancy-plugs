@@ -385,7 +385,7 @@ GateEditor::GateEditor (GateProcessor& processor)
       rmsKnob (parameter ("rms"), "RMS size", gateYellow, Knob::tightStyle),
       lowpassKnob (parameter ("lowpass"), "Lowpass", colours::uiBlue, Knob::tightStyle),
       highpassKnob (parameter ("highpass"), "Highpass", colours::uiBlue, Knob::tightStyle),
-      previewCheckbox (parameter ("preview"), "Preview filter", gateYellow),
+      previewCheckbox (getFancyProcessor(), "Preview filter", gateYellow),
       linkCheckbox (parameter ("link"), "Link channels", gateYellow),
       midiCheckbox (parameter ("midi"), "MIDI on open/close", gateYellow),
       velocityCheckbox (parameter ("velocity"), "Velocity from level", gateYellow),
@@ -452,10 +452,12 @@ GateEditor::GateEditor (GateProcessor& processor)
     midiDropdown.setBounds (346, footerY - 2, 78, 24);
     velocityCheckbox.setBounds (432, footerY, 140, 20);
 
-    for (auto* checkbox : { &previewCheckbox, &linkCheckbox, &midiCheckbox, &velocityCheckbox })
+    for (auto* checkbox : { &linkCheckbox, &midiCheckbox, &velocityCheckbox })
         checkbox->setLabelHeight (labelHeight);
 
-    previewCheckbox.setTooltip ("Listen to what the detector hears, through Lowpass and Highpass.");
+    previewCheckbox.setLabelHeight (labelHeight);
+
+    previewCheckbox.setTooltip ("Listen to what the detector hears, through Lowpass and Highpass. Turns off when you close this window, and is never saved.");
     linkCheckbox.setTooltip ("Both channels open and close together, on the louder one.");
     midiCheckbox.setTooltip ("Sends a note when the gate opens, and its note-off when it closes. "
                              "In REAPER, route this track's MIDI to an instrument track.");

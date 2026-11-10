@@ -106,7 +106,6 @@ fancy::FancyProcessor::Layout createLayout()
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
     layout.add (toggle ("sidechain", "Sidechain detector", false));
-    layout.add (toggle ("listen", "Listen to removed part", false));
 
     layout.add (option ("showAnalysis", "Show analysis", true));
     layout.add (dbParameter ("graphTop", "Graph top", 0.0f, 48.0f, 24.0f, false, 0));
@@ -258,7 +257,7 @@ FirDsp::Targets FirProcessor::readTargets() const
     frame.smoothing = (double) read ("smoothing") * 0.01;
     frame.subReleaseMs = (double) read ("subRelease");
     frame.reduceArtifacts = isOn ("reduce");
-    frame.listen = isOn ("listen") && frame.mode != eq && frame.mode != convolve;
+    frame.listen = isListening() && frame.mode != eq && frame.mode != convolve;
     frame.sidechain = isOn ("sidechain");
     frame.source = juce::jlimit (0, 2, juce::roundToInt (read ("source")));
     frame.adaptSeconds = (double) read ("adaptSpeed");

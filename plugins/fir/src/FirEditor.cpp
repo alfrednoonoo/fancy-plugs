@@ -272,8 +272,8 @@ FirEditor::FirEditor (FirProcessor& processor)
       analysisCheckbox (parameter ("showAnalysis"), "Show analysis"),
       lowLatencyCheckbox (parameter ("lowLatency"), "Low latency"),
       sidechainCheckbox (parameter ("sidechain"), "Sidechain detector"),
-      listenNoiseCheckbox (parameter ("listen"), "Listen to removed noise"),
-      listenReducedCheckbox (parameter ("listen"), "Listen to gain-reduced part"),
+      listenNoiseCheckbox (getFancyProcessor(), "Listen to removed noise"),
+      listenReducedCheckbox (getFancyProcessor(), "Listen to gain-reduced part"),
       editLink (colours::uiTeal),
       outMeter (outGeometry),
       gainFader (parameter ("gain"), colours::uiTeal),
@@ -364,8 +364,14 @@ FirEditor::FirEditor (FirProcessor& processor)
     listenReducedCheckbox.setBounds (365, footerY, 200, 20);
     editLink.setBounds (586, footerY - 2, 64, 24);
 
-    for (auto* checkbox : { &analysisCheckbox, &lowLatencyCheckbox, &sidechainCheckbox, &listenNoiseCheckbox, &listenReducedCheckbox })
+    for (auto* checkbox : { &analysisCheckbox, &lowLatencyCheckbox, &sidechainCheckbox })
         checkbox->setLabelHeight (labelHeight);
+
+    for (auto* checkbox : { &listenNoiseCheckbox, &listenReducedCheckbox })
+    {
+        checkbox->setLabelHeight (labelHeight);
+        checkbox->setTooltip ("Plays only what's being taken away. Turns off when you close this window, and is never saved.");
+    }
 
     lowLatencyCheckbox.setTooltip ("Halves the latency, at the same frequency resolution, with a little more smearing.");
     ratioKnob.setTooltip ("Below 1:1 the level above the threshold is raised: upward expansion.");

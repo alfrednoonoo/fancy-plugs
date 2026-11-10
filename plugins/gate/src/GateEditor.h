@@ -111,7 +111,8 @@ private:
     fancy::ui::Knob preOpenKnob, attackKnob, holdKnob, releaseKnob, hysteresisKnob;
     fancy::ui::Knob rangeKnob, rmsKnob, lowpassKnob, highpassKnob;
 
-    fancy::ui::ParamCheckbox previewCheckbox, linkCheckbox, midiCheckbox, velocityCheckbox;
+    fancy::ui::ListenCheckbox previewCheckbox;
+    fancy::ui::ParamCheckbox linkCheckbox, midiCheckbox, velocityCheckbox;
     MidiDropdown midiDropdown;
 
     fancy::ui::OutMeter outMeter;

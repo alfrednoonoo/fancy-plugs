@@ -10,6 +10,26 @@
 #include <memory>
 #include <random>
 
+#if FANCY_HAS_COMP
+ #include "CompEditor.h"
+ #include "CompProcessor.h"
+#endif
+
+#if FANCY_HAS_FIR
+ #include "FirEditor.h"
+ #include "FirProcessor.h"
+#endif
+
+#if FANCY_HAS_GATE
+ #include "GateEditor.h"
+ #include "GateProcessor.h"
+#endif
+
+#if FANCY_HAS_LIMIT
+ #include "LimitEditor.h"
+ #include "LimitProcessor.h"
+#endif
+
 #if FANCY_HAS_DS
  #include "DsEditor.h"
  #include "DsProcessor.h"
@@ -211,6 +231,36 @@ void checkListenSwitch (const char* oldId, bool audible)
     }
 }
 } // namespace
+
+// The retrofit: these were parameters up to v1.2.0 and Limit's first build.
+#if FANCY_HAS_COMP
+TEST_CASE ("Comp: Preview filter is temporary (§0.3)", "[listen][comp]")
+{
+    checkListenSwitch<CompProcessor> ("preview", false);
+}
+#endif
+
+#if FANCY_HAS_GATE
+TEST_CASE ("Gate: Preview filter is temporary (§0.3)", "[listen][gate]")
+{
+    checkListenSwitch<GateProcessor> ("preview", false);
+}
+#endif
+
+#if FANCY_HAS_FIR
+TEST_CASE ("FIR: Listen to removed noise / gain-reduced part is temporary (§0.3)", "[listen][fir]")
+{
+    checkListenSwitch<FirProcessor> ("listen", false);
+}
+#endif
+
+#if FANCY_HAS_LIMIT
+TEST_CASE ("Limit: Listen to removed is temporary (§0.3)", "[listen][limit]")
+{
+    // The noise peaks over the ceiling, so there's something removed to hear.
+    checkListenSwitch<LimitProcessor> ("listen", true);
+}
+#endif
 
 #if FANCY_HAS_DS
 TEST_CASE ("DS: Listen is temporary (§0.3)", "[listen][ds]")

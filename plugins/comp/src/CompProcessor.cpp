@@ -87,7 +87,6 @@ fancy::FancyProcessor::Layout createLayout()
 
     layout.add (toggle ("link", "Link channels", true));
     layout.add (toggle ("makeup", "Auto make-up", false));
-    layout.add (toggle ("preview", "Preview filter", false));
     layout.add (toggle ("limit", "Limit output", false));
 
     layout.add (std::make_unique<Choice> (juce::ParameterID { "oversampling", 1 }, "Oversampling", juce::StringArray { "Off", "2x", "4x" }, 0));
@@ -174,7 +173,7 @@ CompDsp::Targets CompProcessor::readTargets()
     targets.linkChannels = isOn ("link");
     targets.feedback = isOn ("feedback");
     targets.autoMakeup = isOn ("makeup");
-    targets.previewFilter = isOn ("preview");
+    targets.previewFilter = isListening();
     targets.limitOutput = isOn ("limit");
     targets.bypass = isOn ("bypass");
     return targets;

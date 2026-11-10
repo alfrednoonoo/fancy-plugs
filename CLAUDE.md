@@ -42,7 +42,7 @@ Saved projects from the current release must load and render bit-identical after
 
 Phase 3, from `docs/BUILD_PROMPT_PHASE3.md`, approved by the user on 9 November 2026, with what Phase 2.1 built trimmed out. Its order is in Q2: the benchmark host (Q1), then the shared features and design rules, then EQ, Comp and Verb, then the rest, then the new Limiter, De-esser and Saturator. Each item gets its design note approved before any code, and every new plugin goes through Q5's design rules and HTML mockup first.
 
-Phase 3's new plugins, from `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` (added 10 November 2026), come before EQ, Comp and Verb, in this order: Fancy Limit (done), Fancy DS, Fancy Saturate, Kicker's Sub mode, Fancy Room. Mockups are `reference/phase3/17__ds_mockup.png` to `21__kicker_sub_mockup.png`, with source and the updated kit in `design/phase3-mockup-src/`. Every new plugin follows `docs/DESIGN_SYSTEM.md`.
+Phase 3's new plugins, from `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` (added 10 November 2026), come before EQ, Comp and Verb, in this order: Fancy Limit (done), Fancy DS, Fancy DS-Mini, Fancy Sature (the brief's Fancy Saturate, renamed by the user), Kicker's Sub mode, Fancy Room. Mockups are `reference/phase3/17__ds_mockup.png` to `22__ds_mini_mockup.png`, with source and the updated kit in `design/phase3-mockup-src/`. Every new plugin follows `docs/DESIGN_SYSTEM.md`, and its listen or preview switch follows the brief's §0.3: temporary, never a parameter (`FancyProcessor::setListening` and `ListenCheckbox`).
 
 Write `docs/<plugin>.md` before coding each plugin: DSP algorithm, parameters (range, default, unit, skew), latency, state format, and how each §5 fix is handled.
 

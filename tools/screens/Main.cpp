@@ -485,6 +485,7 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_COMP
     ok = renderPlugin<CompProcessor, CompEditor> ("comp", outputDir) && ok;
+    ok = renderListening<CompProcessor, CompEditor> ("comp", outputDir) && ok;
    #endif
 
    #if FANCY_HAS_EQ
@@ -509,10 +510,12 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_GATE
     ok = renderPlugin<GateProcessor, GateEditor> ("gate", outputDir) && ok;
+    ok = renderListening<GateProcessor, GateEditor> ("gate", outputDir) && ok;
    #endif
 
    #if FANCY_HAS_LIMIT
     ok = renderPlugin<LimitProcessor, LimitEditor> ("limit", outputDir) && ok;
+    ok = renderListening<LimitProcessor, LimitEditor> ("limit", outputDir) && ok;
    #endif
 
    #if FANCY_HAS_DS

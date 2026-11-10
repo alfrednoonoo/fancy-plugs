@@ -26,6 +26,7 @@ This one takes a little longer than the others, because there's more to try. Use
 
 - [ ] Highpass at about 150 Hz stops a kick from pumping the mix.
 - [ ] Preview filter lets you hear what the detector hears.
+- [ ] Tick it, close the plugin window, and open it again: it's unticked, the sound is normal, and the title strip has no **LISTENING** tag. While it's ticked, the tag is there.
 - [ ] Mid and Side settings respond differently on a stereo source.
 
 ## Sidechain

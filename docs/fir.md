@@ -105,7 +105,6 @@ The message thread renders the active curve of each mode to 512 log-spaced value
 | `subRelease` | Release | 10-500 | 80 | ms | P4.2 |
 | `learnLength` | Learn length | 0.5-10 | 2.0 | s | P4.2, not automatable |
 | `sidechain` | Sidechain detector | off/on | off | | P4.2 |
-| `listen` | Listen to removed part | off/on | off | | P4.2 |
 | `showAnalysis` | Show analysis | off/on | on | | P4.2, not automatable |
 | `graphTop` | Graph top | 0-+48 | +24 | dB | P4.1, not automatable |
 | `graphFloor` | Analysis floor | -150 to -30 | -90 | dB | P4.2, not automatable |
@@ -113,6 +112,8 @@ The message thread renders the active curve of each mode to 512 log-spaced value
 | `bypass` | Bypass | off/on | off | | §4.6 |
 
 "ReaFir 0.x compatibility mode" is dropped, as P4.3 says.
+
+`listen` (Listen to removed part), which came after `sidechain`, was removed on 10 November 2026: it's now a temporary switch (`FancyProcessor::setListening`, Phase 3 new-plugins brief §0.3), shown as "Listen to removed noise" in Subtract and "Listen to gain-reduced part" in Gate and Compressor. A saved `listen` value is ignored.
 
 Phase 2.1 A appends `source` (Learned, Adaptive, Both) and `adaptSpeed` (0.5-10 s, default 2 s) after everything above. Their design is in `docs/phase2_1-A.md`.
 

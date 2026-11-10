@@ -126,7 +126,6 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (filterParameter ("lowpass", "Lowpass", 20.0f, (float) GateDsp::lowpassOffHz, (float) GateDsp::lowpassOffHz, true));
     layout.add (filterParameter ("highpass", "Highpass", (float) GateDsp::highpassOffHz, 5000.0f, (float) GateDsp::highpassOffHz, false));
 
-    layout.add (toggle ("preview", "Preview filter", false));
     layout.add (std::make_unique<Choice> (juce::ParameterID { "mode", 1 }, "Mode", juce::StringArray { "Gate", "Duck" }, 0));
     layout.add (toggle ("link", "Link channels", true));
 
@@ -235,7 +234,7 @@ GateDsp::Targets GateProcessor::readTargets() const
     targets.detector = juce::roundToInt (read ("detector"));
     targets.lowpassHz = (double) read ("lowpass");
     targets.highpassHz = (double) read ("highpass");
-    targets.preview = isOn ("preview");
+    targets.preview = isListening();
     targets.duck = isOn ("mode");
     targets.link = isOn ("link");
     targets.wetGain = fancy::levelToGain (read ("wet"), mixFloorDb);

@@ -28,7 +28,7 @@ Fancy Comp is a compressor with a sidechain input, detector filters, lookahead a
 | Auto | off | Program-dependent release: fast after transients, slower after sustained compression |
 | Link channels | on | Both channels share gain reduction, which keeps the stereo image steady |
 | Auto make-up | off | Adds back half of the gain reduction a full-scale signal would get |
-| Preview filter | off | Lets you hear the filtered detector signal, to set Lowpass and Highpass |
+| Preview filter | off | Lets you hear the filtered detector signal, to set Lowpass and Highpass. It's temporary: it turns off when you close the window, it's never saved in a project or preset, and it isn't automatable. While it's on, the title strip shows **LISTENING**. A project saved with it on in v1.2.0 or earlier opens with it off |
 | Limit output | off | Turns on a brickwall limiter with a 0 dBFS ceiling. It adds 104 samples of latency |
 
 ## Detector input

@@ -93,7 +93,8 @@ private:
 
     fancy::ui::Knob ceilingKnob, releaseKnob, lookaheadKnob, linkKnob;
 
-    fancy::ui::ParamCheckbox truePeakCheckbox, autoReleaseCheckbox, listenCheckbox;
+    fancy::ui::ParamCheckbox truePeakCheckbox, autoReleaseCheckbox;
+    fancy::ui::ListenCheckbox listenCheckbox;
     fancy::ui::EditLink editLink;
 
     fancy::ui::OutMeter outMeter;

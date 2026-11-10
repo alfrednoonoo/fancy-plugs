@@ -26,6 +26,12 @@
 - [ ] Tick Lookahead: REAPER's latency readout shows 50 ms (2400 samples at 48 kHz), and Pre-open works.
 - [ ] Move Pre-open from 0 to 50 ms: the latency doesn't change, and the hits' attacks get softer as Pre-open grows.
 
+## Preview filter
+
+- [ ] Tick **Preview filter**: you hear what the detector hears, through Lowpass and Highpass, the checkbox is filled yellow, and the title strip shows a yellow **LISTENING** tag.
+- [ ] Close the plugin window and open it again: Preview filter is unticked, the sound is normal, and the tag is gone.
+- [ ] Open a project saved with Preview filter on in v1.2.0: it opens with Preview filter off.
+
 ## Sidechain
 
 - [ ] Route a kick to channels 3/4 of a bass track, and set Detector input to Sidechain L+R with Mode on Duck: the bass ducks on each kick.

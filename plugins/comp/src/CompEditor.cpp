@@ -59,7 +59,7 @@ CompEditor::CompEditor (CompProcessor& processor)
       highpassKnob (parameter ("highpass"), "Highpass", colours::uiBlue, Knob::mediumStyle),
       linkCheckbox (parameter ("link"), "Link channels"),
       makeupCheckbox (parameter ("makeup"), "Auto make-up"),
-      previewCheckbox (parameter ("preview"), "Preview filter"),
+      previewCheckbox (getFancyProcessor(), "Preview filter"),
       limitCheckbox (parameter ("limit"), "Limit output"),
       wetFader (parameter ("wet"), colours::uiTeal),
       dryFader (parameter ("dry"), colours::uiTeal),
@@ -108,6 +108,7 @@ CompEditor::CompEditor (CompProcessor& processor)
     linkCheckbox.setBounds (72, 440, 130, 20);
     makeupCheckbox.setBounds (232, 440, 130, 20);
     previewCheckbox.setBounds (392, 440, 130, 20);
+    previewCheckbox.setTooltip ("Listen to what the detector hears, through Lowpass and Highpass. Turns off when you close this window, and is never saved.");
     limitCheckbox.setBounds (552, 440, 130, 20);
 
     outMeter.setBounds (750, 24, 70, 426);
@@ -181,7 +182,7 @@ void CompEditor::showPreview (bool drawerOpen)
     setValue (parameter ("wet"), -11.7f);
     setValue (parameter ("dry"), -4.2f);
 
-    for (const auto* id : { "weird", "classic", "auto", "makeup", "preview", "limit" })
+    for (const auto* id : { "weird", "classic", "auto", "makeup", "limit" })
         setValue (parameter (id), 1.0f);
 
     setValue (parameter ("link"), 0.0f);

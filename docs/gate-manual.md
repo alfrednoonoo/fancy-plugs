@@ -34,7 +34,7 @@ A gate that's closing re-opens on the next hit. A gate that's open doesn't re-tr
 | Detector input | Main or Sidechain, L+R, L or R | Main input L+R | What the gate listens to |
 | Lookahead | On or off | Off | Delays the audio by 50 ms, so the gate can open before the hit. Adds 50 ms latency, which REAPER compensates |
 | Mode | Gate or Duck | Gate | Duck turns the signal down by Range while the detector is over Threshold |
-| Preview filter | On or off | Off | Plays what the detector hears, through Lowpass and Highpass |
+| Preview filter | On or off | Off | Plays what the detector hears, through Lowpass and Highpass. It's temporary: it turns off when you close the window, it's never saved in a project or preset, and it isn't automatable. While it's on, the title strip shows **LISTENING**. A project saved with it on in v1.2.0 or earlier opens with it off |
 | Link channels | On or off | On | Both channels open together, on the louder one |
 | Wet, Dry | -inf to +12 dB | 0 dB, -inf | The gated signal and the untouched signal |
 | Noise | -inf to 0 dB | -inf | White noise, only while the gate is open. In Duck mode, while it ducks |

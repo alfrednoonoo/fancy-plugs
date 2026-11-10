@@ -21,7 +21,7 @@ Everything inside the brackets runs at the oversampled rate.
 - **Gain computer:** log domain, with a quadratic soft knee centred on Threshold over Knee dB. **Weird** moves the knee so it starts at Threshold and ends Knee dB above it, so compression arrives later.
 - **Ballistics:** see below.
 - **Make-up:** Auto make-up adds half of the gain reduction that a 0 dBFS signal would get: `0.5 × (1 - 1/ratio) × -threshold`.
-- **Preview filter:** replaces the wet signal with the filtered detector signal.
+- **Preview filter:** replaces the wet signal with the filtered detector signal. Since 10 November 2026 it's a temporary switch, not a parameter (`FancyProcessor::setListening`, Phase 3 new-plugins brief §0.3); a saved `preview` value is ignored.
 - **Feedback detection:** the detector reads the previous output sample of the compressor in place of the main input. Sidechain inputs are unaffected.
 
 ## Ballistics (§5.2)
@@ -55,7 +55,6 @@ Everything inside the brackets runs at the oversampled rate.
 | `detector` | Detector input | 8 choices | Main input L+R | | | §3.3 |
 | `link` | Link channels | off/on | on | | | §3.3 |
 | `makeup` | Auto make-up | off/on | off | | | §3.3 |
-| `preview` | Preview filter | off/on | off | | | §3.3 |
 | `limit` | Limit output | off/on | off | | | §3.3 |
 | `oversampling` | Oversampling | Off, 2x, 4x | Off | | | §3.3 |
 | `osPhase` | Oversampling filter | Linear, Minimum | Linear | | | §5.2 |

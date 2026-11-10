@@ -17,7 +17,7 @@ main or sidechain ─ detector select ─ HP ─ LP ─ peak or RMS ─ link ─
                                                                               └─ MIDI out, history, lights
 ```
 
-**Preview filter** replaces the whole output with the filtered detector signal, delayed to match.
+**Preview filter** replaces the whole output with the filtered detector signal, delayed to match. Since 10 November 2026 it's a temporary switch, not a parameter (`FancyProcessor::setListening`, Phase 3 new-plugins brief §0.3); a saved `preview` value is ignored.
 
 ## Shared code it reuses
 
@@ -149,7 +149,6 @@ The warning is set when a Sidechain source is selected and the sidechain's peak 
 | `detector` | Detector input | 6 choices | Main input L+R | | | |
 | `lowpass` | Lowpass | 20-22000, top is off | Off | Hz | log | Detector only |
 | `highpass` | Highpass | 20-5000, bottom is off | Off | Hz | log | Detector only |
-| `preview` | Preview filter | off/on | off | | | |
 | `mode` | Mode | Gate, Duck | Gate | | | |
 | `link` | Link channels | off/on | on | | | |
 | `wet` | Wet | -inf-+12 | 0 | dB | linear | |

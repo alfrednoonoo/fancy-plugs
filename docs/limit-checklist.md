@@ -18,7 +18,8 @@
 - [ ] Turn Lookahead to 0 ms with a lot of reduction: it gets grittier. Back at 2 ms it's clean again. REAPER's latency readout (the plugin's "PDC" in the FX chain) doesn't change while you turn it.
 - [ ] Switch **Clean**, **Punchy** and **Dense** on drums: Punchy keeps more snap on the hits, Dense sounds denser and louder.
 - [ ] Untick **Auto release** on a bass-heavy section with Release at 10 ms: the bass gets grainy. Tick it again: clean.
-- [ ] Tick **Listen to removed**: you hear only the peaks being taken off. Untick it.
+- [ ] Tick **Listen to removed**: you hear only the peaks being taken off.
+- [ ] Tick it, close the plugin window, and open it again: it's unticked, the sound is normal, and the title strip has no **LISTENING** tag. While it's ticked, the tag is there.
 - [ ] Set Link to 0 % on a mix with a loud hit on one side only: the other side no longer dips with it.
 
 ## Loudness

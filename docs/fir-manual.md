@@ -95,7 +95,7 @@ In Gate, Compressor and Subtract, the plugin's channels 3 and 4 are used to make
 
 ## Listen
 
-**Listen to removed noise** in Subtract, or **Listen to gain-reduced part** in Gate and Compressor, plays only what's being taken away. Use it to check you're not removing what you want to keep.
+**Listen to removed noise** in Subtract, or **Listen to gain-reduced part** in Gate and Compressor, plays only what's being taken away. Use it to check you're not removing what you want to keep. It's temporary: it turns off when you close the window, it's never saved in a project or preset, and it isn't automatable. While it's on, the title strip shows **LISTENING**. A project saved with it on in v1.2.0 or earlier opens with it off.
 
 ## Convolve L/R
 
