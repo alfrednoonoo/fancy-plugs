@@ -1,0 +1,7 @@
+Fancy DS-Mini, CI run 42915095422 (commit ea8c182), 48 kHz, 128-sample blocks, stereo
+dsmini cpu (median of 5, in turns with Fancy DS): DS-Mini default 0.576 %, Fancy DS at the same settings 0.586 %, ratio 0.984 (limit 1.10)
+workflow cpu: Fancy DS-Mini default 0.573 % (1.29 x Comp), Fancy DS default 0.576 % (1.29 x Comp) in the same run
+dsmini default (Female voice, Amount 5): bursts -6.61 dB, vowels -0.21 dB (spec: bursts at least 6 dB, vowels under 0.5 dB)
+dsmini profile switching every 100 ms at Amount 8: largest step 1.6050, input's 1.8512 (limit 1.5 x the input's)
+equivalence: every profile at Amount 2, 5 and 8 bit-identical to Fancy DS at the mapped settings; a saved Fancy DS preset bit-identical in Fancy DS
+latency at 48 kHz: 0 samples by default (measured 0 by the host harness); 96 with Lookahead 2 ms
