@@ -47,7 +47,7 @@ Write `docs/<plugin>.md` before coding each plugin: DSP algorithm, parameters (r
 ## Working rules
 
 - Ask before changing the parameter list or visual layout, or adding a dependency not named in the brief.
-- Look at every image in `reference/` before building each plugin (index in §9). The Phase 1 images (`01__` to `10__`) show the old REAPER plugins, so they're kept outside the repo, which is public: `C:\devancy-plugs-privateeference\`. Never commit them back. For Phase 2, look at the plugin's mockup in `reference/phase2/`, and for Fancy Gate at `reference/phase2_0_1/15__gate_mockup.png`.
+- Look at every image in `reference/` before building each plugin (index in §9). The Phase 1 images (`01__` to `10__`) show the old REAPER plugins, so they're kept outside the repo, which is public: `C:/dev/fancy-plugs-private/reference/`. Never commit them back. For Phase 2, look at the plugin's mockup in `reference/phase2/`, and for Fancy Gate at `reference/phase2_0_1/15__gate_mockup.png`.
 - Commit after each milestone.
 
 ## Cloud-build workflow
