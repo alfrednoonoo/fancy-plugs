@@ -237,6 +237,34 @@ TEST_CASE ("DS: with Range 0 dB the output is the input, in both split filters",
         CHECK (identical);
 }
 
+TEST_CASE ("DS: bypassed, the output is the input delayed by the reported latency", "[ds]")
+{
+    // Every latency DS can report: each lookahead, with each split filter.
+    const auto lookahead = GENERATE ((int) DsDsp::lookaheadOff, (int) DsDsp::lookahead1, (int) DsDsp::lookahead2, (int) DsDsp::lookahead5);
+    const auto linear = GENERATE (false, true);
+    const Voice voice (-12.0, 0.0, 1.0);
+
+    DsDsp::Targets targets;
+    targets.lookahead = lookahead;
+    targets.linearPhase = linear;
+    targets.bypass = true;
+
+    DsDsp probe;
+    probe.setTargets (targets);
+    probe.prepare (rate);
+    const auto latency = probe.getLatencySamples();
+
+    const auto output = run (targets, voice.audio, 333);
+    auto identical = true;
+
+    for (int i = latency; i < output.size(); ++i)
+        identical = identical && output.left[(size_t) i] == voice.audio.left[(size_t) (i - latency)]
+                              && output.right[(size_t) i] == voice.audio.right[(size_t) (i - latency)];
+
+    INFO ("lookahead " << lookahead << (linear ? ", linear phase" : ", minimum phase") << ", latency " << latency);
+    CHECK (identical);
+}
+
 TEST_CASE ("DS: the linear-phase split cuts the band as the minimum-phase one does", "[ds]")
 {
     const Voice voice (-18.0);

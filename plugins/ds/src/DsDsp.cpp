@@ -419,20 +419,22 @@ void DsDsp::processChunk (float* const* main, int numMain, const float* const* s
         const auto out = outputGain.next();
         const auto bypass = bypassMix.next();
 
-        const auto readPosition = (dryPosition + drySize - totalLatency) % drySize;
-        const float dry[2] { dryLines[0][(size_t) readPosition], dryLines[1][(size_t) readPosition] };
-
+        // Written before it's read, so a latency of 0 reads this very sample.
         dryLines[0][(size_t) dryPosition] = left[i];
         dryLines[1][(size_t) dryPosition] = right != nullptr ? right[i] : left[i];
+
+        const auto readPosition = (dryPosition + drySize - totalLatency) % drySize;
+        const float dry[2] { dryLines[0][(size_t) readPosition], dryLines[1][(size_t) readPosition] };
         dryPosition = (dryPosition + 1) % drySize;
 
         const auto wetLeft = outputs[0] * out * fade;
         const auto wetRight = outputs[1] * out * fade;
 
-        left[i] = (float) (wetLeft + ((double) dry[0] - wetLeft) * bypass);
+        // Fully bypassed, the dry signal passes untouched.
+        left[i] = bypass >= 1.0 ? dry[0] : (float) (wetLeft + ((double) dry[0] - wetLeft) * bypass);
 
         if (right != nullptr)
-            right[i] = (float) (wetRight + ((double) dry[1] - wetRight) * bypass);
+            right[i] = bypass >= 1.0 ? dry[1] : (float) (wetRight + ((double) dry[1] - wetRight) * bypass);
 
         if (holdOffSamples > 0)
             --holdOffSamples;
