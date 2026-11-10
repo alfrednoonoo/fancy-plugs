@@ -55,7 +55,7 @@ fancy::dsp::TruePeakLimiter::Settings LimitDsp::guardSettings (const Targets& ta
     settings.shape = fancy::dsp::TruePeakLimiter::Shape::smooth;
     settings.truePeak = targets.truePeak;
     settings.alignedSamplePeak = true;
-    settings.interpolatorTaps = 16;
+    settings.interpolatorTaps = 32;   // 16 lets the dense test mix through by up to 0.2 dB
     settings.interpolatorPhases = 7;
     return settings;
 }
