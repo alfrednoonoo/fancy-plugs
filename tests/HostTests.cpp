@@ -58,6 +58,9 @@
 #if FANCY_HAS_DS
  #include "DsProcessor.h"
 #endif
+#if FANCY_HAS_DSMINI
+ #include "DsMiniProcessor.h"
+#endif
 
 // Allocation counting ---------------------------------------------------------------------
 // The plugins' code is compiled into this program, so replacing operator new here sees every
@@ -216,6 +219,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_DS
     { DsProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_DSMINI
+    { DsMiniProcessor p; callback (p); }
    #endif
 }
 
@@ -511,6 +517,9 @@ TEST_CASE ("Each latency change reaches the host once", "[host][latency]")
    #endif
    #if FANCY_HAS_DS
     { DsProcessor p; checkLatencyNotices (p, "lookahead", 0.0f, 2.0f); }
+   #endif
+   #if FANCY_HAS_DSMINI
+    { DsMiniProcessor p; checkLatencyNotices (p, "lookahead", 0.0f, 1.0f); }
    #endif
    #if FANCY_HAS_VERB
     { VerbProcessor p; checkLatencyNotices (p, "latency", 0.0f, 1.0f); }

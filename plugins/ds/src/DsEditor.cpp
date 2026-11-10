@@ -114,20 +114,17 @@ DsEditor::Display::Display (DsProcessor& processor)
 
 void DsEditor::Display::resized()
 {
-    columns.assign ((size_t) juce::jmax (1, getWidth()), { -200.0f, 0.0f });
-    incoming.resize (columns.size());
-    writeIndex = 0;
-    dsProcessor.getDsp().setHistoryColumns (getWidth());
+    history.setWidth (getWidth(), dsProcessor.getDsp());
 }
 
 float DsEditor::Display::yForDb (float db) const noexcept
 {
-    return 4.0f + juce::jlimit (0.0f, 1.0f, db / historyFloorDb) * (historyHeight() - 8.0f);
+    return fancy::ui::DeEsserHistory::yForDb (db, historyHeight(), historyFloorDb);
 }
 
 float DsEditor::Display::dbForY (float y) const noexcept
 {
-    return juce::jlimit (historyFloorDb, 0.0f, (y - 4.0f) / (historyHeight() - 8.0f) * historyFloorDb);
+    return fancy::ui::DeEsserHistory::dbForY (y, historyHeight(), historyFloorDb);
 }
 
 float DsEditor::Display::xForHz (double hz) const noexcept
@@ -142,25 +139,16 @@ double DsEditor::Display::hzForX (float x) const noexcept
 
 void DsEditor::Display::update()
 {
-    if (frozen)
+    if (history.isFrozen())
         return;
 
-    const auto count = dsProcessor.getDsp().popHistory (incoming.data(), (int) incoming.size());
-
-    for (int i = 0; i < count && ! columns.empty(); ++i)
-    {
-        columns[(size_t) writeIndex] = incoming[(size_t) i];
-        writeIndex = (writeIndex + 1) % (int) columns.size();
-    }
-
+    history.update (dsProcessor.getDsp());
     repaint();
 }
 
 void DsEditor::Display::showColumns (std::vector<DsDsp::HistoryColumn> newColumns)
 {
-    frozen = true;
-    columns = std::move (newColumns);
-    writeIndex = 0;
+    history.show (std::move (newColumns));
     repaint();
 }
 
@@ -174,45 +162,9 @@ void DsEditor::Display::paint (juce::Graphics& g)
     g.fillRoundedRectangle (bounds, 6.0f);
 
     // History: oldest on the left.
-    if (! columns.empty())
-    {
-        juce::Path level, reduction;
-        const auto count = (int) columns.size();
-        const auto pixelsPerDb = (top - 8.0f) / historyReductionDb;
-
-        level.startNewSubPath (0.0f, top);
-        reduction.startNewSubPath (0.0f, 0.0f);
-
-        for (int i = 0; i < count; ++i)
-        {
-            const auto& column = columns[(size_t) ((writeIndex + i) % count)];
-            level.lineTo ((float) i, yForDb (column.levelDb));
-            reduction.lineTo ((float) i, 4.0f + juce::jlimit (0.0f, top, column.reductionDb * pixelsPerDb));
-        }
-
-        level.lineTo ((float) count, top);
-        level.closeSubPath();
-        reduction.lineTo ((float) count, 0.0f);
-        reduction.closeSubPath();
-
-        g.saveState();
-        g.reduceClipRegion (juce::Rectangle<float> (0.0f, 0.0f, bounds.getWidth(), top).toNearestInt());
-
-        g.setColour (colours::textSecondary.withAlpha (0.3f));
-        g.fillPath (level);
-
-        g.setColour (dsGreen.withAlpha (0.8f));
-        g.fillRect (0.0f, yForDb ((float) targets.thresholdDb) - 0.5f, bounds.getWidth(), 1.0f);
-
-        g.setColour (dsGreen.withAlpha (0.55f));
-        g.fillPath (reduction);
-
-        g.setColour (colours::textSecondary);
-        g.setFont (font (Weight::regular, 10.0f));
-        g.drawText (juce::String::fromUTF8 ("sibilance level (grey) \xc2\xb7 reduction (green) \xc2\xb7 threshold"),
-                    juce::Rectangle<float> (8.0f, top - 20.0f, bounds.getWidth() - 16.0f, 16.0f), juce::Justification::centredLeft, false);
-        g.restoreState();
-    }
+    history.paint (g, bounds.getWidth(), top, (float) targets.thresholdDb,
+                   { dsGreen, juce::String::fromUTF8 ("sibilance level (grey) \xc2\xb7 reduction (green) \xc2\xb7 threshold"),
+                     false, historyFloorDb, historyReductionDb });
 
     // The ruler.
     {

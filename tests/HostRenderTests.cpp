@@ -72,6 +72,9 @@
 #if FANCY_HAS_DS
  #include "DsProcessor.h"
 #endif
+#if FANCY_HAS_DSMINI
+ #include "DsMiniProcessor.h"
+#endif
 
 namespace
 {
@@ -491,6 +494,17 @@ TEST_CASE ("DS: an offline render matches playback", "[host][offline]")
     checkRenders<DsProcessor> (phase > 0.5f ? "DS, linear phase" : "DS",
                                { { { "splitPhase", phase }, { "threshold", -40.0f } },
                                  join ({ alternate ("freq", 5000.0f, 7000.0f), alternate ("release", 30.0f, 200.0f, 888) }), {}, true });
+}
+#endif
+
+#if FANCY_HAS_DSMINI
+TEST_CASE ("DS-Mini: an offline render matches playback", "[host][offline]")
+{
+    // Profile changes crossfade between two engines; both renders must make them alike.
+    const auto lookahead = GENERATE (0.0f, 1.0f);
+    checkRenders<DsMiniProcessor> (lookahead > 0.5f ? "DS-Mini, lookahead" : "DS-Mini",
+                                   { { { "lookahead", lookahead }, { "amount", 7.0f } },
+                                     join ({ alternate ("profile", 0.0f, 2.0f), alternate ("amount", 3.0f, 8.0f, 888) }), {} });
 }
 #endif
 

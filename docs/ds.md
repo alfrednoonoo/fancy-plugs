@@ -22,6 +22,8 @@ sidechain ─► detector source (L+R, L, R) ─────────┴─�
 
 ## Shared code it reuses
 
+Since Fancy DS-Mini (10 November 2026), DS's own engine is shared too: `fancy::dsp::DeEsser` in `fancy-core` (DS still calls it `DsDsp`), its history display (`fancy::ui::DeEsserHistory`) and its parameter definitions (`fancy/plugin/DeEsserParameters.h`). All moved unchanged; see `docs/ds-mini.md`.
+
 - **Detector:** the shared detector filters (`fancy::dsp::Svf`) for the 2nd-order band-pass (Band) or high-pass (Shelf) at Freq. Width sets the band-pass's Q: an octave width `w` gives `Q = √2^w / (2^w − 1)`.
 - **Gain computer and ballistics:** `fancy::dsp::computeReduction` with a fixed slope for 8:1 (0.875) and a 6 dB knee, then `Ballistics` and `EnvelopeFollower` from `fancy/dsp/Compression.h` for Attack and Release in dB. They're the same code Comp and MultiComp use.
 - **Meters and controls:**

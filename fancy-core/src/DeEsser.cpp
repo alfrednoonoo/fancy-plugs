@@ -1,4 +1,4 @@
-#include "DsDsp.h"
+#include <fancy/dsp/DeEsser.h>
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +20,10 @@ double fromDb (double db) noexcept
 }
 } // namespace
 
-double DsDsp::lookaheadMs (int choice) noexcept
+namespace fancy::dsp
+{
+
+double DeEsser::lookaheadMs (int choice) noexcept
 {
     switch (choice)
     {
@@ -31,13 +34,13 @@ double DsDsp::lookaheadMs (int choice) noexcept
     }
 }
 
-double DsDsp::qForWidth (double octaves) noexcept
+double DeEsser::qForWidth (double octaves) noexcept
 {
     const auto ratio = std::pow (2.0, octaves);
     return std::sqrt (ratio) / (ratio - 1.0);
 }
 
-DsDsp::Edges DsDsp::edgesFor (const Targets& targets) noexcept
+DeEsser::Edges DeEsser::edgesFor (const Targets& targets) noexcept
 {
     Edges edges;
 
@@ -56,7 +59,7 @@ DsDsp::Edges DsDsp::edgesFor (const Targets& targets) noexcept
     return edges;
 }
 
-void DsDsp::prepare (double sampleRate)
+void DeEsser::prepare (double sampleRate)
 {
     rate = sampleRate;
 
@@ -90,12 +93,12 @@ void DsDsp::prepare (double sampleRate)
     reset();
 }
 
-int DsDsp::latencyFor (int lookahead, bool linear) const noexcept
+int DeEsser::latencyFor (int lookahead, bool linear) const noexcept
 {
     return (int) std::lround (lookaheadMs (lookahead) * 0.001 * rate) + (linear ? crossover.getLatencySamples() : 0);
 }
 
-void DsDsp::reset()
+void DeEsser::reset()
 {
     for (auto* lines : { &lookaheadLines, &rawLines, &dryLines })
         for (auto& line : *lines)
@@ -119,7 +122,7 @@ void DsDsp::reset()
     snapToTargets (current);
 }
 
-void DsDsp::snapToTargets (const Targets& targets) noexcept
+void DeEsser::snapToTargets (const Targets& targets) noexcept
 {
     current = targets;
 
@@ -141,7 +144,28 @@ void DsDsp::snapToTargets (const Targets& targets) noexcept
         updateLinearDesign (targets);
 }
 
-void DsDsp::updateFilters() noexcept
+void DeEsser::continueFrom (const DeEsser& other) noexcept
+{
+    detectors = other.detectors;
+    splits = other.splits;
+    followers = other.followers;
+    peakDb = other.peakDb;
+    meanSquare = other.meanSquare;
+    holdLeft = other.holdLeft;
+    filterCountdown = other.filterCountdown;
+
+    // The same sizes, so these copy without allocating.
+    lookaheadLines = other.lookaheadLines;
+    rawLines = other.rawLines;
+    dryLines = other.dryLines;
+    gainLines = other.gainLines;
+    lookaheadPosition = other.lookaheadPosition;
+    rawPosition = other.rawPosition;
+    dryPosition = other.dryPosition;
+    gainPosition = other.gainPosition;
+}
+
+void DeEsser::updateFilters() noexcept
 {
     const auto hz = std::exp2 (logFreq.getCurrent());
     bandQ = current.shelf ? 0.7071 : qForWidth (width.getCurrent());
@@ -149,7 +173,7 @@ void DsDsp::updateFilters() noexcept
     coefficients.set (hz, bandQ, rate);
 }
 
-void DsDsp::updateLinearDesign (const Targets& targets) noexcept
+void DeEsser::updateLinearDesign (const Targets& targets) noexcept
 {
     if (! targets.linearPhase)
         return;
@@ -165,12 +189,12 @@ void DsDsp::updateLinearDesign (const Targets& targets) noexcept
     designedEdges = edges;
 }
 
-bool DsDsp::isDesignPending (const Targets& targets) const noexcept
+bool DeEsser::isDesignPending (const Targets& targets) const noexcept
 {
     return targets.linearPhase && (designNeeded.load (std::memory_order_acquire) || edgesFor (targets) != designedEdges);
 }
 
-void DsDsp::process (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples) noexcept
+void DeEsser::process (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples) noexcept
 {
     for (int start = 0; start < numSamples; start += maxChunk)
     {
@@ -180,7 +204,7 @@ void DsDsp::process (float* const* main, int numMain, const float* const* sidech
     }
 }
 
-void DsDsp::processChunk (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples) noexcept
+void DeEsser::processChunk (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples) noexcept
 {
     const auto settings = current;
     auto* left = main[0];
@@ -449,14 +473,14 @@ void DsDsp::processChunk (float* const* main, int numMain, const float* const* s
     }
 }
 
-void DsDsp::pushHistory (float levelDb, float reductionDb) noexcept
+void DeEsser::pushHistory (float levelDb, float reductionDb) noexcept
 {
     const auto write = historyWrite.load (std::memory_order_relaxed);
     history[(size_t) write] = { levelDb, reductionDb };
     historyWrite.store ((write + 1) % historyCapacity, std::memory_order_release);
 }
 
-int DsDsp::popHistory (HistoryColumn* destination, int maxColumns) noexcept
+int DeEsser::popHistory (HistoryColumn* destination, int maxColumns) noexcept
 {
     const auto write = historyWrite.load (std::memory_order_acquire);
     auto read = historyRead.load (std::memory_order_relaxed);
@@ -471,3 +495,5 @@ int DsDsp::popHistory (HistoryColumn* destination, int maxColumns) noexcept
     historyRead.store (read, std::memory_order_relaxed);
     return count;
 }
+
+} // namespace fancy::dsp

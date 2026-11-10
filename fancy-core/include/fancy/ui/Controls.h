@@ -331,10 +331,37 @@ public:
     void paint (juce::Graphics&) override;
 };
 
+// A ‹ or › arrow inside a pill, lit under the mouse: the preset pill's, and a ParamDropdown's
+// with step arrows.
+class PillArrow final : public juce::Component, public juce::SettableTooltipClient
+{
+public:
+    explicit PillArrow (bool pointsLeft) : left (pointsLeft) {}
+
+    void paint (juce::Graphics&) override;
+    void mouseEnter (const juce::MouseEvent&) override { repaint(); }
+    void mouseExit (const juce::MouseEvent&) override { repaint(); }
+    void mouseUp (const juce::MouseEvent&) override;
+
+    std::function<void()> onClick;
+
+private:
+    bool left;
+};
+
 class ParamDropdown final : public ParamClickControl, public MenuTarget
 {
 public:
     using ParamClickControl::ParamClickControl;
+
+    // Arrows inside the pill that step to the previous or next choice, as the header's preset
+    // pill has; the pill is then centred and filled with bgSection, to stand out on the body
+    // (Fancy DS-Mini's profile).
+    void setStepArrows (bool shouldShow);
+    void step (int direction);
+    void resized() override;
+
+    static constexpr int stepArrowWidth = 22;
 
     // Puts a section label before the choice at this index, such as "Sidechain".
     void addSection (int choiceIndex, const juce::String& label);
@@ -349,6 +376,7 @@ private:
 
     float textHeight = 14.0f;
     std::vector<std::pair<int, juce::String>> sections;
+    std::unique_ptr<PillArrow> previousArrow, nextArrow;
 };
 
 class PillButton final : public juce::Component

@@ -171,49 +171,8 @@ juce::AttributedString markMatches (const juce::String& text, const juce::String
 
 // PresetPill --------------------------------------------------------------------
 
-class PresetPill::Arrow final : public juce::Component, public juce::SettableTooltipClient
-{
-public:
-    explicit Arrow (bool pointsLeft) : left (pointsLeft) {}
-
-    void paint (juce::Graphics& g) override
-    {
-        const auto bounds = getLocalBounds().toFloat();
-        const auto lit = isMouseOver();
-
-        if (lit)
-        {
-            g.setColour (colours::grey5);
-            g.fillRoundedRectangle (bounds, 3.0f);
-        }
-
-        const auto c = bounds.getCentre();
-        juce::Path arrow;
-        const auto dx = left ? 1.75f : -1.75f;
-        arrow.startNewSubPath (c.x + dx, c.y - 4.0f);
-        arrow.lineTo (c.x - dx, c.y);
-        arrow.lineTo (c.x + dx, c.y + 4.0f);
-        g.setColour (lit ? juce::Colours::white : juce::Colours::white.withAlpha (0.4f));
-        g.strokePath (arrow, juce::PathStrokeType (1.3f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    }
-
-    void mouseEnter (const juce::MouseEvent&) override { repaint(); }
-    void mouseExit (const juce::MouseEvent&) override { repaint(); }
-
-    void mouseUp (const juce::MouseEvent& event) override
-    {
-        if (onClick != nullptr && contains (event.getPosition()))
-            onClick();
-    }
-
-    std::function<void()> onClick;
-
-private:
-    bool left;
-};
-
 PresetPill::PresetPill()
-    : previous (std::make_unique<Arrow> (true)), next (std::make_unique<Arrow> (false))
+    : previous (std::make_unique<PillArrow> (true)), next (std::make_unique<PillArrow> (false))
 {
     previous->setTooltip ("Previous preset");
     next->setTooltip ("Next preset");

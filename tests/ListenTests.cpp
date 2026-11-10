@@ -30,6 +30,11 @@
  #include "DsProcessor.h"
 #endif
 
+#if FANCY_HAS_DSMINI
+ #include "DsMiniEditor.h"
+ #include "DsMiniProcessor.h"
+#endif
+
 namespace
 {
 constexpr double rate = 48000.0;
@@ -256,5 +261,12 @@ TEST_CASE ("FIR: Listen to removed noise / gain-reduced part is temporary (§0.3
 TEST_CASE ("DS: Listen is temporary (§0.3)", "[listen][ds]")
 {
     checkListenSwitch<DsProcessor> ("listen", true);
+}
+#endif
+
+#if FANCY_HAS_DSMINI
+TEST_CASE ("DS-Mini: Listen is temporary (§0.3)", "[listen][dsmini]")
+{
+    checkListenSwitch<DsMiniProcessor> ("listen", true);
 }
 #endif

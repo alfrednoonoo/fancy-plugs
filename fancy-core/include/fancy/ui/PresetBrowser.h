@@ -13,6 +13,8 @@ namespace fancy::ui
 
 // The preset pill in the header (Phase 3 Q2.1): the preset's name, which opens the browser,
 // between previous and next arrows. Drawn as reference/phase3/17c__preset_browser_closeups.png.
+class PillArrow;
+
 class PresetPill final : public juce::Component, public MenuTarget
 {
 public:
@@ -31,10 +33,8 @@ public:
     static constexpr int arrowWidth = 18;
 
 private:
-    class Arrow;
-
     juce::String pillText;
-    std::unique_ptr<Arrow> previous, next;
+    std::unique_ptr<PillArrow> previous, next;
 };
 
 // The 20 px strip above the header with the plugin's name (Phase 3 Q2.1, reference/phase3/

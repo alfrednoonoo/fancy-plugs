@@ -2,6 +2,7 @@
 
 #include "DsProcessor.h"
 
+#include <fancy/ui/DeEsserHistory.h>
 #include <fancy/ui/Meter.h>
 #include <fancy/ui/ShellEditor.h>
 
@@ -60,9 +61,7 @@ private:
         void dragTo (juce::Point<float> position);
 
         DsProcessor& dsProcessor;
-        std::vector<DsDsp::HistoryColumn> columns, incoming;
-        int writeIndex = 0;
-        bool frozen = false;
+        fancy::ui::DeEsserHistory history;
         Drag dragging = Drag::none;
     };
 

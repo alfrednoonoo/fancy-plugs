@@ -65,6 +65,10 @@
  #include "DsEditor.h"
  #include "DsProcessor.h"
 #endif
+#if FANCY_HAS_DSMINI
+ #include "DsMiniEditor.h"
+ #include "DsMiniProcessor.h"
+#endif
 
 using fancy::PresetManager;
 using fancy::ui::ShellEditor;
@@ -126,6 +130,9 @@ void forEachProcessor (const std::function<void (fancy::FancyProcessor&)>& check
 #endif
 #if FANCY_HAS_DS
     { DsProcessor p; check (p); }
+#endif
+#if FANCY_HAS_DSMINI
+    { DsMiniProcessor p; check (p); }
 #endif
 }
 

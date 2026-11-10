@@ -68,6 +68,10 @@
  #include "DsEditor.h"
  #include "DsProcessor.h"
 #endif
+#if FANCY_HAS_DSMINI
+ #include "DsMiniEditor.h"
+ #include "DsMiniProcessor.h"
+#endif
 
 namespace
 {
@@ -350,6 +354,9 @@ bool renderAllHostScales (const juce::File& outputDir)
    #if FANCY_HAS_DS
     ok = renderHostScales<DsProcessor, DsEditor> ("ds", outputDir, plain) && ok;
    #endif
+   #if FANCY_HAS_DSMINI
+    ok = renderHostScales<DsMiniProcessor, DsMiniEditor> ("dsmini", outputDir, plain) && ok;
+   #endif
 
     return ok;
 }
@@ -403,6 +410,9 @@ bool renderAllPopups (const juce::File& outputDir)
    #if FANCY_HAS_DS
     ok = renderPopups<DsProcessor, DsEditor> ("ds", outputDir, plain) && ok;
    #endif
+   #if FANCY_HAS_DSMINI
+    ok = renderPopups<DsMiniProcessor, DsMiniEditor> ("dsmini", outputDir, plain) && ok;
+   #endif
 
     return ok;
 }
@@ -414,7 +424,7 @@ public:
     {
         using namespace fancy::ui;
 
-        for (juce::Component* item : std::initializer_list<juce::Component*> { &wetFader, &dryFader, &onBox, &offBox, &dropdown, &tealKnob, &blueKnob, &smallKnob })
+        for (juce::Component* item : std::initializer_list<juce::Component*> { &wetFader, &dryFader, &onBox, &offBox, &dropdown, &steppedDropdown, &tealKnob, &blueKnob, &smallKnob })
             addAndMakeVisible (item);
 
         wetFader.setBounds (16, 16, 44, 300);
@@ -425,6 +435,8 @@ public:
         onBox.setBounds (136, 170, 100, 20);
         offBox.setBounds (246, 170, 100, 20);
         dropdown.setBounds (136, 204, 180, 24);
+        steppedDropdown.setStepArrows (true);
+        steppedDropdown.setBounds (136, 240, 238, 26);
 
         setSize (406, 332);
     }
@@ -450,6 +462,10 @@ private:
     fancy::ui::Knob smallKnob { width, "Width", fancy::ui::colours::uiTeal, fancy::ui::Knob::smallStyle };
     fancy::ui::ParamCheckbox onBox { on, "Weird" }, offBox { off, "Classic" };
     fancy::ui::ParamDropdown dropdown { detector };
+
+    // The step-arrow variant (Fancy DS-Mini's profile).
+    juce::AudioParameterChoice profile { juce::ParameterID { "profile", 1 }, "Profile", { "Female voice", "Male voice", "Sibilance" }, 0 };
+    fancy::ui::ParamDropdown steppedDropdown { profile };
 };
 
 } // namespace
@@ -520,6 +536,10 @@ int main (int argc, char** argv)
    #if FANCY_HAS_DS
     ok = renderPlugin<DsProcessor, DsEditor> ("ds", outputDir) && ok;
     ok = renderListening<DsProcessor, DsEditor> ("ds", outputDir) && ok;
+   #endif
+   #if FANCY_HAS_DSMINI
+    ok = renderPlugin<DsMiniProcessor, DsMiniEditor> ("dsmini", outputDir) && ok;
+    ok = renderListening<DsMiniProcessor, DsMiniEditor> ("dsmini", outputDir) && ok;
    #endif
 
     Gallery gallery;

@@ -942,7 +942,92 @@ void ParamDropdown::setTextHeight (float height)
 
 void ParamDropdown::paint (juce::Graphics& g)
 {
-    paintDropdown (g, getLocalBounds().toFloat(), getValueText(), textHeight, isMenuOpen());
+    if (previousArrow == nullptr)
+    {
+        paintDropdown (g, getLocalBounds().toFloat(), getValueText(), textHeight, isMenuOpen());
+        return;
+    }
+
+    const auto bounds = getLocalBounds().toFloat();
+    g.setColour (isMenuOpen() ? colours::menuHover : colours::bgSection);
+    g.fillRoundedRectangle (bounds, 3.0f);
+
+    g.setFont (font (Weight::regular, textHeight));
+    g.setColour (colours::textPrimary);
+    g.drawText (getValueText(), bounds.reduced ((float) stepArrowWidth + 2.0f, 0.0f), juce::Justification::centred, true);
+}
+
+void ParamDropdown::setStepArrows (bool shouldShow)
+{
+    if (! shouldShow)
+    {
+        previousArrow.reset();
+        nextArrow.reset();
+        repaint();
+        return;
+    }
+
+    previousArrow = std::make_unique<PillArrow> (true);
+    nextArrow = std::make_unique<PillArrow> (false);
+    previousArrow->setTooltip ("Previous");
+    nextArrow->setTooltip ("Next");
+    previousArrow->onClick = [this] { step (-1); };
+    nextArrow->onClick = [this] { step (1); };
+    addAndMakeVisible (*previousArrow);
+    addAndMakeVisible (*nextArrow);
+    resized();
+    repaint();
+}
+
+void ParamDropdown::step (int direction)
+{
+    const auto count = param.getAllValueStrings().size();
+
+    if (count < 2)
+        return;
+
+    const auto last = count - 1;
+    const auto index = juce::roundToInt (param.getValue() * (float) last);
+    const auto next = (index + direction + count) % count;
+    setDenormalised (param.convertFrom0to1 ((float) next / (float) last));
+}
+
+void ParamDropdown::resized()
+{
+    if (previousArrow != nullptr)
+    {
+        previousArrow->setBounds (0, 0, stepArrowWidth, getHeight());
+        nextArrow->setBounds (getWidth() - stepArrowWidth, 0, stepArrowWidth, getHeight());
+    }
+}
+
+// PillArrow -------------------------------------------------------------------
+
+void PillArrow::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    const auto lit = isMouseOver();
+
+    if (lit)
+    {
+        g.setColour (colours::grey5);
+        g.fillRoundedRectangle (bounds, 3.0f);
+    }
+
+    const auto c = bounds.getCentre();
+    juce::Path arrow;
+    const auto dx = left ? 1.75f : -1.75f;
+    arrow.startNewSubPath (c.x + dx, c.y - 4.0f);
+    arrow.lineTo (c.x - dx, c.y);
+    arrow.lineTo (c.x + dx, c.y + 4.0f);
+    g.setColour (lit ? juce::Colours::white : juce::Colours::white.withAlpha (0.4f));
+    g.strokePath (arrow, juce::PathStrokeType (1.3f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+}
+
+void PillArrow::mouseUp (const juce::MouseEvent& event)
+{
+    if (onClick != nullptr && contains (event.getPosition()))
+        onClick();
 }
 
 void ParamDropdown::addSection (int choiceIndex, const juce::String& label)

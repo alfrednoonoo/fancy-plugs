@@ -1,6 +1,6 @@
 # Fancy DS-Mini: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §6b, and §0.3 for Listen. Mockup: `reference/phase3/22__ds_mini_mockup.png`, source `design/phase3-mockup-src/dsmini.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **No code until this note is approved.** The points marked **Decision** need your answer.
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §6b, and §0.3 for Listen. Mockup: `reference/phase3/22__ds_mini_mockup.png`, source `design/phase3-mockup-src/dsmini.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Approved 10 November 2026: A for all four decisions.**
 
 ## What it is
 
@@ -19,6 +19,8 @@ The brief asks for a 50 ms crossfade of the detector settings, so switching neve
 
 - **A.** Two engines. On a profile change, the running engine keeps going with the old profile while a second one starts with the new profile, and the output crossfades from one to the other over 50 ms (equal gain, since both carry the same input). Then the old one stops. The rest of the time only one engine runs, so it's bit-identical to Fancy DS and costs the same CPU. A new engine starts with no gain reduction, so the crossfade lands on a de-esser that's still catching up for a few ms. With 0.5 ms attack that's inaudible.
 - **B.** One engine with its settings smoothed over 50 ms. Bit-identical between changes too, but the Band–Shelf switch still needs its own crossfade inside the engine, which would change Fancy DS.
+
+**As built:** the incoming engine doesn't start from silence. `DeEsser::continueFrom` copies the playing engine's detector levels, filters, gain and delay lines, then the new profile's settings are snapped on, so the relative threshold's 50 ms average is already full and nothing over-cuts during the fade. Fancy DS never calls it, so it's unchanged.
 
 ## Profiles and Amount
 
@@ -49,6 +51,10 @@ The brief's captions ("≈5.5–9 kHz" for Female voice) don't match its own wid
 - **B.** Narrow the widths to match the brief's captions: Female voice 0.7 oct at 7.0 kHz (5.5–9 kHz), Male voice 0.7 oct at 5.1 kHz (4–6.5 kHz), Harshness 1.0 oct at 3.5 kHz (2.5–5 kHz).
 
 **Tuning.** The brief says to tune these by ear and on the test signals. I can only tune on the test signals: if the default (Female voice, Amount 5) misses the 6 dB on the §2.4 test vocal, I'll change its Attack and Release first, then the Amount mapping's slopes, and record the final numbers here. Your listening in REAPER is the by-ear part.
+
+## Rounding like Fancy DS
+
+Fancy DS reads its settings through JUCE parameters, which snap Threshold and Range to 0.1 dB and pass every value through its normalised form in float. DS-Mini rounds its mapped settings the same way, through private copies of Fancy DS's parameters: their definitions moved to `fancy-core` (`fancy/plugin/DeEsserParameters.h`), and Fancy DS builds its own from the same functions. `fancy::deesser::roundAsParameter` reproduces what the value tree reads back after a host sets a value, with const calls only. That's what makes the equivalence and preset tests bit-identical rather than merely close.
 
 ## Parameters
 
@@ -85,7 +91,7 @@ From the mockup: **392 × 472** at 100 % (53 px header and 419 px body), plus th
 
 The brief asks for a dropdown with ‹ › arrows, "styled like the preset pill". The shared preset pill (Phase 3 Q2.1) has its arrows inside the pill. The mockup draws them as separate square buttons outside it.
 
-- **A.** A `ParamDropdown` variant with the arrows inside, like `PresetPill`, added to `fancy-core` and the gallery first, as the brief says. It matches the header's pill, and `fancy-core` sets styling.
+- **A.** A `ParamDropdown` variant with the arrows inside, like `PresetPill`, added to `fancy-core` and the gallery first, as the brief says. It matches the header's pill, and `fancy-core` sets styling. **As built:** `ParamDropdown::setStepArrows`, with the arrow shared with the preset pill as `PillArrow`. On the body it's filled with `bgSection` (`#262626`, as the mockup draws it), since the header pill's `#303030` would vanish on the body's own `#303030`.
 - **B.** As drawn: a dropdown between two separate 26 px arrow buttons.
 
 ## Display

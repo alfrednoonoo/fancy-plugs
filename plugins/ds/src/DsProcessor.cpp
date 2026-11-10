@@ -1,31 +1,11 @@
 #include "DsProcessor.h"
 #include "DsEditor.h"
 
-#include <fancy/plugin/ParamHelpers.h>
+#include <fancy/plugin/DeEsserParameters.h>
 
 namespace
 {
 constexpr int designIntervalMs = 30;
-
-std::unique_ptr<juce::AudioParameterFloat> dbParameter (const char* id, const char* name, float low, float high, float defaultDb, int decimals = 1)
-{
-    return fancy::floatParameter (
-        id, name, juce::NormalisableRange<float> (low, high, 0.1f), defaultDb,
-        juce::AudioParameterFloatAttributes {}
-            .withLabel ("dB")
-            .withStringFromValueFunction ([decimals] (float value, int) { return fancy::formatFixed (value, decimals) + " dB"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
-}
-
-std::unique_ptr<juce::AudioParameterFloat> msParameter (const char* id, const char* name, float low, float high, float defaultMs)
-{
-    return fancy::floatParameter (
-        id, name, fancy::logRange (low, high, 0.1f), defaultMs,
-        juce::AudioParameterFloatAttributes {}
-            .withLabel ("ms")
-            .withStringFromValueFunction ([] (float value, int) { return (value < 10.0f ? fancy::formatFixed (value, 1) : juce::String (juce::roundToInt (value))) + " ms"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); }));
-}
 
 fancy::FancyProcessor::Layout createLayout()
 {
@@ -40,26 +20,15 @@ fancy::FancyProcessor::Layout createLayout()
         return std::make_unique<Bool> (juce::ParameterID { id, 1 }, name, defaultValue);
     };
 
-    layout.add (dbParameter ("threshold", "Threshold", -60.0f, 0.0f, -28.0f));
-
-    layout.add (fancy::floatParameter (
-        "freq", "Freq", fancy::logRange ((float) DsDsp::minHz, (float) DsDsp::maxHz, 1.0f), 6200.0f,
-        juce::AudioParameterFloatAttributes {}
-            .withLabel ("Hz")
-            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value / 1000.0f, 2) + " kHz"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); })));
-
-    layout.add (fancy::floatParameter (
-        "width", "Width", juce::NormalisableRange<float> (0.3f, 3.0f, 0.01f), 1.0f,
-        juce::AudioParameterFloatAttributes {}
-            .withLabel ("oct")
-            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " oct"; })
-            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    // Shared with Fancy DS-Mini, which rounds its settings through copies of these.
+    layout.add (fancy::deesser::threshold());
+    layout.add (fancy::deesser::freq());
+    layout.add (fancy::deesser::width());
 
     layout.add (std::make_unique<Choice> (juce::ParameterID { "shape", 1 }, "Detection", juce::StringArray { "Band", "Shelf" }, 0));
-    layout.add (dbParameter ("range", "Range", -24.0f, 0.0f, -12.0f, 0));
-    layout.add (msParameter ("attack", "Attack", 0.1f, 20.0f, 0.5f));
-    layout.add (msParameter ("release", "Release", 5.0f, 500.0f, 60.0f));
+    layout.add (fancy::deesser::range());
+    layout.add (fancy::deesser::attack());
+    layout.add (fancy::deesser::release());
 
     layout.add (std::make_unique<Choice> (
         juce::ParameterID { "detector", 1 }, "Detector",
@@ -75,7 +44,7 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (std::make_unique<Choice> (juce::ParameterID { "splitPhase", 1 }, "Split filter",
                                           juce::StringArray { "Minimum phase", "Linear phase" }, 0, ChoiceAttributes {}.withAutomatable (false)));
 
-    layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
+    layout.add (fancy::deesser::output());
     layout.add (toggle ("bypass", "Bypass", false));
 
     return layout;
