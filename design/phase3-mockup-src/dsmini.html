@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><link rel="stylesheet" href="kit2.css"><script src="lib2.js"></script>
+<style>.ch{height:53px;background:#1E1E1E;border-bottom:1px solid #000;display:flex;align-items:center;gap:8px;padding:0 16px;font-size:14px}
+.ch .p{height:24px;border-radius:3px;background:#303030;display:flex;align-items:center;padding:0 8px;color:#fff}
+.big .lbl{font-size:14px}.big .val{font-size:16px;font-weight:600}
+.prof{display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px}
+.prof .ar{width:26px;height:26px;border-radius:3px;background:#262626;display:flex;align-items:center;justify-content:center;color:#8D8D8D;font-size:15px}
+.prof .nm{background:#262626;border-radius:3px;height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;width:170px;color:#fff}</style></head><body style="--a:#3598DB">
+<div class="win" style="width:392px"><div class="tstrip"><span class="f">FANCY</span><span style="color:#3598DB">DS-MINI</span></div>
+ <div class="ch"><div class="p" style="width:110px;justify-content:space-between">Default<span style="color:#8D8D8D;font-size:9px">⌃⌄</span></div><div class="p" style="width:28px;justify-content:center">+</div><div class="p" style="width:43px;justify-content:center">Prm</div><div class="p" style="background:#141414;padding:0 3px;gap:2px"><span style="background:#434343;border-radius:2px;padding:0 6px">A</span><span style="color:#8D8D8D;padding:0 5px">B</span></div><div class="sp"></div><div data-k data-nl data-v=".5" data-c="#00A985" data-s="22" style="width:30px;margin-top:-2px"></div><div class="p" style="width:48px;background:#00A985;justify-content:center;font-weight:600;font-size:12.5px;white-space:nowrap;padding:0 4px">⏻ ON</div></div>
+ <div class="body" style="height:419px">
+  <div class="left" style="padding:14px 12px 0 14px">
+   <div class="prof"><div class="ar">‹</div><div class="nm">Female voice<span style="color:#8D8D8D;font-size:9px">⌃⌄</span></div><div class="ar">›</div></div>
+   <div class="cap" style="text-align:center;margin-top:6px">Sibilance · 5.5–9 kHz</div>
+   <svg id="disp" width="238" height="92" style="display:block;background:#262626;border-radius:6px;margin:10px auto 0"></svg>
+   <div class="big" style="display:flex;justify-content:center;margin-top:12px"><div class="knob" data-k data-v=".6" data-c="#3598DB" data-s="104" data-l="Amount" data-t="6.0" style="width:130px"></div></div>
+   <div style="position:absolute;left:14px;right:12px;bottom:12px;display:flex;align-items:center"><div class="cb" style="font-size:13px"><i></i>Listen</div><span class="edit" style="font-size:13px">⚙ EDIT</span></div>
+  </div>
+  <div class="rcol" style="width:116px;padding-top:14px;gap:14px">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="rl">GR</div><svg width="12" height="330" style="margin-top:6px;display:block"><rect width="12" height="330" rx="1.5" fill="#141414"/><rect width="12" height="46" rx="1.5" fill="#3598DB"/></svg><div class="val" style="color:#FFF;text-align:center">-4.8</div></div>
+    <div data-m data-h="330" data-v=".58,.6" data-w="12" data-l="Out" data-t="-8.9"></div>
+  </div>
+ </div>
+</div>
+<script>
+(()=>{const W=238,H=92,y=d=>6+(H-12)*(-d/60);let seed=21,r=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};let lv=[],gr=[];
+for(let x=0;x<=W;x+=2){const t=(x+18)%64;let d=t<9?-16+4*r():-50-5*r();lv.push([x,y(d)]);gr.push([x,3+Math.max(0,d+28)*1.7])}
+const P=a=>a.map(p=>p.join(',')).join(' ');let s=`<polygon points="0,${H} ${P(lv)} ${W},${H}" fill="#8D8D8D" opacity=".22"/>`;
+s+=`<line x1="0" y1="${y(-28)}" x2="${W}" y2="${y(-28)}" stroke="#3598DB" stroke-dasharray="3 3" opacity=".7"/><polygon points="0,0 ${P(gr)} ${W},0" fill="#3598DB" opacity=".6"/><text x="${W-6}" y="${H-6}" font-size="9.5" fill="#8D8D8D" text-anchor="end">“s” level · reduction · where it starts</text>`;
+document.getElementById('disp').innerHTML=s})();
+</script></body></html>

@@ -7,20 +7,29 @@ This extends all earlier briefs and `docs/DESIGN_SYSTEM.md`. **Every rule there 
 | Plugin | Inspired by | Accent | Size class |
 |---|---|---|---|
 | **Fancy DS** (de-esser) | REAPER's JS de-esser | green `#2DCC70` (approved) | Phase 2, 760 wide |
+| **Fancy DS-Mini** (one-knob de-esser) | Fancy DS, simplified | blue `#3598DB` (approved exception, §6b) | compact, 392 wide |
 | **Fancy Room** (algorithmic room reverb) | ReaVerbate | purple `#9A59B5` (approved; shared with Verb, see §0.2) | Phase 2, 760 wide |
 | **Fancy Saturate** | none (new) | orange `#E77E23` (approved) | Phase 2, 760 wide |
 | **Fancy Limit** | none (new) | red `#E74D3D` (approved) | Phase 2, 760 wide |
 | **Fancy Kicker**: new **Sub** mode | Thunderkick JSFX | red, unchanged | compact, unchanged |
 
-- **Names:** the design system calls three of these "Fancy De-esser", "Fancy Saturator" and "Fancy Limiter". The approved product names are **Fancy DS**, **Fancy Saturate** and **Fancy Limit**. Use them everywhere: product name, title strip, bundle ID (`com.fancyplugs.ds`, `.room`, `.saturate`, `.limit`), docs and presets. Update `DESIGN_SYSTEM.md` to match.
+- **Names:** the design system calls three of these "Fancy De-esser", "Fancy Saturator" and "Fancy Limiter". The approved product names are **Fancy DS**, **Fancy Saturate** and **Fancy Limit**. Use them everywhere: product name, title strip, bundle ID (`com.fancyplugs.ds`, `.dsmini`, `.room`, `.saturate`, `.limit`), docs and presets. Update `DESIGN_SYSTEM.md` to match.
 - **If Phase 3 Q5 already has notes for the limiter or saturator,** this file supersedes them on names and layout. Where they disagree on DSP, list the differences in `docs/PROGRESS.md` and ask me before choosing.
 - **Not in scope:** ReaTune, ReaControlMIDI, ReaSynth, ReaSamplOmatic5000, ReaStream, ReaNINJAM.
 
 ### 0.1 Order
-**Fancy Limit** (reuses Fancy Comp's limiter core) → **Fancy DS** (reuses the detector, the threshold meter and MultiComp's crossovers) → **Fancy Saturate** (reuses Exciter's oversampling and ADAA) → **Kicker Sub mode** → **Fancy Room** (new engine, most tuning). One milestone each, with a design note `docs/<plugin>.md` before any code, as in every earlier phase.
+**Fancy Limit** (reuses Fancy Comp's limiter core) → **Fancy DS** (reuses the detector, the threshold meter and MultiComp's crossovers) → **Fancy DS-Mini** (a second front panel on DS's engine) → **Fancy Saturate** (reuses Exciter's oversampling and ADAA) → **Kicker Sub mode** → **Fancy Room** (new engine, most tuning). One milestone each, with a design note `docs/<plugin>.md` before any code, as in every earlier phase.
 
 ### 0.2 Fancy Room's accent (decided)
 Purple `#9A59B5` (`uiPurple`), approved 10 November 2026. All seven palette accents are taken, and Room is a reverb like Verb, so the suite reads "purple = reverb". Two plugins sharing an accent is accepted. Add Room to the accent table in `DESIGN_SYSTEM.md` §2.
+
+### 0.3 Rule: listen and preview switches are temporary
+A switch that replaces the plugin's normal output with a diagnostic signal must never be saved in a state that could reach an export. This covers **Listen** (Fancy DS, Fancy DS-Mini), **Listen to added harmonics** (Saturate), **Listen to removed** (Limit), and, as a retrofit, the existing **Preview filter** (Comp, Gate) and **Listen to removed noise / gain-reduced part** (FIR).
+- **Not saved:** not written to the plugin state or presets; always off after loading a project or preset. For the existing plugins, a value saved by an older version is ignored on load, so an old project saved with it on opens with it off. (This is a deliberate exception to "old projects sound identical", and the only one.)
+- **Not automatable** and not exposed as a host parameter; it doesn't record undo steps, and A/B switching doesn't change it.
+- **Switches off when the plugin window closes.**
+- **While it's on,** the switch and the plugin's title in the title strip show it clearly (accent-filled checkbox plus a "LISTENING" tag in the title strip), so it can't be forgotten.
+- **Tests:** save state with it on and reload → off; it isn't in the host parameter list; closing the editor turns it off; offline render never includes it unless the window is open and it's on.
 
 ## 1. Mockups
 
@@ -31,10 +40,11 @@ Purple `#9A59B5` (`uiPurple`), approved 10 November 2026. All seven palette acce
 | `reference/phase3/19__saturate_mockup.png` | Fancy Saturate |
 | `reference/phase3/20__limit_mockup.png` | Fancy Limit |
 | `reference/phase3/21__kicker_sub_mockup.png` | Fancy Kicker in Sub mode |
+| `reference/phase3/22__ds_mini_mockup.png` | Fancy DS-Mini |
 
 - Drawn with the Phase 2 kit, updated to `DESIGN_SYSTEM.md` tokens (`design/phase3-mockup-src/kit2.css`, `lib2.js`). Source HTML is in the same folder.
 - In the four 760-wide mockups, the header is a crop of the Fancy Delay CI screenshot, with Delay's "120.0 BPM (host)" read-out painted out, as §10 asks. The title strip is drawn to §3's measurements, because the screenshot didn't include one.
-- **The Kicker mockup's header is drawn, not cropped**, because no Kicker CI screenshot was available. Use the real compact header from `ShellEditor`; only the body is the target.
+- **The Kicker and DS-Mini mockups' headers are drawn, not cropped**, because no compact-class CI screenshot was available. Use the real compact header from `ShellEditor`; only the body is the target.
 - As before, the mockups set layout and control types; `fancy-core` sets the exact styling. Compare each plugin's CI screenshot side by side with its mockup and with Delay or FIR (§10, step 3).
 
 ## 2. Fancy DS (de-esser)
@@ -234,8 +244,54 @@ Thunderkick is Philip Stillwell's JSFX "MDCT subsynthesis filter", which "adds i
 4. No clicks: the generated sub has no discontinuity larger than its own maximum step × 1.5, including at note-off and re-trigger.
 5. Divider engine latency 0; Spectral engine reports its latency exactly.
 
+## 6b. Fancy DS-Mini (one-knob de-esser)
+
+### 6b.1 What it is
+For quick jobs: pick what you're de-essing, turn one knob. It runs **the same engine as Fancy DS**, so DS-Mini at a given setting sounds exactly like Fancy DS at the equivalent settings.
+- Move the DS engine into `fancy-core` (e.g. `fancy::dsp::DeEsser`) and have both plugins use it. Don't copy it.
+- Inspired by the "profile + one big knob" idea of simple de-essers such as MuseFX De-Ess. Take only the idea; the look is ours (`22__ds_mini_mockup.png`), and no names, icons or graphics from that product.
+
+### 6b.2 Checklist (§10)
+1. **Accent:** blue `#3598DB` (`uiBlue`). **Approved exception** to the rule that blue means a filter knob: DS-Mini has no filter knobs, so nothing inside it conflicts. Record this in `DESIGN_SYSTEM.md` §2.
+2. **Size class:** compact, 392 wide (three main controls).
+3. **Controls:**
+
+| Control | Component | Range / default |
+|---|---|---|
+| Profile (top) | `ParamDropdown` with ‹ › step arrows, styled like the preset pill (if `fancy-core` has no such variant, add it there and to the gallery first) | see §6b.3, default Female voice |
+| Profile caption | text, `textSecondary` | what the profile targets, e.g. "Sibilance · 5.5–9 kHz" |
+| Display | own component: a small version of Fancy DS's history (detection level, reduction from the top, a dashed line where reduction starts) | display |
+| Amount | `Knob`, `largeStyle` | 0.0–10.0, default 5.0 |
+
+4. **Footer:** Listen (the removed part only), then the EDIT link. **EDIT drawer:** Mode (Split default / Wide), Lookahead (Off default / 2 ms, with latency note), Link channels (on), and a **"Save as Fancy DS preset…"** action that writes a Fancy DS preset with the exact equivalent settings, for when someone outgrows the Mini.
+5. **Right column (116 px):** GR (single bar, accent) and Out.
+
+### 6b.3 Profiles and the Amount mapping
+Starting values; tune them by ear and on the test signals before the milestone is done, and record the final numbers in `docs/ds-mini.md`.
+
+| Profile | Detection | Attack / Release |
+|---|---|---|
+| Female voice | Band, 7.0 kHz, 1.0 oct (≈5.5–9 kHz) | 0.5 / 60 ms |
+| Male voice | Band, 5.0 kHz, 1.0 oct (≈4–6.5 kHz) | 0.5 / 60 ms |
+| Sibilance (any voice) | Shelf from 5.0 kHz | 0.5 / 60 ms |
+| Harshness | Band, 3.5 kHz, 1.2 oct (≈2.5–5 kHz) | 2 / 120 ms |
+| Acoustic guitar (string squeak) | Band, 3.0 kHz, 1.0 oct | 1 / 80 ms |
+| Bowed strings (rosin) | Band, 4.0 kHz, 1.5 oct | 2 / 120 ms |
+
+- All profiles use Relative threshold and Split mode (unless changed in EDIT).
+- **Amount** sets threshold and range together: relative threshold = −4 × Amount dB, Range = −1.8 × Amount dB. So **Amount 0 does nothing**, 5 is moderate (−20 dB threshold, up to −9 dB cut), and 10 is strong (−40 dB, up to −18 dB).
+- Changing profile crossfades the detector settings over 50 ms, so switching while playing never clicks.
+
+### 6b.4 Tests
+1. Amount 0 → output bit-identical to the input.
+2. **Equivalence:** for each profile at Amount 2, 5 and 8, DS-Mini's output equals Fancy DS's at the mapped settings, bit-identically.
+3. Default (Female voice, Amount 5) on the §2.4 test vocal: "s" bursts reduced by ≥ 6 dB, vowels by < 0.5 dB.
+4. Switching profiles every 100 ms on a full-level signal: no sample-to-sample step larger than the input's own maximum step × 1.5.
+5. "Save as Fancy DS preset" → loading that preset in Fancy DS gives bit-identical output.
+6. CPU (ratio method) within 10 % of Fancy DS.
+
 ## 7. Acceptance (each plugin)
-§7 of `BUILD_PROMPT.md` plus Phase 2.1's S, H and W checks from the start: styled pop-ups (listed in `getPopupOpeners()`), offline render equals real time, keyboard pass-through, scaling screenshots, host-harness scenarios, validator, undo/A-B/Compare, and the CPU ratio method. Every test in §2.4, §3.4, §4.4, §5.4 and §6.4 is in Catch2 and green in CI. CPU targets (Fancy Comp ratio method): DS < 1 %, Room (Normal) < 3 %, Saturate (4×) < 2 %, Limit (4× true peak) < 2 %, Kicker Sub (Divider) < 0.5 %.
+§7 of `BUILD_PROMPT.md` plus Phase 2.1's S, H and W checks from the start: styled pop-ups (listed in `getPopupOpeners()`), offline render equals real time, keyboard pass-through, scaling screenshots, host-harness scenarios, validator, undo/A-B/Compare, and the CPU ratio method. Every test in §2.4, §3.4, §4.4, §5.4 and §6.4 is in Catch2 and green in CI. CPU targets (Fancy Comp ratio method): DS < 1 %, DS-Mini < 1 %, Room (Normal) < 3 %, Saturate (4×) < 2 %, Limit (4× true peak) < 2 %, Kicker Sub (Divider) < 0.5 %.
 
 ## 8. Sources for the issues above
 - Cockos forum, "Need de-esser so bad!": https://forums.cockos.com/showthread.php?t=160053
