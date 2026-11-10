@@ -645,8 +645,7 @@ TEST_CASE ("limit CPU measurement", "[.measure]")
     const auto limitEight = medianOfFive ([&] { return limitCpu (eight); });
     const auto limitSamplePeaks = medianOfFive ([&] { return limitCpu (samplePeaks); });
 
-    std::printf ("limit cpu (median of 5): 4x + true peak, 12 dB pushed (target < 5 %%) %.3f %%, 4x, True peak off %.3f %%, oversampling off %.3f %%, 8x %.3f %%
-",
+    std::printf ("limit cpu (median of 5): 4x + true peak, 12 dB pushed (target < 5 %%) %.3f %%, 4x, True peak off %.3f %%, oversampling off %.3f %%, 8x %.3f %%\n",
                  limit, limitSamplePeaks, limitOff, limitEight);
 
    #if FANCY_HAS_COMP
@@ -678,8 +677,7 @@ TEST_CASE ("limit CPU measurement", "[.measure]")
         return 100.0 * spent.count() / ((double) (measureBlocks * measureBlock) / 48000.0);
     });
 
-    std::printf ("limit cpu reference: Fancy Comp default %.3f %% in the same run; limit 4x / comp = %.2f, True peak off / comp = %.2f, off / comp = %.2f, 8x / comp = %.2f
-",
+    std::printf ("limit cpu reference: Fancy Comp default %.3f %% in the same run; limit 4x / comp = %.2f, True peak off / comp = %.2f, off / comp = %.2f, 8x / comp = %.2f\n",
                  comp, limit / comp, limitSamplePeaks / comp, limitOff / comp, limitEight / comp);
    #endif
 
