@@ -51,6 +51,10 @@
  #include "GateProcessor.h"
 #endif
 
+#if FANCY_HAS_LIMIT
+ #include "LimitProcessor.h"
+#endif
+
 // Allocation counting ---------------------------------------------------------------------
 // The plugins' code is compiled into this program, so replacing operator new here sees every
 // allocation they make. It only counts on a thread that asks it to, around processBlock.
@@ -202,6 +206,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_GATE
     { GateProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_LIMIT
+    { LimitProcessor p; callback (p); }
    #endif
 }
 
@@ -491,6 +498,9 @@ TEST_CASE ("Each latency change reaches the host once", "[host][latency]")
    #endif
    #if FANCY_HAS_GATE
     { GateProcessor p; checkLatencyNotices (p, "lookahead", 0.0f, 1.0f); }
+   #endif
+   #if FANCY_HAS_LIMIT
+    { LimitProcessor p; checkLatencyNotices (p, "oversampling", 0.0f, 1.0f); }
    #endif
    #if FANCY_HAS_VERB
     { VerbProcessor p; checkLatencyNotices (p, "latency", 0.0f, 1.0f); }

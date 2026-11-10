@@ -76,10 +76,10 @@ These are added to `fancy-core` and the screenshot gallery rather than drawn ins
      - momentary (400 ms) and short-term (3 s) loudness
      - integrated loudness, with the −70 LUFS absolute gate and the −10 LU relative gate
      - loudness range, per EBU Tech 3342
-   - **On the audio thread:** it only sums squares into 100 ms blocks and pushes each block's power into a lock-free FIFO.
-   - **On the message thread:** the gating, the histogram and LRA. Nothing allocates on the audio thread: the history is a preallocated ring of 100 ms blocks, 2 hours at most, after which the oldest blocks fall off.
+   - **All on the audio thread, in fixed storage** (as built): K-weighted squares summed into 100 ms blocks; momentary and short-term from a ring of the last 30 blocks; integrated and range from two histograms of 0.1 LU bins (-70 to +10 LUFS) that keep each bin's summed energy and count, so gating is exact apart from the one bin the relative gate falls in. It keeps measuring in an offline render with no editor open, and has no time limit. Results are atomics.
 2. **`fancy::dsp::TruePeakMeter`:** the BS.1770-4 Annex 2 method, a 4× polyphase interpolator with 48 taps per phase. It's longer than the limiter's 16-tap one, because it's measuring, not steering. It's used for the dBTP read-out and in the tests.
-3. **`fancy::ui::LoudnessBar`:** a single bar on the meter gradient, with a red marker line at the Target and a readout. It's a sibling of `OutMeter`, with the same well and geometry.
+3. **Two small additions to existing meters:** `GainReductionMeter::setBarColour` (yellow by default; Limit's is red), and the gate-style `ThresholdMeter` skips its "close" read-out when no close level is set. Gate's screenshots are unchanged.
+4. **`fancy::ui::LoudnessBar`:** a single bar on the meter gradient, with a red marker line at the Target and a readout. It's a sibling of `OutMeter`, with the same well and geometry.
 
 ## Parameters
 
@@ -117,8 +117,8 @@ Styles only change the core's internal shapes. All four knobs keep working in ev
 | Style | Attack shape | Release | Character |
 |---|---|---|---|
 | Clean | three cascaded averages over the full Lookahead | as set | smoothest; least distortion |
-| Punchy | two cascaded averages over the last 60 % of Lookahead | as set, with a 1 ms hold-free start | the gain falls later and faster, so a transient's front keeps more of its shape; the ceiling still holds |
-| Dense | as Clean | × 0.5, and Auto release leans to the fast side | more consistent loudness, more density |
+| Punchy | two cascaded averages over the last 60 % of Lookahead | as set | the gain falls later and faster, so a transient's front keeps more of its shape; the ceiling still holds |
+| Dense | as Clean | × 0.5, both the fast and the slow paths | more consistent loudness, more density |
 
 **Decision 2, approved by the user on 10 November 2026:** Punchy as above, where transients come through by starting the gain reduction later in the lookahead window, not by letting anything pass the ceiling. "Lets very short transients through more" can't mean above the ceiling, because the True peak test would fail. I recommend this reading.
 
@@ -127,7 +127,7 @@ Styles only change the core's internal shapes. All four knobs keep working in ev
 Two release paths run in parallel:
 
 - **fast:** the Release setting
-- **slow:** 8 × Release, at most 2 s
+- **slow:** 8 × Release, at most 2 s, after a 30 ms hold (a second sliding minimum), so the gain doesn't follow each cycle of a bass note
 
 The weight between them follows how sustained the reduction is: a 300 ms average of the gain reduction compared with its 20 ms peak. Short peaks recover on the fast path; steady reduction, such as on a dense chorus or bass, moves to the slow path, which removes pumping and bass distortion (the 40 Hz test). With Auto release off, only the fast path runs.
 
@@ -140,7 +140,7 @@ The weight between them follows how sustained the reduction is: a 300 ms average
 ## Dither
 
 - **Algorithm:** TPDF, ±1 LSB at the chosen word length. The "shaped" variants add second-order error-feedback noise shaping, which pushes the noise above about 15 kHz.
-- **Determinism:** the noise comes from a seeded generator, reset on `prepareToPlay` and on transport start, so offline and real-time renders match (H.1).
+- **Determinism:** the noise comes from a seeded generator, reset on `prepareToPlay` and on reset, so offline and real-time renders match (H.1).
 - **Ceiling with dither:** dither comes after the safety clip, so with dither on, the output can sit up to 1 LSB above Ceiling. The ceiling tests run with Dither off. The drawer's tooltip says to keep Ceiling at −0.1 or lower when dithering.
 
 ## Latency
@@ -160,7 +160,7 @@ From the mockup, at 100 %: **760 × 445** (53 px header + 392 px body), 465 with
   - left: "Style" and the accent-filled `Clean | Punchy | Dense` segments
   - right: "Target" and its dropdown
 - **Left column:**
-  - Threshold over the input meter, Gate's style, with the scale at 0, −12, −24, −36 and −48 and the value in red below it
+  - Threshold over the input meter, Gate's style, with the scale at 0 to −30 in 6 dB steps (the parameter's range, which wins over the mockup's 0 to −48, as on Gate) and the value in red below it
   - next to it, the GR single bar and its read-out
 - **Display card** (510 × 160):
   - history on the left: input in grey, output as a white line, reduction in red from the top, the ceiling dashed red
@@ -168,9 +168,9 @@ From the mockup, at 100 %: **760 × 445** (53 px header + 392 px body), 465 with
 - **Limiter card:** Ceiling, Release, Lookahead and Link, all `Knob::tightStyle` in red.
 - **Footer:** True peak, Auto release, Listen to removed, and ⚙ EDIT at the right.
 - **EDIT drawer:** Oversampling, Oversampling filter, Dither, Meter ballistics, and a Reset loudness button.
-- **Right column,** 100 px: Out, then the LUFS bar.
+- **Right column,** about 120 px (decision 3): Out with the shared `OutMeter` scale (Comp's `withScale`, 70 px), then the LUFS bar with no scale. The display card narrows by the 20 px the column gains.
 
-**Decision 3:** the spec says Out "with scale", but the mockup draws Out without one, like Delay's. I recommend following the mockup: the Threshold meter already has a dB scale, and a second scale doesn't fit in 100 px next to the LUFS bar.
+**Decision 3, chosen by the user on 10 November 2026:** Out has a scale, as the spec says (option B). The LUFS bar has none, because its units differ.
 
 ## State format
 

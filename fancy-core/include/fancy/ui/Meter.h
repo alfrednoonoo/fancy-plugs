@@ -79,6 +79,38 @@ private:
     MeterChannel channels[2];
 };
 
+// One bar of loudness in LUFS, with a red marker at a target and a read-out (Phase 3, Fancy
+// Limit). Drawn on the same scale as an OutMeter beside it, without a scale of its own.
+class LoudnessBar final : public juce::Component, public juce::SettableTooltipClient
+{
+public:
+    // Positions are relative to the component, as OutMeter's are.
+    struct Geometry
+    {
+        float wellX, top, bottom, zeroDbY, pixelsPerDb, readoutY;
+    };
+
+    explicit LoudnessBar (const Geometry& geometry, const juce::String& label = "LUFS");
+
+    // Values at or below -100 show as empty, with "-inf".
+    void setLevel (float lufs);
+    void setTarget (float lufs);
+
+    float getLevel() const noexcept { return level; }
+    float getTarget() const noexcept { return target; }
+
+    void paint (juce::Graphics&) override;
+
+    static constexpr float barWidth = 12.0f;
+
+private:
+    float yFor (float db) const noexcept;
+
+    Geometry layout;
+    juce::String labelText;
+    float level = -200.0f, target = -14.0f;
+};
+
 // The Threshold fader drawn over a stereo input meter. Fancy Comp's look by default. Fancy
 // Gate's adds a dB scale, a dashed close threshold and two read-outs.
 class ThresholdMeter final : public ParamControl
@@ -139,6 +171,9 @@ public:
 
     explicit GainReductionMeter (const Geometry& geometry = stereoWithScale);
 
+    // Yellow by default. Fancy Limit's is its red accent.
+    void setBarColour (juce::Colour colour) { barColour = colour; repaint(); }
+
     void update (float leftDb, float rightDb, float seconds);
 
     // Sets levels directly, for rendered screenshots.
@@ -149,6 +184,7 @@ public:
 private:
     Geometry layout;
     float reduction[2] { 0.0f, 0.0f };
+    juce::Colour barColour { 0xffffcf07 };
 };
 
 } // namespace fancy::ui

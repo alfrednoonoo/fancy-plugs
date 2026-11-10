@@ -65,6 +65,10 @@
  #include "GateProcessor.h"
 #endif
 
+#if FANCY_HAS_LIMIT
+ #include "LimitProcessor.h"
+#endif
+
 namespace
 {
 
@@ -461,6 +465,17 @@ TEST_CASE ("Gate: an offline render matches playback", "[host][offline]")
     checkRenders<GateProcessor> (lookahead > 0.5f ? "Gate, lookahead" : "Gate",
                                  { { { "lookahead", lookahead } },
                                    join ({ alternate ("threshold", -40.0f, -20.0f), alternate ("release", 50.0f, 200.0f, 888) }), {} });
+}
+#endif
+
+#if FANCY_HAS_LIMIT
+TEST_CASE ("Limit: an offline render matches playback", "[host][offline]")
+{
+    // Dither on too: its noise is seeded, so it repeats.
+    const auto dither = GENERATE (0.0f, 2.0f);
+    checkRenders<LimitProcessor> (dither > 0.5f ? "Limit, dither" : "Limit",
+                                  { { { "dither", dither }, { "threshold", -12.0f } },
+                                    join ({ alternate ("threshold", -12.0f, -6.0f), alternate ("release", 30.0f, 300.0f, 888) }), {} });
 }
 #endif
 

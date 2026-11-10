@@ -56,6 +56,11 @@
  #include "GateProcessor.h"
 #endif
 
+#if FANCY_HAS_LIMIT
+ #include "LimitEditor.h"
+ #include "LimitProcessor.h"
+#endif
+
 using fancy::PresetManager;
 using fancy::ui::ShellEditor;
 
@@ -110,6 +115,9 @@ void forEachProcessor (const std::function<void (fancy::FancyProcessor&)>& check
 #endif
 #if FANCY_HAS_GATE
     { GateProcessor p; check (p); }
+#endif
+#if FANCY_HAS_LIMIT
+    { LimitProcessor p; check (p); }
 #endif
 }
 

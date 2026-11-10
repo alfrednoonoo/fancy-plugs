@@ -210,6 +210,64 @@ void OutMeter::paint (juce::Graphics& g)
                 juce::Rectangle<float> (wellX + wellWidth * 0.5f - 20.0f, layout.readoutY, 40.0f, 23.0f), juce::Justification::centred, false);
 }
 
+// LoudnessBar -----------------------------------------------------------------
+
+LoudnessBar::LoudnessBar (const Geometry& geometry, const juce::String& label)
+    : layout (geometry), labelText (label)
+{
+}
+
+float LoudnessBar::yFor (float db) const noexcept
+{
+    return juce::jlimit (layout.top, layout.bottom, layout.zeroDbY - db * layout.pixelsPerDb);
+}
+
+void LoudnessBar::setLevel (float lufs)
+{
+    if (std::abs (lufs - level) > 0.01f)
+    {
+        level = lufs;
+        repaint();
+    }
+}
+
+void LoudnessBar::setTarget (float lufs)
+{
+    if (lufs != target)
+    {
+        target = lufs;
+        repaint();
+    }
+}
+
+void LoudnessBar::paint (juce::Graphics& g)
+{
+    const auto x = layout.wellX;
+
+    g.setFont (font (Weight::regular, 14.0f));
+    g.setColour (colours::textSecondary);
+    g.drawText (labelText, juce::Rectangle<float> (x + barWidth * 0.5f - 24.0f, 0.0f, 48.0f, 17.0f), juce::Justification::centred, false);
+
+    const juce::Rectangle<float> well (x, layout.top, barWidth, layout.bottom - layout.top);
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (well, 2.0f);
+
+    if (level > -100.0f)
+    {
+        g.setGradientFill (juce::ColourGradient (juce::Colour (0xffffcf07), 0.0f, yFor (-6.0f), juce::Colour (0xff00ff96), 0.0f, layout.bottom, false));
+        g.fillRect (well.withTop (yFor (level)));
+    }
+
+    // The target: a red line across the bar, a little wider than it.
+    g.setColour (colours::accentRed);
+    g.fillRect (juce::Rectangle<float> (x - 1.0f, yFor (target) - 1.0f, barWidth + 2.0f, 2.0f));
+
+    g.setFont (font (Weight::regular, 14.0f));
+    g.setColour (colours::textSecondary);
+    g.drawText (level <= -100.0f ? juce::String ("-inf") : formatFixed (level, 1),
+                juce::Rectangle<float> (x + barWidth * 0.5f - 24.0f, layout.readoutY, 48.0f, 23.0f), juce::Justification::centred, false);
+}
+
 // ThresholdMeter --------------------------------------------------------------
 
 ThresholdMeter::ThresholdMeter (juce::RangedAudioParameter& threshold)
@@ -341,9 +399,14 @@ void ThresholdMeter::paint (juce::Graphics& g)
         g.setColour (style.accent);
         g.drawText (getValueText(), juce::Rectangle<float> (0.0f, readoutTop, bounds.getWidth(), 14.0f), juce::Justification::centred, false);
 
-        g.setColour (colours::textSecondary);
-        g.drawText ("close " + formatFixed (closeDb, 1), juce::Rectangle<float> (0.0f, readoutTop + 14.0f, bounds.getWidth(), 14.0f),
+        // Fancy Limit has no close threshold, so it never sets one.
+        if (closeDb > -199.0f)
+        {
+            g.setColour (colours::textSecondary);
+            g.drawText ("close " + formatFixed (closeDb, 1), juce::Rectangle<float> (0.0f, readoutTop + 14.0f, bounds.getWidth(), 14.0f),
                     juce::Justification::centred, false);
+        }
+
         return;
     }
 
@@ -409,7 +472,7 @@ void GainReductionMeter::paint (juce::Graphics& g)
     g.setColour (colours::bgWell);
     g.fillRoundedRectangle (well, 2.0f);
 
-    g.setColour (juce::Colour (0xffffcf07));
+    g.setColour (barColour);
 
     for (int ch = 0; ch < (layout.singleBar ? 1 : 2); ++ch)
     {

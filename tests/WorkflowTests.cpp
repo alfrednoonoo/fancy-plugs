@@ -49,6 +49,10 @@
  #include "GateProcessor.h"
 #endif
 
+#if FANCY_HAS_LIMIT
+ #include "LimitProcessor.h"
+#endif
+
 namespace
 {
 constexpr double rate = 48000.0;
@@ -83,6 +87,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_GATE
     { GateProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_LIMIT
+    { LimitProcessor p; callback (p); }
    #endif
 }
 
@@ -623,6 +630,9 @@ TEST_CASE ("A/B: a version 1 state loads with B as a copy of A, and renders bit-
        #endif
        #if FANCY_HAS_GATE
         FANCY_CHECK_FRESH (GateProcessor)
+       #endif
+       #if FANCY_HAS_LIMIT
+        FANCY_CHECK_FRESH (LimitProcessor)
        #endif
        #undef FANCY_CHECK_FRESH
     });

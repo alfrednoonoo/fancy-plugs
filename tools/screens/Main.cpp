@@ -59,6 +59,11 @@
  #include "GateProcessor.h"
 #endif
 
+#if FANCY_HAS_LIMIT
+ #include "LimitEditor.h"
+ #include "LimitProcessor.h"
+#endif
+
 namespace
 {
 
@@ -316,6 +321,10 @@ bool renderAllHostScales (const juce::File& outputDir)
     ok = renderHostScales<GateProcessor, GateEditor> ("gate", outputDir, plain) && ok;
    #endif
 
+   #if FANCY_HAS_LIMIT
+    ok = renderHostScales<LimitProcessor, LimitEditor> ("limit", outputDir, plain) && ok;
+   #endif
+
     return ok;
 }
 
@@ -359,6 +368,10 @@ bool renderAllPopups (const juce::File& outputDir)
 
    #if FANCY_HAS_GATE
     ok = renderPopups<GateProcessor, GateEditor> ("gate", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_LIMIT
+    ok = renderPopups<LimitProcessor, LimitEditor> ("limit", outputDir, plain) && ok;
    #endif
 
     return ok;
@@ -466,6 +479,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_GATE
     ok = renderPlugin<GateProcessor, GateEditor> ("gate", outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_LIMIT
+    ok = renderPlugin<LimitProcessor, LimitEditor> ("limit", outputDir) && ok;
    #endif
 
     Gallery gallery;

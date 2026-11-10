@@ -54,6 +54,11 @@
  #include "GateProcessor.h"
 #endif
 
+#if FANCY_HAS_LIMIT
+ #include "LimitEditor.h"
+ #include "LimitProcessor.h"
+#endif
+
 using Catch::Approx;
 using namespace fancy::ui;
 
@@ -534,4 +539,8 @@ TEST_CASE ("FIR: every pop-up opens on the editor", "[popups]")
 
 #if FANCY_HAS_GATE
 TEST_CASE ("Gate: every pop-up opens on the editor", "[popups]") { checkEveryPopup<GateProcessor, GateEditor> (plainPreview); }
+#endif
+
+#if FANCY_HAS_LIMIT
+TEST_CASE ("Limit: every pop-up opens on the editor", "[popups]") { checkEveryPopup<LimitProcessor, LimitEditor> (plainPreview); }
 #endif
