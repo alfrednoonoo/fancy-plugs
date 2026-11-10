@@ -81,6 +81,7 @@ These hold in every plugin, so a new plugin keeps them:
 | Room (new) | purple `#9A59B5` (`uiPurple`), shared with Verb: purple means reverb |
 | Limit (new) | red `#E74D3D` (`uiRed`) |
 | DS (new) | green `#2DCC70` (`accentGreen`) |
+| DS-Mini (new) | blue `#3598DB` (`uiBlue`): an approved exception to "blue means a filter knob", because DS-Mini has no filter knobs (brief §6b.2) |
 | Sature (new) | orange `#E77E23` (`accentOrange`) |
 
 The palette has seven accents (`accentYellow`, `accentOrange`, `accentRed`, `accentPurple`, `accentBlue`, `accentTeal`, `accentGreen`). Orange and green were the last two unused; with the new plugins all seven are taken, and two plugins may share an accent when they're the same kind of effect (Verb and Room).
@@ -216,5 +217,6 @@ Product names, also approved: Fancy Limit, Fancy DS, Fancy DS-Mini, Fancy Sature
 |---|---|---|
 | Fancy Room | purple `#9A59B5` | shared with Verb (decided 10 November 2026) |
 | Fancy Sature | orange `#E77E23` | unused as a plugin accent, and warm, which suits saturation |
+| Fancy DS-Mini | blue `#3598DB` | the approved exception (brief §6b.2): it has no filter knobs, so blue can't be read as one |
 | Fancy DS | green `#2DCC70` | unused as a plugin accent, and far from Gate's yellow and Comp's teal on the same track |
 | Fancy Limit | red `#E74D3D` | Kicker and Exciter use it, but a limiter is about the ceiling and clipping, which the suite already marks in red. Red chosen over blue, which means a filter knob elsewhere |
