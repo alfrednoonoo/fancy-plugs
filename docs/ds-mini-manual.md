@@ -22,7 +22,7 @@ A one-knob de-esser. Pick what you're de-essing, then turn **Amount**. It runs t
 
 | Profile | Listens to | Speed |
 |---|---|---|
-| Female voice | 4.9-9.9 kHz | fast (0.5 ms in, 60 ms out) |
+| Female voice | 4.3-11.4 kHz | fast (0.5 ms in, 60 ms out) |
 | Male voice | 3.5-7.1 kHz | fast |
 | Sibilance (any voice) | everything above 5 kHz | fast |
 | Harshness | 2.3-5.3 kHz | slower (2 ms, 120 ms) |

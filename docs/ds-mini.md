@@ -36,7 +36,7 @@ Every profile uses Relative threshold, the minimum-phase split, Main input L+R a
 
 | Profile | Detection | Attack / Release | Caption (from the settings) |
 |---|---|---|---|
-| Female voice (default) | Band, 7.0 kHz, 1.0 oct | 0.5 / 60 ms | Sibilance · 4.9–9.9 kHz |
+| Female voice (default) | Band, 7.0 kHz, **1.4 oct** (tuned; the brief's 1.0) | 0.5 / 60 ms | Sibilance · 4.3–11.4 kHz |
 | Male voice | Band, 5.0 kHz, 1.0 oct | 0.5 / 60 ms | Sibilance · 3.5–7.1 kHz |
 | Sibilance (any voice) | Shelf from 5.0 kHz | 0.5 / 60 ms | Sibilance · above 5 kHz |
 | Harshness | Band, 3.5 kHz, 1.2 oct | 2 / 120 ms | Harshness · 2.3–5.3 kHz |
@@ -51,6 +51,20 @@ The brief's captions ("≈5.5–9 kHz" for Female voice) don't match its own wid
 - **B.** Narrow the widths to match the brief's captions: Female voice 0.7 oct at 7.0 kHz (5.5–9 kHz), Male voice 0.7 oct at 5.1 kHz (4–6.5 kHz), Harshness 1.0 oct at 3.5 kHz (2.5–5 kHz).
 
 **Tuning.** The brief says to tune these by ear and on the test signals. I can only tune on the test signals: if the default (Female voice, Amount 5) misses the 6 dB on the §2.4 test vocal, I'll change its Attack and Release first, then the Amount mapping's slopes, and record the final numbers here. Your listening in REAPER is the by-ear part.
+
+**As tuned (10 November 2026).** With the brief's values, the default cut the test vocal's bursts by 5.58 dB (run 42913375230). Attack is already 0.5 ms, so Attack and Release couldn't add the missing 0.4 dB; the cut is limited by Range and by how much of the bursts' 5–9 kHz energy sits at the bell's edges. A plain-Python model of the engine reproduced CI's figures (6.67 against 6.64 dB for Fancy DS's default, 5.58 against 5.58 for DS-Mini's) and compared the options:
+
+| Change | Bursts | Vowels |
+|---|---|---|
+| None (7.0 kHz, 1.0 oct, Range −1.8 × Amount) | −5.58 dB | −0.11 dB |
+| Female voice at 6.5 kHz | −5.41 dB | −0.14 dB |
+| Female voice 1.2 oct | −6.14 dB | −0.16 dB |
+| Female voice 1.3 oct | −6.39 dB | −0.18 dB |
+| **Female voice 1.4 oct** | **−6.61 dB** | **−0.21 dB** |
+| Range −2.0 × Amount | −6.12 dB | −0.13 dB |
+| Range −2.2 × Amount | −6.65 dB | −0.15 dB |
+
+Female voice is now 1.4 octaves wide (4.3–11.4 kHz): it meets the test with a 0.6 dB margin, its vowels change as little as Fancy DS's default does, and the brief's Amount mapping, which sets every profile's strength, stays as written. The other profiles keep the brief's values.
 
 ## Rounding like Fancy DS
 

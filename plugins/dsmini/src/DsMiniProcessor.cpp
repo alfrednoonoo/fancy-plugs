@@ -3,10 +3,11 @@
 
 #include <fancy/plugin/DeEsserParameters.h>
 
-// The brief's starting values (§6b.3). Captions name what each profile catches; the editor adds
-// the band.
+// The brief's starting values (§6b.3), tuned on the test vocal: Female voice is 1.4 octaves
+// wide, not 1.0, so the default cuts its "s" bursts by 6 dB (docs/ds-mini.md). Captions name
+// what each profile catches; the editor adds the band.
 const std::array<DsMiniProcessor::Profile, 6> DsMiniProcessor::profiles { {
-    { "Female voice",    false, 7000.0f, 1.0f, 0.5f, 60.0f,  "Sibilance" },
+    { "Female voice",    false, 7000.0f, 1.4f, 0.5f, 60.0f,  "Sibilance" },
     { "Male voice",      false, 5000.0f, 1.0f, 0.5f, 60.0f,  "Sibilance" },
     { "Sibilance",       true,  5000.0f, 1.0f, 0.5f, 60.0f,  "Sibilance" },
     { "Harshness",       false, 3500.0f, 1.2f, 2.0f, 120.0f, "Harshness" },

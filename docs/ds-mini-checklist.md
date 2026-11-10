@@ -9,7 +9,7 @@
 ## Look
 
 - [ ] The title strip reads **FANCY DS-MINI** with DS-MINI in blue, and the window matches `reference/phase3/22__ds_mini_mockup.png` below the header: the profile pill with ‹ › inside it, the band under it, the history, the big blue Amount knob, Listen and ⚙ EDIT, and GR and Out on the right.
-- [ ] The line under the profile reads **Sibilance · 4.9–9.9 kHz**.
+- [ ] The line under the profile reads **Sibilance · 4.3–11.4 kHz**.
 
 ## De-essing
 
