@@ -53,7 +53,7 @@ The spec asks for a smooth, Hann-shaped gain envelope over the lookahead window.
 
 **Decision 1 (I recommend A):**
 
-- **A. Three cascaded moving averages, each a third of the window.** The result is a quadratic B-spline, which is within about 1 % of a Hann window's shape, at a fixed cost of three adds per sample, whatever the window length. It keeps the core's guarantee: the sliding minimum covers the whole window, so the gain is at its target when the peak arrives.
+- **A. Three cascaded moving averages, each a third of the window.** The result is a quadratic B-spline: a bell with smooth ends like a Hann window, though not identical (the largest difference is about 12 % of the peak, measured), at a fixed cost of three adds per sample, whatever the window length. It keeps the core's guarantee: the sliding minimum covers the whole window, so the gain is at its target when the peak arrives.
 - **B. Exact Hann** with a recursive (sliding-DFT) form. That's O(1) too, but it drifts numerically and needs a periodic exact recompute. It's more code for an audibly identical result.
 
 ### Other shared code
