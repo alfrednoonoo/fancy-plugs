@@ -1,0 +1,5 @@
+Fancy Limit, CI run 42844407735 (commit 72f5b54), 48 kHz, 128-sample blocks, stereo, median of 5 in one build (Phase 2.1 section 0.4)
+limit cpu (median of 5): 4x + true peak, 12 dB pushed (target < 5 %) 3.639 %, 4x, True peak off 2.576 %, oversampling off 2.038 %, 8x 5.616 %
+limit cpu reference: Fancy Comp default 0.584 % in the same run; limit 4x / comp = 6.23, True peak off / comp = 4.41, off / comp = 3.49, 8x / comp = 9.62
+limit thd: 40 Hz, 10.1 dB of reduction, Auto release: 0.057 % (test limit 1 %)
+latency at 48 kHz: 318 samples at 4x minimum phase (measured 319 by FancyBench), 312 with oversampling off
