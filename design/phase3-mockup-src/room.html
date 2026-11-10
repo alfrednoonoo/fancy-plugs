@@ -1,0 +1,44 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><link rel="stylesheet" href="kit2.css"><script src="lib2.js"></script></head><body style="--a:#9A59B5">
+<div class="win"><div data-chrome></div>
+ <div class="body" style="height:392px">
+  <div class="left">
+   <svg id="disp" width="610" height="198" style="display:block;background:#262626;border-radius:6px"></svg>
+   <div style="display:flex;gap:8px;margin-top:8px">
+     <div class="sec" style="padding:8px 8px 6px;flex:2">
+       <span class="title" style="margin-left:4px">Space</span>
+       <div style="display:flex;justify-content:space-between;margin-top:2px">
+        <div class="knob" data-k data-v=".12" data-c="#9A59B5" data-l="Pre-delay" data-t="12 ms"></div>
+        <div class="knob" data-k data-v=".5" data-c="#9A59B5" data-l="Size" data-t="55 %"></div>
+        <div class="knob" data-k data-v=".42" data-c="#9A59B5" data-l="Decay" data-t="1.80 s"></div>
+        <div class="knob" data-k data-v=".7" data-c="#9A59B5" data-l="Diffusion" data-t="70 %"></div>
+        <div class="knob" data-k data-v=".25" data-c="#9A59B5" data-l="Mod" data-t="25 %"></div>
+        <div class="knob" data-k data-v=".5" data-c="#9A59B5" data-bi data-l="Width" data-t="1.00"></div>
+       </div>
+     </div>
+     <div class="sec" style="padding:8px 8px 6px;flex:1">
+       <span class="title" style="margin-left:4px">Tone</span>
+       <div style="display:flex;justify-content:space-between;margin-top:2px">
+        <div class="knob" data-k data-v=".45" data-c="#9A59B5" data-l="Damping" data-t="45 %"></div>
+        <div class="knob" data-k data-v=".2" data-c="#3598DB" data-l="Low cut" data-t="150 Hz"></div>
+        <div class="knob" data-k data-v=".75" data-c="#3598DB" data-l="High cut" data-t="9.0 kHz"></div>
+       </div>
+     </div>
+   </div>
+   <div class="foot"><div class="cb"><i></i>Sync pre-delay</div><div class="cb"><i></i>Freeze</div><div class="cb"><i></i>Wet only (send)</div><div class="edit">⚙ EDIT</div></div>
+  </div>
+  <div class="rcol" style="width:104px"><div data-m data-h="300" data-v=".5,.53" data-l="Out" data-t="-11.2"></div><div data-f data-h="300" data-v=".62" data-l="Wet" data-t="-8.0"></div><div data-f data-h="300" data-v=".8" data-l="Dry" data-t="0.0"></div></div>
+ </div>
+</div>
+<script>
+chrome('ROOM','#9A59B5');
+(()=>{const W=610,H=198,L=32,R=W-14,T=14,B=H-24,x=t=>L+(R-L)*t/3,y=d=>T+(B-T)*(-d/60);let s='';
+for(const d of [0,-12,-24,-36,-48,-60]) s+=`<line x1="${L}" y1="${y(d)}" x2="${R}" y2="${y(d)}" stroke="${d==0?'#424242':'#303030'}"/><text x="${L-6}" y="${y(d)+3}" font-size="9" fill="#8D8D8D" text-anchor="end">${d}</text>`;
+for(let t=0;t<=3;t+=0.5) s+=`<text x="${x(t)}" y="${H-8}" font-size="9" fill="#8D8D8D" text-anchor="${t==3?'end':t==0?'start':'middle'}">${t} s</text>`;
+const pd=0.012,dec=1.8;let up=[],hf=[];for(let t=pd;t<=3;t+=0.01){const d=Math.max(-60,-60*(t-pd)/dec - 2);up.push(`${x(t)},${y(d)}`);hf.push(`${x(t)},${y(Math.max(-60,-60*(t-pd)/(dec*0.55)-2))}`)}
+s+=`<polygon points="${x(pd)},${y(-60)} ${up.join(' ')} ${x(3)},${y(-60)}" fill="#9A59B5" opacity=".28"/><polyline points="${up.join(' ')}" fill="none" stroke="#9A59B5" stroke-width="2"/>`;
+s+=`<polyline points="${hf.join(' ')}" fill="none" stroke="#9A59B5" stroke-width="1.4" stroke-dasharray="4 3" opacity=".9"/>`;
+let seed=4,r=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};for(let i=0;i<14;i++){const t=pd+0.004+i*0.007+r()*0.004;s+=`<line x1="${x(t)}" y1="${y(-60)}" x2="${x(t)}" y2="${y(-4-i*1.6-r()*5)}" stroke="#EDEDED" opacity=".7"/>`}
+s+=`<line x1="${x(pd+dec)}" y1="${T}" x2="${x(pd+dec)}" y2="${B}" stroke="#4C4C4C" stroke-dasharray="3 3"/><text x="${x(pd+dec)+6}" y="${y(-52)}" font-size="10" fill="#EDEDED">decay 1.80 s (to −60 dB)</text>`;
+s+=`<g font-size="10" fill="#8D8D8D"><line x1="${R-240}" y1="${T+6}" x2="${R-226}" y2="${T+6}" stroke="#EDEDED"/><text x="${R-222}" y="${T+9}">early reflections</text><line x1="${R-138}" y1="${T+6}" x2="${R-124}" y2="${T+6}" stroke="#9A59B5" stroke-width="2"/><text x="${R-120}" y="${T+9}">decay</text><line x1="${R-80}" y1="${T+6}" x2="${R-66}" y2="${T+6}" stroke="#9A59B5" stroke-dasharray="4 3"/><text x="${R-62}" y="${T+9}">highs</text></g>`;
+document.getElementById('disp').innerHTML=s})();
+</script></body></html>

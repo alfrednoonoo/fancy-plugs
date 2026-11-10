@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><link rel="stylesheet" href="kit2.css"><script src="lib2.js"></script></head><body style="--a:#E74D3D">
+<div class="win"><div data-chrome></div>
+ <div class="body" style="height:392px">
+  <div class="left">
+   <div style="display:flex;align-items:center;gap:8px;height:26px"><span class="cap">Style</span><div class="seg"><span class="m">Clean</span><span>Punchy</span><span>Dense</span></div><div class="sp"></div><span class="cap">Target</span><div class="dd">Streaming · −14 LUFS</div></div>
+   <div style="display:flex;gap:10px;margin-top:8px">
+     <div style="display:flex;gap:12px">
+       <div style="display:flex;flex-direction:column;align-items:center;width:62px"><div class="rl">Threshold</div><svg id="thr" width="40" height="246" style="margin-top:6px"></svg><div class="val" style="color:#E74D3D;white-space:nowrap">-7.0 dB</div></div>
+       <div style="display:flex;flex-direction:column;align-items:center;width:22px"><div class="rl">GR</div><svg width="10" height="246" style="margin-top:6px"><rect width="10" height="246" rx="1.5" fill="#141414"/><rect width="10" height="30" rx="1.5" fill="#E74D3D"/></svg><div class="val" style="color:#FFF">-3.1</div></div>
+     </div>
+     <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+       <svg id="disp" width="510" height="160" style="display:block;background:#262626;border-radius:6px"></svg>
+       <div class="sec" style="padding:8px 10px 6px">
+         <span class="title">Limiter</span>
+         <div style="display:flex;justify-content:space-around;margin-top:2px">
+          <div class="knob" data-k data-v=".93" data-c="#E74D3D" data-l="Ceiling" data-t="-1.0 dB"></div>
+          <div class="knob" data-k data-v=".3" data-c="#E74D3D" data-l="Release" data-t="80 ms"></div>
+          <div class="knob" data-k data-v=".33" data-c="#E74D3D" data-l="Lookahead" data-t="2.0 ms"></div>
+          <div class="knob" data-k data-v="1" data-c="#E74D3D" data-l="Link" data-t="100 %"></div>
+         </div>
+       </div>
+     </div>
+   </div>
+   <div class="foot"><div class="cb"><i class="x"></i>True peak</div><div class="cb"><i class="x"></i>Auto release</div><div class="cb"><i></i>Listen to removed</div><div class="edit">⚙ EDIT</div></div>
+  </div>
+  <div class="rcol" style="width:100px"><div data-m data-h="300" data-v=".9,.9" data-l="Out" data-t="-1.0"></div><div id="lufs" style="display:flex;flex-direction:column;align-items:center"></div></div>
+ </div>
+</div>
+<script>
+chrome('LIMIT','#E74D3D');
+(()=>{const H=246,y=d=>H*(-d/48);let s=`<defs><linearGradient id="tg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#00FF96"/><stop offset=".55" stop-color="#7BE84F"/><stop offset="1" stop-color="#FFCF07"/></linearGradient></defs>`;
+[0,11].forEach((x,i)=>s+=`<rect x="${x}" y="0" width="9" height="${H}" rx="1.5" fill="#141414"/><rect x="${x}" y="${y(-4-i)}" width="9" height="${H-y(-4-i)}" rx="1.5" fill="url(#tg)"/>`);
+s+=`<rect x="-1" y="${y(-7)-6}" width="22" height="12" rx="2.5" fill="#262626" stroke="#E74D3D" stroke-width="1.5"/><rect x="4" y="${y(-7)-0.75}" width="12" height="1.5" fill="#E74D3D"/>`;
+for(const d of [0,-12,-24,-36,-48]) s+=`<text x="40" y="${Math.max(9,Math.min(H-2,y(d)+3))}" font-size="9" fill="#8D8D8D" text-anchor="end">${d}</text>`;
+document.getElementById('thr').innerHTML=s})();
+(()=>{const W=510,H=160,y=d=>10+(H-20)*(-d/24);let seed=3,r=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};let inp=[],out=[],gr=[];
+for(let x=0;x<=W-150;x+=2){const t=x%46;let d=(t<5?2+3*r():-4-t*0.12-3*r());inp.push([x,y(d)]);const o=Math.min(-1.0,d);out.push([x,y(o)]);gr.push([x,(Math.max(0,d+1))*4.2])}
+const P=a=>a.map(p=>p.join(',')).join(' ');const xe=W-150;let s=`<polygon points="0,${H} ${P(inp)} ${xe},${H}" fill="#8D8D8D" opacity=".28"/><polyline points="${P(out)}" fill="none" stroke="#EDEDED" stroke-width="1.2" opacity=".8"/>`;
+s+=`<polygon points="0,0 ${P(gr)} ${xe},0" fill="#E74D3D" opacity=".75"/><line x1="0" y1="${y(-1)}" x2="${xe}" y2="${y(-1)}" stroke="#E74D3D" stroke-dasharray="4 3"/>`;
+s+=`<text x="8" y="${H-8}" font-size="10" fill="#8D8D8D">input (grey) · output (white) · reduction (red) · ceiling</text>`;
+s+=`<rect x="${xe}" y="0" width="150" height="${H}" fill="#141414"/><g font-size="10" fill="#8D8D8D">`+
+[['Short-term','−13.8','LUFS'],['Integrated','−14.2','LUFS'],['True peak','−1.0','dBTP'],['Range','5.2','LU']].map((r,i)=>`<text x="${xe+12}" y="${26+i*34}">${r[0]}</text><text x="${xe+12}" y="${42+i*34}" font-size="15" fill="#FFFFFF">${r[1]} <tspan font-size="10" fill="#8D8D8D">${r[2]}</tspan></text>`).join('')+`</g>`;
+document.getElementById('disp').innerHTML=s})();
+(()=>{const h=300,v=0.62,t=0.6;document.getElementById('lufs').innerHTML=`<div class="rl">LUFS</div><svg width="12" height="${h}" style="margin-top:6px;display:block"><defs><linearGradient id="lg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#00FF96"/><stop offset="1" stop-color="#FFCF07"/></linearGradient></defs><rect width="12" height="${h}" rx="1.5" fill="#141414"/><rect y="${h*(1-v)}" width="12" height="${h*v}" rx="1.5" fill="url(#lg)"/><rect x="-2" y="${h*(1-t)}" width="16" height="2" fill="#E74D3D"/></svg><div class="val" style="color:#8D8D8D">-13.8</div>`})();
+</script></body></html>

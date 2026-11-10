@@ -1,6 +1,6 @@
 # Fancy Plugs design system
 
-Phase 3 Q5, step 1. These rules come from the nine finished plugins as built, read from `fancy-core` and each editor at commit `d0ab806`. A new plugin (Fancy Limiter, Fancy De-esser, Fancy Saturator) follows them, so it reads as part of the suite. Where the existing plugins disagree, the rule names the one to follow and lists the others as exceptions.
+Phase 3 Q5, step 1. These rules come from the nine finished plugins as built, read from `fancy-core` and each editor at commit `d0ab806`. A new plugin (Fancy Limit, Fancy DS, Fancy Saturate, Fancy Room; see `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md`) follows them, so it reads as part of the suite. Where the existing plugins disagree, the rule names the one to follow and lists the others as exceptions.
 
 Precedence is unchanged: `fancy-core` sets exact styling, except for pop-ups, where `reference/phase2_1/16__menus_mockup.png` and §S.2 of the Phase 2.1 brief do. A new plugin never draws its own version of a shared control. A control `fancy-core` doesn't have is added to `fancy-core` and to the gallery in `tools/screens/Main.cpp` first (Q5).
 
@@ -78,8 +78,12 @@ These hold in every plugin, so a new plugin keeps them:
 | MultiComp | the selected band's colour (`multiBandColour`) |
 | FIR | the current mode's colour: purple, yellow, teal, red, blue (`modeColour`) |
 | Gate | yellow `#F1C315` (`accentYellow`) |
+| Room (new) | purple `#9A59B5` (`uiPurple`), shared with Verb: purple means reverb |
+| Limit (new) | red `#E74D3D` (`uiRed`) |
+| DS (new) | green `#2DCC70` (`accentGreen`) |
+| Saturate (new) | orange `#E77E23` (`accentOrange`) |
 
-The palette has seven accents (`accentYellow`, `accentOrange`, `accentRed`, `accentPurple`, `accentBlue`, `accentTeal`, `accentGreen`). Only **orange `#E77E23`** and **green `#2DCC70`** aren't yet a whole plugin's accent. Section 10 proposes one for each new plugin.
+The palette has seven accents (`accentYellow`, `accentOrange`, `accentRed`, `accentPurple`, `accentBlue`, `accentTeal`, `accentGreen`). Orange and green were the last two unused; with the new plugins all seven are taken, and two plugins may share an accent when they're the same kind of effect (Verb and Room).
 
 ## 3. Header
 
@@ -205,8 +209,12 @@ Then the CI screenshot is compared side by side with the mockup, and with one ex
 
 ### Accents of the new plugins (approved 10 November 2026)
 
+Product names, also approved: Fancy Limit, Fancy DS, Fancy Saturate and Fancy Room, with bundle IDs `com.fancyplugs.limit`, `.ds`, `.saturate` and `.room`. Their mockups are `reference/phase3/17__ds_mockup.png` to `21__kicker_sub_mockup.png`, drawn with `design/phase3-mockup-src/kit2.css` and `lib2.js`.
+
+
 | New plugin | Proposed accent | Why |
 |---|---|---|
-| Fancy Saturator | orange `#E77E23` | unused as a plugin accent, and warm, which suits saturation |
-| Fancy De-esser | green `#2DCC70` | unused as a plugin accent, and far from Gate's yellow and Comp's teal on the same track |
-| Fancy Limiter | red `#E74D3D` | Kicker and Exciter use it, but a limiter is about the ceiling and clipping, which the suite already marks in red. Red chosen over blue, which means a filter knob elsewhere |
+| Fancy Room | purple `#9A59B5` | shared with Verb (decided 10 November 2026) |
+| Fancy Saturate | orange `#E77E23` | unused as a plugin accent, and warm, which suits saturation |
+| Fancy DS | green `#2DCC70` | unused as a plugin accent, and far from Gate's yellow and Comp's teal on the same track |
+| Fancy Limit | red `#E74D3D` | Kicker and Exciter use it, but a limiter is about the ceiling and clipping, which the suite already marks in red. Red chosen over blue, which means a filter knob elsewhere |

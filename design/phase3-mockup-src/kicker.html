@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><link rel="stylesheet" href="kit2.css"><script src="lib2.js"></script>
+<style>.ch{height:53px;background:#1E1E1E;border-bottom:1px solid #000;display:flex;align-items:center;gap:8px;padding:0 16px;font-size:14px}
+.ch .p{height:24px;border-radius:3px;background:#303030;display:flex;align-items:center;padding:0 8px;color:#fff}
+.k14 .lbl{font-size:14px}.k14 .val{font-size:14px}</style></head><body style="--a:#E74D3D">
+<div class="win" style="width:392px"><div class="tstrip"><span class="f">FANCY</span><span style="color:#E74D3D">KICKER</span></div>
+ <div class="ch"><div class="p" style="width:110px;justify-content:space-between">Default<span style="color:#8D8D8D;font-size:9px">⌃⌄</span></div><div class="p" style="width:28px;justify-content:center">+</div><div class="p" style="width:43px;justify-content:center">Prm</div><div class="p" style="background:#141414;padding:0 3px;gap:2px"><span style="background:#434343;border-radius:2px;padding:0 6px">A</span><span style="color:#8D8D8D;padding:0 5px">B</span></div><div class="sp"></div><div data-k data-nl data-v=".5" data-c="#00A985" data-s="22" style="width:30px;margin-top:-2px"></div><div class="p" style="width:48px;background:#00A985;justify-content:center;font-weight:600;font-size:12.5px;white-space:nowrap;padding:0 4px">⏻ ON</div></div>
+ <div class="body k14" style="height:419px">
+  <div class="left" style="padding:14px 10px 0 14px">
+   <div style="display:flex;justify-content:center"><div class="seg" style="font-size:13px"><span>Boost</span><span class="m">Sub</span></div></div>
+   <div style="display:flex;flex-direction:column;align-items:center;margin-top:10px">
+     <div class="knob" data-k data-v=".42" data-c="#E74D3D" data-s="96" data-l="Cutoff" data-t="70 Hz" style="width:120px"></div>
+     <div class="seg" style="font-size:12px;margin-top:6px"><span class="a">−1 oct</span><span>−2 oct</span></div>
+   </div>
+   <div style="display:flex;justify-content:space-around;margin-top:12px">
+     <div class="knob" data-k data-v=".55" data-c="#E74D3D" data-s="52" data-l="Sub" data-t="-9.0 dB" style="width:80px"></div>
+     <div class="knob" data-k data-v=".8" data-c="#E74D3D" data-s="52" data-l="Dry" data-t="0.0 dB" style="width:80px"></div>
+   </div>
+   <div style="position:absolute;left:14px;right:10px;bottom:12px;display:flex;align-items:center"><span class="edit" style="margin-left:0;font-size:13px">⚙ EDIT</span><span class="cap" style="margin-left:auto;font-size:12px">Sub: adds an octave below</span></div>
+  </div>
+  <div class="rcol" style="width:128px;padding-top:14px"><div id="io"></div></div>
+ </div>
+</div>
+<script>
+(()=>{const h=330,y=d=>h*(-d/60);const g=`<defs><linearGradient id="k" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#00FF96"/><stop offset=".55" stop-color="#7BE84F"/><stop offset="1" stop-color="#FFCF07"/></linearGradient></defs>`;
+const bar=(x,d)=>`<rect x="${x}" y="0" width="12" height="${h}" rx="1.5" fill="#141414"/><rect x="${x}" y="${y(d)}" width="12" height="${h-y(d)}" rx="1.5" fill="url(#k)"/>`;
+let sc='';for(const d of [0,-6,-12,-18,-24,-30,-36,-42,-48,-54]) sc+=`<text x="40" y="${Math.max(9,y(d)+4)}" font-size="10" fill="#8D8D8D" text-anchor="end">${-d}</text>`;
+document.getElementById('io').innerHTML=`<div style="display:flex;gap:16px;justify-content:center;font-size:13px;color:#8D8D8D;margin-left:20px"><span>In</span><span>Out</span></div><svg width="110" height="${h}" style="margin-top:6px;display:block">${g}${sc}<g transform="translate(48,0)">${bar(0,-9)}${bar(30,-6)}</g></svg><div style="display:flex;gap:14px;justify-content:center;font-size:13px;color:#8D8D8D;margin-left:20px;margin-top:4px"><span>-9.2</span><span>-5.8</span></div>`})();
+</script></body></html>
