@@ -384,11 +384,15 @@ private:
             loudest = std::max (loudest, std::abs (window[tap]));
 
         // Nothing between these samples can beat the peak so far.
+        peak = std::max (peak, std::abs (x));
+
         if (loudest * largestGain <= peak)
             return;
 
-        for (const auto& phase : taps)
+        // Phase 0 is the sample itself, already counted.
+        for (int p = 1; p < factor; ++p)
         {
+            const auto& phase = taps[(size_t) p];
             double sum = 0.0;
 
             for (int tap = 0; tap < tapsPerPhase; ++tap)

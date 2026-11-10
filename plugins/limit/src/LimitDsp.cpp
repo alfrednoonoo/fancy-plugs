@@ -39,6 +39,10 @@ fancy::dsp::TruePeakLimiter::Settings LimitDsp::limiterSettings (const Targets& 
     settings.truePeak = targets.truePeak;
     settings.alignedSamplePeak = true;
 
+    // Oversampled, the samples are already close together: the midpoint is enough here, and
+    // the guard measures the output exactly.
+    settings.interpolatorPhases = factor > 1 ? 1 : 3;
+
     return settings;
 }
 
@@ -51,7 +55,7 @@ fancy::dsp::TruePeakLimiter::Settings LimitDsp::guardSettings (const Targets& ta
     settings.shape = fancy::dsp::TruePeakLimiter::Shape::smooth;
     settings.truePeak = targets.truePeak;
     settings.alignedSamplePeak = true;
-    settings.interpolatorTaps = 32;
+    settings.interpolatorTaps = 16;
     settings.interpolatorPhases = 7;
     return settings;
 }
