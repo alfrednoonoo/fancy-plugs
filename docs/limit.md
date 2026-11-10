@@ -195,6 +195,8 @@ Categories as in Q2.1:
 
 ## CPU
 
+**Target changed by the user on 10 November 2026: under 5 % at 48 kHz/128 with 4x and True peak on** (the spec's 2 % was set before anything was measured; measured 4.5 %, 9.6 x Comp, in run 42840531658). With True peak off, the core and the guard both skip their between-sample interpolation, and the guard keeps its fixed delay so the latency doesn't change; that path is measured separately. The rest of this section is the original estimate.
+
 - **Target:** under 2 % at 48 kHz/128 with 4× and True peak, by the §0.4 ratio method against Fancy Comp's defaults. The core is already O(1) per sample apart from the 16-tap interpolator, which runs 3 phases × 2 channels at the oversampled rate.
 - **If it's over target:** run the true-peak detector at the base rate on the upsampled signal's even phases.
 - **Loudness meter:** a few multiply-adds per sample.
