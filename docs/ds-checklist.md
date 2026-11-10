@@ -18,7 +18,7 @@
 - [ ] Tick **Listen**: you hear mostly the "s" sounds. Drag the blue handle on the ruler: what you hear moves up and down in pitch. Drag the green bar's edge: the band gets wider or narrower, and Width follows. Untick Listen.
 - [ ] Click in the history: the green Threshold line jumps there, and the Threshold handle moves with it.
 - [ ] Turn Range to 0 dB: nothing is cut. Back to -12.
-- [ ] Ride the track's volume fader down 12 dB with Relative threshold on: the "s" sounds are still caught about as much.
+- [ ] Lower the item's volume by 12 dB (its volume handle, which comes before the FX) with Relative threshold on: the "s" sounds are still caught about as much.
 - [ ] Switch **Wide**: the whole voice dips on each "s", not just the highs. Back to **Split**.
 - [ ] Switch **Shelf**: the bar on the ruler runs from Freq to 20 kHz, and Width is locked: clicking it shows a hint. Back to **Band**.
 - [ ] Untick **Link channels** on a stereo source with an "s" on one side only: the other side no longer dips.
