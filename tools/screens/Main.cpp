@@ -64,6 +64,11 @@
  #include "LimitProcessor.h"
 #endif
 
+#if FANCY_HAS_DS
+ #include "DsEditor.h"
+ #include "DsProcessor.h"
+#endif
+
 namespace
 {
 
@@ -325,6 +330,10 @@ bool renderAllHostScales (const juce::File& outputDir)
     ok = renderHostScales<LimitProcessor, LimitEditor> ("limit", outputDir, plain) && ok;
    #endif
 
+   #if FANCY_HAS_DS
+    ok = renderHostScales<DsProcessor, DsEditor> ("ds", outputDir, plain) && ok;
+   #endif
+
     return ok;
 }
 
@@ -372,6 +381,10 @@ bool renderAllPopups (const juce::File& outputDir)
 
    #if FANCY_HAS_LIMIT
     ok = renderPopups<LimitProcessor, LimitEditor> ("limit", outputDir, plain) && ok;
+   #endif
+
+   #if FANCY_HAS_DS
+    ok = renderPopups<DsProcessor, DsEditor> ("ds", outputDir, plain) && ok;
    #endif
 
     return ok;
@@ -483,6 +496,10 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_LIMIT
     ok = renderPlugin<LimitProcessor, LimitEditor> ("limit", outputDir) && ok;
+   #endif
+
+   #if FANCY_HAS_DS
+    ok = renderPlugin<DsProcessor, DsEditor> ("ds", outputDir) && ok;
    #endif
 
     Gallery gallery;

@@ -415,6 +415,7 @@ const LatencySetting latencySettings[] {
     { "Fancy FIR", "Low latency", 0.0f, 1.0f },
     { "Fancy Gate", "Lookahead", 0.0f, 1.0f },
     { "Fancy Limit", "Oversampling", 0.0f, 0.34f },
+    { "Fancy DS", "Lookahead", 0.0f, 0.67f },
     { "Fancy Verb", "Latency mode", 0.0f, 1.0f },
 };
 

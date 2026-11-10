@@ -61,6 +61,11 @@
  #include "LimitProcessor.h"
 #endif
 
+#if FANCY_HAS_DS
+ #include "DsEditor.h"
+ #include "DsProcessor.h"
+#endif
+
 using fancy::PresetManager;
 using fancy::ui::ShellEditor;
 
@@ -118,6 +123,9 @@ void forEachProcessor (const std::function<void (fancy::FancyProcessor&)>& check
 #endif
 #if FANCY_HAS_LIMIT
     { LimitProcessor p; check (p); }
+#endif
+#if FANCY_HAS_DS
+    { DsProcessor p; check (p); }
 #endif
 }
 

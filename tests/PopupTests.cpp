@@ -59,6 +59,11 @@
  #include "LimitProcessor.h"
 #endif
 
+#if FANCY_HAS_DS
+ #include "DsEditor.h"
+ #include "DsProcessor.h"
+#endif
+
 using Catch::Approx;
 using namespace fancy::ui;
 
@@ -543,4 +548,8 @@ TEST_CASE ("Gate: every pop-up opens on the editor", "[popups]") { checkEveryPop
 
 #if FANCY_HAS_LIMIT
 TEST_CASE ("Limit: every pop-up opens on the editor", "[popups]") { checkEveryPopup<LimitProcessor, LimitEditor> (plainPreview); }
+#endif
+
+#if FANCY_HAS_DS
+TEST_CASE ("DS: every pop-up opens on the editor", "[popups]") { checkEveryPopup<DsProcessor, DsEditor> (plainPreview); }
 #endif

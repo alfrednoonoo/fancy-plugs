@@ -69,6 +69,10 @@
  #include "LimitProcessor.h"
 #endif
 
+#if FANCY_HAS_DS
+ #include "DsProcessor.h"
+#endif
+
 namespace
 {
 
@@ -476,6 +480,17 @@ TEST_CASE ("Limit: an offline render matches playback", "[host][offline]")
     checkRenders<LimitProcessor> (dither > 0.5f ? "Limit, dither" : "Limit",
                                   { { { "dither", dither }, { "threshold", -12.0f } },
                                     join ({ alternate ("threshold", -12.0f, -6.0f), alternate ("release", 30.0f, 300.0f, 888) }), {} });
+}
+#endif
+
+#if FANCY_HAS_DS
+TEST_CASE ("DS: an offline render matches playback", "[host][offline]")
+{
+    // The linear-phase split designs its filters in-line while offline.
+    const auto phase = GENERATE (0.0f, 1.0f);
+    checkRenders<DsProcessor> (phase > 0.5f ? "DS, linear phase" : "DS",
+                               { { { "splitPhase", phase }, { "threshold", -40.0f } },
+                                 join ({ alternate ("freq", 5000.0f, 7000.0f), alternate ("release", 30.0f, 200.0f, 888) }), {}, true });
 }
 #endif
 

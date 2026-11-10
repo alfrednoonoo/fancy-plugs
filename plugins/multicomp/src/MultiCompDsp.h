@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Crossover.h"
-#include "LinearCrossover.h"
+#include <fancy/dsp/LinearCrossover.h>
 
 #include <fancy/dsp/Compression.h>
 #include <fancy/dsp/MeterTap.h>
@@ -130,7 +130,7 @@ private:
     double sampleRate = 48000.0;
 
     multicomp::MinPhaseCrossover mainCrossover, keyCrossover;
-    multicomp::LinearCrossover linearCrossover;
+    fancy::dsp::LinearCrossover linearCrossover;
     fancy::dsp::TruePeakLimiter limiter;
 
     std::array<BandState, multicomp::maxBands> bandStates;

@@ -14,7 +14,7 @@ on:
         description: Plugin to build
         type: choice
         default: all
-        options: [all, kicker, exciter, comp, eq, verb, delay, multicomp, fir, gate, limit]
+        options: [all, kicker, exciter, comp, eq, verb, delay, multicomp, fir, gate, limit, ds]
 
 concurrency:
   group: build-${{ github.ref }}

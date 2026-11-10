@@ -53,6 +53,10 @@
  #include "LimitProcessor.h"
 #endif
 
+#if FANCY_HAS_DS
+ #include "DsProcessor.h"
+#endif
+
 namespace
 {
 constexpr double rate = 48000.0;
@@ -90,6 +94,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_LIMIT
     { LimitProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_DS
+    { DsProcessor p; callback (p); }
    #endif
 }
 
@@ -633,6 +640,9 @@ TEST_CASE ("A/B: a version 1 state loads with B as a copy of A, and renders bit-
        #endif
        #if FANCY_HAS_LIMIT
         FANCY_CHECK_FRESH (LimitProcessor)
+       #endif
+       #if FANCY_HAS_DS
+        FANCY_CHECK_FRESH (DsProcessor)
        #endif
        #undef FANCY_CHECK_FRESH
     });
