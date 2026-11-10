@@ -42,6 +42,7 @@ public:
     ~DsMiniProcessor() override;
 
     void prepareAudio (double sampleRate, int samplesPerBlock) override;
+    void releaseResources() override {}
     void reset() override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
     void processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) override;
@@ -65,8 +66,8 @@ public:
 
     // A Fancy DS preset with the current settings, and writing it to Fancy DS's user presets.
     juce::ValueTree createDsPresetState() const;
-    juce::File getDsPresetFile (const juce::String& name) const;
-    bool saveAsDsPreset (const juce::String& name);
+    juce::File getDsPresetFile (const juce::String& presetName) const;
+    bool saveAsDsPreset (const juce::String& presetName);
 
     // Message thread.
     void setParameter (const juce::String& parameterId, float value);

@@ -328,21 +328,21 @@ juce::ValueTree DsMiniProcessor::createDsPresetState() const
     return state;
 }
 
-juce::File DsMiniProcessor::getDsPresetFile (const juce::String& name) const
+juce::File DsMiniProcessor::getDsPresetFile (const juce::String& presetName) const
 {
     // Fancy DS's preset folder sits beside this plugin's: <root>/Fancy DS/Presets.
     const auto root = getPresets().getUserDirectory().getParentDirectory().getParentDirectory();
 
     return root.getChildFile ("Fancy DS").getChildFile ("Presets").getChildFile (dsPresetFolder)
-        .getChildFile (juce::File::createLegalFileName (name.trim()) + ".fancypreset");
+        .getChildFile (juce::File::createLegalFileName (presetName.trim()) + ".fancypreset");
 }
 
-bool DsMiniProcessor::saveAsDsPreset (const juce::String& name)
+bool DsMiniProcessor::saveAsDsPreset (const juce::String& presetName)
 {
-    if (juce::File::createLegalFileName (name.trim()).isEmpty())
+    if (juce::File::createLegalFileName (presetName.trim()).isEmpty())
         return false;
 
-    const auto file = getDsPresetFile (name);
+    const auto file = getDsPresetFile (presetName);
 
     if (! file.getParentDirectory().createDirectory())
         return false;
