@@ -149,9 +149,11 @@ double loudness (const Stereo& s, int from = 0)
     return meter.getIntegrated();
 }
 
-// The worst component below Nyquist that isn't a harmonic of the tone, in dBFS: a 65536-point
-// Blackman-Harris FFT after a second of settling, with 6 Hz either side of each harmonic left out.
-double worstAliasDb (int factor, double toneHz, double rate = 44100.0)
+// The worst component that isn't a harmonic of the tone, in dBFS, from `lowHz` to `highHz`: a
+// 65536-point Blackman-Harris FFT after a second of settling, with 6 Hz either side of each
+// harmonic left out. By default, the audio band: half-band oversampling filters let through what
+// folds from just above Nyquist to just below it, above 20 kHz, and the measurements report it.
+double worstAliasDb (int factor, double toneHz, double rate = 44100.0, double lowHz = 20.0, double highHz = 20000.0)
 {
     auto targets = plain();
     targets.type = sat::clip;
@@ -184,6 +186,10 @@ double worstAliasDb (int factor, double toneHz, double rate = 44100.0)
     for (int bin = 2; bin < size / 2; ++bin)
     {
         const auto hz = bin * binHz;
+
+        if (hz < lowHz || hz > highHz)
+            continue;
+
         const auto nearest = std::round (hz / toneHz) * toneHz;
 
         if (nearest > 0.0 && std::abs (hz - nearest) < 6.0)
@@ -257,7 +263,7 @@ TEST_CASE ("Sature: Low and High have Off at their ends, and High keeps an octav
 
 // §4.4 ---------------------------------------------------------------------------------------
 
-TEST_CASE ("Sature: aliasing, 10 kHz at -6 dBFS, Drive 24, Clip, 44.1 kHz (Decision 7)", "[sature][aliasing]")
+TEST_CASE ("Sature: aliasing in the audio band, 10 kHz at -6 dBFS, Drive 24, Clip, 44.1 kHz (Decision 7)", "[sature][aliasing]")
 {
     // The model in docs/research/sature-alias-model.py: -55.9 dBFS at 4x, -69.3 at 8x.
     const auto at4 = worstAliasDb (SatureDsp::x4, 10000.0);
@@ -267,7 +273,7 @@ TEST_CASE ("Sature: aliasing, 10 kHz at -6 dBFS, Drive 24, Clip, 44.1 kHz (Decis
     CHECK (at8 < -65.0);
 }
 
-TEST_CASE ("Sature: aliasing, 1 kHz at -6 dBFS, Drive 24, Clip, 44.1 kHz (Decision 7)", "[sature][aliasing]")
+TEST_CASE ("Sature: aliasing in the audio band, 1 kHz at -6 dBFS, Drive 24, Clip, 44.1 kHz (Decision 7)", "[sature][aliasing]")
 {
     // The model: -94.4 dBFS at 4x; -42.3 with Oversampling Off, which runs without ADAA.
     const auto at4 = worstAliasDb (SatureDsp::x4, 1000.0);
@@ -542,7 +548,9 @@ TEST_CASE ("sature measurements", "[.measure]")
     std::printf ("sature aliasing (Clip, Drive 24, -6 dBFS, 44.1 kHz, bare curve), worst alias in dBFS:\n");
 
     for (int factor = 0; factor < 4; ++factor)
-        std::printf ("sature   %-3s: 10 kHz %7.1f, 1 kHz %7.1f\n", factorNames[factor], worstAliasDb (factor, 10000.0), worstAliasDb (factor, 1000.0));
+        std::printf ("sature   %-3s: 10 kHz %7.1f, 1 kHz %7.1f (20 Hz-20 kHz); 20-22.05 kHz: 10 kHz %7.1f, 1 kHz %7.1f\n", factorNames[factor],
+                     worstAliasDb (factor, 10000.0), worstAliasDb (factor, 1000.0),
+                     worstAliasDb (factor, 10000.0, 44100.0, 20000.0, 22050.0), worstAliasDb (factor, 1000.0, 44100.0, 20000.0, 22050.0));
 
     SatureDsp dsp;
     dsp.prepare (48000.0);
