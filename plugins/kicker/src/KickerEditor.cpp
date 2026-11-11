@@ -41,7 +41,7 @@ KickerEditor::KickerEditor (KickerProcessor& processor)
       qKnob (parameter ("q"), "Filter Q", colours::uiRed, Knob::smallStyle),
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
       sensitivityKnob (parameter ("subSensitivity"), "Sensitivity", colours::uiRed, Knob::smallStyle),
-      subLowpassKnob (parameter ("subLowpass"), "Sub low-pass", colours::uiRed, Knob::smallStyle),
+      subLowpassKnob (parameter ("subLowpass"), "Low-pass", colours::uiRed, Knob::smallStyle),
       monoCheckbox (parameter ("monoBelow"), "Mono below Freq"),
       softClipCheckbox (parameter ("softClip"), "Soft clip"),
       subMonoCheckbox (parameter ("subMono"), "Mono sub")
@@ -58,7 +58,6 @@ KickerEditor::KickerEditor (KickerProcessor& processor)
     freqKnob.setBounds (66, 52, 132, 148);
     freqKnob.setShowDefaultMark (true);
     cutoffKnob.setBounds (66, 52, 132, 148);
-    cutoffKnob.setShowDefaultMark (true);
     cutoffKnob.setTooltip ("The highest frequency Sub listens to. Set it just above the kick's body.");
 
     octaveSegments.setBounds (78, 205, 112, 24);

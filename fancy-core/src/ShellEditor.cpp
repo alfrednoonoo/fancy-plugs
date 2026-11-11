@@ -64,7 +64,8 @@ void CaptionPanels::paint (juce::Graphics& g)
 
     g.setColour (colours::textSecondary);
     g.setFont (font (Weight::medium, 12.0f));
-    g.drawText (captionText, leftWidth - 160, captionTop, 136, 18, juce::Justification::centredRight, false);
+    // Right-aligned, so a short caption sits where it always did; room for Kicker's mode lines.
+    g.drawText (captionText, leftWidth - 224, captionTop, 200, 18, juce::Justification::centredRight, false);
 }
 
 // EditLink --------------------------------------------------------------------
