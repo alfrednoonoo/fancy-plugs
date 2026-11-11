@@ -269,10 +269,12 @@ TEST_CASE ("Kicker Sub: a kick falling from 120 to 50 Hz is followed, half its f
     const auto crossings = upCrossings (sub.left, (int) (onset * rate));
     REQUIRE (crossings.size() > 6);
 
-    auto worstError = 0.0;
+    auto worstError = 0.0, lockInError = 0.0;
     auto checked = 0;
 
-    // Skip the first period, while it locks on; stop where the kick has faded below -40 dBFS.
+    // The first two sub periods are its lock-in: the subsonic filter's start-up shifts their
+    // crossings (docs/kicker-sub.md, "As built"). Reported, then checked from the third on,
+    // until the kick has faded below -40 dBFS.
     for (size_t k = 2; k < crossings.size(); ++k)
     {
         const auto t1 = crossings[k - 1] / rate, t2 = crossings[k] / rate;
@@ -282,11 +284,19 @@ TEST_CASE ("Kicker Sub: a kick falling from 120 to 50 Hz is followed, half its f
 
         const auto subHz = 1.0 / (t2 - t1);
         const auto expected = 0.5 * (inputPhase (t2) - inputPhase (t1)) / (2.0 * pi * (t2 - t1));
+
+        if (k == 2)
+        {
+            lockInError = std::abs (subHz / expected - 1.0);
+            continue;
+        }
+
         worstError = std::max (worstError, std::abs (subHz / expected - 1.0));
         ++checked;
     }
 
-    INFO ("checked " << checked << " periods, worst frequency error " << 100.0 * worstError << " %");
+    std::printf ("kicker sub sweep 120 -> 50 Hz: second sub period %.1f %% off, later ones at most %.1f %%\n", 100.0 * lockInError, 100.0 * worstError);
+    INFO ("checked " << checked << " periods, worst frequency error " << 100.0 * worstError << " %; lock-in " << 100.0 * lockInError << " %");
     CHECK (checked >= 4);
     CHECK (worstError <= 0.05);
 

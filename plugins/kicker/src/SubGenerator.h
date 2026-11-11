@@ -45,6 +45,7 @@ public:
         candidate = -1.0;
         lastCrossing = -1.0;
         lastPeriod = -1.0;
+        previousPeriod = -1.0;
         crossings = 0;
         phase = 0.0;
         increment = 0.0;
@@ -145,9 +146,17 @@ private:
         const auto validPeriod = period >= minPeriod && period <= maxPeriod;
 
         if (validPeriod)
+        {
+            previousPeriod = lastPeriod;
             lastPeriod = period;
+        }
 
-        const auto usePeriod = lastPeriod > 0.0 ? lastPeriod : sampleRate / (0.8 * settings.cutoffHz);
+        // The next period, predicted from the last two: a kick's pitch falls roughly
+        // geometrically, so the trend carries on. Clamped, so one odd crossing can't throw it.
+        auto usePeriod = lastPeriod > 0.0 ? lastPeriod : sampleRate / (0.8 * settings.cutoffHz);
+
+        if (lastPeriod > 0.0 && previousPeriod > 0.0)
+            usePeriod = lastPeriod * std::clamp (lastPeriod / previousPeriod, 0.77, 1.3);
         increment = 1.0 / ((double) settings.divisions * usePeriod);
 
         // The detector's filters delay the band. Its crossing really happened that much
@@ -201,7 +210,7 @@ private:
     fancy::dsp::Biquad subsonic;
 
     double attack = 0.0, release = 0.0, gateStep = 0.0;
-    double envelope = 0.0, previous = 0.0, candidate = -1.0, lastCrossing = -1.0, lastPeriod = -1.0;
+    double envelope = 0.0, previous = 0.0, candidate = -1.0, lastCrossing = -1.0, lastPeriod = -1.0, previousPeriod = -1.0;
     bool armed = false, running = false;
     int crossings = 0;
     double phase = 0.0, increment = 0.0, correction = 0.0;
