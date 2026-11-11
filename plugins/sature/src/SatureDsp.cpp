@@ -111,6 +111,7 @@ void SatureDsp::resetCore()
 
     delayWritePosition = 0;
     lastCurve = sat::makeCurve (activeType, character.getCurrent());
+    settingsCached = false;
 }
 
 void SatureDsp::reset()
@@ -126,6 +127,7 @@ void SatureDsp::updateRateDependent()
     tapeCoefficient = sat::TapeLoss::coefficientFor (processRate);
     lastToneDb = 1.0e9; // recompute the tilt for the new rate
 
+    settingsCached = false;
     numTaps = tapsFor (factor);
     addedDelaySamples = numTaps / 2 - 1;
     halfDelayTaps.fill (0.0);
@@ -151,8 +153,19 @@ void SatureDsp::setTargets (const Targets& newTargets)
     if (targets.highOn)
         logHigh.setTarget (std::log (std::clamp (effectiveHighHz (targets), lowestHz, nyquistLimit)));
 
-    lowOn.setTarget (targets.lowOn ? 1.0 : 0.0);
-    highOn.setTarget (targets.highOn ? 1.0 : 0.0);
+    // A band edge that was fully off skips its filters, so it starts them afresh as it fades in.
+    const auto restart = [this] (bool on, fancy::dsp::Smoother& amount, bool low)
+    {
+        if (on && amount.isSettled() && amount.getCurrent() == 0.0)
+            for (auto& state : channelStates)
+                for (auto& section : low ? state.lowCut : state.highCut)
+                    section.reset();
+
+        amount.setTarget (on ? 1.0 : 0.0);
+    };
+
+    restart (targets.lowOn, lowOn, true);
+    restart (targets.highOn, highOn, false);
     autoGain.setTarget (targets.autoGain ? 1.0 : 0.0);
     wet.setTarget (targets.wetGain);
     dry.setTarget (targets.dryGain);
@@ -258,42 +271,65 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
     {
         updateBandFilters (false);
 
-        const auto t = typeFade.next();
-        const auto characterValue = character.next();
-        const auto driveDb = drive.next();
-        const auto toneDb = tone.next();
-        const auto autoAmount = autoGain.next();
+        const auto settled = typeFade.isSettled() && character.isSettled() && drive.isSettled() && tone.isSettled() && autoGain.isSettled();
 
-        const auto curve = t >= 1.0 ? sat::makeCurve (activeType, characterValue)
-                                    : sat::blend (sat::makeCurve (previousType, characterValue), sat::makeCurve (activeType, characterValue), t);
-
-        chunkShapeChanged[(size_t) i] = ! curve.sameShape (lastCurve);
-        chunkDc[(size_t) i] = (chunkShapeChanged[(size_t) i] || curve.bias != lastCurve.bias || i == 0) ? curve.shape (curve.bias) : chunkDc[(size_t) i - 1];
-        chunkCurve[(size_t) i] = curve;
-        lastCurve = curve;
-
-        chunkDrive[(size_t) i] = dbToGain (driveDb);
-        chunkTape[(size_t) i] = sat::TapeLoss::amountFor (driveDb, curve.tape);
-
-        if (toneDb != lastToneDb)
+        if (settled && settingsCached)
         {
-            tiltCoefficients.set (toneDb, processRate);
-            lastToneDb = toneDb;
+            chunkCurve[(size_t) i] = cachedCurve;
+            chunkShapeChanged[(size_t) i] = false;
+            chunkDc[(size_t) i] = cachedDc;
+            chunkDrive[(size_t) i] = cachedDrive;
+            chunkGain[(size_t) i] = cachedGain;
+            chunkTape[(size_t) i] = cachedTape;
+            chunkTilt[(size_t) i] = tiltCoefficients;
         }
-
-        chunkTilt[(size_t) i] = tiltCoefficients;
-
-        auto gainDb = 0.0;
-
-        if (autoAmount > 0.0)
+        else
         {
-            const auto table = t >= 1.0 ? tableGainDb (activeType, driveDb, characterValue)
-                                        : tableGainDb (previousType, driveDb, characterValue) * (1.0 - t)
-                                              + tableGainDb (activeType, driveDb, characterValue) * t;
-            gainDb = autoAmount * (table + toneGainDb (toneDb));
-        }
+            const auto t = typeFade.next();
+            const auto characterValue = character.next();
+            const auto driveDb = drive.next();
+            const auto toneDb = tone.next();
+            const auto autoAmount = autoGain.next();
 
-        chunkGain[(size_t) i] = gainDb == 0.0 ? 1.0 : dbToGain (gainDb);
+            const auto curve = t >= 1.0 ? sat::makeCurve (activeType, characterValue)
+                                        : sat::blend (sat::makeCurve (previousType, characterValue), sat::makeCurve (activeType, characterValue), t);
+
+            chunkShapeChanged[(size_t) i] = ! curve.sameShape (lastCurve);
+            chunkDc[(size_t) i] = curve.shape (curve.bias);
+            chunkCurve[(size_t) i] = curve;
+            lastCurve = curve;
+
+            chunkDrive[(size_t) i] = dbToGain (driveDb);
+            chunkTape[(size_t) i] = sat::TapeLoss::amountFor (driveDb, curve.tape);
+
+            if (toneDb != lastToneDb)
+            {
+                tiltCoefficients.set (toneDb, processRate);
+                lastToneDb = toneDb;
+            }
+
+            chunkTilt[(size_t) i] = tiltCoefficients;
+
+            auto gainDb = 0.0;
+
+            if (autoAmount > 0.0)
+            {
+                const auto table = t >= 1.0 ? tableGainDb (activeType, driveDb, characterValue)
+                                            : tableGainDb (previousType, driveDb, characterValue) * (1.0 - t)
+                                                  + tableGainDb (activeType, driveDb, characterValue) * t;
+                gainDb = autoAmount * (table + toneGainDb (toneDb));
+            }
+
+            chunkGain[(size_t) i] = gainDb == 0.0 ? 1.0 : dbToGain (gainDb);
+
+            // Cached only once the smoothers have landed, so it is what every later sample would compute.
+            settingsCached = typeFade.isSettled() && character.isSettled() && drive.isSettled() && tone.isSettled() && autoGain.isSettled();
+            cachedCurve = curve;
+            cachedDc = chunkDc[(size_t) i];
+            cachedDrive = chunkDrive[(size_t) i];
+            cachedGain = chunkGain[(size_t) i];
+            cachedTape = chunkTape[(size_t) i];
+        }
 
         const auto trimGain = trim.next();
         const auto lowAmount = lowOn.next();
@@ -310,17 +346,25 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
 
             const auto x = (double) in * trimGain;
 
-            auto cut = x;
-            for (int k = 0; k < numSections; ++k)
-                cut = state.lowCut[(size_t) k].tick (lowCoefficients[(size_t) k], cut).high;
+            auto mid = x;
 
-            auto mid = lowAmount == 0.0 ? x : x + lowAmount * (cut - x);
+            if (lowAmount != 0.0)
+            {
+                auto cut = x;
+                for (int k = 0; k < numSections; ++k)
+                    cut = state.lowCut[(size_t) k].tick (lowCoefficients[(size_t) k], cut).high;
 
-            auto top = mid;
-            for (int k = 0; k < numSections; ++k)
-                top = state.highCut[(size_t) k].tick (highCoefficients[(size_t) k], top).low;
+                mid = x + lowAmount * (cut - x);
+            }
 
-            mid = highAmount == 0.0 ? mid : mid + highAmount * (top - mid);
+            if (highAmount != 0.0)
+            {
+                auto top = mid;
+                for (int k = 0; k < numSections; ++k)
+                    top = state.highCut[(size_t) k].tick (highCoefficients[(size_t) k], top).low;
+
+                mid += highAmount * (top - mid);
+            }
 
             matchedBuffer.setSample (ch, i, (float) x);
             midBuffer.setSample (ch, i, (float) mid);

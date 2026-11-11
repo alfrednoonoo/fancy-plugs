@@ -195,8 +195,15 @@ struct TapeLoss
 
     double process (double x, double coefficient, double amount) noexcept
     {
+        if (amount == 0.0)
+        {
+            // Follows the input, so it starts from where the signal is when the loss comes in.
+            state = x;
+            return x;
+        }
+
         state += coefficient * (x - state);
-        return amount == 0.0 ? x : x + amount * (state - x);
+        return x + amount * (state - x);
     }
 
     static double coefficientFor (double sampleRate) noexcept
@@ -239,9 +246,16 @@ struct Tilt
 
     double process (const TiltCoefficients& c, double x) noexcept
     {
+        if (c.flat)
+        {
+            // A flat tilt is the identity, whose state is zero.
+            state = 0.0;
+            return x;
+        }
+
         const auto y = c.b0 * x + state;
         state = c.b1 * x - c.a1 * y;
-        return c.flat ? x : y;
+        return y;
     }
 };
 

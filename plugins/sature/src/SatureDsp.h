@@ -114,6 +114,12 @@ private:
     std::array<fancy::dsp::saturation::TiltCoefficients, maxChunk> chunkTilt;
 
     fancy::dsp::saturation::Curve lastCurve;
+
+    // The last sample's settings, reused while Type, Drive, Character, Tone and Auto gain are
+    // all settled.
+    bool settingsCached = false;
+    fancy::dsp::saturation::Curve cachedCurve;
+    double cachedDc = 0.0, cachedDrive = 1.0, cachedGain = 1.0, cachedTape = 0.0;
     fancy::dsp::saturation::TiltCoefficients tiltCoefficients;
     double lastToneDb = 1.0e9;
     double tapeCoefficient = 0.0;

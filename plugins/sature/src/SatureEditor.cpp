@@ -432,8 +432,9 @@ SatureEditor::SatureEditor (SatureProcessor& processor)
     // The Type row.
     setUpLabel (typeLabel, "Type", juce::Justification::centredLeft);
     typeLabel.setBounds (leftX + 2, rowY, 34, rowHeight);
-    typeSegments.setBounds (50, rowY + 1, 217, 24);
+    typeSegments.setBounds (50, rowY + 1, 240, 24);
     typeSegments.setTextHeight (labelHeight);
+    typeSegments.setFitToText (true);
     typeSegments.setTooltip ("Tape: soft and warm, a little darker when driven hard. Tube: soft and uneven, rich in even harmonics. "
                              "Transistor: a harder knee. Clip: hard clipping with a small rounded corner.");
 
