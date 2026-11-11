@@ -17,6 +17,9 @@ class CaptionPanels final : public juce::Component
 public:
     CaptionPanels (const juce::String& caption, int leftPanelWidth, int captionY);
 
+    // For a caption that follows the plugin's state, such as Kicker's mode.
+    void setCaption (const juce::String& caption);
+
     void paint (juce::Graphics&) override;
 
 private:

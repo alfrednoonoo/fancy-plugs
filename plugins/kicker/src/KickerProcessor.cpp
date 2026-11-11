@@ -33,6 +33,34 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "softClip", 1 }, "Soft clip", false));
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "bypass", 1 }, "Bypass", false));
 
+    // Sub mode (docs/kicker-sub.md), appended. A state without them loads in Boost, as before.
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "mode", 1 }, "Mode", juce::StringArray { "Boost", "Sub" }, 0));
+
+    const auto hzParameter = [] (const char* id, const char* name, float low, float high, float defaultHz)
+    {
+        return fancy::floatParameter (
+            id, name, fancy::logRange (low, high, 1.0f), defaultHz,
+            juce::AudioParameterFloatAttributes {}
+                .withLabel ("Hz")
+                .withStringFromValueFunction ([] (float value, int) { return fancy::formatFilterHz (value); })
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); }));
+    };
+
+    layout.add (hzParameter ("subCutoff", "Cutoff", 40.0f, 200.0f, 100.0f));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "subOctave", 1 }, "Octave",
+                                                              juce::StringArray { juce::String::fromUTF8 ("\xe2\x88\x92" "1 oct"), juce::String::fromUTF8 ("\xe2\x88\x92" "2 oct") }, 0));
+    layout.add (fancy::levelParameter ("subLevel", "Sub", levelFloorDb, 6.0f, -9.0f, levelFloorDb));
+
+    layout.add (fancy::floatParameter (
+        "subSensitivity", "Sensitivity", juce::NormalisableRange<float> (-60.0f, 0.0f, 0.1f), -40.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("dB")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " dB"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
+    layout.add (hzParameter ("subLowpass", "Sub low-pass", 60.0f, 250.0f, 120.0f));
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "subMono", 1 }, "Mono sub", true));
+
     return layout;
 }
 
@@ -44,12 +72,18 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Deep Sub", { { "freq", 42.0f }, { "wet", -6.0f }, { "q", 3.0f }, { "monoBelow", 1.0f } } },
         { "Bass Lift", { { "freq", 90.0f }, { "wet", -12.0f }, { "q", 1.0f } } },
         { "Safe Boom", { { "freq", 50.0f }, { "wet", 0.0f }, { "dry", -3.0f }, { "softClip", 1.0f } } },
+        { "Sub: Deep 808", { { "mode", 1.0f }, { "subCutoff", 90.0f }, { "subLevel", 0.0f } } },
+        { "Sub: Tight Punch", { { "mode", 1.0f }, { "subLevel", -6.0f }, { "subLowpass", 90.0f }, { "subSensitivity", -30.0f } } },
+        { "Sub: Tom Drop", { { "mode", 1.0f }, { "subOctave", 1.0f }, { "subCutoff", 180.0f }, { "subLevel", -6.0f } } },
     };
 
     // Phase 3 Q2.1: the preset browser's categories.
     fancy::setCategories (presets, {
         { "Tight Kick", "Kick" },
         { "Safe Boom", "Kick" },
+        { "Sub: Deep 808", "Kick" },
+        { "Sub: Tight Punch", "Kick" },
+        { "Sub: Tom Drop", "Kick" },
         { "Deep Sub", "Bass" },
         { "Bass Lift", "Bass" },
     });
@@ -87,6 +121,16 @@ KickerDsp::Targets KickerProcessor::readTargets() const
     targets.monoWet = monoBelow.load (std::memory_order_relaxed) >= 0.5f;
     targets.softClip = softClip.load (std::memory_order_relaxed) >= 0.5f;
     targets.bypass = bypass.load (std::memory_order_relaxed) >= 0.5f;
+
+    const auto read = [this] (const char* id) { return const_cast<KickerProcessor*> (this)->getApvts().getRawParameterValue (id)->load (std::memory_order_relaxed); };
+
+    targets.sub = juce::roundToInt (read ("mode")) == 1;
+    targets.subCutoffHz = (double) read ("subCutoff");
+    targets.subDivisions = juce::roundToInt (read ("subOctave")) == 1 ? 4 : 2;
+    targets.subGain = fancy::levelToGain (read ("subLevel"), levelFloorDb);
+    targets.subSensitivityGain = fancy::dbToGain ((double) read ("subSensitivity"));
+    targets.subLowpassHz = (double) read ("subLowpass");
+    targets.subMono = read ("subMono") >= 0.5f;
     return targets;
 }
 

@@ -1,6 +1,6 @@
 # Fancy Kicker, Sub mode: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §6. Mockup: `reference/phase3/21__kicker_sub_mockup.png`, source `design/phase3-mockup-src/kicker.html`. Kicker's own note: `docs/kicker.md`. Design rules: `docs/DESIGN_SYSTEM.md`. **No code until this note is approved.** The points marked **Decision** need your answer.
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §6. Mockup: `reference/phase3/21__kicker_sub_mockup.png`, source `design/phase3-mockup-src/kicker.html`. Kicker's own note: `docs/kicker.md`. Design rules: `docs/DESIGN_SYSTEM.md`. **Approved by the user on 11 November 2026: A for all three decisions.**
 
 ## Scope, agreed 11 November 2026
 
@@ -92,3 +92,13 @@ From §6.4, plus the sweep agreed above:
 | Mode switch while playing | no step larger than 1.5 × the larger mode's own largest step |
 | Shared suites | offline equals real time, random blocks, rates 44.1 to 384 kHz, mono, state, §0.3 (nothing to listen to), pop-ups, undo, A/B, Compare |
 | CPU, Sub (Divider), median of 5 | under 0.5 % (§7), and the ratio to Fancy Comp |
+
+## As built (11 November 2026)
+
+- **No `stateVersion` bump.** State version 3 (Phase 2.1 D) already gives a parameter missing from a state its default, so a project saved before Sub mode loads with Mode at Boost. MultiComp's Phase 2.1 U parameters relied on the same rule. A test removes Sub's parameters from a state and checks it loads in Boost.
+- **Boost is the old code, unchanged.** While Mode is settled at Boost, `KickerDsp` runs the v1.2.0 loop as it was; a frozen copy (`tests/LegacyKickerDsp.h`) checks it sample for sample at three rates, with Sub's settings moving underneath.
+- **Sub low-pass is 4th order** (24 dB/oct), not 2nd, so nothing the sub adds reaches Sub low-pass + 1 octave above −60 dB.
+- **The detector's delay is compensated.** Its low-pass at Cutoff delays the band by several ms at kick frequencies; the oscillator works out that delay from the filters' phase at the tracked frequency, so the sub's cycles line up with the kick itself, not with the filtered band.
+- **The first sub cycle** starts on the first confirmed crossing, using the last kick's period (or one from Cutoff before any kick), and corrects itself from the next crossing on, so the sub is there from the kick's first cycle.
+- **Boost's caption is "Boost: lifts its own low end".** The brief's "lifts the kick's own low end" ran into the EDIT link in the 264 px panel.
+- **Boost's large knob** is 104 px, not 116, in both modes, so the switch and the octave row fit as the mockup draws.

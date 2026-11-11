@@ -100,6 +100,25 @@ bool writeBothScales (juce::Component& component, const juce::String& name, cons
         && writeSnapshot (component, 2.0f, outputDir.getChildFile (name + "@2x.png"));
 }
 
+#if FANCY_HAS_KICKER
+// Kicker's Sub mode (docs/kicker-sub.md), beside its mockup.
+bool renderKickerSub (const juce::File& outputDir)
+{
+    KickerProcessor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<KickerEditor*> (base.get());
+
+    if (editor == nullptr)
+        return false;
+
+    editor->showPreview (false, true);
+    const auto mainOk = writeBothScales (*editor, "kicker-sub", outputDir);
+
+    editor->showPreview (true, true);
+    return writeBothScales (*editor, "kicker-sub-edit", outputDir) && mainOk;
+}
+#endif
+
 template <typename Processor, typename Editor>
 bool renderPlugin (const juce::String& slug, const juce::File& outputDir)
 {
@@ -503,6 +522,7 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_KICKER
     ok = renderPlugin<KickerProcessor, KickerEditor> ("kicker", outputDir) && ok;
+    ok = renderKickerSub (outputDir) && ok;
    #endif
 
    #if FANCY_HAS_EXCITER

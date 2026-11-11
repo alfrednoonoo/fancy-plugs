@@ -67,6 +67,28 @@ The **Prm** menu has the rest:
 - **I/O** shows the plugin's inputs and outputs.
 
 
+## Sub mode
+
+The **Boost | Sub** switch at the top picks what Kicker does. **Boost** (the default) lifts the kick's own low end, as above. **Sub** creates new bass below the kick: it follows the kick's low end and plays a clean sine an octave (or two) below it, at the kick's own level, locked to its cycles so it stays punchy. It adds no latency.
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Cutoff | 40–200 Hz | 100 Hz | The highest frequency Sub listens to. Set it just above the kick's body |
+| −1 oct / −2 oct | | −1 oct | How far below. −2 oct suits toms and pitched-up 808s; two octaves below a low kick is under 15 Hz and is filtered out |
+| Sub | −inf to +6 dB | −9 dB | The level of the sub it creates |
+| Dry | −inf to +12 dB | 0 dB | The kick itself. The same Dry as in Boost |
+
+In **⚙ EDIT** (Sub):
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| Sensitivity | −60 to 0 dB | −40 dB | Below this level Sub stays silent, so bleed and noise don't make sub |
+| Sub low-pass | 60–250 Hz | 120 Hz | Smooths the sub: nothing it adds goes much above this |
+| Output, Soft clip | | | As in Boost |
+| Mono sub | on/off | on | The same sub in both channels, from L+R. Off: each channel makes its own |
+
+Switching mode while playing crossfades over 20 ms. Presets **Sub: Deep 808**, **Sub: Tight Punch** and **Sub: Tom Drop** are in the Kick category.
+
 ## Credits
 
 UI design based on "ReaPlugs (vst GUI)" by Eugene Reznik, CC BY 4.0 — https://www.figma.com/community/file/967866927752067729. Modified from the original.

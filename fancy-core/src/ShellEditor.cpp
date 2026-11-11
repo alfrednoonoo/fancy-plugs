@@ -44,6 +44,15 @@ CaptionPanels::CaptionPanels (const juce::String& caption, int leftPanelWidth, i
 {
 }
 
+void CaptionPanels::setCaption (const juce::String& caption)
+{
+    if (caption != captionText)
+    {
+        captionText = caption;
+        repaint();
+    }
+}
+
 void CaptionPanels::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds();

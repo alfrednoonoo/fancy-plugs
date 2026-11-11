@@ -59,3 +59,15 @@ Tell me "Kicker OK", or list which boxes failed. Once it's OK, I'll start the Ex
 - [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
 - [ ] Play a loop and pick **≈ Compare (level-matched)**: you hear the input at about the same loudness as the plugin's output. Pick it again to go back. No clicks either way.
 - [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
+
+## Sub mode (docs/kicker-sub.md)
+
+- [ ] An old project with Kicker on it opens in **Boost** and sounds exactly as before. The knobs sit a little lower than they used to, under the **Boost | Sub** switch, and the caption reads "Boost: lifts its own low end".
+- [ ] Click **Sub** while a kick plays: no click, and a sub an octave below comes in. The controls swap in place to Cutoff, the −1 oct / −2 oct row, Sub and Dry, and the caption reads "Sub: adds an octave below".
+- [ ] Turn **Sub** up and down: the added low end follows. Turn **Dry** to −inf: you hear the sub alone, a clean sine that follows the kick, starting and stopping without clicks.
+- [ ] On a kick that drops in pitch, the sub follows the drop without warbling.
+- [ ] Set **Cutoff** just above the kick's body: the sub is steadiest there. Too low, and it comes in late or thin.
+- [ ] Pick **−2 oct** on a tom: a sub two octaves down. On a low kick it nearly vanishes (below 15 Hz), as the tooltip says.
+- [ ] Open **⚙ EDIT** in Sub: Sensitivity, Sub low-pass, Output, Mono sub and Soft clip. Raise **Sensitivity** on a track with bleed: the bleed stops making sub. Untick **Mono sub**: each side makes its own.
+- [ ] The preset browser's **Kick** category has **Sub: Deep 808**, **Sub: Tight Punch** and **Sub: Tom Drop**.
+- [ ] Automate Mode between Boost and Sub and render: no clicks, and the render matches playback. The plugin reports no latency in either mode.

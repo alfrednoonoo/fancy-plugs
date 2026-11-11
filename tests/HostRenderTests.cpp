@@ -374,6 +374,13 @@ TEST_CASE ("Kicker: an offline render matches playback", "[host][offline]")
 {
     checkRenders<KickerProcessor> ("Kicker", { {}, join ({ alternate ("freq", 45.0f, 90.0f), alternate ("wet", -20.0f, -6.0f, 777) }), {} });
 }
+
+TEST_CASE ("Kicker Sub: an offline render matches playback", "[host][offline]")
+{
+    // Mode switches crossfade, and the sub generator follows crossings at any block size.
+    checkRenders<KickerProcessor> ("Kicker, Sub", { { { "mode", 1.0f } },
+                                                    join ({ alternate ("mode", 1.0f, 0.0f), alternate ("subCutoff", 70.0f, 150.0f, 777) }), {} });
+}
 #endif
 
 #if FANCY_HAS_EXCITER
