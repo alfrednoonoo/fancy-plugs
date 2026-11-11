@@ -1,0 +1,36 @@
+# Fancy Sature measurements
+
+From CI run 43075498314 (commit 02ffb3f), 48 kHz, 128-sample blocks unless stated. See docs/sature.md.
+
+PASS  Fancy Sature at defaults: reported latency matches the measured delay (reported 6, measured 7)
+PASS  Fancy Sature: loads
+PASS  Fancy Sature: offline, random blocks of 0-8192 against 128 (-156.5 dBFS)
+PASS  Fancy Sature: 44.1 -> 48 -> 96 -> 44.1 kHz without reloading
+PASS  Fancy Sature: deactivate, reactivate, and 60 s of silence
+PASS  Fancy Sature: state restored before the first prepareToPlay
+PASS  Fancy Sature: state restored while playing
+PASS  Fancy Sature: mono main bus
+PASS  Fancy Sature: host bypass is time-aligned (latency 6, worst 0.00000000)
+PASS  Fancy Sature: latency notice for Oversampling (0 -> 6 -> 0, notices 1 then 2)
+PASS  Fancy Sature: every parameter changed every block for 10 s
+PASS  Fancy Sature: editor opened and closed 50 times, and resized
+sature aliasing (Clip, Drive 24, -6 dBFS, 44.1 kHz, bare curve), worst alias in dBFS:
+sature   Off: 10 kHz    -8.0, 1 kHz   -42.7 (20 Hz-20 kHz); 20-22.05 kHz: 10 kHz   -22.5, 1 kHz   -47.3
+sature   2x : 10 kHz   -29.9, 1 kHz   -70.8 (20 Hz-20 kHz); 20-22.05 kHz: 10 kHz   -37.0, 1 kHz   -66.9
+sature   4x : 10 kHz   -56.3, 1 kHz   -94.4 (20 Hz-20 kHz); 20-22.05 kHz: 10 kHz   -83.8, 1 kHz   -75.4
+sature   8x : 10 kHz   -70.0, 1 kHz  -105.9 (20 Hz-20 kHz); 20-22.05 kHz: 10 kHz   -88.1, 1 kHz   -75.2
+sature latency Off: minimum phase 0, linear phase 0 samples at 48 kHz
+sature latency 2x : minimum phase 7, linear phase 57 samples at 48 kHz
+sature latency 4x : minimum phase 6, linear phase 69 samples at 48 kHz
+sature latency 8x : minimum phase 7, linear phase 74 samples at 48 kHz
+sature auto gain Tape      : Drive  0 -0.03 LU Drive 12 -0.05 LU Drive 24 -0.42 LU Drive 36 -0.66 LU
+sature auto gain Tube      : Drive  0 -0.03 LU Drive 12 -0.05 LU Drive 24 -0.16 LU Drive 36 -0.47 LU
+sature auto gain Transistor: Drive  0 -0.02 LU Drive 12 -0.05 LU Drive 24 -0.26 LU Drive 36 -0.63 LU
+sature auto gain Clip      : Drive  0 -0.02 LU Drive 12 -0.05 LU Drive 24 -0.28 LU Drive 36 -0.65 LU
+sature cpu (median of 5): defaults, 4x minimum phase (target < 2 %) 1.723 %, 4x linear 4.471 %, off 0.225 %, 8x 3.363 %, 4x with Low and High 1.970 %
+sature cpu reference: Fancy Comp default 0.462 % in the same run; sature 4x / comp = 3.73, linear / comp = 9.68, off / comp = 0.49, 8x / comp = 7.28
+Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 0: 0.1465 % (target without oversampling < 0.5 %)
+Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 1: 1.1229 % (target without oversampling < 0.5 %)
+Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 2: 2.1010 % (target without oversampling < 0.5 %)
+Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 3: 3.7460 % (target without oversampling < 0.5 %)
+workflow cpu: Fancy Sature       default 2.084 % (3.54 x Comp); editor open, Compare measuring 2.043 % (3.47 x); Compare on 2.139 % (3.63 x)
