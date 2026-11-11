@@ -75,6 +75,9 @@
 #if FANCY_HAS_DSMINI
  #include "DsMiniProcessor.h"
 #endif
+#if FANCY_HAS_SATURE
+ #include "SatureProcessor.h"
+#endif
 
 namespace
 {
@@ -505,6 +508,17 @@ TEST_CASE ("DS-Mini: an offline render matches playback", "[host][offline]")
     checkRenders<DsMiniProcessor> (lookahead > 0.5f ? "DS-Mini, lookahead" : "DS-Mini",
                                    { { { "lookahead", lookahead }, { "amount", 7.0f } },
                                      join ({ alternate ("profile", 0.0f, 2.0f), alternate ("amount", 3.0f, 8.0f, 888) }), {} });
+}
+#endif
+
+#if FANCY_HAS_SATURE
+TEST_CASE ("Sature: an offline render matches playback", "[host][offline]")
+{
+    // Type changes crossfade two curves, and the band edges glide.
+    const auto oversampling = GENERATE (0.0f, 2.0f);
+    checkRenders<SatureProcessor> (oversampling > 0.5f ? "Sature, 4x" : "Sature, oversampling off",
+                                   { { { "oversampling", oversampling }, { "drive", 18.0f }, { "low", 150.0f } },
+                                     join ({ alternate ("type", 0.0f, 3.0f), alternate ("drive", 6.0f, 24.0f, 501), alternate ("high", 3000.0f, 8000.0f, 888) }), {} });
 }
 #endif
 

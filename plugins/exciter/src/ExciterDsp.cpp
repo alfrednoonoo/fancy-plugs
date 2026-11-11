@@ -8,8 +8,6 @@ namespace
 constexpr double shaperLimit = 1.5;
 constexpr double maxBias = 0.75;
 constexpr double butterworthQ = 0.70710678118654752;
-constexpr double switchFadeMs = 2.0;
-constexpr double switchSettleSeconds = 0.003;
 constexpr double adaaThreshold = 1.0e-6;
 
 double biasFor (double character) noexcept
@@ -42,33 +40,12 @@ double ExciterDsp::shapeAntiderivative (double x) noexcept
 
 void ExciterDsp::prepare (double newSampleRate)
 {
-    using Oversampler = juce::dsp::Oversampling<float>;
-
     sampleRate = newSampleRate;
-    latencies[off] = 0;
 
-    for (int factor = 0; factor < numFactors; ++factor)
-    {
-        auto oversampler = std::make_unique<Oversampler> (2);
-        oversampler->setUsingIntegerLatency (true);
-
-        for (int stage = 0; stage <= factor; ++stage)
-        {
-            const auto transition = stage == 0 ? 0.06f : 0.12f;
-            const auto stopband = -100.0f + 10.0f * (float) stage;
-
-            oversampler->addOversamplingStage (Oversampler::filterHalfBandFIREquiripple,
-                                               transition, stopband, transition, stopband);
-        }
-
-        oversampler->initProcessing ((size_t) maxChunk);
-        latencies[(size_t) factor + 1] = juce::roundToInt (oversampler->getLatencyInSamples());
-        oversamplers[(size_t) factor] = std::move (oversampler);
-    }
-
+    oversampling.prepare (sampleRate, maxChunk, 1, false);
     wetBuffer.setSize (2, maxChunk);
 
-    delayLength = *std::max_element (latencies.begin(), latencies.end()) + maxChunk + 1;
+    delayLength = oversampling.getMaxLatency() + maxChunk + 1;
 
     for (auto& state : channelStates)
         state.dryDelay.assign ((size_t) delayLength, 0.0f);
@@ -83,16 +60,13 @@ void ExciterDsp::prepare (double newSampleRate)
     mixBack.setTime (20.0, sampleRate);
     output.setTime (20.0, sampleRate);
     bypass.setTime (10.0, sampleRate);
-    switchGain.setTime (switchFadeMs, sampleRate);
 
     reset();
 }
 
 void ExciterDsp::resetCore()
 {
-    for (auto& oversampler : oversamplers)
-        if (oversampler != nullptr)
-            oversampler->reset();
+    oversampling.reset();
 
     for (auto& state : channelStates)
     {
@@ -135,11 +109,10 @@ void ExciterDsp::snapToTargets (const Targets& targets)
     character.snapTo (targets.character);
     output.snapTo (targets.outputGain);
     bypass.snapTo (targets.bypass ? 1.0 : 0.0);
-    switchGain.snapTo (1.0);
-    switchHoldSamples = 0;
 
     updateFilter (logFrequency.getCurrent());
-    selectOversampling (targets.oversampling);
+    oversampling.select (targets.oversampling, false);
+    resetCore();
 }
 
 void ExciterDsp::updateFilter (double logHz) noexcept
@@ -147,16 +120,9 @@ void ExciterDsp::updateFilter (double logHz) noexcept
     filter.set (std::exp (logHz), butterworthQ, sampleRate);
 }
 
-void ExciterDsp::selectOversampling (int index)
-{
-    activeOversampling = index;
-    activeLatency = latencies[(size_t) index];
-    resetCore();
-}
-
 int ExciterDsp::getLatencySamples() const noexcept
 {
-    return activeLatency;
+    return oversampling.getLatency();
 }
 
 void ExciterDsp::process (float* const* channels, int numChannels, int numSamples)
@@ -207,30 +173,10 @@ void ExciterDsp::shapeBlock (juce::dsp::AudioBlock<float> block, int baseSamples
 
 void ExciterDsp::processChunk (float* const* channels, int numChannels, int offset, int numSamples)
 {
-    if (requestedOversampling != activeOversampling)
-    {
-        switchGain.setTarget (0.0);
+    if (oversampling.beginChunk (requestedOversampling, false, numSamples))
+        resetCore();
 
-        if (switchGain.isSettled())
-        {
-            selectOversampling (requestedOversampling);
-
-            // Stay silent until the empty delay line has refilled and the cleared filters
-            // have settled. Fading in sooner lets the signal restart abruptly, a click.
-            switchHoldSamples = activeLatency + juce::roundToInt (switchSettleSeconds * sampleRate);
-        }
-    }
-    else if (switchHoldSamples > 0)
-    {
-        switchHoldSamples -= numSamples;
-    }
-    else
-    {
-        // Also recovers when the setting returns to the active one during the fade-out.
-        switchGain.setTarget (1.0);
-    }
-
-    const auto delay = activeLatency;
+    const auto delay = oversampling.getLatency();
 
     for (int i = 0; i < numSamples; ++i)
     {
@@ -256,13 +202,13 @@ void ExciterDsp::processChunk (float* const* channels, int numChannels, int offs
 
     auto block = juce::dsp::AudioBlock<float> (wetBuffer).getSubBlock (0, (size_t) numSamples);
 
-    if (activeOversampling == off)
+    if (oversampling.getFactor() == off)
     {
         shapeBlock (block, numSamples);
     }
     else
     {
-        auto& oversampler = *oversamplers[(size_t) activeOversampling - 1];
+        auto& oversampler = oversampling.get (0);
         const juce::dsp::AudioBlock<const float> constBlock (block);
 
         shapeBlock (oversampler.processSamplesUp (constBlock), numSamples);
@@ -274,7 +220,7 @@ void ExciterDsp::processChunk (float* const* channels, int numChannels, int offs
         const auto amount = harmonics.next() * mixBack.next();
         const auto outputGain = output.next();
         const auto bypassAmount = bypass.next();
-        const auto fade = switchGain.next();
+        const auto fade = oversampling.nextFade();
         const auto readPosition = (delayWritePosition + i + delayLength - delay) % delayLength;
 
         for (int ch = 0; ch < 2; ++ch)

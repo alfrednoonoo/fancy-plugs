@@ -1,5 +1,6 @@
 #include "ExciterDsp.h"
 #include "ExciterProcessor.h"
+#include "LegacyExciterDsp.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -11,6 +12,7 @@
 #include <complex>
 #include <cstdio>
 #include <limits>
+#include <random>
 #include <numbers>
 #include <vector>
 
@@ -556,4 +558,92 @@ TEST_CASE ("exciter latency and aliasing measurement", "[.measure]")
         std::printf ("Oversampling %-3s: latency %3d samples, worst alias (10 kHz, 0 dBFS, Harmonics 100 %%, Boost 12 dB, 44.1 kHz) %7.1f dBFS at Character 50 %%, %7.1f dBFS at Character 0 %%\n",
                      names[oversampling], dsp.getLatencySamples(), worstAliasDb (oversampling, 0.5), worstAliasDb (oversampling, 0.0));
     }
+}
+
+TEST_CASE ("Exciter: the oversampler moved to fancy-core changes nothing, sample for sample", "[exciter][shared]")
+{
+    // docs/sature.md, Decision 3: a copy of ExciterDsp from before the move runs alongside the
+    // current one, through every oversampling setting, switches between them and gliding
+    // settings, at three rates and random block sizes.
+    const auto sampleRate = GENERATE (44100.0, 48000.0, 96000.0);
+    INFO ("rate " << sampleRate);
+
+    ExciterDsp current;
+    LegacyExciterDsp legacy;
+
+    const auto targetsAt = [] (int step)
+    {
+        ExciterDsp::Targets targets;
+        targets.frequencyHz = step % 2 == 0 ? 3000.0 : 6500.0;
+        targets.boostGain = fancy::dbToGain (step % 3 == 0 ? 6.0 : 18.0);
+        targets.harmonics = 0.3 + 0.1 * (step % 5);
+        targets.mixBackGain = 0.8;
+        targets.character = step % 2 == 0 ? 0.2 : 0.9;
+        targets.oversampling = step % 4;
+        targets.bypass = step == 9;
+        return targets;
+    };
+
+    const auto legacyTargets = [] (const ExciterDsp::Targets& t)
+    {
+        LegacyExciterDsp::Targets l;
+        l.frequencyHz = t.frequencyHz;
+        l.boostGain = t.boostGain;
+        l.harmonics = t.harmonics;
+        l.mixBackGain = t.mixBackGain;
+        l.character = t.character;
+        l.outputGain = t.outputGain;
+        l.oversampling = t.oversampling;
+        l.bypass = t.bypass;
+        return l;
+    };
+
+    current.prepare (sampleRate);
+    legacy.prepare (sampleRate);
+    current.snapToTargets (targetsAt (2));
+    legacy.snapToTargets (legacyTargets (targetsAt (2)));
+
+    std::mt19937 random (5);
+    std::uniform_int_distribution<int> sizes (1, 700);
+    std::uniform_real_distribution<float> noise (-0.7f, 0.7f);
+
+    long long compared = 0, differing = 0;
+
+    for (int step = 0; step < 12; ++step)
+    {
+        const auto targets = targetsAt (step);
+        const auto length = (int) (0.15 * sampleRate);
+
+        for (int done = 0; done < length;)
+        {
+            const auto count = std::min (sizes (random), length - done);
+            std::vector<float> a ((size_t) count * 2), b;
+
+            for (auto& v : a)
+                v = noise (random);
+
+            b = a;
+
+            float* currentChannels[] { a.data(), a.data() + count };
+            float* legacyChannels[] { b.data(), b.data() + count };
+
+            current.setTargets (targets);
+            legacy.setTargets (legacyTargets (targets));
+            current.process (currentChannels, 2, count);
+            legacy.process (legacyChannels, 2, count);
+
+            CHECK (current.getLatencySamples() == legacy.getLatencySamples());
+
+            for (size_t i = 0; i < a.size(); ++i)
+            {
+                ++compared;
+                differing += a[i] != b[i] ? 1 : 0;
+            }
+
+            done += count;
+        }
+    }
+
+    INFO (differing << " of " << compared << " samples differ");
+    CHECK (differing == 0);
 }

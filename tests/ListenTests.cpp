@@ -34,6 +34,10 @@
  #include "DsMiniEditor.h"
  #include "DsMiniProcessor.h"
 #endif
+#if FANCY_HAS_SATURE
+ #include "SatureEditor.h"
+ #include "SatureProcessor.h"
+#endif
 
 namespace
 {
@@ -268,5 +272,12 @@ TEST_CASE ("DS: Listen is temporary (§0.3)", "[listen][ds]")
 TEST_CASE ("DS-Mini: Listen is temporary (§0.3)", "[listen][dsmini]")
 {
     checkListenSwitch<DsMiniProcessor> ("listen", true);
+}
+#endif
+
+#if FANCY_HAS_SATURE
+TEST_CASE ("Sature: Listen to added harmonics is temporary (§0.3)", "[listen][sature]")
+{
+    checkListenSwitch<SatureProcessor> ("listen", true);
 }
 #endif

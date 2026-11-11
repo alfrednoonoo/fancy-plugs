@@ -72,6 +72,10 @@
  #include "DsMiniEditor.h"
  #include "DsMiniProcessor.h"
 #endif
+#if FANCY_HAS_SATURE
+ #include "SatureEditor.h"
+ #include "SatureProcessor.h"
+#endif
 
 namespace
 {
@@ -357,6 +361,9 @@ bool renderAllHostScales (const juce::File& outputDir)
    #if FANCY_HAS_DSMINI
     ok = renderHostScales<DsMiniProcessor, DsMiniEditor> ("dsmini", outputDir, plain) && ok;
    #endif
+   #if FANCY_HAS_SATURE
+    ok = renderHostScales<SatureProcessor, SatureEditor> ("sature", outputDir, plain) && ok;
+   #endif
 
     return ok;
 }
@@ -412,6 +419,9 @@ bool renderAllPopups (const juce::File& outputDir)
    #endif
    #if FANCY_HAS_DSMINI
     ok = renderPopups<DsMiniProcessor, DsMiniEditor> ("dsmini", outputDir, plain) && ok;
+   #endif
+   #if FANCY_HAS_SATURE
+    ok = renderPopups<SatureProcessor, SatureEditor> ("sature", outputDir, plain) && ok;
    #endif
 
     return ok;
@@ -540,6 +550,10 @@ int main (int argc, char** argv)
    #if FANCY_HAS_DSMINI
     ok = renderPlugin<DsMiniProcessor, DsMiniEditor> ("dsmini", outputDir) && ok;
     ok = renderListening<DsMiniProcessor, DsMiniEditor> ("dsmini", outputDir) && ok;
+   #endif
+   #if FANCY_HAS_SATURE
+    ok = renderPlugin<SatureProcessor, SatureEditor> ("sature", outputDir) && ok;
+    ok = renderListening<SatureProcessor, SatureEditor> ("sature", outputDir) && ok;
    #endif
 
     Gallery gallery;

@@ -67,6 +67,10 @@
  #include "DsMiniEditor.h"
  #include "DsMiniProcessor.h"
 #endif
+#if FANCY_HAS_SATURE
+ #include "SatureEditor.h"
+ #include "SatureProcessor.h"
+#endif
 
 using Catch::Approx;
 using namespace fancy::ui;
@@ -559,4 +563,7 @@ TEST_CASE ("DS: every pop-up opens on the editor", "[popups]") { checkEveryPopup
 #endif
 #if FANCY_HAS_DSMINI
 TEST_CASE ("DS-Mini: every pop-up opens on the editor", "[popups]") { checkEveryPopup<DsMiniProcessor, DsMiniEditor> (plainPreview); }
+#endif
+#if FANCY_HAS_SATURE
+TEST_CASE ("Sature: every pop-up opens on the editor", "[popups]") { checkEveryPopup<SatureProcessor, SatureEditor> (plainPreview); }
 #endif

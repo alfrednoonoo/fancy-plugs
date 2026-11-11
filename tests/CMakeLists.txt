@@ -17,7 +17,7 @@ if("FANCY_HAS_KICKER=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_EXCITER=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE ExciterTests.cpp)
+    target_sources(fancy-tests PRIVATE ExciterTests.cpp LegacyExciterDsp.cpp)
 endif()
 
 if("FANCY_HAS_COMP=1" IN_LIST fancy_screen_defs)
@@ -58,6 +58,16 @@ endif()
 
 if("FANCY_HAS_DSMINI=1" IN_LIST fancy_screen_defs)
     target_sources(fancy-tests PRIVATE DsMiniTests.cpp)
+endif()
+
+if("FANCY_HAS_SATURE=1" IN_LIST fancy_screen_defs)
+    target_sources(fancy-tests PRIVATE SatureTests.cpp)
+endif()
+
+# Headers generated during the build, such as Fancy Sature's auto-gain table.
+get_property(fancy_screen_depends GLOBAL PROPERTY FANCY_SCREEN_DEPENDS)
+if(fancy_screen_depends)
+    add_dependencies(fancy-tests ${fancy_screen_depends})
 endif()
 
 target_include_directories(fancy-tests PRIVATE ${fancy_screen_includes})

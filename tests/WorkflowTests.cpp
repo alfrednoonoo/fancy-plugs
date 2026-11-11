@@ -59,6 +59,9 @@
 #if FANCY_HAS_DSMINI
  #include "DsMiniProcessor.h"
 #endif
+#if FANCY_HAS_SATURE
+ #include "SatureProcessor.h"
+#endif
 
 namespace
 {
@@ -103,6 +106,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_DSMINI
     { DsMiniProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_SATURE
+    { SatureProcessor p; callback (p); }
    #endif
 }
 
@@ -652,6 +658,9 @@ TEST_CASE ("A/B: a version 1 state loads with B as a copy of A, and renders bit-
        #endif
        #if FANCY_HAS_DSMINI
         FANCY_CHECK_FRESH (DsMiniProcessor)
+       #endif
+       #if FANCY_HAS_SATURE
+        FANCY_CHECK_FRESH (SatureProcessor)
        #endif
        #undef FANCY_CHECK_FRESH
     });

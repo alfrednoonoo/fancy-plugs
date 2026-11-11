@@ -10,8 +10,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 # "all", or one of the names in FANCY_ALL_PLUGINS. Set by the workflow_dispatch input.
-set(FANCY_PLUGINS "all" CACHE STRING "Plugin to build: all, kicker, exciter, comp, eq, verb, delay, multicomp, fir, gate, limit, ds or dsmini")
-set(FANCY_ALL_PLUGINS kicker exciter comp eq verb delay multicomp fir gate limit ds dsmini)
+set(FANCY_PLUGINS "all" CACHE STRING "Plugin to build: all, kicker, exciter, comp, eq, verb, delay, multicomp, fir, gate, limit, ds, dsmini or sature")
+set(FANCY_ALL_PLUGINS kicker exciter comp eq verb delay multicomp fir gate limit ds dsmini sature)
 
 include(cmake/Dependencies.cmake)
 include(cmake/FancyPlugin.cmake)

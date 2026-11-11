@@ -69,6 +69,10 @@
  #include "DsMiniEditor.h"
  #include "DsMiniProcessor.h"
 #endif
+#if FANCY_HAS_SATURE
+ #include "SatureEditor.h"
+ #include "SatureProcessor.h"
+#endif
 
 using fancy::PresetManager;
 using fancy::ui::ShellEditor;
@@ -133,6 +137,9 @@ void forEachProcessor (const std::function<void (fancy::FancyProcessor&)>& check
 #endif
 #if FANCY_HAS_DSMINI
     { DsMiniProcessor p; check (p); }
+#endif
+#if FANCY_HAS_SATURE
+    { SatureProcessor p; check (p); }
 #endif
 }
 

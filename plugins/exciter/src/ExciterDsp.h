@@ -3,6 +3,7 @@
 #include <fancy/dsp/Biquad.h>
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/Svf.h>
+#include <fancy/dsp/SwitchedOversampler.h>
 
 #include <juce_dsp/juce_dsp.h>
 
@@ -50,7 +51,6 @@ public:
     static double shapeAntiderivative (double x) noexcept;
 
 private:
-    static constexpr int numFactors = 3;
     static constexpr int maxChunk = 64;
 
     struct ChannelState
@@ -66,12 +66,11 @@ private:
     void shapeBlock (juce::dsp::AudioBlock<float> block, int baseSamples);
     void resetCore();
     void updateFilter (double logHz) noexcept;
-    void selectOversampling (int index);
 
     double sampleRate = 48000.0;
 
-    std::array<std::unique_ptr<juce::dsp::Oversampling<float>>, numFactors> oversamplers;
-    std::array<int, numFactors + 1> latencies {};
+    // Moved to fancy-core for Fancy Sature, unchanged (docs/sature.md, Decision 3).
+    fancy::dsp::SwitchedOversampler oversampling;
     juce::AudioBuffer<float> wetBuffer;
 
     std::array<ChannelState, 2> channelStates;
@@ -82,12 +81,9 @@ private:
     std::array<fancy::dsp::SvfCoefficients, maxChunk> chunkFilters;
     std::array<double, maxChunk> chunkBias {};
 
-    int activeOversampling = x4;
     int requestedOversampling = x4;
     int delayWritePosition = 0;
     int delayLength = 1;
-    int activeLatency = 0;
-    int switchHoldSamples = 0;
 
-    fancy::dsp::Smoother logFrequency, boost, harmonics, mixBack, character, output, bypass, switchGain;
+    fancy::dsp::Smoother logFrequency, boost, harmonics, mixBack, character, output, bypass;
 };

@@ -7,6 +7,12 @@ get_property(fancy_screen_defs GLOBAL PROPERTY FANCY_SCREEN_DEFS)
 target_sources(fancy-screens PRIVATE Main.cpp ${fancy_screen_sources})
 target_include_directories(fancy-screens PRIVATE ${fancy_screen_includes})
 
+# Headers generated during the build, such as Fancy Sature's auto-gain table.
+get_property(fancy_screen_depends GLOBAL PROPERTY FANCY_SCREEN_DEPENDS)
+if(fancy_screen_depends)
+    add_dependencies(fancy-screens ${fancy_screen_depends})
+endif()
+
 target_compile_definitions(fancy-screens PRIVATE
     ${fancy_screen_defs}
     JUCE_WEB_BROWSER=0
