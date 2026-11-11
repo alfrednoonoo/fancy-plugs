@@ -1,0 +1,20 @@
+# Fancy Kicker, Sub mode measurements
+
+From CI run 43093215775 (commit 31543a8, attempt 2), 48 kHz, 128-sample blocks. See docs/kicker-sub.md.
+
+PASS  Fancy Kicker at defaults: reported latency matches the measured delay (reported 0, measured 0)
+PASS  Fancy Kicker: loads
+PASS  Fancy Kicker: offline, random blocks of 0-8192 against 128 (bit-identical)
+PASS  Fancy Kicker: 44.1 -> 48 -> 96 -> 44.1 kHz without reloading
+PASS  Fancy Kicker: deactivate, reactivate, and 60 s of silence
+PASS  Fancy Kicker: state restored before the first prepareToPlay
+PASS  Fancy Kicker: state restored while playing
+PASS  Fancy Kicker: mono main bus
+PASS  Fancy Kicker: host bypass is time-aligned (latency 0, worst 0.00000000)
+PASS  Fancy Kicker: every parameter changed every block for 10 s
+PASS  Fancy Kicker: editor opened and closed 50 times, and resized
+workflow cpu: Fancy Kicker       default 0.074 % (0.26 x Comp); editor open, Compare measuring 0.137 % (0.48 x); Compare on 0.173 % (0.61 x)
+kicker cpu (median of 5): Boost 0.047 %, Sub (Divider, Mono sub) 0.157 % (target < 0.5 %), Sub with Mono sub off 0.239 %
+kicker cpu reference: Fancy Comp default 0.223 %; Sub / Comp = 0.70
+Kicker CPU at 48 kHz, 128 samples, stereo: 0.0781 % (target < 0.5 %)
+kicker sub sweep 120 -> 50 Hz: second sub period 9.9 % off, later ones at most 1.9 % (run 43090455280's test log)
