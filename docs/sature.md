@@ -1,6 +1,6 @@
 # Fancy Sature: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §4 (it calls the plugin Fancy Saturate; the user renamed it **Fancy Sature** on 10 November 2026), and §0.3 for Listen. Mockup: `reference/phase3/19__saturate_mockup.png`, source `design/phase3-mockup-src/sat.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **No code until this note is approved.** The points marked **Decision** need your answer.
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §4 (it calls the plugin Fancy Saturate; the user renamed it **Fancy Sature** on 10 November 2026), and §0.3 for Listen. Mockup: `reference/phase3/19__saturate_mockup.png`, source `design/phase3-mockup-src/sat.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Approved by the user on 11 November 2026: A for all seven decisions.** For Decision 7 the user weighed B (an optional 16×) and chose A: 4× stays the default, with no 16× setting.
 
 Names: product **Fancy Sature**, title strip "FANCY SATURE", bundle ID `com.fancyplugs.sature`, folder `plugins/sature/`, docs `docs/sature*.md`. Accent orange `#E77E23`, not following a selection. Phase 2 size class: 760 × 445 (window 760 × 465 with the title strip), body 392 px as in the mockup.
 
