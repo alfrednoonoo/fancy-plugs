@@ -3,8 +3,7 @@
 // fancy/dsp/Saturation.h.
 //
 // For every Type, Drive (0-36 dB, 1 dB steps) and Character (-100 to +100 %, steps of 10), it
-// renders fixed-seed pink noise at -18 dBFS RMS through the curve (with ADAA and Tape's loss,
-// as the plugin runs them) and stores the gain that brings its BS.1770 loudness back to the
+// renders fixed-seed pink noise at -18 dBFS RMS through the curve and Tape's loss and stores the gain that brings its BS.1770 loudness back to the
 // input's. Tone gets its own small table, measured on the same noise.
 //
 // Usage: sature-gaintable <output header>
@@ -120,12 +119,13 @@ int main (int argc, char** argv)
             {
                 const auto curve = sat::makeCurve (type, (double) (step - 10) / 10.0);
                 const auto dc = curve.shape (curve.bias);
-                sat::Adaa adaa;
                 sat::TapeLoss loss;
 
+                // The bare curve, without ADAA: at 48 kHz its two-sample average would take about
+                // 1 dB off pink noise's top end, which the plugin's subtraction never hears.
                 for (size_t i = 0; i < noise.size(); ++i)
                 {
-                    const auto y = adaa.process (curve, driveGain * (double) noise[i], i == 0, dc);
+                    const auto y = curve.shape (driveGain * (double) noise[i] + curve.bias) - dc;
                     shaped[i] = (float) loss.process (y, tapeCoefficient, tapeAmount);
                 }
 

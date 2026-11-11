@@ -178,3 +178,16 @@ So ADAA is worth about 25 dB at 4×, and −90 dBFS for this signal needs 16×.
 - **A. Keep 4× as the default and test what it does** (I recommend this). The brief's signal stays, with limits a few dB inside the model: Clip below −50 dBFS at 4×, −65 at 8×, −15 at Off; plus a 1 kHz tone at the same level and Drive, below −90 dBFS at 4× and −45 at Off. The drawer's note under Oversampling says that Off aliases on bright, heavily driven material and 8× is cleaner. The CPU target stays reachable.
 - **B. Add a 16× setting** for the brief's −90 dBFS on the 10 kHz test, with 4× still the default. At 16× the shaper and both oversamplers run four times as often as at 4×: I estimate 6 to 8 % CPU, which is outside every other target in the suite but is opt-in.
 - **C. Second-order ADAA.** It gains roughly another 15 to 20 dB, which still falls short of −90 at 4×, costs more per sample, and its second antiderivatives are messier on Tube's and Tape's curves. Not recommended.
+
+## As built (11 November 2026)
+
+Two details the note didn't foresee, both forced by first-order ADAA:
+
+- **ADAA lags by half a sample.** Its output is the curve at the midpoint of each step, so its linear part is the two-sample average of the input. For `added = saturated(mid) − mid` to cancel exactly at low Drive, the reference subtracted inside the saturated path is that same two-sample average, at the oversampled rate. The matched path (dry, and the clean part of the wet signal) gets a **half-sample delay** instead of the average, so it stays flat: a 4-tap Lagrange filter at 4× and 8×, 8 taps at 2× (within 0.1 dB to 20 kHz at 44.1 kHz and above), and the saturated path is delayed by the filter's whole samples to line up. The two differ only in the average's gentle roll-off, so at high Drive a trace of the clean input remains in the top octave: about −26 dB at 20 kHz and −38 dB at 10 kHz at 4×, −14 dB at 20 kHz at 2×. The reported latency adds the filter's delay, rounded: +2 samples at 2×, +0 at 4× and 8× (the true extra is 0.375 and 0.19 samples).
+- **Oversampling Off runs the curve without ADAA.** At the base rate the half-sample lag can't be matched without either dulling the dry signal (the average is −12 dB at 20 kHz at 48 kHz) or leaving the clean input's top end almost untouched at high Drive. Without ADAA, Off stays flat, exact and at zero latency, at the cost of about 10 dB more aliasing there: the model gives −42 dBFS for the 1 kHz test (−52 with ADAA) and −8 dBFS for the 10 kHz one. The test limit for Off is −38 dBFS on the 1 kHz tone; the drawer says Off aliases on bright, heavily driven sounds.
+
+Other choices made while building:
+
+- Character's odd half blends towards a symmetric knee at 0.97 to 1.03 for every Type, so it hardens Clip too, rather than towards Transistor's knee as the note said, which would have softened Clip.
+- The aliasing tests run with Character neutral and Auto gain off, matching the model's bare curve.
+- Low's knob is Off below 20 Hz (the first 5 % of its travel) and High's above 20 kHz (the last 7 %). Both accept "off" when typed.
