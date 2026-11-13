@@ -1,6 +1,6 @@
 # Fancy Room: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all), and the Python model (13 November 2026), which passes all five tests. Next: Phase 3, the CPU budget.**
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all), the Python model (13 November 2026), which passes all five tests, and the CPU budget (13 November 2026): about 1.3 % in Normal. Next: Phase 4, the layout check.**
 
 ## Build plan (agreed with the user, 11 November 2026)
 
@@ -46,8 +46,6 @@ Decisions for the user, written 13 November 2026. Each has a recommendation (A) 
 
 Tooling the suite doesn't have yet: an RT60 measurement (T30 from the energy-decay curve), and the host harness's "render 1 s, then silence, and get the full tail to −90 dB".
 
-Tooling the suite doesn't have yet: an RT60 measurement (T30 from the energy-decay curve), and the host harness's "render 1 s, then silence, and get the full tail to −90 dB".
-
 ### Phase 2: a Python model of the whole engine, used as the spec
 
 - The full signal path, every filter included: early reflections, input diffusers, the delay network with its mixing matrix and per-line damping, seeded modulation, Width, Low cut and High cut.
@@ -80,6 +78,43 @@ Settled by the model:
 ### Phase 3: a CPU budget before writing the engine
 
 Count the operations per sample in Normal (16 lines, Householder mixing, a few modulated reads, eight all-passes, about 20 reflection taps per channel) against measured references: Sature 1.72 %, Comp about 0.45 %. Target under 3 %, with the cheap choices made in the design.
+
+**Budget, 13 November 2026.** There's no compiler here, so the figures are counts calibrated against CI measurements, not timings.
+
+Calibration:
+- At 48 kHz, 1 % of a core is 208 ns per sample.
+- One Fancy Delay tap costs 0.19 % (16 taps plain 3.01 %, 1 tap 0.23 %; `docs/measurements/delay.txt`), about 39 ns per sample. That covers about 100 scalar double operations (14 smoothers, two reads, two DC blockers, the mid/side output) plus two to four `tanh`. So about 0.3 ns per operation is a fair rate for this kind of code on CI's machines.
+- A plugin that does almost nothing costs 0.15 to 0.23 % (Kicker 0.16 %, Verb 0.21 %, Sature with oversampling off 0.23 %): smoothers, meters, bypass and the workflow layer.
+
+Operations per sample, Normal, stereo, with the cheap choices below:
+
+| Part | Count | Operations |
+|---|---|---|
+| Early reflections | 32 taps, two loads and two multiply-adds each | 130 |
+| Input diffusers | 8 all-passes, about 8 each | 65 |
+| Line reads | 16 linear reads: modulation step, floor, two loads, lerp, index | 240 |
+| Damping and Decay gains | 16 one-poles, about 4 each (freeze-off path) | 65 |
+| Late sums | 16 | 30 |
+| Mixing | 16-point Walsh-Hadamard (the model's matrix), 64 add/sub, then 16 writes with the input | 130 |
+| Modulation | one `sin` per sample (16 lines every 16 samples) | about 30 |
+| Output | Low cut and High cut biquads on two channels, Width, Wet, Dry, Ducking | 80 |
+| **Total** | | **about 770** |
+
+About 770 operations × 0.3 ns is about 230 ns, or 1.1 %. With the base cost that's **about 1.3 % for Normal**, with a range of 1.0 to 2.0 % allowing for CI's drift (Comp measured 0.22 to 0.46 % on 11 November 2026). High adds a 4-point cubic per line (about +130 operations): **about 1.6 %**. Eco halves the network: **about 0.9 %**. The 3 % target leaves room for an estimate that's 2× out.
+
+Outside the steady figure:
+- For up to 2 s after a Quality change, two networks run (decision 4): up to about 2.5 % in Normal → High.
+- Moving Decay, Damping or Size recomputes 16 line gains (two `pow` each) every 16 samples: about +0.2 % while the knob moves.
+
+Cheap choices, part of the design from the start:
+1. **Modulation is computed every 16 samples, not every sample.** The exact sine is taken at each 16th sample of the absolute sample count and interpolated linearly in between, so the output doesn't depend on block size. The model now does the same (`MOD_STEP`), and all five tests give the same figures as before to the precision reported. One `sin` per sample instead of 16.
+2. **Line gains and damping coefficients are recomputed only while Decay, Damping or Size move**, every 16 samples on the same absolute grid. Size needs nothing per sample, because every read is already fractional: a Size change glides the read positions.
+3. **Delay lines and the input history are stored as `float`**, with the arithmetic in `double`, as in Fancy Delay. At 48 kHz the 16 lines take about 330 kB and stay in L2 cache. Float rounding sits near −140 dB, far under the tail test's −90 dB; Freeze still loops losslessly in level, since the matrix is orthonormal and its scale for 16 lines (1/4) is exact.
+4. **The input history is stereo-interleaved**, so each reflection tap reads one cache line, and each tap's two gains (0.75 and 0.25 of its own side) are precomputed.
+5. **Parts that are off are skipped**: early reflections at −inf, Ducking at 0 %, and the freeze terms when Freeze is off and its ramp has finished.
+6. **No `tanh`, `exp` or `log` per sample in the network.** Ducking's follower maps to gain with one `log` per sample only when Ducking is above 0 %.
+
+The CPU test reports Eco, Normal and High at the defaults, and Normal with Freeze and Ducking on, as the median of five with Comp's figure from the same run, the way Sature's test does.
 
 ### Phase 4: the layout checked before it renders
 

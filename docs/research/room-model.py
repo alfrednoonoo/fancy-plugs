@@ -20,6 +20,7 @@ DIFF_MS = ([4.77, 3.59, 12.73, 9.31], [4.91, 3.37, 13.17, 9.67])
 ER_TAPS = 16
 MOD_MAX_MS = 0.6                   # Mod 100 %
 FREEZE_RAMP = int(0.020 * FS)      # 20 ms
+MOD_STEP = 16                      # samples between exact modulation values
 # Every line is modulated: modulating only some (linear reads lose highs on
 # those lines alone) left their modes decaying differently, +6 to +10 dB peaks.
 QUALITY = {                        # lines, modulated lines, cubic reads
@@ -127,6 +128,9 @@ def render(inL, inR, n_total, **kw):
     w = 0
     nL, nR = len(inL), len(inR)
     v = [0.0] * n_lines
+    m0 = [0.0] * n_lines
+    m1 = [0.0] * n_lines
+    k0 = 0
     for n in range(n_total):
         xL = inL[n] if n < nL else 0.0
         xR = inR[n] if n < nR else 0.0
@@ -167,11 +171,20 @@ def render(inL, inR, n_total, **kw):
             if frozen_len is None:
                 frozen_len = lengths[:]  # unmodulated lengths are integers already
 
+        # Modulation: the exact sine at every 16th sample of the absolute count,
+        # linear in between (CPU budget: one sine per sample, not one per line).
+        if n % MOD_STEP == 0:
+            k0 = n
+            for i in range(n_lines):
+                m0[i] = math.sin(phase[i] + rate[i] * n)
+                m1[i] = math.sin(phase[i] + rate[i] * (n + MOD_STEP))
+        t = (n - k0) / MOD_STEP
+
         # Read the lines, damp them, sum the outputs.
         lateL = lateR = 0.0
         for i in range(n_lines):
             if is_mod[i]:
-                dmod = lengths[i] + depth * math.sin(phase[i] + rate[i] * n)
+                dmod = lengths[i] + depth * (m0[i] + t * (m1[i] - m0[i]))
                 dd = (1.0 - f) * dmod + f * lengths[i]
                 ip = math.floor(dd)
                 fr = dd - ip
