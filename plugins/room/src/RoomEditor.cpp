@@ -1,6 +1,7 @@
 #include "RoomEditor.h"
 
 #include <fancy/plugin/ParamFormat.h>
+#include <fancy/plugin/ParamHelpers.h>
 
 #include <cmath>
 
