@@ -5,7 +5,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 ## Now
 
 - **Next item: Q2.4, Fancy EQ** (mid/side, 24 bands, Match), from `docs/BUILD_PROMPT_PHASE3.md`. Write its design-note section in `docs/eq.md` first (the brief's rule for Q2 items), with each decision given a recommended option, and get the user's approval before any code. New controls go in EDIT drawers or popovers unless the user approves a layout change.
-- **Release v1.3.0:** pending, from commit `e2ed62c` (version bump, README and screenshots), once its run is green.
+- **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
 
 ## Releases
 
@@ -15,7 +15,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 | v1.0.1 | Typed values on every knob and fader | |
 | v1.1.0 | Delay, MultiComp, FIR | |
 | v1.2.0 | Gate; Phase 2.1 (S, H, W, D, U, A) | 42576245019, commit `a613f77` |
-| v1.3.0 | Limit, DS, DS-Mini, Sature, Room, Kicker Sub mode, preset browser, free resizing, title strip, temporary Listen switches | pending |
+| v1.3.0 | Limit, DS, DS-Mini, Sature, Room, Kicker Sub mode, preset browser, free resizing, title strip, temporary Listen switches | 43436706689, commit `e2ed62c` |
 
 Release recipe: bump `project(... VERSION)` in `CMakeLists.txt` (it has CRLF line endings, so edit it byte-exact), update `README.md` (plugin table, "What's new", screenshots from the latest `screens-<sha>` @2x into `docs/images/`), push, wait for green, then `gh release create v<x.y.z>` with that run's `FancyPlugs-VST3-<sha>` artifact zipped as it is, named `FancyPlugs-<x.y.z>-win64.zip`. Notes follow v1.2.0's: what's new, install, build (run, commit, test count).
 
@@ -33,7 +33,7 @@ Every item below is built, green in CI and passed by the user in REAPER. Each ha
 - **Phase 3 new plugins:** Fancy Limit (`docs/limit.md`), Fancy DS (`docs/ds.md`), Fancy DS-Mini (`docs/ds-mini.md`), Fancy Sature (`docs/sature.md`), Kicker's Sub mode (`docs/kicker-sub.md`), Fancy Room (`docs/room.md`). REAPER checks passed on 10 November (Limit) and 13 November 2026 (the rest).
 - **§0.3 Listen rule:** Listen and preview switches are temporary, never parameters (`FancyProcessor::setListening`, `ListenCheckbox`), retrofitted to Comp's and Gate's Preview filter and FIR's Listen. Limit's "Listen to removed" stays a parameter, by the user's choice.
 
-Latest green run: 43415017352 (commit `312c820`), 439 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
+Latest green run: 43436706689 (commit `e2ed62c`, the v1.3.0 release), 439 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
 
 ## Still to do in Phase 3
 
