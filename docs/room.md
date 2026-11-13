@@ -1,6 +1,6 @@
 # Fancy Room: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions (13 November 2026), waiting for approval. No code until the design note is approved.**
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all). Next: Phase 2, the Python model.**
 
 ## Build plan (agreed with the user, 11 November 2026)
 
@@ -20,7 +20,7 @@ No compile errors came up in about six builds of new code: copying existing patt
 
 ### Phase 1: the design note, with every ambiguity settled before code
 
-Decisions for the user, written 13 November 2026. Each has a recommendation (A) and an alternative (B). **Waiting for approval.**
+Decisions for the user, written 13 November 2026. Each has a recommendation (A) and an alternative (B). **Approved by the user on 13 November 2026: A for all seven.**
 
 1. **Wet only (send).**
    - A: while it's on, the DSP treats Dry as −inf and the Dry fader is greyed with the tooltip "Off while Wet only (send) is on". Dry's own value is kept, so turning the switch off brings it back. Host bypass still passes the dry signal, as in every other plugin.
