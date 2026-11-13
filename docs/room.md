@@ -1,6 +1,6 @@
 # Fancy Room: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all), the Python model (13 November 2026), which passes all five tests, and the CPU budget (13 November 2026): about 1.3 % in Normal. Next: Phase 4, the layout check.**
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all), the Python model (13 November 2026), which passes all five tests, the CPU budget (13 November 2026): about 1.3 % in Normal, and the layout check (13 November 2026). Next: Phase 5, the code.**
 
 ## Build plan (agreed with the user, 11 November 2026)
 
@@ -35,7 +35,7 @@ Decisions for the user, written 13 November 2026. Each has a recommendation (A) 
    - A: on a change, the old network stops taking input and is left to ring out; it's switched off once its output stays under −90 dB, or after 2 s with a fade. The new network takes the input from that moment. The tail never drops out, at up to double the CPU for 2 s.
    - B: a 50 ms crossfade to the new network, which starts empty, so the existing tail is cut short.
 5. **Sync pre-delay.**
-   - A: a separate stepped parameter holds the note, so the ms value is kept when Sync goes off. It uses Fancy Delay's note lengths and feels (`plugins/delay/src/DelayTime.h`, moved to `fancy-core`), from 1/64 to 1/8 with straight, dotted and triplet, and defaults to 120 BPM when the host gives no tempo, as in Delay. The result is capped at 250 ms, with "(250 ms max)" in the read-out when the cap applies.
+   - A: a separate stepped parameter holds the note, so the ms value is kept when Sync goes off. It uses Fancy Delay's note lengths and feels (`plugins/delay/src/DelayTime.h`, moved to `fancy-core`), from 1/64 to 1/8 with straight, dotted and triplet, and defaults to 120 BPM when the host gives no tempo, as in Delay. The result is capped at 250 ms. **Changed by the user on 13 November 2026 (Phase 4):** "(250 ms max)" doesn't fit the read-out (138 px in a 68 px knob), so a capped note keeps its text, such as "1/8 dotted", in red (#E74D3D), and the tooltip says "1/8 dotted is 375 ms at this tempo; Pre-delay stops at 250 ms".
    - B: allow notes up to 1/4 and raise the pre-delay buffer to 1 s when Sync is on.
 6. **Width −1 to +2.**
    - A: mid/side scaling on the wet signal only: M = (L + R) / 2, S = (L − R) / 2, L = M + W·S, R = M − W·S. So 0 is mono, −1 swaps the sides and 2 doubles the side signal. The mono sum never changes with Width. Stereo input "Mono-sum" sums the input before the reverb.
@@ -120,6 +120,17 @@ The CPU test reports Eco, Normal and High at the defaults, and Normal with Freez
 
 - Positions from `design/phase3-mockup-src/room.html`.
 - A script reads character widths from `assets/fonts/Inter-*.ttf` (its `hmtx` and `cmap` tables, no libraries needed) and checks every label, read-out and caption against its box: six knobs in the Space card at about 70 px each, "Wet only (send)", "decay 1.80 s (to −60 dB)", the drawer's labels.
+
+**Done, 13 November 2026:** `docs/research/room-textfit.py` (pure Python, `python -I docs/research/room-textfit.py`, 0 failures). Widths are glyph advances × point size ÷ units per em, which is how `fancy::ui::font` sizes text (`withPointHeight`); kerning is left out, so every box keeps a 2 px margin. Geometry, taken from Sature's editor and `room.html`:
+- Content from x 13 to 646. Space card (6 knobs) 417 px and Tone card (3 knobs) 208 px, 8 px apart, so knobs sit 69.4 px apart in both; each `Knob` is 68 px wide, `tightStyle` (12 pt).
+- Widest knob label: "Pre-delay", 55.4 px. Widest value: "1/16 dotted", 61.6 px, with Sync on.
+- Footer: Sync pre-delay at x 13, Freeze at 134, Wet only (send) at 207, ending at 319; EDIT at 582.
+- Drawer, as Sature's: 170 px labels ("Early reflections" 106.9 px at 14 pt) and 170 px dropdowns ("Mono-sum" 72.1 of 144 px of text room).
+- Display: marker label "decay 20.0 s (to −60 dB)" 118.2 px at 10 pt; axis labels at 9 pt.
+
+What it found:
+- **The display legend** in `room.html` sits at fixed offsets, where "early reflections" (76.2 px at 10 pt) runs into the decay swatch, 66 px away. The legend is laid out from measured widths instead, right-aligned: 214.8 px in all.
+- **The capped Sync read-out** of decision 5 doesn't fit: "1/8 dotted (250 ms max)" is 138.3 px, and even "250 ms max" is 69.4 px. The user chose on 13 November 2026 to keep the note's text in red while it's capped, with the cap explained in the tooltip (decision 5 above).
 
 ### Phase 5: code from patterns that have already passed
 
