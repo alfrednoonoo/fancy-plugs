@@ -1,0 +1,46 @@
+# Fancy Room measurements
+
+From CI run 43415017352 (commit 312c820), 48 kHz, 128-sample blocks unless stated. See docs/room.md.
+
+PASS  Fancy Room: loads
+PASS  Fancy Room: offline, random blocks of 0-8192 against 128 (bit-identical)
+PASS  Fancy Room: 44.1 -> 48 -> 96 -> 44.1 kHz without reloading
+PASS  Fancy Room: deactivate, reactivate, and 60 s of silence
+PASS  Fancy Room: state restored before the first prepareToPlay
+PASS  Fancy Room: state restored while playing
+PASS  Fancy Room: mono main bus
+PASS  Fancy Room: host bypass is time-aligned (latency 0, worst 0.00000000)
+PASS  Fancy Room: every parameter changed every block for 10 s
+PASS  Fancy Room: tail render at Decay 0.5 s (reported 0.81 s, loudest 50 ms after it -107.0 dB)
+PASS  Fancy Room: tail render at Decay 1.8 s (reported 2.76 s, loudest 50 ms after it -101.7 dB)
+PASS  Fancy Room: tail render at Decay 8 s (reported 12.06 s, loudest 50 ms after it -99.9 dB)
+PASS  Fancy Room: editor opened and closed 50 times, and resized
+PASS  Fancy Room at defaults: reported latency matches the measured delay (reported 0, measured 0)
+
+A/B switch: Fancy Room to Ducked vocal: largest step 0.0074124 after the switch, 0.007413 in A, 0.00723022 in B
+offline render: Room: random blocks bit-identical, real time bit-identical
+room ducking 100 %: -24.0 dB while playing, -0.2 dB 1.5 s after
+room freeze (quality 0): 1 s levels over 60 s within 0.116 dB of the first (limit 1), last - first -0.0821 dB
+room freeze (quality 1): 1 s levels over 60 s within 0.133 dB of the first (limit 1), last - first -0.1086 dB
+room freeze (quality 2): 1 s levels over 60 s within 0.123 dB of the first (limit 1), last - first -0.0973 dB
+room metallic (quality 0): worst peak +3.67 dB over the 1/3-octave average at 6410 Hz (limit +6)
+room metallic (quality 1): worst peak +4.07 dB over the 1/3-octave average at 2918 Hz (limit +6)
+room metallic (quality 2): worst peak +3.99 dB over the 1/3-octave average at 2918 Hz (limit +6)
+room mono: tail mono sum -0.01 dB against stereo energy (limit 3)
+room quality change: 50 ms before -18.9 dB, 50 ms after -19.4 dB
+room rt60: Size  20 % Decay  0.5 s: T_mid  0.500 s ( +0.0 %, limit 10)
+room rt60: Size  20 % Decay  2.0 s: T_mid  1.931 s ( -3.5 %, limit 10)
+room rt60: Size  20 % Decay  8.0 s: T_mid  7.640 s ( -4.5 %, limit 10)
+room rt60: Size  55 % Decay  0.5 s: T_mid  0.497 s ( -0.5 %, limit 10)
+room rt60: Size  55 % Decay  2.0 s: T_mid  1.905 s ( -4.8 %, limit 10)
+room rt60: Size  55 % Decay  8.0 s: T_mid  7.704 s ( -3.7 %, limit 10)
+room rt60: Size  90 % Decay  0.5 s: T_mid  0.472 s ( -5.6 %, limit 10)
+room rt60: Size  90 % Decay  2.0 s: T_mid  1.909 s ( -4.6 %, limit 10)
+room rt60: Size  90 % Decay  8.0 s: T_mid  7.738 s ( -3.3 %, limit 10)
+room tail: Decay  0.5 s, reported tail  0.813 s; loudest 50 ms after it -107.3 dB re peak (limit -90)
+room tail: Decay  1.8 s, reported tail  2.763 s; loudest 50 ms after it -101.4 dB re peak (limit -90)
+room tail: Decay  8.0 s, reported tail 12.063 s; loudest 50 ms after it -100.4 dB re peak (limit -90)
+
+workflow cpu: Fancy Room         default 2.207 % (4.50 x Comp); editor open, Compare measuring 2.356 % (4.81 x); Compare on 2.322 % (4.74 x)
+room cpu (median of 5): Normal (target < 3 %) 1.951 %, Eco 1.551 %, High 2.587 %, Normal with Freeze and Ducking 2.203 %
+room cpu reference: Fancy Comp default 0.395 % in the same run; Normal / comp = 4.94, Eco / comp = 3.92, High / comp = 6.55

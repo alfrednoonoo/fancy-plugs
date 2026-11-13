@@ -1,6 +1,6 @@
 # Fancy Room: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all), the Python model (13 November 2026), which passes all five tests, the CPU budget (13 November 2026): about 1.3 % in Normal, the layout check, and the code (Phases 5 and 6, 13 November 2026; "As built" below). Next: the CI run.**
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all), the Python model (13 November 2026), which passes all five tests, the CPU budget (13 November 2026): about 1.3 % in Normal, the layout check, and the code (Phases 5 and 6, 13 November 2026; "As built" below). CI run 43415017352 is green (the first push failed on one missing include). Next: the user's REAPER checks.**
 
 ## Build plan (agreed with the user, 11 November 2026)
 
@@ -211,3 +211,12 @@ The brief gives no Wet or Dry default for Room, so they're Fancy Verb's. The bri
 ### The §3.4 tests
 
 All five run on `RoomDsp` as the model runs them. Metallic ringing and Freeze also run in Eco and High; the model gives +3.7 and +4.0 dB for metallic ringing and 0.09 and 0.13 dB for Freeze there (13 November 2026). The tail render runs in Catch2 on the engine and in the host harness on the built VST3, at Decay 0.5, 1.8 and 8 s, Wet only, from 1 s of −6 dBFS noise.
+
+### Results, run 43415017352 (13 November 2026)
+
+Everything passed: 439 test cases, pluginval, Steinberg's validator, the host harness and FancyBench. All figures are in `docs/measurements/room.txt`.
+
+- **The C++ matches the model** to the precision reported: metallic ringing +4.07 dB at 2918 Hz (Eco +3.67, High +3.99), every RT60 the same as the model's (−5.6 to 0.0 %), Freeze within 0.13 dB, mono sum −0.01 dB, the tail −107.3, −101.4 and −100.4 dB after the reported tail. In the host harness, on the built VST3: −107.0, −101.7 and −99.9 dB.
+- **Offline renders are bit-identical** to real time and to random blocks, through Size, Decay, Pre-delay, Freeze, Quality and Low cut changes.
+- **CPU:** Normal 1.95 %, Eco 1.55 %, High 2.59 %, Normal with Freeze and Ducking 2.20 %, against Comp's 0.40 % in the same run. All are under the 3 % target, but Normal is 50 % over the budget's 1.3 % estimate, and Eco saves only a fifth: the parts that don't scale with the line count (32 interpolated reflection reads, eight interpolated all-passes, per-sample smoothers) cost more than counted. For the next budget: count an interpolated read from a large buffer as about 3 operations' worth more than a plain one.
+- **The first push failed to compile** on one missing include (`fancy::levelToGain` without `ParamHelpers.h` in the editor); everything else compiled. The pre-push checker now checks that every `fancy::` function a changed file calls comes from a header it includes.

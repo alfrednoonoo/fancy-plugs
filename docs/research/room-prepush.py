@@ -135,6 +135,37 @@ for path in cpp:
             continue
         check(found or inc in ("algorithm",), "include resolves: %s in %s" % (inc, path))
 
+# 6b. Every fancy:: function a file calls is declared in a header it includes, directly or through
+# its own header (the first push failed on levelToGain without ParamHelpers.h).
+core = {}
+for base, _, files in os.walk("fancy-core/include"):
+    for f in files:
+        rel = os.path.relpath(os.path.join(base, f), "fancy-core/include").replace("\\", "/")
+        for name in re.findall(r"^\s*(?:inline |static |constexpr )*[\w:<>]+[\s&*]+(\w+) \(", text(os.path.join(base, f)), re.M):
+            core.setdefault(name, set()).add(rel)
+
+
+def includes_of(path, seen=None):
+    seen = seen or set()
+    if path in seen or not os.path.isfile(path):
+        return set()
+    seen.add(path)
+    found = set()
+    for inc in re.findall(r'#include ["<]([^">]+)[">]', text(path)):
+        found.add(inc)
+        for d in ["fancy-core/include", os.path.dirname(path)]:
+            found |= includes_of(os.path.join(d, inc).replace("\\", "/"), seen)
+    return found
+
+
+for path in cpp:
+    if not path.startswith(("plugins/room", "tests/RoomTests")):
+        continue
+    reachable = includes_of(path)
+    for name in sorted(set(re.findall(r"fancy::(?:\w+::)*(\w+) \(", text(path)))):
+        if name in core:
+            check(bool(core[name] & reachable), "fancy::%s declared in an included header, in %s" % (name, path))
+
 # 7. Balanced brackets ---------------------------------------------------------------------------
 def strip(code):
     code = re.sub(r"//[^\n]*", "", code)
