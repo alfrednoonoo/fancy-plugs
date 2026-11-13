@@ -1,6 +1,6 @@
 # Fancy Room: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: only the build plan below exists (11 November 2026). No code until the design note is written and approved.**
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions (13 November 2026), waiting for approval. No code until the design note is approved.**
 
 ## Build plan (agreed with the user, 11 November 2026)
 
@@ -20,13 +20,31 @@ No compile errors came up in about six builds of new code: copying existing patt
 
 ### Phase 1: the design note, with every ambiguity settled before code
 
-Decisions for the user:
-- **Wet only (send):** forces Dry off, or only hides the Dry fader.
-- **Freeze:** how it interacts with Ducking and Pre-delay.
-- **The tail reported while frozen:** endless, but the host needs a length.
-- **Quality switching:** Eco has 8 delay lines and Normal 16, so a change while playing needs a crossfade.
-- **Sync pre-delay:** reuses Fancy Delay's note values.
-- **Width −1 to +2:** as mid/side scaling.
+Decisions for the user, written 13 November 2026. Each has a recommendation (A) and an alternative (B). **Waiting for approval.**
+
+1. **Wet only (send).**
+   - A: while it's on, the DSP treats Dry as −inf and the Dry fader is greyed with the tooltip "Off while Wet only (send) is on". Dry's own value is kept, so turning the switch off brings it back. Host bypass still passes the dry signal, as in every other plugin.
+   - B: it only hides the Dry fader, and Dry has to be pulled down by hand.
+2. **Freeze.**
+   - A: the input to the late network fades out over 20 ms. Feedback goes to exactly 1 with damping and modulation off, so the loop is lossless: interpolated reads lose highs, and that would fail the 60 s test. Size, Decay and Damping hold while frozen and glide to their current values when Freeze goes off. Early reflections still follow the input, so new playing is heard as reflections over the frozen pad. Pre-delay, Width, Low cut, High cut, Ducking, Wet and Dry still work, because they come after the network.
+   - B: Freeze also mutes the early reflections, so only the frozen pad sounds.
+3. **The tail reported to the host.**
+   - A: normally Pre-delay + the longest reflection + 1.5 × Decay (−90 dB at RT60 × 1.5), told to the host whenever it changes. While frozen it reports "infinite" if JUCE's VST3 wrapper passes that through (to be checked in JUCE's source before any code), and otherwise 60 s.
+   - B: always report the tail for the longest Decay (30 s), which is simple but makes every export render 30 s of extra silence.
+4. **Quality while playing.** The brief gives Eco 8 lines and Normal and High 16. High uses cubic interpolation and modulates every line, where Normal modulates 4 lines with linear interpolation.
+   - A: on a change, the old network stops taking input and is left to ring out; it's switched off once its output stays under −90 dB, or after 2 s with a fade. The new network takes the input from that moment. The tail never drops out, at up to double the CPU for 2 s.
+   - B: a 50 ms crossfade to the new network, which starts empty, so the existing tail is cut short.
+5. **Sync pre-delay.**
+   - A: a separate stepped parameter holds the note, so the ms value is kept when Sync goes off. It uses Fancy Delay's note lengths and feels (`plugins/delay/src/DelayTime.h`, moved to `fancy-core`), from 1/64 to 1/8 with straight, dotted and triplet, and defaults to 120 BPM when the host gives no tempo, as in Delay. The result is capped at 250 ms, with "(250 ms max)" in the read-out when the cap applies.
+   - B: allow notes up to 1/4 and raise the pre-delay buffer to 1 s when Sync is on.
+6. **Width −1 to +2.**
+   - A: mid/side scaling on the wet signal only: M = (L + R) / 2, S = (L − R) / 2, L = M + W·S, R = M − W·S. So 0 is mono, −1 swaps the sides and 2 doubles the side signal. The mono sum never changes with Width. Stereo input "Mono-sum" sums the input before the reverb.
+   - B: crossfeed-style width, which changes the mono sum.
+7. **Ducking** (the brief only gives 0–100 %).
+   - A: a follower on the dry input, with 10 ms attack and 300 ms release. At 100 % the wet is turned down by up to 24 dB, fully when the input is above −20 dBFS and not at all below −50 dBFS; Ducking scales that depth.
+   - B: a threshold knob in the drawer, which adds a parameter the brief doesn't list.
+
+Tooling the suite doesn't have yet: an RT60 measurement (T30 from the energy-decay curve), and the host harness's "render 1 s, then silence, and get the full tail to −90 dB".
 
 Tooling the suite doesn't have yet: an RT60 measurement (T30 from the energy-decay curve), and the host harness's "render 1 s, then silence, and get the full tail to −90 dB".
 

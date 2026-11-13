@@ -85,6 +85,16 @@ It downloads the newest successful build of the current branch and installs it t
 
 Add `%USERPROFILE%\VST3-Dev` to REAPER's VST plug-in paths once (Options > Preferences > Plug-ins > VST), and click Re-scan after each install.
 
+## Choosing presets
+
+Click the preset name in the header to open the preset browser. It works the same way in every plugin:
+
+- **One click** on a preset loads it, and the browser **stays open**, so you can try several in a row.
+- **Double-click** a preset, or press **Enter**, to load it and close the browser.
+- Click outside the browser, or press **Esc**, to close it.
+- The star marks a favourite without loading the preset.
+- The ‹ › arrows on the preset name step to the previous or next preset without opening the browser.
+
 Each plugin has a manual and a REAPER checklist in `docs/`. `docs/PROGRESS.md` has the full history, test results and measurements.
 
 ## How builds work
