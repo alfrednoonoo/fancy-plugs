@@ -636,7 +636,20 @@ void EqGraph::paintHandles (juce::Graphics& g)
             g.fillEllipse (circle);
 
             g.setColour (selected ? juce::Colours::white : juce::Colours::black);
-            g.drawText (juce::String (b + 1), circle, juce::Justification::centred, false);
+            // A band that isn't Stereo shows its channel's letter after its number, in 9 px.
+            static const char* const letters[] { "", "L", "R", "M", "S" };
+            const auto letter = letters[juce::jlimit (0, 4, (int) band.spec.channel)];
+
+            if (*letter != 0)
+            {
+                g.setFont (font (Weight::semiBold, 9.0f));
+                g.drawText (juce::String (b + 1) + letter, circle.expanded (3.0f, 0.0f), juce::Justification::centred, false);
+                g.setFont (font (Weight::semiBold, 11.0f));
+            }
+            else
+            {
+                g.drawText (juce::String (b + 1), circle, juce::Justification::centred, false);
+            }
         }
     }
 }

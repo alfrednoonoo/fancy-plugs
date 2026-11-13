@@ -199,6 +199,52 @@ void EqEditor::BandEditor::TypeDropdown::paint (juce::Graphics& g)
                   juce::PathStrokeType (1.0f));
 }
 
+EqEditor::BandEditor::ChannelChip::ChannelChip (juce::RangedAudioParameter& channel, juce::Colour accentColour)
+    : ParamClickControl (channel), accent (accentColour)
+{
+}
+
+void EqEditor::BandEditor::ChannelChip::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    const auto index = juce::jlimit (0, 4, juce::roundToInt (param.convertFrom0to1 (param.getValue())));
+
+    g.setColour (isMenuOpen() ? colours::menuHover : juce::Colour (0xff282828));
+    g.fillRoundedRectangle (bounds, 4.0f);
+
+    static const char* const names[] { "ST", "L", "R", "M", "S" };
+
+    g.setColour (index == 0 ? juce::Colour (0xffededed) : accent);
+    g.setFont (font (Weight::semiBold, 12.0f));
+    g.drawText (names[index], bounds.withTrimmedLeft (4.0f).withTrimmedRight (14.0f), juce::Justification::centred, false);
+
+    g.setColour (juce::Colours::white.withAlpha (0.4f));
+    g.strokePath (icons::chevrons (juce::Rectangle<float> (5.0f, 8.0f).withCentre ({ bounds.getRight() - 9.0f, bounds.getCentreY() })),
+                  juce::PathStrokeType (1.0f));
+}
+
+void EqEditor::BandEditor::ChannelChip::clicked()
+{
+    const auto names = param.getAllValueStrings();
+    const auto current = juce::roundToInt (param.convertFrom0to1 (param.getValue()));
+
+    fancy::ui::Menu menu;
+
+    for (int i = 0; i < names.size(); ++i)
+        menu.addItem (1 + i, names[i], true, i == current);
+
+    menu.show (*this, [safeThis = juce::Component::SafePointer<ChannelChip> (this)] (int result)
+    {
+        if (safeThis == nullptr || result <= 0)
+            return;
+
+        auto& parameter = safeThis->param;
+        parameter.beginChangeGesture();
+        parameter.setValueNotifyingHost (parameter.convertTo0to1 ((float) (result - 1)));
+        parameter.endChangeGesture();
+    });
+}
+
 void EqEditor::BandEditor::TypeDropdown::clicked()
 {
     // The mockup's order: the gain types, then the filters, with a slope submenu on Low pass
@@ -281,6 +327,7 @@ EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEdito
       band (bandIndex),
       typeDropdown (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "type")),
                     *processor.getApvts().getParameter (EqProcessor::id (bandIndex, "slope"))),
+      channelChip (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "chan")), bandColour (bandIndex)),
       frequencyKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "freq")), "Freq", bandColour (bandIndex), Knob::mediumStyle),
       gainKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "gain")), "Gain", bandColour (bandIndex), Knob::mediumStyle, true),
       qKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "q")), "Q", bandColour (bandIndex), Knob::mediumStyle),
@@ -295,7 +342,7 @@ EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEdito
       modeSwitch (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dynMode")), juce::Colour (0xff434343), juce::Colours::white),
       sidechainCheckbox (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dynSc")), "Sidechain", bandColour (bandIndex))
 {
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &typeDropdown, &frequencyKnob, &gainKnob, &qKnob, &powerIcon, &plusButton, &closeButton })
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &typeDropdown, &channelChip, &frequencyKnob, &gainKnob, &qKnob, &powerIcon, &plusButton, &closeButton })
         addAndMakeVisible (item);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &dynamicChip, &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob,
@@ -303,6 +350,7 @@ EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEdito
         addChildComponent (item);
 
     dynamicChip.setTooltip ("Dynamic: the band's gain follows the level in its own region, up to Range.");
+    channelChip.setTooltip ("Channel: Stereo, Left, Right, Mid or Side. Mid and Side work on the sum and the difference.");
     modeSwitch.setTextHeight (12.0f);
     sidechainCheckbox.setLabelHeight (12.0f);
     sidechainCheckbox.setTooltip ("The band listens to the sidechain input instead of the main input.");
@@ -332,7 +380,8 @@ void EqEditor::BandEditor::layoutFor (bool compact)
 void EqEditor::BandEditor::layoutDynamic (int dx, int dy, int buttonsX, int buttonsDy)
 {
     typeDropdown.setBounds (dx + 12, dy + 24, 94, 32);
-    dynamicChip.setBounds (dx + 12, dy + 64, 94, 24);
+    channelChip.setBounds (dx + 12, dy + 64, 40, 24);
+    dynamicChip.setBounds (dx + 56, dy + 64, 50, 24);
     frequencyKnob.setBounds (dx + 112, dy + 12, 62, 99);
     gainKnob.setBounds (dx + 174, dy + 12, 90, 99);
     qKnob.setBounds (dx + 264, dy + 12, 56, 99);
@@ -387,15 +436,10 @@ void EqEditor::BandEditor::resized()
 
     if (isCompact)
     {
-        if (chipShown)
-        {
-            typeDropdown.setBounds (16, 28, 94, 32);
-            dynamicChip.setBounds (16, 68, 94, 24);
-        }
-        else
-        {
-            typeDropdown.setBounds (16, 45, 94, 32);
-        }
+        // The Channel chip is always there, so the type dropdown always sits above its row.
+        typeDropdown.setBounds (16, 28, 94, 32);
+        channelChip.setBounds (16, 68, 40, 24);
+        dynamicChip.setBounds (60, 68, 50, 24);
 
         frequencyKnob.setBounds (138, 25, 62, 79);
         gainKnob.setBounds (198, 25, 100, 79);
@@ -410,7 +454,8 @@ void EqEditor::BandEditor::resized()
     const auto right = getWidth() - 43;
 
     typeDropdown.setBounds (26, 80, 142, 32);
-    dynamicChip.setBounds (26, 120, 142, 24);
+    channelChip.setBounds (26, 120, 44, 24);
+    dynamicChip.setBounds (74, 120, 94, 24);
     frequencyKnob.setBounds (232 + centreShift, 40, 90, 123);
     gainKnob.setBounds (338 + centreShift, 40, 90, 123);
     qKnob.setBounds (444 + centreShift, 40, 90, 123);
@@ -449,6 +494,14 @@ void EqEditor::BandEditor::update()
                                                                                &modeSwitch, &sidechainCheckbox })
             item->setAlpha (linear ? 0.4f : 1.0f);
     }
+
+    // A mono bus has one channel, so every band acts on it.
+    const auto stereoBus = eqProcessor.getMainBusNumInputChannels() >= 2;
+    channelChip.setEnabled (stereoBus);
+    channelChip.setAlpha (stereoBus ? 1.0f : 0.4f);
+    channelChip.setTooltip (stereoBus ? "Channel: Stereo, Left, Right, Mid or Side. Mid and Side work on the sum and the difference."
+                                      : "Channel needs a stereo bus");
+    channelChip.repaint();
 
     gainKnob.setValueSuffix ("(" + noteName (spec.frequencyHz) + ")");
     gainKnob.setAlpha (usesGain ? 1.0f : 0.4f);

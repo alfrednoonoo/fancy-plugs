@@ -23,7 +23,7 @@ public:
     // 2: Phase 2.1 W adds the A/B slots. Version 1 states load with B as a copy of A.
     // 3: Phase 2.1 D adds EQ's dynamic bands. From here on, a parameter missing from a state
     //    takes its default, rather than keeping the value the instance had.
-    static constexpr int stateVersion = 3;
+    static constexpr int stateVersion = 4;
 
     using Layout = juce::AudioProcessorValueTreeState::ParameterLayout;
 

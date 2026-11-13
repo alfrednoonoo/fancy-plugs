@@ -984,7 +984,7 @@ TEST_CASE ("log-scale toggle keeps Hz and moves the host value", "[eq]")
     CHECK (frequency->getValue() == Catch::Approx (logPosition).margin (1.0e-4f));
 }
 
-TEST_CASE ("bands can be added until all 16 are used, and removed", "[eq]")
+TEST_CASE ("bands can be added until all 24 are used, and removed", "[eq]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInitialiser;
 
@@ -1008,6 +1008,183 @@ TEST_CASE ("bands can be added until all 16 are used, and removed", "[eq]")
 
     CHECK_FALSE (processor.readBand (10).on);
     CHECK (processor.addBand (500.0f, 0.0f) == 10);
+}
+
+// Phase 3 Q2.4: a band's Channel.
+namespace
+{
+BandSpec onChannel (BandSpec spec, eq::Channel channel)
+{
+    spec.channel = channel;
+    return spec;
+}
+
+Audio opposedSine (double hz, double amplitude, int numSamples)
+{
+    auto signal = sine (hz, amplitude, rate, numSamples);
+
+    for (auto& sample : signal.right)
+        sample = -sample;
+
+    return signal;
+}
+} // namespace
+
+TEST_CASE ("a Left band leaves the right channel untouched, and Right the left", "[eq][channel]")
+{
+    for (const auto channel : { eq::Channel::left, eq::Channel::right })
+    {
+        auto targets = flatTargets();
+        targets.bands[0] = onChannel (makeBand (BandType::band, 1000.0, 9.0, 1.0), channel);
+
+        EqDsp dsp;
+        prepare (dsp, targets);
+
+        auto signal = sine (1000.0, 0.2, rate, 24000);
+        const auto original = signal;
+        signal.process (dsp);
+
+        const auto& untouched = channel == eq::Channel::left ? signal.right : signal.left;
+        const auto& source = channel == eq::Channel::left ? original.right : original.left;
+        const auto& changed = channel == eq::Channel::left ? signal.left : signal.right;
+
+        CHECK (untouched == source);
+        CHECK (levelAt (changed, 12000, 1000.0, rate) == Catch::Approx (fancy::gainToDb (0.2) + 9.0).margin (0.05));
+    }
+}
+
+TEST_CASE ("Mid and Side bands act on the sum and the difference", "[eq][channel]")
+{
+    const auto bell = makeBand (BandType::band, 1000.0, 9.0, 1.0);
+
+    const auto render = [&] (eq::Channel channel, bool opposed)
+    {
+        auto targets = flatTargets();
+        targets.bands[0] = onChannel (bell, channel);
+
+        EqDsp dsp;
+        prepare (dsp, targets);
+
+        auto signal = opposed ? opposedSine (1000.0, 0.2, 24000) : sine (1000.0, 0.2, rate, 24000);
+        signal.process (dsp);
+        return signal;
+    };
+
+    // With L = R a Side band does nothing and a Mid band is the Stereo band.
+    const auto original = sine (1000.0, 0.2, rate, 24000);
+    CHECK (render (eq::Channel::side, false).left == original.left);
+
+    const auto stereo = render (eq::Channel::stereo, false);
+    const auto mid = render (eq::Channel::mid, false);
+
+    for (size_t i = 0; i < stereo.left.size(); ++i)
+        REQUIRE (mid.left[i] == Catch::Approx (stereo.left[i]).margin (1.0e-6));
+
+    // With L = -R, the reverse.
+    const auto opposite = opposedSine (1000.0, 0.2, 24000);
+    CHECK (render (eq::Channel::mid, true).left == opposite.left);
+
+    const auto stereoOpposed = render (eq::Channel::stereo, true);
+    const auto side = render (eq::Channel::side, true);
+
+    for (size_t i = 0; i < stereoOpposed.left.size(); ++i)
+        REQUIRE (side.left[i] == Catch::Approx (stereoOpposed.left[i]).margin (1.0e-6));
+}
+
+TEST_CASE ("on a mono bus every Channel setting gives the Stereo result", "[eq][channel]")
+{
+    const auto render = [] (eq::Channel channel)
+    {
+        auto targets = flatTargets();
+        targets.bands[0] = onChannel (makeBand (BandType::band, 1000.0, 9.0, 1.0), channel);
+
+        EqDsp dsp;
+        prepare (dsp, targets);
+
+        auto signal = sine (1000.0, 0.2, rate, 12000);
+
+        for (int start = 0; start < signal.size(); start += 256)
+        {
+            float* channels[] { signal.left.data() + start };
+            dsp.process (channels, 1, std::min (256, signal.size() - start));
+        }
+
+        return signal.left;
+    };
+
+    const auto reference = render (eq::Channel::stereo);
+
+    for (const auto channel : { eq::Channel::left, eq::Channel::right, eq::Channel::mid, eq::Channel::side })
+        CHECK (render (channel) == reference);
+}
+
+TEST_CASE ("changing a band's Channel under signal doesn't click", "[eq][channel][sweep]")
+{
+    auto targets = flatTargets();
+    targets.bands[0] = makeBand (BandType::band, 1000.0, 12.0, 1.0);
+
+    EqDsp dsp;
+    prepare (dsp, targets);
+
+    auto signal = sine (200.0, 0.3, rate, 48000);
+    const auto reference = signal;
+
+    const eq::Channel sequence[] { eq::Channel::mid, eq::Channel::left, eq::Channel::side, eq::Channel::stereo };
+
+    for (int start = 0, block = 0; start < signal.size(); start += 256, ++block)
+    {
+        if (block % 40 == 20)
+            targets.bands[0].channel = sequence[(block / 40) % 4];
+
+        dsp.setTargets (targets);
+
+        float* channels[] { signal.left.data() + start, signal.right.data() + start };
+        dsp.process (channels, 2, std::min (256, signal.size() - start));
+    }
+
+    // A 200 Hz sine at 0.3 changes by at most about 0.0079 per sample; the bell at 1 kHz adds little.
+    CHECK (largestStep (signal.left) < 0.02);
+    CHECK (largestStep (signal.right) < 0.02);
+    CHECK (reference.size() == signal.size());
+}
+
+TEST_CASE ("a dynamic Side band reacts to a Side signal and not to a Mid one", "[eq][channel][dynamic]")
+{
+    const auto changeFor = [] (bool opposed)
+    {
+        auto targets = flatTargets();
+        targets.bands[0] = onChannel (makeBand (BandType::band, 1000.0, 0.0, 1.0), eq::Channel::side);
+        targets.dynamics[0].on = true;
+        targets.dynamics[0].thresholdDb = -30.0;
+        targets.dynamics[0].rangeDb = -12.0;
+
+        EqDsp dsp;
+        prepare (dsp, targets);
+
+        auto signal = opposed ? opposedSine (1000.0, 0.5, 24000) : sine (1000.0, 0.5, rate, 24000);
+        signal.process (dsp);
+
+        return dsp.getDynamicChange (0);
+    };
+
+    CHECK (changeFor (true) < -6.0f);
+    CHECK (changeFor (false) == 0.0f);
+}
+
+TEST_CASE ("the 17th to 24th bands and every Channel default to the old sound", "[eq][channel]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    EqProcessor processor;
+
+    for (int band = 0; band < eq::maxBands; ++band)
+        CHECK (processor.readBand (band).channel == eq::Channel::stereo);
+
+    for (int band = 16; band < eq::maxBands; ++band)
+        CHECK_FALSE (processor.isBandUsed (band));
+
+    setParameter (processor, "b24chan", 4.0f);
+    CHECK (processor.readBand (23).channel == eq::Channel::side);
 }
 
 TEST_CASE ("eq state round-trips", "[eq]")

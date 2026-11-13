@@ -6,9 +6,12 @@
 namespace eq
 {
 
+// Which channel a band filters (Phase 3 Q2.4). Mid and Side run on M = (L+R)/2 and S = (L-R)/2.
+enum class Channel { stereo, left, right, mid, side };
+
 enum class BandType { lowShelf, highShelf, band, notch, lowPass, highPass, bandPass, allPass, tilt };
 
-constexpr int maxBands = 16;
+constexpr int maxBands = 24;
 constexpr int maxSections = 4;
 constexpr int slopeOrders[] { 1, 2, 3, 4, 6, 8 };
 constexpr double butterworthQ = 0.70710678118654752;
@@ -52,10 +55,11 @@ struct BandSpec
     double q = 1.0;
     int order = 2;
     bool on = false;
+    Channel channel = Channel::stereo;
 
     bool sameShape (const BandSpec& other) const noexcept
     {
-        return type == other.type && order == other.order && on == other.on;
+        return type == other.type && order == other.order && on == other.on && channel == other.channel;
     }
 
     bool operator== (const BandSpec&) const = default;

@@ -59,7 +59,10 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
     constexpr int defaultTypes[] { 0, 2, 2, 1 };
     constexpr float defaultHz[] { 80.0f, 500.0f, 2000.0f, 8000.0f };
 
-    for (int band = 0; band < eq::maxBands; ++band)
+    // Bands 17-24 (Phase 3 Q2.4) come after everything else, so no ID or index moves.
+    constexpr int originalBands = 16;
+
+    const auto addBase = [&] (int band)
     {
         const auto prefix = "Band " + juce::String (band + 1) + " ";
         const auto firstFour = band < 4;
@@ -78,7 +81,10 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
                 .withStringFromValueFunction ([] (float value, int) { return qText (value); })
                 .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
         layout.add (std::make_unique<Choice> (juce::ParameterID { EqProcessor::id (band, "slope"), 1 }, prefix + "Slope", slopes, 1));
-    }
+    };
+
+    for (int band = 0; band < originalBands; ++band)
+        addBase (band);
 
     layout.add (fancy::levelParameter ("gain", "Gain", mixFloorDb, 12.0f, 0.0f, mixFloorDb));
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
@@ -112,7 +118,7 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
 
     // Phase 2.1 D: dynamic bands, appended after everything above so no ID or index moves.
     // Off by default, which leaves every band as it was.
-    for (int band = 0; band < eq::maxBands; ++band)
+    const auto addDynamic = [&] (int band)
     {
         const auto prefix = "Band " + juce::String (band + 1) + " ";
 
@@ -124,7 +130,22 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
         layout.add (std::make_unique<Choice> (juce::ParameterID { EqProcessor::id (band, "dynMode"), 1 }, prefix + "Dynamic mode",
                                               juce::StringArray { "Above", "Below" }, 0));
         layout.add (toggle (EqProcessor::id (band, "dynSc"), prefix + "Sidechain", false));
+    };
+
+    for (int band = 0; band < originalBands; ++band)
+        addDynamic (band);
+
+    for (int band = originalBands; band < eq::maxBands; ++band)
+    {
+        addBase (band);
+        addDynamic (band);
     }
+
+    // Phase 3 Q2.4: the channel each band filters. Stereo leaves a band as it was.
+    for (int band = 0; band < eq::maxBands; ++band)
+        layout.add (std::make_unique<Choice> (juce::ParameterID { EqProcessor::id (band, "chan"), 1 },
+                                              "Band " + juce::String (band + 1) + " Channel",
+                                              juce::StringArray { "Stereo", "Left", "Right", "Mid", "Side" }, 0));
 
     return layout;
 }
@@ -186,7 +207,8 @@ EqProcessor::EqProcessor (SharedFlag logScaleFlag)
                                       apvts.getRawParameterValue (id (band, "freq")),
                                       apvts.getRawParameterValue (id (band, "gain")),
                                       apvts.getRawParameterValue (id (band, "q")),
-                                      apvts.getRawParameterValue (id (band, "slope")) };
+                                      apvts.getRawParameterValue (id (band, "slope")),
+                                      apvts.getRawParameterValue (id (band, "chan")) };
 
     for (int band = 0; band < eq::maxBands; ++band)
         dynamicValues[(size_t) band] = { apvts.getRawParameterValue (id (band, "dyn")),
@@ -242,6 +264,7 @@ eq::BandSpec EqProcessor::readBand (int band)
     spec.gainDb = (double) values.gain->load (std::memory_order_relaxed);
     spec.q = (double) values.q->load (std::memory_order_relaxed);
     spec.order = eq::slopeOrders[juce::jlimit (0, 5, juce::roundToInt (values.slope->load (std::memory_order_relaxed)))];
+    spec.channel = (eq::Channel) juce::jlimit (0, 4, juce::roundToInt (values.channel->load (std::memory_order_relaxed)));
     return spec;
 }
 
@@ -409,7 +432,7 @@ void EqProcessor::setParameter (const juce::String& parameterId, float value)
 void EqProcessor::resetBand (int band)
 {
     const UserEdit edit (*this);
-    for (const auto* suffix : { "on", "type", "freq", "gain", "q", "slope", "dyn", "thresh", "range", "attack", "release", "dynMode", "dynSc" })
+    for (const auto* suffix : { "on", "type", "freq", "gain", "q", "slope", "chan", "dyn", "thresh", "range", "attack", "release", "dynMode", "dynSc" })
     {
         auto& parameter = *getApvts().getParameter (id (band, suffix));
         parameter.setValueNotifyingHost (parameter.getDefaultValue());

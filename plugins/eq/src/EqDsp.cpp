@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace
 {
@@ -245,6 +246,19 @@ void EqDsp::runDetectors (const float* const* main, int numMain, const float* co
         const auto* const* source = useSidechain ? sidechain : main;
         const auto numSource = std::min (useSidechain ? numSidechain : numMain, (int) maxChannels);
 
+        // Phase 3 Q2.4: a band hears its own channel. Stereo keeps the larger of L and R; a mono
+        // source feeds every channel.
+        const auto channel = numSource < 2 ? eq::Channel::stereo : spec.channel;
+
+        if (channel != detector.channel)
+        {
+            detector.channel = channel;
+            detector.state = {};
+            detector.meanSquare = {};
+        }
+
+        const auto numHeard = (channel == eq::Channel::stereo) ? numSource : 1;
+
         const auto attack = std::exp (-(double) controlInterval / (std::max (0.01, settings.attackMs) * 0.001 * sampleRate));
         const auto release = std::exp (-(double) controlInterval / (std::max (0.01, settings.releaseMs) * 0.001 * sampleRate));
         const auto notch = spec.type == eq::BandType::notch;
@@ -253,9 +267,17 @@ void EqDsp::runDetectors (const float* const* main, int numMain, const float* co
         {
             auto loudest = 0.0;
 
-            for (int ch = 0; ch < numSource; ++ch)
+            for (int ch = 0; ch < numHeard; ++ch)
             {
                 auto x = (double) source[ch][i];
+
+                switch (channel)
+                {
+                    case eq::Channel::right: x = (double) source[1][i]; break;
+                    case eq::Channel::mid:   x = 0.5 * ((double) source[0][i] + (double) source[1][i]); break;
+                    case eq::Channel::side:  x = 0.5 * ((double) source[0][i] - (double) source[1][i]); break;
+                    default: break;
+                }
 
                 for (int s = 0; s < detector.filter.numSections; ++s)
                 {
@@ -507,12 +529,35 @@ void EqDsp::updateBands (int baseIndex) noexcept
     }
 }
 
+// The channels a band filters, as a range: all of them, or just one (Phase 3 Q2.4). A mono bus has
+// only the one, so every band acts on it.
+static std::pair<int, int> channelRange (eq::Channel channel, int numChannels) noexcept
+{
+    if (numChannels < 2)
+        return { 0, numChannels };
+
+    switch (channel)
+    {
+        case eq::Channel::left:
+        case eq::Channel::mid:   return { 0, 1 };
+        case eq::Channel::right:
+        case eq::Channel::side:  return { 1, 2 };
+        default:                 return { 0, 2 };
+    }
+}
+
+static bool usesMidSide (eq::Channel channel, int numChannels) noexcept
+{
+    return numChannels >= 2 && (channel == eq::Channel::mid || channel == eq::Channel::side);
+}
+
 void EqDsp::runBand (Band& band, int numChannels, int numSamples) noexcept
 {
+    const auto [firstChannel, endChannel] = channelRange (band.active.channel, numChannels);
     const auto mixing = band.mix < 1.0 || band.mixTarget < 1.0;
 
     if (mixing)
-        for (int ch = 0; ch < numChannels; ++ch)
+        for (int ch = firstChannel; ch < endChannel; ++ch)
             std::copy_n (work[ch], numSamples, unfiltered[ch]);
 
     for (int s = 0; s < band.numSections; ++s)
@@ -520,7 +565,7 @@ void EqDsp::runBand (Band& band, int numChannels, int numSamples) noexcept
         const auto start = band.coefficients[(size_t) s];
         const auto& d = band.increments[(size_t) s];
 
-        for (int ch = 0; ch < numChannels; ++ch)
+        for (int ch = firstChannel; ch < endChannel; ++ch)
         {
             auto& state = band.state[(size_t) ch][(size_t) s];
             auto z1 = state[0], z2 = state[1];
@@ -546,7 +591,7 @@ void EqDsp::runBand (Band& band, int numChannels, int numSamples) noexcept
                     c.a2 += d.a2;
                 }
 
-                if (ch == numChannels - 1)
+                if (ch == endChannel - 1)
                     band.coefficients[(size_t) s] = c;
             }
             else
@@ -577,7 +622,7 @@ void EqDsp::runBand (Band& band, int numChannels, int numSamples) noexcept
     {
         mix = std::clamp (mix + increment, 0.0, 1.0);
 
-        for (int ch = 0; ch < numChannels; ++ch)
+        for (int ch = firstChannel; ch < endChannel; ++ch)
             work[ch][i] = unfiltered[ch][i] + mix * (work[ch][i] - unfiltered[ch][i]);
     }
 
@@ -593,9 +638,44 @@ void EqDsp::filterChunk (float* const* channels, int numChannels, int offset, in
         for (int i = 0; i < numSamples; ++i)
             work[ch][i] = (double) channels[ch][offset + i];
 
+    // Mid and Side bands work on M = (L+R)/2 and S = (L-R)/2: the signal converts before one and
+    // back before any other band, and at the end. With none of them nothing converts.
+    auto inMidSide = false;
+
+    const auto convert = [&]
+    {
+        for (int i = 0; i < numSamples; ++i)
+        {
+            const auto l = work[0][i], r = work[1][i];
+
+            if (inMidSide)
+            {
+                work[0][i] = l + r;
+                work[1][i] = l - r;
+            }
+            else
+            {
+                work[0][i] = 0.5 * (l + r);
+                work[1][i] = 0.5 * (l - r);
+            }
+        }
+
+        inMidSide = ! inMidSide;
+    };
+
     for (auto& band : bands)
+    {
         if (band.numSections > 0 && (band.mix > 0.0 || band.mixTarget > 0.0))
+        {
+            if (usesMidSide (band.active.channel, numChannels) != inMidSide)
+                convert();
+
             runBand (band, numChannels, numSamples);
+        }
+    }
+
+    if (inMidSide)
+        convert();
 
     for (int ch = 0; ch < numChannels; ++ch)
         for (int i = 0; i < numSamples; ++i)

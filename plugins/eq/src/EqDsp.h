@@ -102,6 +102,7 @@ private:
         std::array<std::array<std::array<double, 2>, eq::maxSections>, maxChannels> state {};
         std::array<double, maxChannels> meanSquare {};
         double change = 0.0;
+        eq::Channel channel = eq::Channel::stereo;
         bool designed = false;
     };
 

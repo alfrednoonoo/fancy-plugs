@@ -46,7 +46,7 @@ private:
         juce::Rectangle<int> tabBounds (int index) const;
     };
 
-    // The controls for one band. All 16 exist, and only the selected one is shown.
+    // The controls for one band. All 24 exist, and only the selected one is shown.
     class BandEditor final : public juce::Component
     {
     public:
@@ -75,6 +75,21 @@ private:
             juce::RangedAudioParameter& slopeParameter;
         };
 
+        // Phase 3 Q2.4: which channel the band filters. Reads ST, L, R, M or S.
+        class ChannelChip final : public fancy::ui::ParamClickControl, public fancy::ui::MenuTarget
+        {
+        public:
+            ChannelChip (juce::RangedAudioParameter& channel, juce::Colour accentColour);
+
+            void paint (juce::Graphics&) override;
+
+        private:
+            void clicked() override;
+
+            juce::Colour accent;
+        };
+
+        ChannelChip& getChannelChip() noexcept { return channelChip; }
         TypeDropdown& getTypeDropdown() noexcept { return typeDropdown; }
         fancy::ui::Knob& getFrequencyKnob() noexcept { return frequencyKnob; }
         fancy::ui::Knob& getGainKnob() noexcept { return gainKnob; }
@@ -96,6 +111,7 @@ private:
         bool dynamicShown = false, chipShown = false, linearPhase = false;
 
         TypeDropdown typeDropdown;
+        ChannelChip channelChip;
         fancy::ui::Knob frequencyKnob, gainKnob, qKnob;
         fancy::ui::ParamPowerIcon powerIcon;
         fancy::ui::IconButton plusButton, closeButton;

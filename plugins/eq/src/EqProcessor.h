@@ -43,7 +43,7 @@ public:
     // Message thread.
     void setParameter (const juce::String& parameterId, float value);
     void resetBand (int band);
-    int addBand (float hz, float gainDb); // returns -1 when all 16 are in use
+    int addBand (float hz, float gainDb); // returns -1 when all 24 are in use
     void removeBand (int band);
 
     // The analyzer's feed. The editor turns it on only while it's open.
@@ -74,7 +74,7 @@ private:
 
     struct BandValues
     {
-        std::atomic<float>* used, *on, *type, *frequency, *gain, *q, *slope;
+        std::atomic<float>* used, *on, *type, *frequency, *gain, *q, *slope, *channel;
     };
 
     struct DynamicValues
