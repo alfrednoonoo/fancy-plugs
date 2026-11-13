@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DelayTime.h"
+#include <fancy/dsp/DelayTime.h>
 
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/Svf.h>

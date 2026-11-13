@@ -76,6 +76,10 @@
  #include "SatureEditor.h"
  #include "SatureProcessor.h"
 #endif
+#if FANCY_HAS_ROOM
+ #include "RoomEditor.h"
+ #include "RoomProcessor.h"
+#endif
 
 namespace
 {
@@ -383,6 +387,9 @@ bool renderAllHostScales (const juce::File& outputDir)
    #if FANCY_HAS_SATURE
     ok = renderHostScales<SatureProcessor, SatureEditor> ("sature", outputDir, plain) && ok;
    #endif
+   #if FANCY_HAS_ROOM
+    ok = renderHostScales<RoomProcessor, RoomEditor> ("room", outputDir, plain) && ok;
+   #endif
 
     return ok;
 }
@@ -441,6 +448,9 @@ bool renderAllPopups (const juce::File& outputDir)
    #endif
    #if FANCY_HAS_SATURE
     ok = renderPopups<SatureProcessor, SatureEditor> ("sature", outputDir, plain) && ok;
+   #endif
+   #if FANCY_HAS_ROOM
+    ok = renderPopups<RoomProcessor, RoomEditor> ("room", outputDir, plain) && ok;
    #endif
 
     return ok;
@@ -574,6 +584,9 @@ int main (int argc, char** argv)
    #if FANCY_HAS_SATURE
     ok = renderPlugin<SatureProcessor, SatureEditor> ("sature", outputDir) && ok;
     ok = renderListening<SatureProcessor, SatureEditor> ("sature", outputDir) && ok;
+   #endif
+   #if FANCY_HAS_ROOM
+    ok = renderPlugin<RoomProcessor, RoomEditor> ("room", outputDir) && ok;
    #endif
 
     Gallery gallery;

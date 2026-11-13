@@ -78,6 +78,9 @@
 #if FANCY_HAS_SATURE
  #include "SatureProcessor.h"
 #endif
+#if FANCY_HAS_ROOM
+ #include "RoomProcessor.h"
+#endif
 
 namespace
 {
@@ -526,6 +529,18 @@ TEST_CASE ("Sature: an offline render matches playback", "[host][offline]")
     checkRenders<SatureProcessor> (oversampling > 0.5f ? "Sature, 4x" : "Sature, oversampling off",
                                    { { { "oversampling", oversampling }, { "drive", 18.0f }, { "low", 150.0f } },
                                      join ({ alternate ("type", 0.0f, 3.0f), alternate ("drive", 6.0f, 24.0f, 501), alternate ("high", 3000.0f, 8000.0f, 888) }), {} });
+}
+#endif
+
+#if FANCY_HAS_ROOM
+TEST_CASE ("Room: an offline render matches playback", "[host][offline]")
+{
+    // Size and Pre-delay glide, Freeze ramps, and a Quality change rings the old network out.
+    checkRenders<RoomProcessor> ("Room",
+                                 { { { "ducking", 40.0f } },
+                                   join ({ alternate ("size", 30.0f, 80.0f), alternate ("decay", 1.0f, 4.0f, 333), alternate ("predelay", 20.0f, 90.0f, 777),
+                                           alternate ("freeze", 1.0f, 0.0f, 1501), alternate ("quality", 2.0f, 0.0f, 2222), alternate ("lowcut", 80.0f, 400.0f, 3003) }),
+                                   {} });
 }
 #endif
 

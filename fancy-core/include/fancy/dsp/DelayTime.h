@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+// Fancy Delay's note lengths, moved here unchanged so Fancy Room's Sync pre-delay uses the same
+// ones (docs/room.md, decision 5). The namespace stays as it was, so Delay's code is untouched.
 namespace delay
 {
 

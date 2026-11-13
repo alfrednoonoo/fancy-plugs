@@ -5,6 +5,9 @@
 /screens/
 /out/
 
+# Python's caches, from the models in docs/research
+__pycache__/
+
 # Editors and agents
 .claude/
 .vs/

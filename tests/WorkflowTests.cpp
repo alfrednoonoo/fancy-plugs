@@ -62,6 +62,9 @@
 #if FANCY_HAS_SATURE
  #include "SatureProcessor.h"
 #endif
+#if FANCY_HAS_ROOM
+ #include "RoomProcessor.h"
+#endif
 
 namespace
 {
@@ -109,6 +112,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_SATURE
     { SatureProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_ROOM
+    { RoomProcessor p; callback (p); }
    #endif
 }
 
@@ -661,6 +667,9 @@ TEST_CASE ("A/B: a version 1 state loads with B as a copy of A, and renders bit-
        #endif
        #if FANCY_HAS_SATURE
         FANCY_CHECK_FRESH (SatureProcessor)
+       #endif
+       #if FANCY_HAS_ROOM
+        FANCY_CHECK_FRESH (RoomProcessor)
        #endif
        #undef FANCY_CHECK_FRESH
     });

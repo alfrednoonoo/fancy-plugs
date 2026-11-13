@@ -64,6 +64,10 @@ if("FANCY_HAS_SATURE=1" IN_LIST fancy_screen_defs)
     target_sources(fancy-tests PRIVATE SatureTests.cpp)
 endif()
 
+if("FANCY_HAS_ROOM=1" IN_LIST fancy_screen_defs)
+    target_sources(fancy-tests PRIVATE RoomTests.cpp)
+endif()
+
 # Headers generated during the build, such as Fancy Sature's auto-gain table.
 get_property(fancy_screen_depends GLOBAL PROPERTY FANCY_SCREEN_DEPENDS)
 if(fancy_screen_depends)

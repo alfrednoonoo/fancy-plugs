@@ -6,6 +6,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <iostream>
@@ -478,6 +479,115 @@ void latencyNotices (const Loaded& plugin)
     }
 }
 
+// Fancy Room (docs/room.md, decision 3): a host renders the tail the plugin reports, so 1 s of
+// sound followed by that much silence must hold the whole tail, down to -90 dB.
+void tailRender (const Loaded& plugin)
+{
+    if (plugin.description.name != "Fancy Room")
+        return;
+
+    for (const auto* decayText : { "0.5", "1.8", "8" })
+    {
+        auto instance = plugin.create();
+        juce::AudioProcessorParameter* decay = nullptr;
+        juce::AudioProcessorParameter* wetOnly = nullptr;
+
+        for (auto* candidate : instance->getParameters())
+        {
+            if (candidate->getName (64) == "Decay")
+                decay = candidate;
+            else if (candidate->getName (64) == "Wet only (send)")
+                wetOnly = candidate;
+        }
+
+        if (decay == nullptr || wetOnly == nullptr)
+        {
+            report (plugin.description.name, "tail render", false, "no Decay or Wet only parameter");
+            return;
+        }
+
+        decay->setValue (decay->getValueForText (decayText));
+        wetOnly->setValue (1.0f);
+
+        constexpr double rate = 48000.0;
+        constexpr int block = 512;
+        instance->prepareToPlay (rate, block);
+
+        // Settle the settings, in silence.
+        run (*instance, rate, (int) rate / 2, fixedBlocks (block), {}, 0.0f);
+
+        const auto tail = instance->getTailLengthSeconds();
+        const auto window = (int) (0.05 * rate);
+        const auto total = (int) ((1.0 + tail + 0.3) * rate);
+
+        if (! std::isfinite (tail) || tail <= 0.0 || tail > 60.0)
+        {
+            report (plugin.description.name, juce::String ("tail render at Decay ") + decayText + " s", false,
+                    "reported tail " + juce::String (tail));
+            instance->releaseResources();
+            continue;
+        }
+
+        const auto channels = channelsFor (*instance);
+        juce::AudioBuffer<float> buffer (channels, block);
+        juce::MidiBuffer midi;
+        std::mt19937 random (3);
+        std::uniform_real_distribution<float> noise (-1.0f, 1.0f);
+        const auto amplitude = 0.5f * std::sqrt (3.0f); // -6 dBFS RMS
+
+        std::vector<double> energies;
+        double energy = 0.0;
+        int inWindow = 0;
+        auto finite = true;
+
+        for (int position = 0; position < total; position += block)
+        {
+            const auto size = juce::jmin (block, total - position);
+            juce::AudioBuffer<float> view (buffer.getArrayOfWritePointers(), channels, 0, size);
+            view.clear();
+
+            for (int i = 0; i < size; ++i)
+                if (position + i < (int) rate)
+                    for (int channel = 0; channel < juce::jmax (1, instance->getMainBusNumInputChannels()); ++channel)
+                        view.setSample (channel, i, amplitude * noise (random));
+
+            midi.clear();
+            instance->processBlock (view, midi);
+
+            for (int i = 0; i < size; ++i)
+            {
+                for (int channel = 0; channel < juce::jmax (1, instance->getMainBusNumOutputChannels()); ++channel)
+                {
+                    const auto sample = (double) view.getSample (channel, i);
+                    finite = finite && std::isfinite (sample);
+                    energy += sample * sample;
+                }
+
+                if (++inWindow == window)
+                {
+                    energies.push_back (energy / window);
+                    energy = 0.0;
+                    inWindow = 0;
+                }
+            }
+        }
+
+        instance->releaseResources();
+
+        const auto toDb = [] (double value) { return 10.0 * std::log10 (std::max (value, 1.0e-30)); };
+        const auto loudest = *std::max_element (energies.begin(), energies.end());
+        const auto firstAfter = (size_t) ((1.0 + tail) * rate) / (size_t) window;
+        auto after = 1.0e-30;
+
+        for (auto i = firstAfter; i < energies.size(); ++i)
+            after = std::max (after, energies[i]);
+
+        const auto relative = toDb (after) - toDb (loudest);
+        report (plugin.description.name, juce::String ("tail render at Decay ") + decayText + " s", finite && relative <= -90.0,
+                "reported " + juce::String (tail, 2) + " s, loudest 50 ms after it " + juce::String (relative, 1) + " dB");
+    }
+}
+
 void automationFlood (const Loaded& plugin)
 {
     auto instance = plugin.create();
@@ -583,6 +693,7 @@ int main (int argc, char** argv)
         hostBypass (plugin);
         latencyNotices (plugin);
         automationFlood (plugin);
+        tailRender (plugin);
         editorCycles (plugin);
     }
 

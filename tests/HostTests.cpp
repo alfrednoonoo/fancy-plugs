@@ -64,6 +64,9 @@
 #if FANCY_HAS_SATURE
  #include "SatureProcessor.h"
 #endif
+#if FANCY_HAS_ROOM
+ #include "RoomProcessor.h"
+#endif
 
 // Allocation counting ---------------------------------------------------------------------
 // The plugins' code is compiled into this program, so replacing operator new here sees every
@@ -228,6 +231,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_SATURE
     { SatureProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_ROOM
+    { RoomProcessor p; callback (p); }
    #endif
 }
 

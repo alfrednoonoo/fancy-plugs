@@ -1,6 +1,6 @@
 # Fancy Room: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all), the Python model (13 November 2026), which passes all five tests, the CPU budget (13 November 2026): about 1.3 % in Normal, and the layout check (13 November 2026). Next: Phase 5, the code.**
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all), the Python model (13 November 2026), which passes all five tests, the CPU budget (13 November 2026): about 1.3 % in Normal, the layout check, and the code (Phases 5 and 6, 13 November 2026; "As built" below). Next: the CI run.**
 
 ## Build plan (agreed with the user, 11 November 2026)
 
@@ -160,3 +160,54 @@ One push is the goal, not a guarantee. In order of risk:
 3. CPU on CI's machines, which drifts between runs (Comp measured 0.22 % to 0.46 % on 11 November 2026).
 
 If CI fails, the model should make the fix one understood change.
+
+## As built (13 November 2026)
+
+Code: `plugins/room/` (`RoomDsp`, `RoomProcessor`, `RoomEditor`), tests `tests/RoomTests.cpp`, the harness's tail render in `tools/hosttest/Main.cpp`, manual `docs/room-manual.md`, REAPER checklist `docs/room-checklist.md`. Bundle ID `com.fancyplugs.room`, plugin code `FRoo`. `plugins/delay/src/DelayTime.h` moved to `fancy-core/include/fancy/dsp/DelayTime.h` unchanged (decision 5), so Delay's sound can't change.
+
+### Signal path
+
+`RoomDsp` is `render()` in `docs/research/room-model.py`, line for line: input history (stereo-interleaved `float`), 16 reflection taps per channel from it after Pre-delay, four all-passes per channel on the pre-delayed input, then the network (8 or 16 lines, `float` storage, `double` arithmetic): read each line (linear, or 4-point Lagrange in High), damp it (one-pole per line), sum the late outputs, mix with an orthonormal Walsh-Hadamard, write back with the diffused input. Then Low cut and High cut (Butterworth biquads, `fancy::dsp::Biquad`), Width as mid/side, Ducking, Wet, Dry, Output and the host's bypass. Latency is 0.
+
+What the model leaves out, and how the plugin adds it without changing the model's steady state:
+- **Every setting is smoothed** (30 ms; Pre-delay 50 ms, bypass 10 ms). Size and Pre-delay change the read positions per sample while they move, with interpolated reads; once settled, every length is a whole sample, as in the model. Line gains, damping and the cut filters are recomputed every 16 samples on the absolute sample grid, only while something moves.
+- **Quality changes** (decision 4) use two preallocated networks. The new one is cleared on the audio thread (about 0.5 MB at 48 kHz). A third change while one is still ringing out drops the ringing one at once; Quality isn't automatable, so that only happens with quick clicks in the drawer.
+- **Ducking** (decision 7): a peak detector on the dry input (instant attack, 50 ms release, to ride over the waveform) gives the wanted reduction, from 0 dB below −50 dBFS to 24 dB × Ducking above −20 dBFS, and the reduction follows it in dB with 10 ms attack and 300 ms release. A follower on the level itself would take about 1.5 s to let a −6 dBFS signal's reverb back, since 300 ms in linear amplitude is only 29 dB a second.
+
+### Parameters
+
+In this order (the host harness's offline test moves the first one, Pre-delay):
+
+| ID | Name | Range | Default | Unit, skew, text |
+|---|---|---|---|---|
+| predelay | Pre-delay | 0–250, step 0.1 | 12 | ms, skewed so 40 ms is mid-travel; "12 ms", "4.5 ms" |
+| prenote | Pre-delay note | 12 notes | 1/32 | 1/64 to 1/8, each straight, dotted, triplet ("1/8 dotted") |
+| sync | Sync pre-delay | off/on | off | |
+| size | Size | 0–100 | 55 | % |
+| decay | Decay | 0.1–20, step 0.01 | 1.8 | s, log; "1.80 s", "12.5 s"; typing "500 ms" works |
+| diffusion | Diffusion | 0–100 | 70 | % |
+| mod | Mod | 0–100 | 25 | % |
+| width | Width | −1 to 2, step 0.01 | 1.00 | −1 to 1 on the lower half of the knob, 1 to 2 on the upper, so 1.00 is at the default mark |
+| damping | Damping | 0–100 | 45 | % |
+| lowcut | Low cut | 20–1000 | 150 | Hz, log |
+| highcut | High cut | 1000–20000 | 9000 | Hz, log; "9.0 kHz" |
+| freeze | Freeze | off/on | off | |
+| wetonly | Wet only (send) | off/on | off | |
+| ducking | Ducking | 0–100 | 0 | % |
+| quality | Quality | Eco, Normal, High | Normal | not automatable |
+| erlevel | Early reflections | −60 (−inf) to +6 | 0 | dB |
+| stereoin | Stereo input | Stereo, Mono-sum | Stereo | |
+| wet | Wet | −60 (−inf) to +12 | −12 | dB, as Fancy Verb's |
+| dry | Dry | −60 (−inf) to +12 | 0 | dB, as Fancy Verb's |
+| output | Output | −24 to +12 | 0 | dB |
+| bypass | Bypass | off/on | off | |
+
+The brief gives no Wet or Dry default for Room, so they're Fancy Verb's. The brief gives no default note either: 1/32 (62.5 ms at 120 BPM) is the nearest musical value to the 12 ms default that still reads as a pre-delay.
+
+### State
+
+`FancyProcessor`'s versioned state (`stateVersion` 3) with these parameters, A/B slots included. It's a new plugin, so there's nothing to migrate.
+
+### The §3.4 tests
+
+All five run on `RoomDsp` as the model runs them. Metallic ringing and Freeze also run in Eco and High; the model gives +3.7 and +4.0 dB for metallic ringing and 0.09 and 0.13 dB for Freeze there (13 November 2026). The tail render runs in Catch2 on the engine and in the host harness on the built VST3, at Decay 0.5, 1.8 and 8 s, Wet only, from 1 s of −6 dBFS noise.
