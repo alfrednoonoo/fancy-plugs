@@ -1,6 +1,6 @@
 # Fancy Plugs: agent notes
 
-`CLAUDE.md` and `AGENTS.md` are identical; change both together. The full brief is `docs/BUILD_PROMPT.md`. Later phases add `docs/BUILD_PROMPT_PHASE2.md`, `docs/BUILD_PROMPT_PHASE2_0_1.md` (Fancy Gate) and `docs/BUILD_PROMPT_PHASE2_1.md`, and their rules override this summary. Session state is in `docs/PROGRESS.md`: read it first and update it at the end of each session.
+`CLAUDE.md` and `AGENTS.md` are identical; change both together. The full brief is `docs/BUILD_PROMPT.md`. Later phases add `docs/BUILD_PROMPT_PHASE2.md`, `docs/BUILD_PROMPT_PHASE2_0_1.md` (Fancy Gate), `docs/BUILD_PROMPT_PHASE2_1.md`, `docs/BUILD_PROMPT_PHASE3.md` and `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md`, and their rules override this summary. Session state is in `docs/PROGRESS.md`: read it first and update it at the end of each session, keeping it short (history goes in `docs/progress-archive.md` and each item's design note).
 
 ## What this is
 
@@ -8,41 +8,11 @@ Nine original VST3 effects with a shared UI library, for personal use on Windows
 
 ## Build order
 
-Finish each step's §7 acceptance checks before starting the next:
+Done: Phase 1 (Kicker, Exciter, Comp, EQ, Verb), Phase 2 (Delay, MultiComp, FIR), Phase 2.0.1 (Gate), Phase 2.1 (S, H, W, D, U, A) and, from Phase 3, the benchmark host, the preset browser, the design rules and the new plugins (Fancy Limit, Fancy DS, Fancy DS-Mini, Fancy Sature, Kicker's Sub mode, Fancy Room). `docs/PROGRESS.md` lists the releases and the next item.
 
-Phase 1, done and released:
-
-1. `fancy-core` (shared DSP + UI components)
-2. Fancy Kicker
-3. Fancy Exciter
-4. Fancy Comp
-5. Fancy EQ
-6. Fancy Verb
-
-Phase 2, from `docs/BUILD_PROMPT_PHASE2.md`, done and released as v1.1.0:
-
-7. Fancy Delay
-8. Fancy MultiComp (reuses Fancy Comp's detector and gain computer)
-9. Fancy FIR
-
-Phase 2.0.1, from `docs/BUILD_PROMPT_PHASE2_0_1.md`, done:
-
-10. Fancy Gate (reuses Fancy Comp's detector, detector filters, Threshold-over-meter fader and reduction meter)
-
-Phase 2.1, from `docs/BUILD_PROMPT_PHASE2_1.md`, done and released as v1.2.0, in the order S, H, W, D, U, A. It builds no new plugin: it changes the nine that exist, Fancy Gate included. Each item gets its own design note, `docs/phase2_1-<item>.md`, before any code, and its own commit, green run and `docs/PROGRESS.md` entry:
-
-11. S: styled menus, dropdown lists, tooltips, typed values and dialogs, in `fancy-core`. The mockup `reference/phase2_1/16__menus_mockup.png` sets their exact styling. Start with the pop-up audit in `docs/phase2_1-S.md`
-12. H: host compatibility: offline rendering, keyboard pass-through, scaling, sidechain and MIDI buses, latency changes, Steinberg's validator and a host-behaviour harness in CI, and `docs/host-compat.md` with checklists for the user's hosts
-13. W: undo and redo, A/B and level-matched Compare, for all nine plugins in `fancy-core`
-14. D: dynamic EQ in Fancy EQ
-15. U: upward compression, Depth and Time in Fancy MultiComp
-16. A: adaptive noise tracking in Fancy FIR
+Phase 3 continues from `docs/BUILD_PROMPT_PHASE3.md`, approved by the user on 9 November 2026: EQ (Q2.4), Comp (Q2.5) and Verb (Q2.8), then MultiComp, Delay and FIR, confirming that part of the order with the user first. Each item gets its design note approved before any code; a new plugin also goes through Q5's design rules (`docs/DESIGN_SYSTEM.md`) and an HTML mockup first. A listen or preview switch is temporary, never a parameter (`FancyProcessor::setListening`, `ListenCheckbox`), per §0.3 of `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md`.
 
 Saved projects from the current release must load and render bit-identical after every item. New parameters are appended, with defaults that keep the old sound, and `stateVersion` is bumped with a migration. Measure CPU with §0.4 of the Phase 2.1 brief: five runs in one build, the median, and the ratio to Fancy Comp at its defaults.
-
-Phase 3, from `docs/BUILD_PROMPT_PHASE3.md`, approved by the user on 9 November 2026, with what Phase 2.1 built trimmed out. Its order is in Q2: the benchmark host (Q1), then the shared features and design rules, then EQ, Comp and Verb, then the rest, then the new Limiter, De-esser and Saturator. Each item gets its design note approved before any code, and every new plugin goes through Q5's design rules and HTML mockup first.
-
-Phase 3's new plugins, from `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` (added 10 November 2026), come before EQ, Comp and Verb, in this order: Fancy Limit (done), Fancy DS, Fancy DS-Mini, Fancy Sature (the brief's Fancy Saturate, renamed by the user), Kicker's Sub mode, Fancy Room. Mockups are `reference/phase3/17__ds_mockup.png` to `22__ds_mini_mockup.png`, with source and the updated kit in `design/phase3-mockup-src/`. Every new plugin follows `docs/DESIGN_SYSTEM.md`, and its listen or preview switch follows the brief's §0.3: temporary, never a parameter (`FancyProcessor::setListening` and `ListenCheckbox`).
 
 Write `docs/<plugin>.md` before coding each plugin: DSP algorithm, parameters (range, default, unit, skew), latency, state format, and how each §5 fix is handled.
 
