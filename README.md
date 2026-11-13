@@ -1,10 +1,10 @@
 # Fancy Plugs
 
-Nine VST3 effects for Windows 10 and 11 (x64), built for personal use and signed off by ear in REAPER. Version **1.2.0**.
+Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and signed off by ear in REAPER. Version **1.3.0**.
 
 | Plugin | What it does |
 |---|---|
-| Fancy Kicker | Parallel low-frequency enhancer: one big Freq knob, Wet and Dry |
+| Fancy Kicker | Low-end enhancer: Boost (one big Freq knob, Wet and Dry) or, new in 1.3.0, Sub, which adds an octave or two below |
 | Fancy Exciter | Parallel high-frequency exciter with clip boost and a mix-back control |
 | Fancy Comp | Compressor with a Threshold fader over the input meter, a filtered detector, a sidechain and an output limiter |
 | Fancy EQ | Up to 16 bands with draggable handles, a live analyzer and, new in 1.2.0, dynamic bands |
@@ -13,8 +13,24 @@ Nine VST3 effects for Windows 10 and 11 (x64), built for personal use and signed
 | Fancy MultiComp | Up to 8 bands of compression behind flat-summing crossovers and, new in 1.2.0, upward compression |
 | Fancy FIR | Spectral processor: drawable EQ, Gate, Compressor, noise Subtract and Convolve, with adaptive noise tracking in 1.2.0 |
 | Fancy Gate | Gate with a filtered detector, a sidechain and a MIDI trigger output |
+| Fancy Limit | New in 1.3.0: true-peak brickwall limiter with lookahead, three styles, Auto release, a loudness meter and dither |
+| Fancy DS | New in 1.3.0: de-esser with a relative threshold, split or wide cuts, minimum- or linear-phase split filters and a history display |
+| Fancy DS-Mini | New in 1.3.0: one-knob de-esser with voice and instrument profiles, on the same engine as Fancy DS |
+| Fancy Sature | New in 1.3.0: saturator with Tape, Tube, Transistor and Clip curves, even/odd Character, Tone, oversampling and auto gain |
+| Fancy Room | New in 1.3.0: algorithmic reverb from small room to long hall, with Freeze, tempo-synced pre-delay, a send mode and ducking |
 
-## What's new in 1.2.0
+## What's new in 1.3.0
+
+- **Five new plugins:** Fancy Limit, Fancy DS, Fancy DS-Mini, Fancy Sature and Fancy Room (table above).
+- **Sub mode in Fancy Kicker.** A Boost | Sub switch at the top. Sub tracks the kick's pitch and adds a clean sub an octave or two below, under Cutoff. Boost sounds exactly as before.
+- **Preset browser in every plugin**, with categories, user folders, favourites and search (see "Choosing presets" below), and the ‹ › arrows on the preset name.
+- **Free resizing.** Drag a window's edge or corner to resize it, from 100 % to 200 % of its size; the layout scales with it.
+- **Title strip.** Every window shows the plugin's name at the top.
+- **Listen switches are temporary.** Comp's and Gate's Preview filter and FIR's Listen switches now turn off when you close the window and are never saved, like the new plugins' Listen. A project saved with one of them on opens with it off; nothing else about old projects changes.
+
+Projects saved with 1.0, 1.1 and 1.2 load and sound exactly as before.
+
+## What was new in 1.2.0
 
 - **Undo, redo, A/B and Compare in every plugin.** There are 100 steps of undo and redo (Ctrl+Z and Ctrl+Y), and two settings slots, A and B, with a copy button. Compare matches the loudness of the dry signal so you can judge the processing at equal level.
 - **Styled menus, dropdowns, tooltips, typed values and dialogs** that match the rest of the design, instead of the plain Windows ones.
@@ -31,7 +47,7 @@ The screenshots below are rendered by CI from the current build, at 2× scale.
 
 ### Fancy Kicker
 
-<img src="docs/images/kicker.png" width="392" alt="Fancy Kicker">
+<img src="docs/images/kicker.png" width="392" alt="Fancy Kicker in Boost mode"> <img src="docs/images/kicker-sub.png" width="392" alt="Fancy Kicker in Sub mode">
 
 ### Fancy Exciter
 
@@ -70,6 +86,26 @@ Shown in Subtract mode with Adaptive tracking. The dashed line is the tracked no
 ### Fancy Gate
 
 <img src="docs/images/gate.png" width="740" alt="Fancy Gate">
+
+### Fancy Limit
+
+<img src="docs/images/limit.png" width="760" alt="Fancy Limit">
+
+### Fancy DS
+
+<img src="docs/images/ds.png" width="760" alt="Fancy DS">
+
+### Fancy DS-Mini
+
+<img src="docs/images/dsmini.png" width="392" alt="Fancy DS-Mini">
+
+### Fancy Sature
+
+<img src="docs/images/sature.png" width="760" alt="Fancy Sature">
+
+### Fancy Room
+
+<img src="docs/images/room.png" width="760" alt="Fancy Room">
 
 ## Installing
 
