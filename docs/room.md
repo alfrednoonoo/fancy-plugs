@@ -1,6 +1,6 @@
 # Fancy Room: design note
 
-Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all). Next: Phase 2, the Python model.**
+Spec: `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md` §3 (and §0.2 for the accent). Mockup: `reference/phase3/18__room_mockup.png`, source `design/phase3-mockup-src/room.html`. Design rules: `docs/DESIGN_SYSTEM.md`. **Not started: the build plan below (11 November 2026) and the Phase 1 decisions, approved 13 November 2026 (A for all), and the Python model (13 November 2026), which passes all five tests. Next: Phase 3, the CPU budget.**
 
 ## Build plan (agreed with the user, 11 November 2026)
 
@@ -60,6 +60,22 @@ Tooling the suite doesn't have yet: an RT60 measurement (T30 from the energy-dec
 - Test limits come from the model's figures, with a stated margin. Where the brief's number can't be met, the user hears it before any code, as with Sature's aliasing.
 - The riskiest test is RT60 within ±10 % at extreme Size and Decay, since early reflections and diffusion bend the start of the decay curve. The model settles it, or shows the measurement needs a later window.
 - The C++ is a transcription of the model: the same constants and the same order of operations.
+
+**Model results, 13 November 2026** (`docs/research/room-model.py`, pure Python, 48 kHz, all defaults unless named; run time about 1 minute):
+
+| Test | Model | Limit |
+|---|---|---|
+| No metallic ringing: Decay 2 s, Mod 25 %, Welch 4096-point Hann, 50 % overlap, 0.3–1.5 s, L and R averaged, each bin against its ±1/6-octave mean, 100 Hz–16 kHz | +4.07 dB at 2918 Hz (the measurement's own noise is about +4 dB) | +6 dB |
+| RT60, T30 from the energy-decay curve, Size 20/55/90 % × Decay 0.5/2/8 s | −5.6 % to 0.0 % | ±10 % |
+| Freeze, −12 dBFS noise, frozen at 1.5 s, 1 s levels over 60 s | within 0.14 dB, no NaN | 1 dB |
+| Mono sum of the tail, Σ(L+R)² against Σ(L²+R²) | −0.01 dB, L/R correlation −0.002 | 3 dB |
+| Tail: 1 s of −6 dBFS noise, then silence; loudest 50 ms after the reported tail, against the loudest 50 ms | −107.7, −101.5, −99.9 dB at Decay 0.5, 1.8, 8 s | −90 dB |
+
+Settled by the model:
+- **Every line is modulated, in every Quality.** With only 4 of 16 lines modulated, the linear reads took highs from those lines alone, their modes decayed at different rates, and peaks reached +6 to +10 dB. With all lines modulated the worst is +4.8 dB at any Size or Mod. High differs from Normal by cubic reads (+4.0 dB against +4.1 at the defaults) and Eco by its 8 lines.
+- **RT60 is measured as T_mid**, the mean of T30 in the 500 Hz and 1 kHz octave bands (ISO 3382), because Damping shortens the highs by design: broadband T30 reads 10–14 % short at the default 45 % Damping. Results sit 3–5 % short, from the linear reads' slight loss; well inside ±10 %, so there's no correction.
+- **The reported tail** (Pre-delay + longest reflection + 1.5 × Decay) leaves 10 dB of margin at −90 dB.
+- **Freeze** reads every line at a whole-sample length once frozen (the modulation glides to the line's unmodulated length over the 20 ms ramp), so the loop is exactly lossless.
 
 ### Phase 3: a CPU budget before writing the engine
 
