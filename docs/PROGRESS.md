@@ -4,7 +4,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 ## Now
 
-- **Next item: Q2.4, Fancy EQ** (mid/side, 24 bands, Match), from `docs/BUILD_PROMPT_PHASE3.md`. Write its design-note section in `docs/eq.md` first (the brief's rule for Q2 items), with each decision given a recommended option, and get the user's approval before any code. New controls go in EDIT drawers or popovers unless the user approves a layout change.
+- **Current item: Q2.4, Fancy EQ** (channel per band, 24 bands, Match). Design section "Phase 3 Q2.4" in `docs/eq.md`, approved 13 November 2026 with every recommended option: a Channel chip left of DYN, a `MATCH` header link opening a card over the graph, full Linear-phase support (up to four FIRs). Mockup of the visible changes: `design/phase3-mockup-src/eq-q24.html`, **waiting for the user's approval**; no code until then. Then build in two pushes: (1) 24 bands and Channel, (2) Match.
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
 
 ## Releases

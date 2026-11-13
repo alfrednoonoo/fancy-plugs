@@ -144,3 +144,71 @@ The Figma frames are 802 × 625 without the host title bar. The graph is 734 wid
 **Q:** Figma's bell at "2.0" is wider than a true Q of 2, because the original control was bandwidth in octaves. The build keeps Q, as §2.5 labels it, so the curve in the comparison render is narrower.
 
 **Band colours:** Figma's EQ Graph uses #E74D3D, #9A59B5, #3598DB and #1BBC9C, and these replace the §2.1 band colours. Bands 5 and up continue with green, yellow, orange, and then repeat.
+
+## Phase 3 Q2.4: channel per band, 24 bands and Match
+
+Brief: Q2.4 of `docs/BUILD_PROMPT_PHASE3.md`. **Approved by the user on 13 November 2026**, with every recommended option **(R)**: the Channel chip by DYN, the `MATCH` header link, and full Linear-phase support. The alternatives are kept below for the record.
+
+### 1. Parameters and state
+
+Appended after every existing parameter, so no ID or index moves:
+
+1. Bands 17-24, each with the seven base parameters and then the seven dynamic ones, exactly as bands 1-16 (`b17used` … `b24dynSc`). `bNused` defaults to off.
+2. `bNchan` for N = 1 to 24: **Band N Channel**: Stereo, Left, Right, Mid, Side. Default Stereo. Automatable.
+3. No Match parameters. Match is an editor action whose result is ordinary band parameters (§4).
+
+`FancyProcessor::stateVersion` goes from 3 to 4. It's shared, so every plugin writes 4; nothing else changes for the others. Migration for EQ: an older state lacks every new ID, and since Phase 2.1 D a missing parameter takes its default (bands 17-24 unused, every band Stereo), so v1.1.0, v1.2.0 and v1.3.0 projects load and render bit-identically. New fixtures `tests/data/eq-v1.3.0-*.xml` join the older ones.
+
+`eq::maxBands` goes from 16 to 24. The band tabs already show only the bands in use and shrink to fit: 24 tabs are 29 px each at the default size and 25 px at the minimum, which still fits "24". Band colours keep repeating after band 4. Double-click on the graph and `+` add bands until 24 are in use.
+
+### 2. Channel per band: DSP
+
+- **Domains (R).** Stereo, Left and Right bands run on L/R; Mid and Side bands run on M = (L+R)/2 and S = (L-R)/2. Bands run in band order, as now. Before a Mid or Side band the signal converts to M/S if it isn't already there, and before a Stereo, Left or Right band it converts back; the output is always L/R. In double precision from float input both conversions are exact, and with no Mid or Side band nothing converts, so every existing state stays bit-identical.
+- **One channel.** A Left band filters L only and passes R untouched. Right, Mid and Side likewise.
+- **Changing Channel** is a shape change: the band fades to dry over 10 ms, switches, clears its filter state and fades back, as changing type does. It's click-free and can be automated.
+- **Mono bus (R):** every band acts on the single channel, whatever its setting, and the Channel chip is greyed with the tooltip "Channel needs a stereo bus". The alternative, Right and Side doing nothing on mono, would silently drop bands.
+- **Dynamic bands:** the detector reads the band's own channel, from the main input or the sidechain: Left reads L, Mid reads (L+R)/2, and so on. Stereo keeps the larger of L and R. A mono sidechain feeds every channel.
+- **Oversampling:** the conversions sit inside the oversampled section with the bands; nothing else changes.
+- **Linear phase (R):** each band's matched magnitude is real, so the whole EQ at each FFT bin is a real 2 × 2 matrix from (L, R) in to (L, R) out: Stereo is `H·I`, Left `diag(H, 1)`, Mid `½[[H+1, H-1], [H-1, H+1]]`, and so on, multiplied in band order. The worker designs one FIR per distinct non-zero entry. With only Stereo bands that's today's single FIR. With L/R-only or M/S-only bands it's two (L and R, or M and S with the conversions around them). Only when L/R-specific and M/S bands are mixed does it need four, which roughly doubles the convolution cost (about 1.1 % at 8192, against 0.53 % today). **Alternative:** Linear mode ignores Channel, as it ignores DYN. Simpler, but it makes M/S unusable for mastering, where linear phase is common.
+- **CPU:** Stereo bands cost what they do today; a one-channel band costs about half. A domain change is two adds and two multiplies per sample pair.
+
+### 3. Channel per band: controls and graph
+
+This adds a visible control, so it needs the user's approval.
+
+- **Channel chip (R):** a small dropdown chip under the type dropdown, left of the DYN chip, reading `ST`, `L`, `R`, `M` or `S`, using the shared dropdown and menus from Phase 2.1 S. It goes in both the Details panel and the compact card; nothing else moves. It's also on the band handle's right-click menu. **Alternative:** the right-click menu and the EDIT drawer only, as Slope is, with no visible layout change.
+- **Band handles:** a band that isn't Stereo shows its letter (`L`, `R`, `M`, `S`) in 9 px text inside its handle.
+- **Total curve (R):** with mixed channels there's no single total. The white curve is the response for the selected band's channel: Mid is what a signal with L = R hears, Side what L = -R hears, Left and Right what a signal in that channel alone hears. A selected Stereo band shows Mid, which is today's curve whenever every band is Stereo. The graph's top-right corner reads "total: Mid" (or Side, Left, Right) while any band isn't Stereo, and nothing otherwise.
+- **Analyzer channel (R):** a new non-automatable setting in the EDIT drawer: Mid (today's `(L+R)/2`, default), Side, Left, Right. Without it, a Side band's effect can't be seen in the analyzer.
+
+### 4. EQ Match
+
+**What it does:** learns two long-term average spectra, the reference and the current material, and writes the difference into free bands as ordinary bells and shelves. The result is just bands: editable, automatable, saved in the project and undone in one step. Match adds nothing to the audio path.
+
+- **Sources (R):** the reference comes from the **Sidechain** (both spectra learn at once while the song plays) or is **Captured**: play the reference section and press Learn reference, then play the material and press Learn current. A reference from an audio file would need file decoding the brief doesn't name, so it's left out unless the user asks.
+- **Capture:** while learning, the audio thread pushes the main input (pre-EQ) and, for Sidechain, the sidechain into lock-free FIFOs, as the analyzer does, only while the Match panel is open. A worker thread runs 8192-point Blackman-Harris FFTs with 75 % overlap (scaled with the sample rate, like the FIR length) and averages the power. Frames under -60 dBFS are skipped, so silences don't pull the average down. The panel shows each spectrum growing, with the seconds learned; Match is enabled after 3 s of each.
+- **Target:** reference minus current, in dB on 1/48-octave bins from 20 Hz to 20 kHz, smoothed by **Smoothing** (1/12 to 1 octave, default 1/3), offset to a 0 dB mean between 200 Hz and 5 kHz so a loudness difference doesn't become a broadband gain, scaled by **Amount** (0-100 %, default 100 %), held to ±12 dB, and faded to 0 outside **Range** (default 30 Hz to 18 kHz). The used bands' response is subtracted, so they stay, and the total EQ makes the current match the reference.
+- **Fit (R):** greedy, then refined. A low and a high shelf are placed first if the target's ends need them. Then, until **Bands** (1-24, default 8, limited to the free ones) is reached or the error stops falling by 0.1 dB, a bell goes at the largest remaining error, with its Q from that error's width. Every few additions, Levenberg-Marquardt refines all fitted bands' Freq, Gain and Q together on the log-frequency grid, weighting 100 Hz to 10 kHz double. Gains are held to ±12 dB and Q to 0.3-8. It runs on a worker thread and is deterministic.
+- **Writing the bands:** one undo transaction sets the free bands it uses, with Channel Stereo and DYN off. The bands from the last Match are remembered in the state (a property, not a parameter) and replaced by the next Match, so changing Amount or Smoothing and pressing Match again doesn't pile up bands. A Match band the user has edited since is kept as theirs.
+- **Stored spectra:** the learned reference and current spectra are saved in the state (about 480 values each), so a reopened project can match again without relearning.
+- **Panel (R):** a `MATCH` link in the header, left of `⚙ EDIT`, opens a card over the graph: Source (Sidechain | Captured), Learn reference, Learn current, Clear, small knobs for Smoothing, Amount, Bands, Range low and Range high, and the Match button. While it's open the graph draws the reference spectrum in purple, the current in grey and the target as a dashed white line. **Alternative:** a section of the EDIT drawer, with no new header control but a much taller drawer.
+
+### 5. Tests (Catch2)
+
+1. **Compatibility:** v1.1.0, v1.2.0 and v1.3.0 EQ states load with bands 17-24 unused and every band Stereo, and render bit-identically to their stored renders.
+2. **24 bands:** all 24 in use match the analog product within the existing tolerances; a 25th add is refused.
+3. **One channel:** a Left band leaves R bit-identical to the input, and Right leaves L.
+4. **Mid/side:** with L = R input a Side band changes nothing (bit-identical) and a Mid band equals the same Stereo band; with L = -R, the reverse. A chain alternating Stereo, Mid, Left and Side bands matches an explicit-matrix reference to -120 dB.
+5. **Channel switch:** changing Channel under signal is click-free (the existing click detector).
+6. **Dynamic bands:** a dynamic Side band reacts to a Side-only sine and not to a Mid-only one at the same level.
+7. **Linear phase:** with mixed channels, Linear mode's magnitude per path matches Minimum mode's within 0.1 dB from 50 Hz to 16 kHz; with only Stereo bands the render is bit-identical to today's.
+8. **Mono:** on a mono bus every Channel setting gives the Stereo result.
+9. **Match fit:** pink noise as current and pink noise through a known 6-band EQ as reference: 8 fitted bands come within 1 dB RMS from 50 Hz to 16 kHz at 1/3-octave smoothing, and two runs give identical bands.
+10. **Match capture:** a reference with silent gaps learns the same spectrum as one without, within 0.2 dB; a pure level difference gives no bands.
+11. **Match writing:** one undo step; existing bands untouched; a second Match replaces the first's bands; an edited Match band survives.
+12. **Host:** H's offline-render and flood tests include 24 bands with mixed channels; the sidechain test includes Match's Sidechain source.
+13. **CPU (§0.4):** 24 Stereo bells, 24 mixed-channel bells, and Linear 8192 with mixed channels, with ratios to Comp, in `docs/measurements/eq-q24.txt`. Targets: 24 bells under 1.5 %; Linear with mixed channels under 1.5 %.
+
+### 6. Build order
+
+One item in two pushes: first 24 bands and Channel, with their tests and screenshots, then Match. Both go to REAPER together with the updated manual and checklist, then the release. If the user approves a visible change (the Channel chip or the `MATCH` link), an HTML mockup of it in `design/phase3-mockup-src/eq-q24.html` comes first.

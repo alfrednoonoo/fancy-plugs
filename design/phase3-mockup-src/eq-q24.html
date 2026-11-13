@@ -1,0 +1,82 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy EQ Q2.4 mockup</title><link rel="stylesheet" href="common.css"><script src="lib.js"></script>
+<style>.sheet{background:#121212;padding:8px 4px;width:820px;display:flex;flex-direction:column;gap:16px}.h{font-size:13px;font-weight:700;color:#fff;margin:6px 0 2px}.n{font-size:11px;color:#909090;margin-bottom:6px;line-height:1.45}.chip{border-radius:4px;padding:4px 8px;font-size:10.5px;font-weight:600}.vline{width:1px;align-self:stretch;background:#434343;margin:0 6px}
+.chdd{background:#282828;border-radius:4px;padding:4px 6px;font-size:10.5px;font-weight:600;color:#EDEDED;display:flex;align-items:center;gap:4px}.chdd:after{content:"⌄";font-size:9px;color:#909090}
+.menu{background:#282828;border:1px solid #434343;border-radius:6px;padding:5px 0;width:118px;font-size:11px;box-shadow:0 8px 24px rgba(0,0,0,.5)}.menu div{padding:4px 12px;display:flex;justify-content:space-between}.menu div.a{background:#434343}.menu span{color:#909090}
+.link{font-size:10.5px;font-weight:600;color:#909090;letter-spacing:.04em}.link.lit{color:#fff}
+.pb{background:#282828;border-radius:4px;padding:5px 9px;font-size:10.5px;color:#EDEDED;text-align:center}.pb.go{background:#00A884;color:#fff;font-weight:600}</style></head><body>
+<div class="sheet">
+
+<div><div class="h">1 · Band editor: the Channel chip (Details panel and Compact card)</div><div class="n">A small dropdown chip sits left of DYN under the type dropdown and reads ST, L, R, M or S. The menu is the shared Phase 2.1 S menu. Nothing else moves; with DYN on, the dynamic half appears as in Phase 2.1 D. On a mono bus the chip is greyed ("Channel needs a stereo bus").</div>
+<div style="display:flex;gap:14px;align-items:flex-start">
+<div style="background:#262626;border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:2px;border:1px solid #3a3a3a">
+ <div style="display:flex;flex-direction:column;gap:8px;margin:18px 6px 0 0"><div class="dd" style="font-size:10.5px;padding:3px 7px">∩ Bell</div>
+  <div style="display:flex;gap:4px"><div class="chdd" style="color:#3598DB">M</div><div class="chip" style="background:#3598DB;color:#fff;text-align:center;flex:1">DYN</div></div></div>
+ <div class="knob" data-k data-v=".58" data-c="#3598DB" data-l="Freq" data-t="3.20 kHz" style="width:56px"></div>
+ <div class="knob" data-k data-v=".5" data-c="#3598DB" data-bi data-l="Gain" data-t="0.0 dB" style="width:56px"></div>
+ <div class="knob" data-k data-v=".35" data-c="#3598DB" data-l="Q" data-t="2.0" style="width:56px"></div>
+ <div class="vline"></div>
+ <div class="knob" data-k data-v=".55" data-c="#3598DB" data-l="Threshold" data-t="-24 dB" style="width:58px"></div>
+ <div class="knob" data-k data-v=".3" data-c="#3598DB" data-bi data-l="Range" data-t="-6.0 dB" style="width:56px"></div>
+ <div class="knob" data-k data-v=".15" data-c="#3598DB" data-l="Attack" data-t="5 ms" data-s="34" style="width:46px"></div>
+ <div class="knob" data-k data-v=".3" data-c="#3598DB" data-l="Release" data-t="80 ms" data-s="34" style="width:48px"></div>
+ <div style="display:flex;flex-direction:column;gap:7px;margin:16px 0 0 6px"><div class="seg" style="font-size:9.5px"><span class="a" style="padding:3px 6px">Above</span><span style="padding:3px 6px">Below</span></div><div class="cb"><i></i>Sidechain</div></div>
+</div>
+<div class="menu" style="margin-top:44px"><div>Stereo<span>ST</span></div><div>Left<span>L</span></div><div>Right<span>R</span></div><div class="a">✓ Mid<span>M</span></div><div>Side<span>S</span></div></div>
+</div>
+<div class="n" style="margin-top:8px">With DYN off and Channel Stereo the editor is exactly today's, apart from the chip:</div>
+<div style="background:#262626;border-radius:8px;padding:10px 12px;display:inline-flex;align-items:flex-start;gap:2px;border:1px solid #3a3a3a">
+ <div style="display:flex;flex-direction:column;gap:8px;margin:18px 6px 0 0"><div class="dd" style="font-size:10.5px;padding:3px 7px">⌐ Low shelf</div>
+  <div style="display:flex;gap:4px"><div class="chdd">ST</div><div class="chip" style="background:#282828;color:#909090;text-align:center;flex:1">DYN</div></div></div>
+ <div class="knob" data-k data-v=".2" data-c="#E74D3D" data-l="Freq" data-t="80 Hz" style="width:56px"></div>
+ <div class="knob" data-k data-v=".6" data-c="#E74D3D" data-bi data-l="Gain" data-t="+2.5 dB" style="width:56px"></div>
+ <div class="knob" data-k data-v=".25" data-c="#E74D3D" data-l="Q" data-t="0.71" style="width:56px"></div>
+</div></div>
+
+<div><div class="h">2 · Graph: channel letters on handles and the total for the selected band's channel</div><div class="n">Band 3 (Mid, selected) and band 5 (Side) carry their letter. The white total is what a Mid signal (L = R) hears, so band 5 (Side) isn't in it; the corner reads "total: Mid". With every band Stereo the corner is empty and the graph is today's. Band tabs show only bands in use and shrink to fit up to 24.</div>
+<svg id="g2" width="760" height="230" style="background:#262626;border-radius:6px;display:block"></svg>
+<div style="display:flex;gap:1px;margin-top:6px">
+ <div class="tab" style="width:29px;color:#E74D3D">1</div><div class="tab" style="width:29px;color:#9A59B5">2</div><div class="tab" style="width:29px;background:#434343;color:#fff">3</div><div class="tab" style="width:29px;color:#1BBC9C">4</div><div class="tab" style="width:29px;color:#2DCC70">5</div><div class="tab" style="width:29px;color:#F1C40F">6</div><div class="tab" style="width:29px;color:#E67E22">7</div><div class="tab" style="width:29px;color:#2DCC70">8</div><div class="tab" style="width:29px;color:#F1C40F">…</div><div class="tab" style="width:29px;color:#9A59B5">24</div>
+</div></div>
+
+<div><div class="h">3 · Header MATCH link and the Match card</div><div class="n">MATCH sits left of ⚙ EDIT in the header's empty space and turns white while the card is open. The card floats over the graph like the Compact card. The graph shows the reference (purple), the current (grey) and the target (dashed white). Match writes ordinary bands into free slots, as one undo step.</div>
+<div class="win" style="width:802px"><div class="hdr"><div class="dd" style="width:140px">No preset</div><div class="btn">+ New</div><div class="btn">Parameter</div><div class="btn">4 in 2 out</div><div class="sp"></div>
+ <span class="link lit">◎ MATCH</span><span style="width:10px"></span><span class="link">⚙ EDIT</span><span style="width:8px"></span><div data-k data-v=".5" data-c="#00A884" data-s="16" style="width:26px"></div><div class="on">⏻ ON</div></div>
+ <div style="position:relative;padding:10px 34px 14px">
+  <svg id="g3" width="734" height="300" style="background:#141414;border-radius:4px;display:block"></svg>
+  <div style="position:absolute;left:150px;top:150px;width:500px;background:#262626;border:1px solid #3a3a3a;border-radius:8px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.55)">
+   <div style="display:flex;align-items:center;gap:10px"><span class="title" style="font-size:10px;color:#909090">Match</span><div class="seg" style="font-size:9.5px"><span class="a" style="padding:3px 7px">Sidechain</span><span style="padding:3px 7px">Captured</span></div><div class="sp" style="flex:1"></div><span class="cap">ref 24.6 s · current 24.6 s</span><span class="cap" style="color:#EDEDED">✕</span></div>
+   <div style="display:flex;align-items:flex-start;gap:2px;margin-top:6px">
+    <div style="display:flex;flex-direction:column;gap:6px;margin:14px 8px 0 0;width:110px"><div class="pb" style="border:1px solid #9A59B5">● Learning…</div><div class="pb">Clear</div></div>
+    <div class="knob" data-k data-v=".45" data-c="#00A884" data-s="34" data-l="Smoothing" data-t="1/3 oct" style="width:58px"></div>
+    <div class="knob" data-k data-v="1" data-c="#00A884" data-s="34" data-l="Amount" data-t="100 %" style="width:54px"></div>
+    <div class="knob" data-k data-v=".3" data-c="#00A884" data-s="34" data-l="Bands" data-t="8" style="width:50px"></div>
+    <div class="knob" data-k data-v=".12" data-c="#00A884" data-s="34" data-l="Low" data-t="30 Hz" style="width:50px"></div>
+    <div class="knob" data-k data-v=".9" data-c="#00A884" data-s="34" data-l="High" data-t="18 kHz" style="width:50px"></div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin:14px 0 0 8px;width:76px"><div class="pb go">Match</div><span class="cap" style="text-align:center">16 bands free</span></div>
+   </div>
+   <div class="n" style="margin:6px 0 0">Captured shows two buttons in place of "Learning…": Learn reference, then Learn current.</div>
+  </div>
+ </div></div></div>
+</div>
+<script>
+const LX=(W,f)=>12+(W-24)*(Math.log2(f+40)-Math.log2(60))/(Math.log2(24040)-Math.log2(60));
+function bell(f0,g,q,f){const o=Math.log2(f/f0);return g/(1+(o*q*1.6)**2)}
+function shelf(f0,g,lo,f){const t=1/(1+(f/f0)**(lo?2:-2));return g*t}
+// graph 2
+(()=>{const W=760,H=230,x=f=>LX(W,f),y=d=>H/2-d*7.5;let s='';
+[100,1000,10000].forEach(f=>s+=`<line x1="${x(f)}" y1="10" x2="${x(f)}" y2="${H-10}" stroke="#333"/>`);s+=`<line x1="12" y1="${y(0)}" x2="${W-12}" y2="${y(0)}" stroke="#434343"/>`;
+const bands=[{f:80,g:2.5,c:'#E74D3D',t:'ls'},{f:400,g:-3,q:1,c:'#9A59B5'},{f:3200,g:-4,q:1.2,c:'#3598DB',ch:'M',sel:1},{f:9000,g:3,c:'#1BBC9C',t:'hs'},{f:6000,g:5,q:.8,c:'#2DCC70',ch:'S'}];
+const resp=(b,f)=>b.t=='ls'?shelf(b.f,b.g,1,f):b.t=='hs'?shelf(b.f,b.g,0,f):bell(b.f,b.g,b.q,f);
+bands.forEach(b=>{let p=[];for(let f=20;f<24000;f*=1.03)p.push(`${x(f)},${y(resp(b,f))}`);s+=`<polygon points="${x(20)},${y(0)} ${p.join(' ')} ${x(23900)},${y(0)}" fill="${b.c}" opacity=".16"/><polyline points="${p.join(' ')}" fill="none" stroke="${b.c}" stroke-width="1.2"/>`});
+let t=[];for(let f=20;f<24000;f*=1.03){let d=0;bands.forEach(b=>{if(b.ch!='S')d+=resp(b,f)});t.push(`${x(f)},${y(d)}`)}s+=`<polyline points="${t.join(' ')}" fill="none" stroke="#fff" stroke-width="2"/>`;
+bands.forEach((b,i)=>{const cx=x(b.f),cy=y(b.g);s+=`<circle cx="${cx}" cy="${cy}" r="${b.sel?9:8}" fill="${b.c}" ${b.sel?'stroke="#fff" stroke-width="1.5"':''}/><text x="${cx}" y="${cy+(b.ch?-0.5:3.5)}" font-size="9.5" font-weight="700" fill="#fff" text-anchor="middle">${i+1}</text>`;if(b.ch)s+=`<text x="${cx}" y="${cy+7.5}" font-size="7" font-weight="700" fill="#fff" text-anchor="middle">${b.ch}</text>`});
+s+=`<text x="${W-14}" y="18" font-size="10" fill="#909090" text-anchor="end">total: Mid</text><text x="14" y="18" font-size="10" fill="#909090">post</text>`;document.getElementById('g2').innerHTML=s})();
+// graph 3: reference, current, target
+(()=>{const W=734,H=300,x=f=>LX(W,f),yA=d=>40+(-d-10)*3.2,yE=d=>H/2-40-d*7;let s='';
+[100,1000,10000].forEach(f=>s+=`<line x1="${x(f)}" y1="10" x2="${x(f)}" y2="${H-10}" stroke="#2a2a2a"/>`);s+=`<line x1="12" y1="${yE(0)}" x2="${W-12}" y2="${yE(0)}" stroke="#3a3a3a"/>`;
+let seed=7,r=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};const ref=[],cur=[],tg=[];
+for(let f=20;f<22000;f*=1.03){const L=Math.log10(f);const base=-22-9*(L-2)-(L<1.7?(1.7-L)*25:0);const dr=3*Math.exp(-((L-2.0)**2)/.05)-2.5*Math.exp(-((L-3.45)**2)/.03)+2*Math.exp(-((L-4.0)**2)/.04);
+ref.push(`${x(f)},${yA(base+dr+r()*1.5)}`);cur.push(`${x(f)},${yA(base+r()*1.5)}`);tg.push(`${x(f)},${yE(f<30||f>18000?0:dr)}`)}
+s+=`<polyline points="${cur.join(' ')}" fill="none" stroke="#8D8D8D" stroke-width="1.2" opacity=".8"/><polyline points="${ref.join(' ')}" fill="none" stroke="#9A59B5" stroke-width="1.6"/><polyline points="${tg.join(' ')}" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="5 4"/>`;
+s+=`<text x="14" y="20" font-size="10" fill="#9A59B5">reference</text><text x="80" y="20" font-size="10" fill="#8D8D8D">current</text><text x="132" y="20" font-size="10" fill="#fff">- - target</text>`;document.getElementById('g3').innerHTML=s})();
+</script></body></html>
