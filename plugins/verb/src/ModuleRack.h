@@ -36,6 +36,9 @@ public:
     // Phase 3 Q2.8: a true-stereo IR, from a four-channel file or a pair.
     bool isTrueStereo() const;
 
+    // Dims the Reverb generator's Size while Early is Off or Plate.
+    void updateDimming();
+
 private:
     struct Link final : public juce::AudioProcessorParameter::Listener
     {

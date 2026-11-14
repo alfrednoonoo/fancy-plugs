@@ -1,0 +1,81 @@
+{
+  "about": "Fancy Verb's IR library (Phase 3 Q2.8, docs/verb.md). Every IR is made at build time by tools/verb-library from these chains, with the plugin's own generators, at 48 kHz. No recorded or third-party audio. Settings not given keep their defaults; seeds keep each IR repeatable.",
+  "irs": [
+    { "category": "Rooms", "name": "Booth", "chain": [
+      { "type": "reverb", "seed": 101, "length": 0.4, "decay": 0.25, "density": 90, "damping": 60, "spread": 70, "lowDecay": 0.8, "highDecay": 0.6, "size": 3, "buildUp": 10, "early": 1 } ] },
+    { "category": "Rooms", "name": "Small Room", "chain": [
+      { "type": "reverb", "seed": 102, "length": 0.8, "decay": 0.5, "density": 85, "damping": 45, "spread": 90, "lowDecay": 1.0, "highDecay": 0.7, "size": 5, "buildUp": 25, "early": 1, "trueStereo": 1 } ] },
+    { "category": "Rooms", "name": "Bedroom", "chain": [
+      { "type": "reverb", "seed": 103, "length": 0.7, "decay": 0.45, "density": 80, "damping": 70, "spread": 85, "lowDecay": 1.2, "highDecay": 0.5, "size": 4, "buildUp": 20, "early": 1 } ] },
+    { "category": "Rooms", "name": "Studio Live", "chain": [
+      { "type": "reverb", "seed": 104, "length": 1.4, "decay": 0.9, "density": 90, "damping": 35, "spread": 100, "lowDecay": 1.1, "highDecay": 0.8, "size": 9, "buildUp": 40, "early": 1, "trueStereo": 1 } ] },
+    { "category": "Rooms", "name": "Wood Room", "chain": [
+      { "type": "reverb", "seed": 105, "length": 1.1, "decay": 0.7, "density": 85, "damping": 55, "spread": 90, "lowDecay": 1.4, "highDecay": 0.6, "size": 7, "buildUp": 35, "early": 1 } ] },
+    { "category": "Rooms", "name": "Tiled Room", "chain": [
+      { "type": "reverb", "seed": 106, "length": 1.2, "decay": 0.8, "density": 75, "damping": 10, "spread": 90, "lowDecay": 0.8, "highDecay": 1.2, "size": 5, "buildUp": 20, "early": 1 } ] },
+    { "category": "Rooms", "name": "Drum Room", "chain": [
+      { "type": "reverb", "seed": 107, "length": 1.0, "decay": 0.6, "density": 90, "damping": 30, "spread": 100, "lowDecay": 0.9, "highDecay": 0.9, "size": 8, "buildUp": 30, "early": 1, "trueStereo": 1 } ] },
+    { "category": "Rooms", "name": "Garage", "chain": [
+      { "type": "reverb", "seed": 108, "length": 1.6, "decay": 1.1, "density": 70, "damping": 20, "spread": 90, "lowDecay": 1.3, "highDecay": 0.9, "size": 7, "buildUp": 40, "early": 1 } ] },
+
+    { "category": "Halls", "name": "Recital Hall", "chain": [
+      { "type": "reverb", "seed": 201, "length": 2.6, "decay": 1.6, "density": 85, "damping": 40, "spread": 100, "lowDecay": 1.2, "highDecay": 0.7, "size": 18, "buildUp": 70, "early": 2 } ] },
+    { "category": "Halls", "name": "Small Hall", "chain": [
+      { "type": "reverb", "seed": 202, "length": 2.2, "decay": 1.3, "density": 85, "damping": 35, "spread": 100, "lowDecay": 1.15, "highDecay": 0.75, "size": 14, "buildUp": 60, "early": 2, "trueStereo": 1 } ] },
+    { "category": "Halls", "name": "Concert Hall", "chain": [
+      { "type": "reverb", "seed": 203, "length": 3.8, "decay": 2.2, "density": 90, "damping": 40, "spread": 100, "lowDecay": 1.3, "highDecay": 0.65, "size": 28, "buildUp": 90, "early": 2, "trueStereo": 1 } ] },
+    { "category": "Halls", "name": "Dark Hall", "chain": [
+      { "type": "reverb", "seed": 204, "length": 3.5, "decay": 2.0, "density": 90, "damping": 70, "spread": 100, "lowDecay": 1.5, "highDecay": 0.45, "size": 24, "buildUp": 90, "early": 2 } ] },
+    { "category": "Halls", "name": "Bright Hall", "chain": [
+      { "type": "reverb", "seed": 205, "length": 3.2, "decay": 1.9, "density": 90, "damping": 15, "spread": 100, "lowDecay": 1.0, "highDecay": 1.0, "size": 22, "buildUp": 80, "early": 2 } ] },
+    { "category": "Halls", "name": "Cathedral", "chain": [
+      { "type": "reverb", "seed": 206, "length": 6.0, "decay": 4.2, "density": 90, "damping": 45, "spread": 100, "lowDecay": 1.4, "highDecay": 0.55, "size": 50, "buildUp": 180, "early": 2, "trueStereo": 1 } ] },
+    { "category": "Halls", "name": "Arena", "chain": [
+      { "type": "reverb", "seed": 207, "length": 4.5, "decay": 2.8, "density": 80, "damping": 30, "spread": 100, "lowDecay": 1.1, "highDecay": 0.6, "size": 60, "buildUp": 150, "early": 2, "trueStereo": 1 } ] },
+
+    { "category": "Plates", "name": "Short Plate", "chain": [
+      { "type": "reverb", "seed": 301, "length": 1.4, "decay": 0.8, "density": 100, "damping": 10, "spread": 100, "lowDecay": 0.6, "highDecay": 1.1, "buildUp": 5, "early": 3 } ] },
+    { "category": "Plates", "name": "Vocal Plate", "chain": [
+      { "type": "reverb", "seed": 302, "length": 2.6, "decay": 1.6, "density": 100, "damping": 20, "spread": 100, "lowDecay": 0.6, "highDecay": 0.9, "buildUp": 8, "early": 3, "trueStereo": 1 } ] },
+    { "category": "Plates", "name": "Bright Plate", "chain": [
+      { "type": "reverb", "seed": 303, "length": 2.4, "decay": 1.5, "density": 100, "damping": 5, "spread": 100, "lowDecay": 0.5, "highDecay": 1.3, "buildUp": 5, "early": 3 } ] },
+    { "category": "Plates", "name": "Dark Plate", "chain": [
+      { "type": "reverb", "seed": 304, "length": 2.4, "decay": 1.6, "density": 100, "damping": 60, "spread": 100, "lowDecay": 0.8, "highDecay": 0.6, "buildUp": 10, "early": 3 } ] },
+    { "category": "Plates", "name": "Long Plate", "chain": [
+      { "type": "reverb", "seed": 305, "length": 4.5, "decay": 3.2, "density": 100, "damping": 20, "spread": 100, "lowDecay": 0.6, "highDecay": 0.9, "buildUp": 10, "early": 3, "trueStereo": 1 } ] },
+    { "category": "Plates", "name": "Drum Plate", "chain": [
+      { "type": "reverb", "seed": 306, "length": 1.2, "decay": 0.6, "density": 100, "damping": 15, "spread": 100, "lowDecay": 0.7, "highDecay": 1.0, "buildUp": 3, "early": 3 } ] },
+
+    { "category": "Chambers", "name": "Small Chamber", "chain": [
+      { "type": "reverb", "seed": 401, "length": 1.6, "decay": 1.0, "density": 85, "damping": 30, "spread": 100, "lowDecay": 1.1, "highDecay": 0.8, "size": 6, "buildUp": 50, "early": 1 } ] },
+    { "category": "Chambers", "name": "Echo Chamber", "chain": [
+      { "type": "reverb", "seed": 402, "length": 2.6, "decay": 1.7, "density": 85, "damping": 25, "spread": 100, "lowDecay": 1.1, "highDecay": 0.9, "size": 10, "buildUp": 70, "early": 1, "trueStereo": 1 } ] },
+    { "category": "Chambers", "name": "Stone Chamber", "chain": [
+      { "type": "reverb", "seed": 403, "length": 2.2, "decay": 1.4, "density": 80, "damping": 10, "spread": 100, "lowDecay": 1.0, "highDecay": 1.1, "size": 8, "buildUp": 60, "early": 1 } ] },
+    { "category": "Chambers", "name": "Stairwell", "chain": [
+      { "type": "reverb", "seed": 404, "length": 3.0, "decay": 2.0, "density": 75, "damping": 20, "spread": 100, "lowDecay": 0.9, "highDecay": 1.0, "size": 14, "buildUp": 40, "early": 2 },
+      { "type": "echo", "seed": 405, "start": 45, "length": 400, "spacing": 45, "error": 4, "startVol": -14, "endVol": -36 } ] },
+    { "category": "Chambers", "name": "Tunnel", "chain": [
+      { "type": "reverb", "seed": 406, "length": 3.5, "decay": 2.4, "density": 80, "damping": 50, "spread": 100, "lowDecay": 1.6, "highDecay": 0.5, "size": 30, "buildUp": 100, "early": 2 } ] },
+
+    { "category": "Special", "name": "Reverse Swell", "chain": [
+      { "type": "reverb", "seed": 501, "length": 2.0, "decay": 1.4, "density": 90, "damping": 30, "spread": 100, "lowDecay": 1.1, "highDecay": 0.8, "buildUp": 50 },
+      { "type": "reverse" },
+      { "type": "trim", "fadeIn": 50, "fadeOut": 30 } ] },
+    { "category": "Special", "name": "Gated Room", "chain": [
+      { "type": "reverb", "seed": 502, "length": 0.6, "decay": 3.0, "density": 100, "damping": 30, "spread": 100, "size": 6, "buildUp": 15, "early": 1 },
+      { "type": "trim", "endCut": 250, "fadeOut": 40 } ] },
+    { "category": "Special", "name": "Nonlinear", "chain": [
+      { "type": "reverb", "seed": 503, "length": 0.5, "decay": 5.0, "density": 100, "damping": 20, "spread": 100, "lowDecay": 0.9, "buildUp": 300 },
+      { "type": "trim", "fadeOut": 60 } ] },
+    { "category": "Special", "name": "Slap Room", "chain": [
+      { "type": "echo", "seed": 504, "start": 80, "length": 160, "spacing": 80, "startVol": -6, "endVol": -12 },
+      { "type": "reverb", "seed": 505, "length": 0.6, "decay": 0.4, "density": 85, "damping": 40, "spread": 90, "size": 5, "buildUp": 20, "early": 1 } ] },
+    { "category": "Special", "name": "Metal Ping", "chain": [
+      { "type": "reverb", "seed": 506, "length": 2.0, "decay": 1.5, "density": 100, "damping": 0, "spread": 100, "lowDecay": 0.3, "highDecay": 3.0, "buildUp": 2, "early": 3 },
+      { "type": "lphp", "highpass": 600 } ] },
+    { "category": "Special", "name": "Endless Cloud", "chain": [
+      { "type": "reverb", "seed": 507, "length": 9.0, "decay": 12.0, "density": 100, "damping": 35, "spread": 100, "lowDecay": 1.3, "highDecay": 0.7, "buildUp": 300, "trueStereo": 1 },
+      { "type": "trim", "fadeIn": 200 } ] }
+  ]
+}

@@ -1,6 +1,7 @@
 #include "IrFiles.h"
 
 #include "IrBuilder.h"
+#include "VerbLibrary.h"
 
 namespace verb
 {
@@ -181,7 +182,38 @@ std::vector<int> IrResolver::resolve (ChainSpec& chain, const juce::File& irFold
 
     for (auto& module : chain.modules)
     {
-        if (module.type != ModuleType::file || (module.path.isEmpty() && module.flac.isEmpty()))
+        if (module.type != ModuleType::file)
+            continue;
+
+        // A library IR (Phase 3 Q2.8).
+        if (module.factory.isNotEmpty())
+        {
+            const auto key = "factory|" + module.factory;
+
+            if (const auto found = cache.find (key); found != cache.end())
+            {
+                module.file = found->second;
+            }
+            else
+            {
+                module.file = Library::builtIn().load (module.factory);
+
+                if (module.file != nullptr)
+                {
+                    if (cache.size() >= maxCachedFiles)
+                        cache.clear();
+
+                    cache[key] = module.file;
+                }
+            }
+
+            if (module.file == nullptr)
+                missing.push_back (module.uid);
+
+            continue;
+        }
+
+        if (module.path.isEmpty() && module.flac.isEmpty())
             continue;
 
         module.file = lookUp ({ module.path, module.hash, module.flac, module.flacRate }, irFolder);

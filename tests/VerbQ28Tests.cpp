@@ -6,6 +6,7 @@
 #include "LegacyVerbConvolver.h"
 #include "LegacyVerbIrBuilder.h"
 #include "VerbChain.h"
+#include "VerbLibrary.h"
 #include "VerbProcessor.h"
 
 #include <catch2/catch_approx.hpp>
@@ -16,6 +17,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <numbers>
 #include <random>
 #include <vector>
 
@@ -492,6 +494,267 @@ TEST_CASE ("choosing a four-channel file or a pair makes the File module true st
     const auto cleared = processor.getChain().getChildWithProperty (verb::ids::uid, uid);
     CHECK_FALSE (cleared.hasProperty (verb::ids::trueStereo));
     CHECK_FALSE (cleared.hasProperty (verb::ids::pairPath));
+}
+
+// Push 2: the Reverb generator's new settings and the IR library --------------------------
+
+namespace
+{
+ModuleSpec reverbModule (std::initializer_list<std::pair<const char*, float>> values, int seed = 7)
+{
+    auto module = moduleOf (ModuleType::reverb, seed);
+    const auto& settings = verb::settingsOf (ModuleType::reverb);
+
+    for (const auto& [id, value] : values)
+        for (size_t i = 0; i < settings.size(); ++i)
+            if (juce::String (settings[i].id) == id)
+                module.values[i] = value;
+
+    return module;
+}
+
+// RT60 in one octave band, from the Schroeder integral of the band-passed IR, by T20.
+double bandRt60 (const float* ir, int length, double centreHz)
+{
+    // Two cascaded second-order band passes, about an octave wide.
+    const auto w = 2.0 * std::numbers::pi * centreHz / rate;
+    const auto alpha = std::sin (w) / (2.0 * 1.4);
+    const auto a0 = 1.0 + alpha;
+    const double b0 = alpha / a0, b2 = -alpha / a0, a1 = -2.0 * std::cos (w) / a0, a2 = (1.0 - alpha) / a0;
+
+    std::vector<double> band ((size_t) length);
+    double s1 = 0.0, s2 = 0.0, t1 = 0.0, t2 = 0.0;
+
+    for (int i = 0; i < length; ++i)
+    {
+        const auto x = (double) ir[i];
+        const auto y = b0 * x + s1;
+        s1 = -a1 * y + s2;
+        s2 = b2 * x - a2 * y;
+        const auto z = b0 * y + t1;
+        t1 = -a1 * z + t2;
+        t2 = b2 * y - a2 * z;
+        band[(size_t) i] = z;
+    }
+
+    std::vector<double> energy ((size_t) length + 1, 0.0);
+
+    for (int i = length - 1; i >= 0; --i)
+        energy[(size_t) i] = energy[(size_t) i + 1] + band[(size_t) i] * band[(size_t) i];
+
+    const auto total = energy[0];
+    int start = -1, end = -1;
+
+    for (int i = 0; i < length; ++i)
+    {
+        const auto db = 10.0 * std::log10 (std::max (energy[(size_t) i] / total, 1.0e-30));
+
+        if (start < 0 && db <= -5.0)
+            start = i;
+
+        if (end < 0 && db <= -25.0)
+        {
+            end = i;
+            break;
+        }
+    }
+
+    if (start < 0 || end <= start)
+        return 0.0;
+
+    return 3.0 * (double) (end - start) / rate; // 20 dB of decay, times three
+}
+} // namespace
+
+TEST_CASE ("Low RT and High RT set the decay in their bands", "[verb][q28][generator]")
+{
+    verb::ChainSpec chain;
+    chain.modules.push_back (reverbModule ({ { "length", 5.0f }, { "decay", 1.0f }, { "density", 100.0f }, { "damping", 0.0f },
+                                             { "lowDecay", 2.0f }, { "highDecay", 0.5f }, { "buildUp", 0.0f } }));
+
+    const auto built = verb::buildIr (chain, rate);
+    const auto* left = built.audio.getReadPointer (0);
+    const auto length = built.audio.getNumSamples();
+
+    const auto low = bandRt60 (left, length, 125.0);
+    const auto mid = bandRt60 (left, length, 1000.0);
+    const auto high = bandRt60 (left, length, 8000.0);
+
+    INFO ("RT60: 125 Hz " << low << " s, 1 kHz " << mid << " s, 8 kHz " << high << " s");
+    CHECK (low == Catch::Approx (2.0).epsilon (0.1));
+    CHECK (mid == Catch::Approx (1.0).epsilon (0.1));
+    CHECK (high == Catch::Approx (0.5).epsilon (0.1));
+}
+
+TEST_CASE ("Early places the image-source reflections", "[verb][q28][generator]")
+{
+    // The floor reflection in a 10 m Room, worked out by hand: the box is 10 x 7.5 x 4.5 m, the
+    // left source at (3, 3, 2.25), the left ear at (7, 3.66, 1.8); the floor image is at z = -2.25.
+    const auto direct = std::sqrt (16.0 + 0.66 * 0.66 + 0.45 * 0.45);
+    const auto floor = std::sqrt (16.0 + 0.66 * 0.66 + 4.05 * 4.05);
+    const auto expected = (floor - direct) / 343.0;
+
+    const auto pattern = verb::earlyPattern (verb::EarlyType::room, 10.0, 0, 0);
+    REQUIRE (pattern.size() > 20);
+
+    auto nearest = 1.0;
+
+    for (const auto& reflection : pattern)
+        nearest = std::min (nearest, std::abs (reflection.seconds - expected));
+
+    CHECK (nearest * rate < 1.0);
+    CHECK (verb::earlyPattern (verb::EarlyType::plate, 10.0, 0, 0).empty());
+    CHECK (verb::earlyPattern (verb::EarlyType::hall, 10.0, 0, 0).size() < pattern.size());
+
+    // The first reflection stands out in the built IR.
+    verb::ChainSpec chain;
+    chain.modules.push_back (reverbModule ({ { "length", 0.5f }, { "decay", 0.3f }, { "damping", 0.0f }, { "size", 10.0f },
+                                             { "buildUp", 300.0f }, { "early", 1.0f } }));
+
+    const auto built = verb::buildIr (chain, rate);
+    const auto first = (int) std::llround (pattern.front().seconds * rate);
+    const auto* left = built.audio.getReadPointer (0);
+
+    auto background = 0.0;
+
+    for (int i = 0; i < 2400; ++i)
+        if (std::abs (i - first) > 2)
+            background = std::max (background, (double) std::abs (left[i]) * (i < first ? 1.0 : 0.0));
+
+    CHECK (std::abs (left[first]) > 4.0 * background);
+}
+
+TEST_CASE ("the generator's True stereo makes four decorrelated paths", "[verb][q28][generator]")
+{
+    verb::ChainSpec chain;
+    chain.modules.push_back (reverbModule ({ { "length", 1.0f }, { "trueStereo", 1.0f } }));
+
+    const auto built = verb::buildIr (chain, rate);
+    REQUIRE (built.audio.getNumChannels() == 4);
+
+    const auto correlation = [&built] (int a, int b)
+    {
+        auto ab = 0.0, aa = 0.0, bb = 0.0;
+
+        for (int i = 0; i < built.audio.getNumSamples(); ++i)
+        {
+            const auto x = (double) built.audio.getSample (a, i), y = (double) built.audio.getSample (b, i);
+            ab += x * y;
+            aa += x * x;
+            bb += y * y;
+        }
+
+        return ab / std::sqrt (aa * bb);
+    };
+
+    CHECK (built.audio.getRMSLevel (2, 0, built.audio.getNumSamples()) > 0.3f * built.audio.getRMSLevel (0, 0, built.audio.getNumSamples()));
+    CHECK (std::abs (correlation (0, 2)) < 0.2);
+    CHECK (std::abs (correlation (1, 3)) < 0.2);
+}
+
+TEST_CASE ("the IR library has 32 IRs at one loudness, made from the recipes", "[verb][q28][library]")
+{
+    const auto& library = verb::Library::builtIn();
+    const auto& entries = library.getEntries();
+
+    REQUIRE (entries.size() == 32);
+
+    auto trueStereo = 0;
+
+    for (const auto& entry : entries)
+    {
+        INFO (entry.key());
+        CHECK (verb::Library::categories().contains (entry.category));
+
+        const auto audio = library.load (entry.key());
+        REQUIRE (audio != nullptr);
+        CHECK (audio->audio.getNumChannels() == entry.numChannels);
+
+        auto finite = true;
+
+        for (int ch = 0; ch < audio->audio.getNumChannels(); ++ch)
+            for (int i = 0; i < audio->audio.getNumSamples(); ++i)
+                finite = finite && std::isfinite (audio->audio.getSample (ch, i));
+
+        CHECK (finite);
+
+        // Nothing clipped in the 24-bit FLAC.
+        for (int ch = 0; ch < audio->audio.getNumChannels(); ++ch)
+            CHECK (audio->audio.getMagnitude (ch, 0, audio->audio.getNumSamples()) < 0.999f);
+
+        const auto loudnessDb = 10.0 * std::log10 (verb::outputEnergy (audio->audio, verb::libraryRate, verb::libraryLoudnessSeconds)
+                                                   / verb::libraryLoudnessEnergy);
+        CHECK (std::abs (loudnessDb) < 0.5);
+
+        trueStereo += entry.isTrueStereo() ? 1 : 0;
+    }
+
+    CHECK (trueStereo >= 8);
+
+    // The built-in data is what the recipes make, and making them is repeatable.
+    const auto recipes = verb::parseRecipes (juce::File (FANCY_SOURCE_DIR "/plugins/verb/library/recipes.json").loadFileAsString());
+    REQUIRE (recipes.size() == 32);
+
+    for (const auto index : { 0, 10, 16, 31 })
+    {
+        const auto& recipe = recipes[(size_t) index];
+        INFO (recipe.name);
+
+        const auto once = verb::renderRecipe (recipe);
+        const auto twice = verb::renderRecipe (recipe);
+        CHECK (sameAudio (once, twice));
+
+        const auto stored = library.load (recipe.category + "/" + recipe.name);
+        REQUIRE (stored != nullptr);
+        REQUIRE (stored->audio.getNumSamples() == once.getNumSamples());
+
+        auto worst = 0.0;
+
+        for (int ch = 0; ch < once.getNumChannels(); ++ch)
+            for (int i = 0; i < once.getNumSamples(); ++i)
+                worst = std::max (worst, std::abs ((double) once.getSample (ch, i) - stored->audio.getSample (ch, i)));
+
+        CHECK (worst < 4.0 / 8388608.0); // within the 24-bit FLAC's step
+    }
+}
+
+TEST_CASE ("a File module plays a library IR, true stereo where it is", "[verb][q28][library]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    VerbProcessor processor;
+    const auto uid = processor.addModule (ModuleType::file, 0);
+
+    CHECK_FALSE (processor.loadLibrary (uid, "Halls/No Such Hall"));
+    REQUIRE (processor.loadLibrary (uid, "Halls/Concert Hall"));
+
+    auto module = processor.getChain().getChildWithProperty (verb::ids::uid, uid);
+    CHECK (module[verb::ids::factory].toString() == "Halls/Concert Hall");
+    CHECK ((bool) module.getProperty (verb::ids::trueStereo, false));
+    CHECK_FALSE (module.hasProperty (verb::ids::path));
+
+    processor.setNonRealtime (true);
+    processor.prepareToPlay (rate, 512);
+    REQUIRE (processor.waitForBuild (20000));
+    CHECK_FALSE (processor.isMissing (uid));
+    CHECK (processor.getPreview().numChannels == 4);
+
+    const auto out = renderLeftOnly (processor, 24000);
+    CHECK (peakOf (out, 1) > 0.001); // the left input reaches the right output
+
+    juce::MemoryBlock state;
+    processor.getStateInformation (state);
+    CHECK (state.getSize() < 64 * 1024); // a reference, not an embedded copy
+
+    VerbProcessor copy;
+    copy.setStateInformation (state.getData(), (int) state.getSize());
+    CHECK (copy.getChain().getChildWithProperty (verb::ids::uid, uid)[verb::ids::factory].toString() == "Halls/Concert Hall");
+    REQUIRE (copy.waitForBuild (20000));
+
+    // Choosing a file afterwards drops the library reference.
+    REQUIRE (processor.loadLibrary (uid, "Rooms/Booth"));
+    module = processor.getChain().getChildWithProperty (verb::ids::uid, uid);
+    CHECK_FALSE ((bool) module.getProperty (verb::ids::trueStereo, false));
 }
 
 // 8. CPU (section 0.4) ----------------------------------------------------------

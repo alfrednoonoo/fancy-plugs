@@ -21,18 +21,25 @@ inline constexpr std::array<ModuleType, 7> allModuleTypes {
 };
 
 inline constexpr int maxModules = 16;
-inline constexpr int maxSettings = 7;
+inline constexpr int maxSettings = 12;
 inline constexpr int numGainModes = 8;
 
 struct Setting
 {
+    enum class Kind { knob, choice, toggle };
+
     const char* id;
     const char* label;
     float low, high, defaultValue, interval, skew;
     int decimals;
     const char* unit;
     bool logarithmic = false;
+    Kind kind = Kind::knob;
 };
+
+// The Reverb generator's Early choice (Phase 3 Q2.8).
+enum class EarlyType { off, room, hall, plate };
+const juce::StringArray& earlyTypeNames();
 
 const std::vector<Setting>& settingsOf (ModuleType type);
 
@@ -53,7 +60,9 @@ inline const juce::Identifier chain ("CHAIN"), module ("MODULE"), type ("type"),
     gainMode ("gainMode"), trimStart ("trimStart"), trimEnd ("trimEnd"),
     // Phase 3 Q2.8: true stereo. "ts" is set only when a file is chosen in a version that
     // knows about it, so a project that used a four-channel file before keeps its first two.
-    trueStereo ("ts"), pairPath ("pairPath"), pairHash ("pairHash"), pairFlac ("pairFlac"), pairRate ("pairRate");
+    trueStereo ("ts"), pairPath ("pairPath"), pairHash ("pairHash"), pairFlac ("pairFlac"), pairRate ("pairRate"),
+    // A library IR, as "Category/Name" (Phase 3 Q2.8).
+    factory ("factory");
 }
 
 struct IrAudio
@@ -85,6 +94,9 @@ struct ModuleSpec
     std::shared_ptr<const IrAudio> pairFile;
 
     bool hasPair() const noexcept { return pairPath.isNotEmpty() || pairFlac.isNotEmpty(); }
+
+    // A library IR, as "Category/Name"; it takes the place of path, hash and the embedded copy.
+    juce::String factory;
 };
 
 struct ChainSpec

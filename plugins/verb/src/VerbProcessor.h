@@ -45,6 +45,9 @@ public:
     // makes it true stereo, or removes the pair.
     bool loadPair (int uid, const juce::File& file);
     void clearPair (int uid);
+
+    // Plays a library IR ("Category/Name") in a File module (Phase 3 Q2.8).
+    bool loadLibrary (int uid, const juce::String& key);
     void setTrim (double startSeconds, double endSeconds);
 
     // Bumped when modules are added, removed or reordered, so the rack knows to rebuild.

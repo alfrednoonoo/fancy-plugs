@@ -423,8 +423,206 @@ void applyReverse (Channels& ir)
         std::reverse (channel.begin(), channel.end());
 }
 
+// Phase 3 Q2.8: the Reverb generator with any of its new settings away from their defaults.
+// Bands, early reflections and true stereo come from their own seeded noise, and the original
+// loop below stays as it was for the defaults.
+constexpr double speedOfSound = 343.0;
+constexpr double earOffsetMetres = 0.09;
+constexpr double lowSplitHz = 250.0, highSplitHz = 4000.0;
+constexpr double earlyLevel = 3.0;
+
+struct Box
+{
+    double length, width, height;
+    int order;
+    double absorption;
+};
+
+Box boxFor (EarlyType type, double size) noexcept
+{
+    if (type == EarlyType::room)
+        return { size, 0.75 * size, 0.45 * size, 3, 0.80 };
+
+    return { size, 0.6 * size, 0.5 * size, 2, 0.85 };
+}
+
+double imageOf (int n, double length, double position) noexcept
+{
+    return n * length + ((n % 2) == 0 ? position : length - position);
+}
+
+// Fourth-order Butterworth: two sections.
+struct Butterworth4
+{
+    Biquad first, second;
+
+    double run (double x) noexcept { return second.run (first.run (x)); }
+};
+
+Butterworth4 butterworth4 (double hz, double sampleRate, bool highpass) noexcept
+{
+    const auto limited = std::min (hz, 0.45 * sampleRate);
+    return { butterworthSection (limited, sampleRate, 0.5411961001461969, highpass),
+             butterworthSection (limited, sampleRate, 1.3065629648763766, highpass) };
+}
+
+void addReverbExtended (Channels& ir, const ModuleSpec& module, double sampleRate)
+{
+    const auto lengthSeconds = (double) module.values[0];
+    const auto decaySeconds = (double) module.values[1];
+    const auto density = (double) module.values[2] * 0.01;
+    const auto damping = (double) module.values[3] * 0.01;
+    const auto spread = (double) module.values[4] * 0.01;
+    const auto lowMultiplier = (double) module.values[5];
+    const auto highMultiplier = (double) module.values[6];
+    const auto size = (double) module.values[7];
+    const auto buildUpSeconds = (double) module.values[8] / 1000.0;
+    const auto early = (EarlyType) juce::jlimit (0, 3, juce::roundToInt (module.values[9]));
+    const auto trueStereo = module.values[10] >= 0.5f;
+
+    const auto length = std::max ((size_t) 1, (size_t) (lengthSeconds * sampleRate));
+    const auto fillSamples = buildUpSeconds * sampleRate;
+    const auto startProbability = 0.02 + 0.98 * density * density;
+    const auto common = std::sqrt (std::max (0.0, 1.0 - spread * spread));
+    const auto banded = lowMultiplier != 1.0 || highMultiplier != 1.0;
+    const auto ramps = early == EarlyType::room || early == EarlyType::hall;
+    const auto paths = trueStereo ? 4 : 2; // LL, RR, then RL, LR
+    const auto bands = banded ? 3 : 1;
+
+    juce::Random mask ((juce::int64) module.seed);
+    juce::Random random ((juce::int64) module.seed * 31 + 7919);
+    const auto noise = [&random] { return (double) random.nextFloat() * 2.0 - 1.0; };
+
+    // Which input side and which output side each path joins.
+    constexpr int sourceOf[] { 0, 1, 1, 0 };
+    constexpr int earOf[] { 0, 1, 0, 1 };
+
+    Channels wet;
+
+    for (int p = 0; p < paths; ++p)
+        wet[(size_t) p].assign (length, 0.0);
+
+    // Early reflections, as impulses ahead of the damping filter.
+    if (ramps)
+    {
+        for (int p = 0; p < paths; ++p)
+        {
+            for (const auto& reflection : earlyPattern (early, size, sourceOf[p], earOf[p]))
+            {
+                const auto index = (size_t) std::llround (reflection.seconds * sampleRate);
+
+                if (index < length)
+                    wet[(size_t) p][index] += earlyLevel * reflection.gain;
+            }
+        }
+    }
+
+    const std::array<double, 3> multipliers { lowMultiplier, 1.0, highMultiplier };
+    std::array<std::array<Butterworth4, 2>, 4> bandFilters {}; // per path: [low or high part, mid's second filter]
+
+    for (int p = 0; p < paths; ++p)
+    {
+        bandFilters[(size_t) p][0] = butterworth4 (lowSplitHz, sampleRate, false);
+        bandFilters[(size_t) p][1] = butterworth4 (highSplitHz, sampleRate, true);
+    }
+
+    // The mid band is a high pass at 250 Hz into a low pass at 4 kHz.
+    std::array<std::array<Butterworth4, 2>, 4> midFilters {};
+
+    for (int p = 0; p < paths; ++p)
+    {
+        midFilters[(size_t) p][0] = butterworth4 (lowSplitHz, sampleRate, true);
+        midFilters[(size_t) p][1] = butterworth4 (highSplitHz, sampleRate, false);
+    }
+
+    std::array<double, 4> lowpass {};
+
+    for (size_t i = 0; i < length; ++i)
+    {
+        const auto t = (double) i / sampleRate;
+        const auto fill = fillSamples > 0.0 ? std::min (1.0, (double) i / fillSamples) : 1.0;
+        const auto probability = early == EarlyType::plate ? 1.0 : startProbability + (1.0 - startProbability) * fill;
+        const auto keep = (double) mask.nextFloat() < probability;
+        const auto amplitude = keep ? (ramps ? fill : 1.0) / std::sqrt (probability) : 0.0;
+        const auto crossGain = 0.5 + 0.35 * fill;
+
+        const auto cutoff = damping > 0.0 ? std::max (200.0, 20000.0 * std::exp (-t * damping * 4.0 / decaySeconds)) : 0.0;
+        const auto coefficient = cutoff > 0.0 ? 1.0 - std::exp (-2.0 * pi * cutoff / sampleRate) : 1.0;
+
+        std::array<double, 4> sum {};
+
+        for (int b = 0; b < bands; ++b)
+        {
+            const auto envelope = std::exp (-sixtyDbInNepers * t / (decaySeconds * multipliers[(size_t) (banded ? b : 1)]));
+            const auto shared = noise();
+
+            for (int p = 0; p < paths; ++p)
+            {
+                auto x = (common * shared + spread * noise()) * amplitude;
+
+                if (banded)
+                {
+                    auto& split = bandFilters[(size_t) p];
+                    auto& mid = midFilters[(size_t) p];
+                    x = b == 0 ? split[0].run (x) : b == 2 ? split[1].run (x) : mid[1].run (mid[0].run (x));
+                }
+
+                sum[(size_t) p] += x * envelope * (p >= 2 ? crossGain : 1.0);
+            }
+        }
+
+        for (int p = 0; p < paths; ++p)
+        {
+            auto& state = lowpass[(size_t) p];
+            state += (sum[(size_t) p] + wet[(size_t) p][i] - state) * coefficient;
+            wet[(size_t) p][i] = state;
+        }
+    }
+
+    const auto fade = std::min (length, (size_t) (0.05 * sampleRate));
+
+    for (int p = 0; p < paths; ++p)
+        for (size_t i = 0; i < fade; ++i)
+            wet[(size_t) p][length - 1 - i] *= (double) i / (double) fade;
+
+    // Unit energy over the direct paths, as the original; the cross paths keep their level to them.
+    auto energy = 0.0;
+
+    for (int p = 0; p < 2; ++p)
+        for (const auto sample : wet[(size_t) p])
+            energy += sample * sample;
+
+    const auto gain = energy > 0.0 ? std::sqrt (2.0 / energy) : 0.0;
+
+    growTo (ir, length);
+
+    if (trueStereo)
+        makeTrueStereo (ir);
+
+    for (int p = 0; p < paths; ++p)
+        for (size_t i = 0; i < length; ++i)
+            ir[(size_t) p][i] += wet[(size_t) p][i] * gain;
+}
+
+bool usesNewReverbSettings (const ModuleSpec& module) noexcept
+{
+    const auto& settings = settingsOf (ModuleType::reverb);
+
+    for (size_t i = 5; i < settings.size(); ++i)
+        if (module.values[i] != settings[i].defaultValue)
+            return true;
+
+    return false;
+}
+
 void addReverb (Channels& ir, const ModuleSpec& module, double sampleRate)
 {
+    if (usesNewReverbSettings (module))
+    {
+        addReverbExtended (ir, module, sampleRate);
+        return;
+    }
+
     const auto lengthSeconds = (double) module.values[0];
     const auto decaySeconds = (double) module.values[1];
     const auto density = (double) module.values[2] * 0.01;
@@ -517,6 +715,45 @@ void makePreview (const Channels& ir, IrPreview& preview)
 }
 
 } // namespace
+
+std::vector<Reflection> earlyPattern (EarlyType type, double sizeMetres, int sourceSide, int earSide)
+{
+    std::vector<Reflection> reflections;
+
+    if (type != EarlyType::room && type != EarlyType::hall)
+        return reflections;
+
+    const auto box = boxFor (type, sizeMetres);
+    const double source[] { 0.3 * box.length, (sourceSide == 0 ? 0.4 : 0.6) * box.width, 0.5 * box.height };
+    const double ear[] { 0.7 * box.length, 0.5 * box.width + (earSide == 0 ? -earOffsetMetres : earOffsetMetres), 0.4 * box.height };
+
+    const auto distance = [&ear] (double x, double y, double z)
+    {
+        return std::sqrt ((x - ear[0]) * (x - ear[0]) + (y - ear[1]) * (y - ear[1]) + (z - ear[2]) * (z - ear[2]));
+    };
+
+    const auto direct = distance (source[0], source[1], source[2]);
+
+    for (int nx = -box.order; nx <= box.order; ++nx)
+    {
+        for (int ny = -box.order; ny <= box.order; ++ny)
+        {
+            for (int nz = -box.order; nz <= box.order; ++nz)
+            {
+                const auto bounces = std::abs (nx) + std::abs (ny) + std::abs (nz);
+
+                if (bounces == 0 || bounces > box.order)
+                    continue;
+
+                const auto d = distance (imageOf (nx, box.length, source[0]), imageOf (ny, box.width, source[1]), imageOf (nz, box.height, source[2]));
+                reflections.push_back ({ (d - direct) / speedOfSound, std::pow (box.absorption, bounces) * direct / d });
+            }
+        }
+    }
+
+    std::sort (reflections.begin(), reflections.end(), [] (const auto& a, const auto& b) { return a.seconds < b.seconds; });
+    return reflections;
+}
 
 std::vector<double> resample (const double* source, int numSamples, double ratio)
 {

@@ -1,4 +1,5 @@
 #include "ModuleRack.h"
+#include "VerbLibrary.h"
 
 #include <fancy/plugin/ParamHelpers.h>
 #include <fancy/ui/ShellEditor.h>
@@ -191,6 +192,33 @@ void ModuleCard::addSettingKnobs()
 
         Control control;
 
+        // Phase 3 Q2.8: the Reverb generator's Early dropdown and True stereo checkbox.
+        if (setting.kind != verb::Setting::Kind::knob)
+        {
+            const auto current = (float) tree.getProperty (setting.id, setting.defaultValue);
+
+            if (setting.kind == verb::Setting::Kind::choice)
+                control.parameter = std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { setting.id, 1 }, setting.label,
+                                                                                  verb::earlyTypeNames(), juce::roundToInt (current));
+            else
+                control.parameter = std::make_unique<juce::AudioParameterBool> (juce::ParameterID { setting.id, 1 }, setting.label, current >= 0.5f);
+
+            control.link = std::make_unique<Link> (*control.parameter, [this, id = juce::Identifier (setting.id)] (float value)
+            {
+                processor.setModuleValue (uid, id, value);
+                updateDimming();
+            });
+
+            if (setting.kind == verb::Setting::Kind::choice)
+                control.component = std::make_unique<fancy::ui::ParamDropdown> (*control.parameter);
+            else
+                control.component = std::make_unique<ParamCheckbox> (*control.parameter, setting.label, accent());
+
+            addAndMakeVisible (*control.component);
+            controls.push_back (std::move (control));
+            continue;
+        }
+
         control.parameter = std::make_unique<juce::AudioParameterFloat> (
             juce::ParameterID { setting.id, 1 }, setting.label, rangeOf (setting),
             (float) tree.getProperty (setting.id, setting.defaultValue),
@@ -204,7 +232,9 @@ void ModuleCard::addSettingKnobs()
         });
 
         const auto colour = accent();
-        const auto& style = controls.size() >= 3 ? Knob::smallStyle : Knob::mediumStyle;
+        const auto& style = type == ModuleType::reverb ? Knob::tightStyle
+                          : controls.size() >= 3       ? Knob::smallStyle
+                                                       : Knob::mediumStyle;
         const auto bipolar = juce::String (setting.id) == "gain";
 
         auto knob = std::make_unique<Knob> (*control.parameter, setting.label, colour, style, bipolar);
@@ -271,7 +301,18 @@ void ModuleCard::placeKnobs()
         for (size_t i = 0; i < controls.size(); ++i)
             place (i, gridSlots[i]);
     }
-    else if (type == ModuleType::trim || type == ModuleType::reverb)
+    else if (type == ModuleType::reverb)
+    {
+        // Phase 3 Q2.8 (reference/phase3/24__verb_q28_mockup.png): two rows of five small knobs,
+        // then the Early dropdown and the True stereo checkbox.
+        for (size_t i = 0; i < controls.size() && i < 10; ++i)
+            place (i, { 12 + 66 * (int) (i % 5), i < 5 ? 56 : 158, 66, 99 });
+
+        place (10, { 80, 268, 110, 28 });
+        place (11, { 206, 272, 140, 20 });
+        updateDimming();
+    }
+    else if (type == ModuleType::trim)
     {
         for (size_t i = 0; i < controls.size(); ++i)
             place (i, wideGridSlots[i]);
@@ -286,6 +327,11 @@ juce::File ModuleCard::currentFile() const
 
 juce::String ModuleCard::breadcrumb() const
 {
+    const auto factory = tree[verb::ids::factory].toString();
+
+    if (factory.isNotEmpty())
+        return "/ Library / " + factory.upToFirstOccurrenceOf ("/", false, false);
+
     const auto path = tree[verb::ids::path].toString();
 
     if (path.isEmpty())
@@ -307,7 +353,9 @@ void ModuleCard::refresh()
         return;
 
     const auto path = tree[verb::ids::path].toString();
-    const auto name = path.fromLastOccurrenceOf ("\\", false, false).fromLastOccurrenceOf ("/", false, false);
+    const auto factory = tree[verb::ids::factory].toString();
+    const auto name = factory.isNotEmpty() ? factory.fromFirstOccurrenceOf ("/", false, false)
+                                           : path.fromLastOccurrenceOf ("\\", false, false).fromLastOccurrenceOf ("/", false, false);
 
     // A pair shows both files, left input first (Phase 3 Q2.8).
     const auto pairPath = tree[verb::ids::pairPath].toString();
@@ -357,6 +405,22 @@ void ModuleCard::browsePair()
 
 void ModuleCard::stepFile (int direction)
 {
+    // A library IR steps through its category.
+    if (const auto factory = tree[verb::ids::factory].toString(); factory.isNotEmpty())
+    {
+        const auto category = factory.upToFirstOccurrenceOf ("/", false, false);
+        juce::StringArray keys;
+
+        for (const auto& entry : verb::Library::builtIn().getEntries())
+            if (entry.category == category)
+                keys.add (entry.key());
+
+        if (const auto index = keys.indexOf (factory); index >= 0)
+            processor.loadLibrary (uid, keys[(index + direction + keys.size()) % keys.size()]);
+
+        return;
+    }
+
     const auto current = currentFile();
 
     if (! current.existsAsFile())
@@ -369,6 +433,16 @@ void ModuleCard::stepFile (int direction)
         return;
 
     processor.loadFile (uid, files[(index + direction + files.size()) % files.size()]);
+}
+
+void ModuleCard::updateDimming()
+{
+    // Size only matters to Room and Hall's early reflections.
+    if (type == ModuleType::reverb && controls.size() > 9)
+    {
+        const auto early = juce::roundToInt ((float) tree.getProperty ("early", 0.0f));
+        controls[7].component->setAlpha (early == 1 || early == 2 ? 1.0f : 0.4f);
+    }
 }
 
 bool ModuleCard::isTrueStereo() const
@@ -394,37 +468,88 @@ bool ModuleCard::isChanged() const
 void ModuleCard::showFileMenu()
 {
     const auto current = currentFile();
+    const auto factory = tree[verb::ids::factory].toString();
 
-    if (processor.isMissing (uid) || ! current.existsAsFile())
+    if (processor.isMissing (uid) && factory.isEmpty())
     {
         browse();
         return;
     }
 
-    const auto files = verb::audioFilesBeside (current);
+    // Phase 3 Q2.8: the library first, by category, then the IR folder.
+    constexpr int libraryId = 200000;
+    const auto& library = verb::Library::builtIn().getEntries();
 
     fancy::ui::Menu menu;
-    menu.setScrollingList (true);
 
-    for (int i = 0; i < files.size(); ++i)
-        menu.addItem (i + 1, files[i].getFileName(), true, files[i] == current);
+    if (! library.empty())
+    {
+        menu.addSection ("Library");
+
+        for (const auto& category : verb::Library::categories())
+        {
+            fancy::ui::Menu sub;
+            auto holdsCurrent = false;
+
+            for (size_t i = 0; i < library.size(); ++i)
+            {
+                if (library[i].category != category)
+                    continue;
+
+                const auto ticked = library[i].key() == factory;
+                holdsCurrent = holdsCurrent || ticked;
+                sub.addItem (libraryId + (int) i, library[i].name, true, ticked, library[i].isTrueStereo() ? "TS" : juce::String());
+            }
+
+            if (! sub.isEmpty())
+                menu.addSubMenu (category, std::move (sub), true, holdsCurrent);
+        }
+    }
+
+    const auto files = current.existsAsFile() ? verb::audioFilesBeside (current)
+                     : processor.getIrFolder().isDirectory() ? verb::audioFilesBeside (processor.getIrFolder().getChildFile ("_"))
+                                                             : juce::Array<juce::File>();
+
+    if (! files.isEmpty())
+    {
+        menu.addSection ("IR folder");
+
+        for (int i = 0; i < files.size(); ++i)
+            menu.addItem (i + 1, files[i].getFileName(), true, files[i] == current);
+    }
+
+    if (menu.isEmpty())
+    {
+        browse();
+        return;
+    }
 
     // Phase 3 Q2.8: true stereo from two stereo files, one per input.
     constexpr int pairId = 100000, removePairId = 100001;
     const auto paired = tree[verb::ids::pairPath].toString().isNotEmpty() || tree[verb::ids::pairFlac].toString().isNotEmpty();
 
-    menu.addSeparator();
-    menu.addItem (pairId, paired ? "Change right input..." : "Pair right input...");
+    if (current.existsAsFile())
+    {
+        menu.addSeparator();
+        menu.addItem (pairId, paired ? "Change right input..." : "Pair right input...");
 
-    if (paired)
-        menu.addItem (removePairId, "Remove pair");
+        if (paired)
+            menu.addItem (removePairId, "Remove pair");
+    }
 
     menu.show (fileDropdown, [safeThis = juce::Component::SafePointer<ModuleCard> (this), files] (int chosen)
     {
         if (safeThis == nullptr || chosen <= 0)
             return;
 
-        if (chosen == pairId)
+        if (chosen >= libraryId)
+        {
+            const auto& entries = verb::Library::builtIn().getEntries();
+
+            if ((size_t) (chosen - libraryId) < entries.size())
+                safeThis->processor.loadLibrary (safeThis->uid, entries[(size_t) (chosen - libraryId)].key());
+        }
+        else if (chosen == pairId)
             safeThis->browsePair();
         else if (chosen == removePairId)
             safeThis->processor.clearPair (safeThis->uid);
@@ -489,6 +614,12 @@ void ModuleCard::paint (juce::Graphics& g)
         g.setColour (juce::Colour (0xff7e7e7e));
         g.setFont (font (Weight::medium, 12.0f));
         g.drawText (breadcrumb(), 24, 71, 248, 14, juce::Justification::centredLeft, true);
+    }
+    else if (type == ModuleType::reverb)
+    {
+        g.setColour (colours::textPrimary.withMultipliedAlpha (dim));
+        g.setFont (font (Weight::regular, 14.0f));
+        g.drawText ("Early", 24, 268, 50, 28, juce::Justification::centredLeft, false);
     }
     else if (type == ModuleType::reverse)
     {

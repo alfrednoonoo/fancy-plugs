@@ -35,6 +35,17 @@ struct BuiltIr
     IrPreview preview;
 };
 
+// One early reflection of the Reverb generator's image-source box (Phase 3 Q2.8): its delay
+// after the direct sound, and its gain relative to the direct sound.
+struct Reflection
+{
+    double seconds = 0.0, gain = 0.0;
+};
+
+// The reflections from one input side to one output side (0 left, 1 right) for Early Room or
+// Hall, in order of arrival. Empty for Off and Plate.
+std::vector<Reflection> earlyPattern (EarlyType type, double sizeMetres, int sourceSide, int earSide);
+
 // Windowed-sinc rate change, in double precision. Runs off the audio thread.
 std::vector<double> resample (const double* source, int numSamples, double ratio);
 

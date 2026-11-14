@@ -46,8 +46,22 @@ const std::vector<Setting> reverbSettings {
     { "density", "Density", 0.0f, 100.0f, 80.0f, 1.0f, 1.0f, 0, "%" },
     { "damping", "Damping", 0.0f, 100.0f, 40.0f, 1.0f, 1.0f, 0, "%" },
     { "spread", "Stereo spread", 0.0f, 100.0f, 100.0f, 1.0f, 1.0f, 0, "%" },
+
+    // Phase 3 Q2.8, appended. At these defaults the generator makes the IR it always did.
+    { "lowDecay", "Low RT", 0.25f, 4.0f, 1.0f, 0.01f, 1.0f, 2, "x", true },
+    { "highDecay", "High RT", 0.25f, 4.0f, 1.0f, 0.01f, 1.0f, 2, "x", true },
+    { "size", "Size", 2.0f, 60.0f, 20.0f, 0.1f, 1.0f, 1, "m", true },
+    { "buildUp", "Build-up", 0.0f, 300.0f, 100.0f, 1.0f, 1.0f, 0, "ms" },
+    { "early", "Early", 0.0f, 3.0f, 0.0f, 1.0f, 1.0f, 0, "", false, Setting::Kind::choice },
+    { "trueStereo", "True stereo", 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0, "", false, Setting::Kind::toggle },
 };
 } // namespace
+
+const juce::StringArray& earlyTypeNames()
+{
+    static const juce::StringArray names { "Off", "Room", "Hall", "Plate" };
+    return names;
+}
 
 const std::vector<Setting>& settingsOf (ModuleType type)
 {
@@ -258,6 +272,7 @@ ChainSpec readChain (const juce::ValueTree& chain)
             item.pairHash = module[ids::pairHash].toString();
             item.pairFlac = module[ids::pairFlac].toString();
             item.pairFlacRate = module[ids::pairRate];
+            item.factory = module[ids::factory].toString();
         }
 
         spec.modules.push_back (std::move (item));

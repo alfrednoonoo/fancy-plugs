@@ -1,4 +1,5 @@
 #include "VerbProcessor.h"
+#include "VerbLibrary.h"
 #include "VerbEditor.h"
 
 #include <fancy/plugin/ParamHelpers.h>
@@ -460,6 +461,8 @@ bool VerbProcessor::loadFile (int uid, const juce::File& file)
     module.setProperty (verb::ids::flac, embed ? verb::encodeFlac (*audio) : juce::String(), nullptr);
     module.setProperty (verb::ids::rate, embed ? audio->sampleRate : 0.0, nullptr);
 
+    module.removeProperty (verb::ids::factory, nullptr);
+
     // Phase 3 Q2.8: a new file ends any pair. A four-channel file is true stereo, so it's not
     // mixed to mono; the property is only written when it's on, so other modules are unchanged.
     for (const auto& id : { verb::ids::pairPath, verb::ids::pairHash, verb::ids::pairFlac, verb::ids::pairRate })
@@ -496,6 +499,30 @@ bool VerbProcessor::loadPair (int uid, const juce::File& file)
     module.setProperty (verb::ids::pairRate, embed ? audio->sampleRate : 0.0, nullptr);
     module.setProperty (verb::ids::trueStereo, true, nullptr);
     module.setProperty (verb::ids::mono, false, nullptr);
+
+    chainEdited (true);
+    return true;
+}
+
+bool VerbProcessor::loadLibrary (int uid, const juce::String& key)
+{
+    auto module = findModule (uid);
+    const auto* entry = verb::Library::builtIn().find (key);
+
+    if (! module.isValid() || entry == nullptr)
+        return false;
+
+    for (const auto& id : { verb::ids::path, verb::ids::hash, verb::ids::flac, verb::ids::rate,
+                            verb::ids::pairPath, verb::ids::pairHash, verb::ids::pairFlac, verb::ids::pairRate })
+        module.removeProperty (id, nullptr);
+
+    module.setProperty (verb::ids::factory, key, nullptr);
+    module.setProperty (verb::ids::mono, false, nullptr);
+
+    if (entry->isTrueStereo())
+        module.setProperty (verb::ids::trueStereo, true, nullptr);
+    else
+        module.removeProperty (verb::ids::trueStereo, nullptr);
 
     chainEdited (true);
     return true;
