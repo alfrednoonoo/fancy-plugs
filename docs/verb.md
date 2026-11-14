@@ -183,3 +183,129 @@ The convolver's worker runs at JUCE `highest`, which is below the audio thread i
 6. State round trip, corrupted state, an embedded FLAC with the file deleted, and the missing-IR state.
 7. Offline renders are bit-identical across runs, §4.8 automation, and bypass.
 8. CPU benchmark.
+
+## Phase 3 Q2.8: IR library, true stereo and modulation
+
+Brief: Q2.8 of `docs/BUILD_PROMPT_PHASE3.md`. **Draft, waiting for the user's approval.** Six decisions are marked; **(R)** is the recommended option, and nothing is coded until they're settled. Then a mockup of the changed cards comes first, as for Q2.4 and Q2.5.
+
+### 1. Signal path
+
+```
+                ┌─ pre-delay ─ convolver ──────────────────────────┐
+in ─┬─ (sum if ─┤   direct: L→L, R→R (today)                       ├─ crossfade on a swap ─ Center/Width ─ × Wet ─┐
+    │  mono IR) │   true stereo: L→L+R, R→L+R (section 3)          │                                               ├─ + ─ × Output ─ bypass ─ out
+    │           └─ second tail convolver × LFO (Modulate, sec. 4) ─┘                                               │
+    └─ latency delay ─ × Dry ──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+With no true-stereo IR and no Modulate module, the path is today's, to the bit (section 7).
+
+### 2. IR library
+
+32 original impulse responses, made by the Verb's own generators, with no recorded or third-party audio.
+
+| Category | IRs |
+|---|---|
+| Rooms (8) | Booth, Small Room, Bedroom, Studio Live, Wood Room, Tiled Room, Drum Room, Garage |
+| Halls (7) | Recital Hall, Small Hall, Concert Hall, Dark Hall, Bright Hall, Cathedral, Arena |
+| Plates (6) | Short Plate, Vocal Plate, Bright Plate, Dark Plate, Long Plate, Drum Plate |
+| Chambers (5) | Small Chamber, Echo Chamber, Stone Chamber, Stairwell, Tunnel |
+| Special (6) | Reverse Swell, Gated Room, Nonlinear, Slap Room, Metal Ping, Endless Cloud |
+
+- **Decision 1: how the generators make 32 different spaces.** Today's Reverb generator is seeded noise under one RT60 envelope, with Density, Damping and Stereo spread. Thirty-two IRs from that alone would differ mainly in length and brightness.
+  - **A (R).** Extend the Reverb generator with new settings, appended and defaulting to today's output:
+    - **Low decay** and **High decay:** multipliers of Decay below 250 Hz and above 4 kHz, 0.25x to 4x.
+    - **Early:** off, Room, Hall or Plate. Room and Hall add a pattern of discrete early reflections from a simple image-source box; Plate has none.
+    - **Size:** the box for the early pattern, 2 to 60 m.
+    - **Build-up:** how long the tail takes to reach full density, 0 to 300 ms.
+    - **True stereo:** section 3.
+
+    The library is built at build time by a small tool that runs the plugin's own generator code on recipes in `plugins/verb/library/*.json`, as Sature's gain table is. The same settings are in the Reverb card, so the user has the same tools.
+  - **B.** Today's generators only, combined with Echo, LP/HP and Trim in chains. No new settings, but rooms, halls and plates would sound much alike.
+- **Decision 2: where the IRs live.** At 48 kHz, 24-bit and about 2.5 s on average, with the true-stereo halls and plates at four channels, the library is about 30 MB as WAV and about 22 MB as FLAC.
+  - **A (R).** Embedded in `Fancy Verb.vst3` as FLAC, through JUCE binary data, so it's always there. A File module that plays a library IR saves `factory:<name>` instead of a path, hash and embedded copy, so projects stay small. The plugin grows by about 22 MB.
+  - **B.** Store only the recipes (a few kB) and render each IR on the build worker when it's chosen, in well under a second. The plugin stays small and the IRs are the same, but they aren't WAV files, which the brief asked for. An `Export IR…` item in the card's menu could write one out.
+  - **C.** WAV files in the release zip, copied by `install.ps1` into the IR folder. The plugin stays small, but a project then depends on the folder, so every project would carry an embedded copy again.
+- **Dropdown:** the File card's dropdown gets a **Library** section, with the five categories as sub-sections, above the user's IR folder. The `<` `>` buttons step through the library within a category.
+- **Level:** every library IR is normalized to the same loudness (equal energy over its first 500 ms), so switching IRs doesn't jump in level.
+- **Rates:** the library is made at 48 kHz and resampled by the existing offline resampler at other rates, like any file.
+
+### 3. True stereo
+
+Today each IR channel convolves its own input channel: L→L and R→R. True stereo adds the cross paths, so a source on the left also reaches the right output through its own reflections.
+
+- **Convolver:** each stage already packs the input as `L + iR` in one complex FFT. With four IR spectra (LL, LR, RL, RR), it separates the input's two spectra, forms `YL = XL·HLL + XR·HRL` and `YR = XL·HLR + XR·HRR`, and packs them back for one inverse FFT. The FFTs don't change; the spectral multiply-adds double. Expected cost: about 1.4 times the direct path, with twice the IR memory.
+- **Mono bus:** the output is the input through `(LL + LR + RL + RR) / 2`, which is what the stereo output would give summed to mono.
+- **Modules:** generators add their left and right outputs to LL and RR, or to all four paths with True stereo on. LP/HP, Normalize, Trim, Reverse and Stretch process all four alike. Mix to mono sums everything to a direct mono IR, as now.
+- **Display:** the IR display keeps its two lanes, showing what reaches each output: LL + RL on top, LR + RR below. A small `TS` mark on the File card shows that a true-stereo IR is loaded.
+- **Decision 3: which files count as true stereo.**
+  - **A (R).** A four-channel file is read as LL, LR, RL, RR, the most common order. A stereo file can also be paired with a second stereo file, one per input, with **Pair right input…** in the card's dropdown. The pair is saved like the first file: path, hash and embedded copy.
+  - **B.** Four-channel files only. Simpler, but IRs that come as pairs would need converting first.
+
+### 4. Modulation
+
+A slow movement in the tail, so long reverbs don't ring statically, without changing pitch.
+
+- **Decision 4: how the tail moves.**
+  - **A (R). Two decorrelated tails, crossfaded.** The builder makes a second copy of the tail from **Start** on, with the same spectrum and decay but a different fine structure: short-time FFT frames of 2048 samples with their phases randomised (seeded, so it's repeatable), overlap-added. A second convolver plays that copy, and an LFO crossfades the two tails at equal power. The early part never moves. Gains changing slower than 2 Hz add no audible pitch. The cost is a second convolution of the tail only, which starts after Start, so only the large, cheap partitions run: about 1.6 times the CPU for a 3 s IR.
+  - **B. A slowly moving filter on the tail.** Two gentle bells, ±2 dB, wandering between 300 Hz and 6 kHz on the tail's output. Very cheap, but it sounds like filtering rather than motion, and it still needs the early part split off.
+- **Controls under A:**
+  - **Start:** 20 to 500 ms, default 80.
+  - **Rate:** 0.05 to 2 Hz, log, default 0.3.
+  - **Depth:** 0 to 100 %, default 50. At 100 % the tails swap fully.
+  - **Spread:** 0 to 100 %, default 100. The right channel's LFO runs a quarter cycle ahead, so the motion is wide.
+- **The LFO** is a smoothed random walk rather than a sine, so the motion doesn't repeat audibly. It's seeded, so offline renders are repeatable, and it restarts at `reset()`.
+- **Decision 5: where Modulation lives.**
+  - **A (R).** A new module, **Modulate**, in the add panel, with its own card (Start, Rate, Depth and Spread as small knobs) and power button. Only one per chain: with one in the chain, the add panel greys it out. Its place in the chain doesn't matter, because it always acts on the finished IR, as the trim handles do.
+  - **B.** Settings in the SETUP drawer. Fewer visible changes, but it's sound design rather than setup, and SETUP holds things set once.
+- **Not host parameters,** like every module setting today (see "Parameters" above): a chain's modules change at runtime and VST3's list is fixed. Rate, Depth and Spread don't rebuild the IR, so they change smoothly over 20 ms. Start rebuilds it, through the usual 64 ms crossfade.
+
+### 5. Presets
+
+**Decision 6 (R):** five new factory presets that show the new parts, with categories:
+
+- **Library Hall:** Concert Hall.
+- **Library Plate:** Vocal Plate.
+- **True Stereo Room:** Studio Live, true stereo.
+- **Modulated Hall:** Concert Hall with Modulate.
+- **Endless:** Endless Cloud with Modulate at 100 %.
+
+The six existing presets don't change.
+
+### 6. Controls and layout
+
+- **Main layout:** unchanged. The File card's dropdown gains the Library section and Pair right input…, and the card gains the `TS` mark. The add panel gains Modulate, and the Reverb card gains its new settings.
+- **Reverb card under Decision 1 A:** today it's 356 wide, in Echo's two-row grid, with five knobs. The new settings make ten knobs, so it becomes two rows of five small knobs, plus the Early dropdown and the True stereo checkbox.
+- **Modulate card:** 247 wide, one row of four small knobs.
+- **Mockup:** `design/phase3-mockup-src/verb-q28.html`, after the decisions: the File card with the Library menu open, the Reverb card, the Modulate card and the IR display with a true-stereo IR.
+
+### 7. State and compatibility
+
+- **State:** `stateVersion` is shared and stays at 4. Everything new is a new attribute or module type, so a v1.4.0 state has none of it and loads unchanged. A state saved by this version and opened in v1.4.0 drops the Modulate module and the pairing (unknown types and attributes are ignored, as now) and plays the direct IR.
+- **New attributes:** File `factory`, `pairPath`, `pairHash`, `pairFlac` and `pairRate`; Reverb `lowDecay`, `highDecay`, `early`, `size`, `buildUp` and `trueStereo`, all defaulting to today's output.
+- **Bit-identical:** the direct convolver path keeps its code. A copy of today's convolver in `tests/`, as `LegacyCompDsp` was for Comp, checks that a direct IR renders the same, sample for sample.
+
+### 8. Tests (Catch2)
+
+1. **Compatibility:** every existing factory preset and a File-module state render bit-identically to the legacy convolver, in both latency modes.
+2. **Generators:** each new Reverb setting at its default gives today's IR exactly. Low and High decay give the set RT60 per band within 10 %, measured by Schroeder integration in octave bands. Early with Size puts the first reflections where the image-source model says, within one sample.
+3. **Library:** all 32 load and are finite, they're within 0.5 dB of the shared loudness, and two runs of the tool give identical files. The binary data's total size is recorded in the measurements.
+4. **True stereo:** an IR with only LR set sends a left-only input to the right output alone. The convolver's output matches a direct time-domain convolution of all four paths within -100 dB, at block sizes 1, 7, 128, 1000 and 8192, in both latency modes.
+5. **Pairing:** a pair of stereo files gives the same IR as the equivalent four-channel file.
+6. **Modulation:**
+   - The decorrelated tail has the same octave-band energy envelope as the original within 1 dB, and a correlation with it under 0.2.
+   - Depth 0 renders bit-identically to no Modulate module.
+   - A 1 kHz tone through a modulated hall shows no sidebands above -60 dB beyond ±2 Hz, so no pitch change.
+   - Renders are repeatable.
+7. **State:** a true-stereo, paired, library and modulated chain round-trips. The same state with those parts stripped plays the direct IR without errors.
+8. **CPU (§0.4):** a 3 s IR direct (today's ratio), true stereo, modulated, and both, in Zero latency and Low CPU, in `docs/measurements/verb-q28.txt`. Targets: true stereo under 1.6 times direct, and modulation under 1.8 times direct.
+
+### 9. Build order
+
+Three pushes, checked in REAPER together:
+
+1. True stereo in the convolver, and the File card's four-channel and paired files, with tests 1, 4, 5 and 7.
+2. The Reverb generator's new settings, the library tool and the 32 IRs, and the Library menu, with tests 2 and 3.
+3. Modulate and the presets, then screenshots, the manual, the checklist and CPU.
+
+Before push 2, a Python model of the image-source early pattern and the per-band decay, to check the recipes sound as named before they're baked.

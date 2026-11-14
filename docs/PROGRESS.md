@@ -5,7 +5,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 ## Now
 
 - **Releasing v1.4.0** (EQ Q2.4 and Comp Q2.5, both passed in REAPER by the user on 14 November 2026): version bumped, README updated; waiting for the release build.
-- **Next item: Verb (Q2.8)**: content, true stereo and modulation. Design note first (`docs/verb.md`, a "Phase 3 Q2.8" section), then the user's decisions, then a mockup.
+- **Next item: Verb (Q2.8)**: IR library, true stereo, modulation. Design note drafted (`docs/verb.md`, "Phase 3 Q2.8"), waiting for the user's six decisions. Then a mockup, `design/phase3-mockup-src/verb-q28.html`. No code yet.
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
 
 ## Releases
