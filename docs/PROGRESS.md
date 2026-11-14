@@ -4,15 +4,8 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 ## Now
 
-- **Current item: Q2.4, Fancy EQ** (channel per band, 24 bands, Match): built, waiting for the user's REAPER check. Design and "As built" (section 7) in `docs/eq.md`; mockup `design/phase3-mockup-src/eq-q24.html`.
-  - Green: run 43611318357 (`7df8468`), 460 test cases. Screenshots `eq`, `eq-channel` and `eq-match` checked against the mockup. CPU in `docs/measurements/eq-q24.txt`.
-  - The EQ's minimum width is 724 px, up from 696, to fit `MATCH` in the header (user, 14 November 2026). Below 781 px the link is its icon alone.
-  - Next: the user's REAPER check (`docs/eq-checklist.md`, the two Q2.4 sections), then the release (v1.4.0), then Comp (Q2.5).
-- **Comp (Q2.5): built, green, waiting for the user's REAPER check.** Design and "As built" (section 10) in `docs/comp.md`; mockup `reference/phase3/23__comp_q25_mockup.png` (approved 14 November 2026).
-  - Green: run 43633937359 (`d21fb1b`), 476 test cases. Screenshots `comp-detector`, `comp-character`, `comp-upward`, `comp-options` checked against the mockup. CPU in `docs/measurements/comp-q25.txt`.
-  - CPU targets restated by the user (14 November 2026) as the cost added over the same oversampling: < 1.5 % at 4x (0.86 % measured), < 3 % at 8x (1.76 %), run 43639193810. The aliasing targets were lowered to what the model allows (As built).
-  - Built before EQ's REAPER sign-off, at the user's request: v1.4.0 can carry both, or EQ can be released from `25fb11c` first.
-  - Next: the user's REAPER check (`docs/comp-checklist.md`, the Q2.5 section).
+- **Releasing v1.4.0** (EQ Q2.4 and Comp Q2.5, both passed in REAPER by the user on 14 November 2026): version bumped, README updated; waiting for the release build.
+- **Next item: Verb (Q2.8)**: content, true stereo and modulation. Design note first (`docs/verb.md`, a "Phase 3 Q2.8" section), then the user's decisions, then a mockup.
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
 
 ## Releases
@@ -37,6 +30,7 @@ Every item below is built, green in CI and passed by the user in REAPER. Each ha
 - **Phase 2.1:** S styled pop-ups, H host compatibility (`docs/host-compat.md`), W undo/A-B/Compare, D dynamic EQ, U upward compression, A adaptive noise tracking. Design notes `docs/phase2_1-<item>.md`. Released as v1.2.0.
 - **Phase 3 Q1:** FancyBench benchmark host (`docs/phase3-Q1.md`, how-to `docs/bench.md`, results `docs/research/bench-2026-11-09.md`).
 - **Phase 3 Q2.1:** preset browser, free resizing, title strip (`docs/phase3-Q2.1.md`, `docs/presets-checklist.md`).
+- **Phase 3 Q2.4:** Fancy EQ, channel per band, 24 bands, Match (`docs/eq.md`, section 7). **Q2.5:** Fancy Comp, Character, Upward, Auto threshold, detector EQ, 8x (`docs/comp.md`, section 10). REAPER checks passed on 14 November 2026.
 - **Phase 3 Q5 step 1:** design rules, `docs/DESIGN_SYSTEM.md` (accents: Limit red, DS green, DS-Mini blue, Sature orange, Room purple).
 - **Phase 3 new plugins:** Fancy Limit (`docs/limit.md`), Fancy DS (`docs/ds.md`), Fancy DS-Mini (`docs/ds-mini.md`), Fancy Sature (`docs/sature.md`), Kicker's Sub mode (`docs/kicker-sub.md`), Fancy Room (`docs/room.md`). REAPER checks passed on 10 November (Limit) and 13 November 2026 (the rest).
 - **§0.3 Listen rule:** Listen and preview switches are temporary, never parameters (`FancyProcessor::setListening`, `ListenCheckbox`), retrofitted to Comp's and Gate's Preview filter and FIR's Listen. Limit's "Listen to removed" stays a parameter, by the user's choice.
@@ -47,10 +41,8 @@ Latest green run: 43639193810 (commit `5b71497`, Comp Q2.5), 476 test cases, plu
 
 In Q2's order (`docs/BUILD_PROMPT_PHASE3.md`), each with an approved design note first and signed off in REAPER before the next:
 
-1. EQ (Q2.4): mid/side, 24 bands, Match. Next.
-2. Comp (Q2.5): character and upward compression.
-3. Verb (Q2.8): content, true stereo and modulation.
-4. Then MultiComp (Q2.6), Delay (Q2.3), FIR (Q2.7) and Kicker (Q2.2, now reduced to Sub mode, which is done). Confirm this part of the order with the user when the first three are done.
+1. Verb (Q2.8): content, true stereo and modulation. Next.
+2. Then MultiComp (Q2.6), Delay (Q2.3), FIR (Q2.7) and Kicker (Q2.2, now reduced to Sub mode, which is done). Confirm this part of the order with the user when Verb is done.
 
 Mac comes after Windows is finished. Phase 4 holds Kicker's sidechain Duck, a transient shaper and a chorus.
 
@@ -61,6 +53,8 @@ Mac comes after Windows is finished. Phase 4 holds Kicker's sidechain Duck, a tr
 - Header knob and the EDIT drawer's Output are the same parameter.
 - Kicker's Sub mode: Divider engine only; a Spectral engine only if Divider disappoints. Q2.2's Harmonics mode is dropped and its Duck moves to Phase 4 (user, 11 November 2026).
 - Limit's CPU target is under 5 % at 4x with True peak (user, 10 November 2026).
+- Comp's Q2.5 CPU targets are the cost added over the same oversampling: under 1.5 % at 4x, under 3 % at 8x (user, 14 November 2026).
+- The EQ's minimum width is 724 px, to fit `MATCH` in the header (user, 14 November 2026).
 - The preset browser: one click loads and keeps it open; double-click or Enter loads and closes (user, 13 November 2026).
 - Phase 1 reference images live outside the public repo, in `C:/dev/fancy-plugs-private/reference/`. Never commit them.
 - Never store a Figma token in the repo. The Figma data is committed, so a token is only needed to export again.

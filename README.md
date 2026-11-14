@@ -1,13 +1,13 @@
 # Fancy Plugs
 
-Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and signed off by ear in REAPER. Version **1.3.0**.
+Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and signed off by ear in REAPER. Version **1.4.0**.
 
 | Plugin | What it does |
 |---|---|
 | Fancy Kicker | Low-end enhancer: Boost (one big Freq knob, Wet and Dry) or, new in 1.3.0, Sub, which adds an octave or two below |
 | Fancy Exciter | Parallel high-frequency exciter with clip boost and a mix-back control |
-| Fancy Comp | Compressor with a Threshold fader over the input meter, a filtered detector, a sidechain and an output limiter |
-| Fancy EQ | Up to 16 bands with draggable handles, a live analyzer and, new in 1.2.0, dynamic bands |
+| Fancy Comp | Compressor with a Threshold fader over the input meter, a filtered detector, a sidechain and an output limiter; new in 1.4.0, Character, upward compression, Auto threshold and a detector EQ |
+| Fancy EQ | Up to 24 bands with draggable handles, a live analyzer, dynamic bands and, new in 1.4.0, mid/side per band and Match |
 | Fancy Verb | Convolution reverb built from a chain of modules: impulse file, filters, echo generator, normalize |
 | Fancy Delay | Up to 16 delay taps, each with its own feedback, loop filters, bit crush, width, pan and ping-pong |
 | Fancy MultiComp | Up to 8 bands of compression behind flat-summing crossovers and, new in 1.2.0, upward compression |
@@ -19,7 +19,19 @@ Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and si
 | Fancy Sature | New in 1.3.0: saturator with Tape, Tube, Transistor and Clip curves, even/odd Character, Tone, oversampling and auto gain |
 | Fancy Room | New in 1.3.0: algorithmic reverb from small room to long hall, with Freeze, tempo-synced pre-delay, a send mode and ducking |
 
-## What's new in 1.3.0
+## What's new in 1.4.0
+
+- **Fancy EQ: 24 bands and a channel per band.** Up to 24 bands, and each one can work on Stereo, Left, Right, Mid or Side, from a small chip under its type. The white curve shows the total for the selected band's channel, Linear phase follows the channels in use, and the analyzer can show any one channel.
+- **Fancy EQ: Match.** Learn a reference and your material, from the sidechain or captured one after the other, and Match writes ordinary bands into free slots to move your track towards the reference, as one undo step. Amount, Smoothing, the number of bands and a frequency range set how far it goes.
+- **Fancy Comp: Character.** A Warm or Bright saturation stage, before or after the compressor, with Drive, using Fancy Sature's curves.
+- **Fancy Comp: upward compression,** as in Fancy MultiComp, with Up threshold, Up ratio, Max lift and a Floor, and a transfer curve that shows both directions.
+- **Fancy Comp: Auto threshold** follows the input's long-term level, so the gain reduction stays steady between quiet and loud passages. The Threshold meter shows the threshold in use.
+- **Fancy Comp: detector EQ and 8x.** A low shelf, a bell and a high shelf shape what the detector hears, with a curve you can drag. Oversampling now goes to 8x. The EDIT drawer has four pages: Detector, Character, Upward and Options.
+- **Three new Comp presets:** Warm Bus, Upward Vocal and Level Rider.
+
+Projects saved with 1.0 to 1.3 load and sound exactly as before. Every new setting defaults to the old behaviour.
+
+## What was new in 1.3.0
 
 - **Five new plugins:** Fancy Limit, Fancy DS, Fancy DS-Mini, Fancy Sature and Fancy Room (table above).
 - **Sub mode in Fancy Kicker.** A Boost | Sub switch at the top. Sub tracks the kick's pitch and adds a clean sub an octave or two below, under Cutoff. Boost sounds exactly as before.
@@ -29,17 +41,6 @@ Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and si
 - **Listen switches are temporary.** Comp's and Gate's Preview filter and FIR's Listen switches now turn off when you close the window and are never saved, like the new plugins' Listen. A project saved with one of them on opens with it off; nothing else about old projects changes.
 
 Projects saved with 1.0, 1.1 and 1.2 load and sound exactly as before.
-
-## What was new in 1.2.0
-
-- **Undo, redo, A/B and Compare in every plugin.** There are 100 steps of undo and redo (Ctrl+Z and Ctrl+Y), and two settings slots, A and B, with a copy button. Compare matches the loudness of the dry signal so you can judge the processing at equal level.
-- **Styled menus, dropdowns, tooltips, typed values and dialogs** that match the rest of the design, instead of the plain Windows ones.
-- **Host compatibility.** Offline renders now match playback. Keys you press reach the host, so the space bar works with a plugin window focused. The plugins follow the host's display scaling, report latency changes to the host, and Comp, MultiComp, FIR and Gate have sidechain inputs. Every plugin passes Steinberg's VST3 validator, pluginval and a host-behaviour test in CI.
-- **Dynamic EQ (Fancy EQ).** Any bell, shelf, tilt or notch can be made dynamic, cutting or boosting above or below a threshold, optionally keyed from a sidechain.
-- **Upward compression (Fancy MultiComp).** Each band can lift quiet passages, with Max lift and a Floor. Global Depth and Time controls scale the processing, and a "Big squash" preset uses all of it.
-- **Adaptive noise tracking (Fancy FIR).** Subtract mode can follow a noise floor that changes over time, using minimum statistics, while leaving speech, music and sustained tones alone. It runs on the learned profile, the tracked one, or both.
-
-Projects saved with 1.0 and 1.1 load and sound exactly as before. Every new parameter defaults to the old behaviour.
 
 ## The plugins
 
@@ -57,11 +58,19 @@ The screenshots below are rendered by CI from the current build, at 2× scale.
 
 <img src="docs/images/comp.png" width="934" alt="Fancy Comp">
 
+The EDIT drawer's Upward page, with the static curve and the current lift:
+
+<img src="docs/images/comp-upward.png" width="934" alt="Fancy Comp's EDIT drawer on the Upward page">
+
 ### Fancy EQ
 
 Shown with band 2 set as a dynamic cut. The dashed outline shows the most it can cut, and the filled curve shows what it's cutting right now.
 
 <img src="docs/images/eq-dynamic.png" width="802" alt="Fancy EQ with a dynamic band">
+
+The Match card over a learned reference (purple), the current material (grey) and the target (dashed):
+
+<img src="docs/images/eq-match.png" width="802" alt="Fancy EQ's Match card">
 
 ### Fancy Verb
 
