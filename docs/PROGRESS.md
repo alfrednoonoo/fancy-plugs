@@ -5,9 +5,8 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 ## Now
 
 - **Current item: Q2.4, Fancy EQ** (channel per band, 24 bands, Match): built, waiting for the user's REAPER check. Design and "As built" (section 7) in `docs/eq.md`; mockup `design/phase3-mockup-src/eq-q24.html`.
-  - Green: run 43609486929 (`1800906`), 460 test cases: 24 bands, Channel in both phase modes, the total per channel, the analyzer's Channel, Match. Screenshots `eq-channel` and `eq-match` checked against the mockup. CPU in `docs/measurements/eq-q24.txt`.
-  - After that run: the `MATCH` link widened by 10 px (it read "MATC"). Check `eq@1x.png` in the next run's screenshots.
-  - **For the user to confirm:** the EQ's minimum width went from 696 to 724 px, because the header had no room for `MATCH` at 696 (section 7 of the design note). Below 781 px the link is its icon alone.
+  - Green: run 43611318357 (`7df8468`), 460 test cases. Screenshots `eq`, `eq-channel` and `eq-match` checked against the mockup. CPU in `docs/measurements/eq-q24.txt`.
+  - The EQ's minimum width is 724 px, up from 696, to fit `MATCH` in the header (user, 14 November 2026). Below 781 px the link is its icon alone.
   - Next: the user's REAPER check (`docs/eq-checklist.md`, the two Q2.4 sections), then the release (v1.4.0), then Comp (Q2.5).
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
 
@@ -37,7 +36,7 @@ Every item below is built, green in CI and passed by the user in REAPER. Each ha
 - **Phase 3 new plugins:** Fancy Limit (`docs/limit.md`), Fancy DS (`docs/ds.md`), Fancy DS-Mini (`docs/ds-mini.md`), Fancy Sature (`docs/sature.md`), Kicker's Sub mode (`docs/kicker-sub.md`), Fancy Room (`docs/room.md`). REAPER checks passed on 10 November (Limit) and 13 November 2026 (the rest).
 - **§0.3 Listen rule:** Listen and preview switches are temporary, never parameters (`FancyProcessor::setListening`, `ListenCheckbox`), retrofitted to Comp's and Gate's Preview filter and FIR's Listen. Limit's "Listen to removed" stays a parameter, by the user's choice.
 
-Latest green run: 43436706689 (commit `e2ed62c`, the v1.3.0 release), 439 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
+Latest green run: 43611318357 (commit `7df8468`, EQ Q2.4), 460 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
 
 ## Still to do in Phase 3
 
