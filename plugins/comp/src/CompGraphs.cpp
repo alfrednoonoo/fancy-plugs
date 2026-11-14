@@ -367,7 +367,7 @@ void CharacterCurve::paint (juce::Graphics& g)
         return;
     }
 
-    g.drawText ((type == 1 ? "Warm" : "Bright") + juce::String (" · Drive ") + juce::String (driveDb, 1) + " dB",
+    g.drawText ((type == 1 ? "Warm" : "Bright") + juce::String (" - Drive ") + juce::String (driveDb, 1) + " dB",
                 juce::Rectangle<float> (margin + 4.0f, margin - 4.0f, size, 14.0f), juce::Justification::centredLeft, false);
 
     const auto drive = std::pow (10.0, driveDb / 20.0);
@@ -522,7 +522,7 @@ void UpwardCurve::paint (juce::Graphics& g)
         {
             g.setColour (colours::accentGreen);
             g.setFont (smallFont());
-            g.drawText ("+" + juce::String (lift, 1) + " dB", juce::Rectangle<float> (x + 8.0f, y - 18.0f, 60.0f, 12.0f), juce::Justification::centredLeft, false);
+            g.drawText ("+" + juce::String (lift, 1) + " dB", juce::Rectangle<float> (x - 64.0f, y - 20.0f, 56.0f, 12.0f), juce::Justification::centredRight, false);
         }
     }
 

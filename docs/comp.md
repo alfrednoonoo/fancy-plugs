@@ -275,3 +275,5 @@ Push 1 holds the whole item: the moves into `fancy-core`, 8x, Character, Upward,
 - **Drawer:** the view switch remembers the last page per editor, not in the state, and starts on Detector.
 - **Sidechain EQ:** the shelves are second order with a Butterworth Q. A band at exactly 0 dB is skipped, and its state is cleared, so it starts from rest when it comes back.
 - **Screenshots:** `comp-detector`, `comp-character`, `comp-upward` and `comp-options`, with the mockup's values.
+- **Green:** run 43633937359 (`d21fb1b`), 476 test cases, pluginval, Steinberg's validator, the host harness and FancyBench. The first push (`9b77d50`) failed to compile: a tooltip on a plain component and Catch's `range` without its header.
+- **CPU misses its targets** (`docs/measurements/comp-q25.txt`): everything on at 4x is 4.37 % against under 1.5 %, and at 8x 8.3 % against under 3 %. The targets were wrong rather than the stages: Comp at 4x with nothing new on already costs 3.38 % in the same run. The stages add about 1.0 % over 4x. Waiting for the user's decision on the targets.

@@ -8,7 +8,11 @@ Short status for starting a session. The full history to 13 November 2026 (run n
   - Green: run 43611318357 (`7df8468`), 460 test cases. Screenshots `eq`, `eq-channel` and `eq-match` checked against the mockup. CPU in `docs/measurements/eq-q24.txt`.
   - The EQ's minimum width is 724 px, up from 696, to fit `MATCH` in the header (user, 14 November 2026). Below 781 px the link is its icon alone.
   - Next: the user's REAPER check (`docs/eq-checklist.md`, the two Q2.4 sections), then the release (v1.4.0), then Comp (Q2.5).
-- **Comp (Q2.5) design note approved** (`docs/comp.md`, "Phase 3 Q2.5"): every recommended option, 14 November 2026; no badge. Mockup `reference/phase3/23__comp_q25_mockup.png` (source `design/phase3-mockup-src/comp-q25.html`) waits for the user's approval. Code starts after that and after EQ's REAPER sign-off.
+- **Comp (Q2.5): built, green, waiting for the user's REAPER check.** Design and "As built" (section 10) in `docs/comp.md`; mockup `reference/phase3/23__comp_q25_mockup.png` (approved 14 November 2026).
+  - Green: run 43633937359 (`d21fb1b`), 476 test cases. Screenshots `comp-detector`, `comp-character`, `comp-upward`, `comp-options` checked against the mockup. CPU in `docs/measurements/comp-q25.txt`.
+  - Open: the CPU targets (everything on at 4x 4.37 % against 1.5 %; 4x alone is 3.38 %); the aliasing targets were lowered to what the model allows (As built).
+  - Built before EQ's REAPER sign-off, at the user's request: v1.4.0 can carry both, or EQ can be released from `25fb11c` first.
+  - Next: the user's REAPER check (`docs/comp-checklist.md`, the Q2.5 section).
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
 
 ## Releases
@@ -37,7 +41,7 @@ Every item below is built, green in CI and passed by the user in REAPER. Each ha
 - **Phase 3 new plugins:** Fancy Limit (`docs/limit.md`), Fancy DS (`docs/ds.md`), Fancy DS-Mini (`docs/ds-mini.md`), Fancy Sature (`docs/sature.md`), Kicker's Sub mode (`docs/kicker-sub.md`), Fancy Room (`docs/room.md`). REAPER checks passed on 10 November (Limit) and 13 November 2026 (the rest).
 - **§0.3 Listen rule:** Listen and preview switches are temporary, never parameters (`FancyProcessor::setListening`, `ListenCheckbox`), retrofitted to Comp's and Gate's Preview filter and FIR's Listen. Limit's "Listen to removed" stays a parameter, by the user's choice.
 
-Latest green run: 43611318357 (commit `7df8468`, EQ Q2.4), 460 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
+Latest green run: 43633937359 (commit `d21fb1b`, Comp Q2.5), 476 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
 
 ## Still to do in Phase 3
 
