@@ -156,8 +156,12 @@ void addTrueStereoFile (Channels& ir, const ModuleSpec& module, double sampleRat
         return;
     }
 
-    makeTrueStereo (ir);
+    if (length == 0)
+        return;
+
+    // Grow first: cross paths made on an empty IR would be empty, which reads as "not true stereo".
     growTo (ir, length);
+    makeTrueStereo (ir);
 
     for (size_t i = 0; i < length; ++i)
     {
