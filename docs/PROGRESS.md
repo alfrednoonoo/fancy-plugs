@@ -4,9 +4,10 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 ## Now
 
-- **Releasing v1.4.0** (EQ Q2.4 and Comp Q2.5, both passed in REAPER by the user on 14 November 2026): version bumped, README updated; waiting for the release build.
-- **Next item: Verb (Q2.8)**: IR library, true stereo, modulation. Design approved by the user (every recommended option, 14 November 2026; `docs/verb.md`, "Phase 3 Q2.8"). Mockup `reference/phase3/24__verb_q28_mockup.png` (source `design/phase3-mockup-src/verb-q28.html`) waits for the user's approval. No code yet.
-- **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
+- **Current item: Verb (Q2.8)**: IR library, true stereo, modulation. Design (every recommended option) and mockup (`reference/phase3/24__verb_q28_mockup.png`) approved by the user on 14 November 2026; `docs/verb.md`, "Phase 3 Q2.8".
+  - Push 1 (true stereo: convolver cross paths, four-channel files, pairs, File card) pushed as `1085a3f`, run 43646158395.
+  - Next: push 2 (Reverb generator settings, library tool and 32 IRs, Library menu), then push 3 (Modulate, presets, docs).
+- **Latest release:** [v1.4.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.4.0), 14 November 2026.
 
 ## Releases
 
@@ -17,6 +18,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 | v1.1.0 | Delay, MultiComp, FIR | |
 | v1.2.0 | Gate; Phase 2.1 (S, H, W, D, U, A) | 42576245019, commit `a613f77` |
 | v1.3.0 | Limit, DS, DS-Mini, Sature, Room, Kicker Sub mode, preset browser, free resizing, title strip, temporary Listen switches | 43436706689, commit `e2ed62c` |
+| v1.4.0 | EQ: channel per band, 24 bands, Match. Comp: Character, Upward, Auto threshold, detector EQ, 8x | 43644278032, commit `82a4bbd` |
 
 Release recipe: bump `project(... VERSION)` in `CMakeLists.txt` (it has CRLF line endings, so edit it byte-exact), update `README.md` (plugin table, "What's new", screenshots from the latest `screens-<sha>` @2x into `docs/images/`), push, wait for green, then `gh release create v<x.y.z>` with that run's `FancyPlugs-VST3-<sha>` artifact zipped as it is, named `FancyPlugs-<x.y.z>-win64.zip`. Notes follow v1.2.0's: what's new, install, build (run, commit, test count).
 
