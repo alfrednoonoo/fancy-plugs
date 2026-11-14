@@ -259,3 +259,19 @@ Two pushes, both checked in REAPER together:
 2. Auto threshold, the sidechain EQ and the drawer tabs, then screenshots, the manual, the checklist and CPU.
 
 Before the first push, a Python model of the Character curves' harmonics and aliasing and of Auto threshold's settling, as `docs/research/room-model.py` did for Room.
+
+### 10. As built
+
+Push 1 holds the whole item: the moves into `fancy-core`, 8x, Character, Upward, Auto threshold, the sidechain EQ, the drawer's tabs and graphs, the presets and the tests (`tests/CompQ25Tests.cpp`). The model is `docs/research/comp-q25-model.py`.
+
+- **Compatibility:** `tests/LegacyCompDsp.*` is `CompDsp` at commit `07cebe8`. A test renders both at Off, 2x and 4x in six setting variants (filters, Classic, feedback, pre-comp, sidechain, limiter, minimum phase, Auto make-up, linear release, Mid) and requires identical samples and latency. A second test strips the 16 new IDs from a saved state and requires identical renders.
+- **Shared code:** EQ's filters are `fancy/dsp/MatchedFilters.h` and `fancy-core/src/MatchedFilters.cpp`, in `fancy::dsp::matched`. `plugins/eq/src/EqFilters.h` is now a shim that brings the names into `eq`, so EQ's code is unchanged. MultiComp's `liftFor` calls `fancy::dsp::upward::liftFor` (`fancy/dsp/Upward.h`).
+- **Character, as built:** the stage adds what the curve changes rather than replacing the signal, as Fancy Sature does: `x + (shaped − linear) / Drive` through the inverse tilt, where `linear` is the ADAA's own two-sample average. Quiet material is untouched to the bit (the model: under 0.001 dB at −60 dBFS, 20 Hz to 20 kHz, even at the base rate), and only the added part carries the ADAA's half-sample lag. Warm's DC blocker (5 Hz) works on the added part. A change of Type or Position fades the stage out over 10 ms, switches, and fades in over 10 ms.
+- **Character's level:** `f(d·x)/d` holds peaks near −Drive dBFS (at Drive 24 dB, a 0 dBFS sine comes out near −24 dBFS). That's the approved curve; the manual says so.
+- **Aliasing targets changed.** Section 8, test 5 asked for −90 dBFS at 8x and −70 at 4x (10 kHz, 0 dBFS, Drive 24, 44.1 kHz). The model, with ideal filters, reaches −88.5 (Bright, 8x) and −73.3 (Bright, 4x); Warm reaches −97.6 and −75.6. The test requires under −82 at 8x, under −66 at 4x, and 8x at least 8 dB under 4x.
+- **Upward with Classic:** Classic's smoothed level starts at the bottom of the knee, so it can't see quiet levels. The lift always reads the level itself, through its own follower on Comp's ballistics, in Classic too.
+- **Auto threshold's gate:** the long-term level holds below −60 dBFS **or 40 dB under the long-term level**, measured through a 5 ms average. With the designed 50 ms gate alone, the first 0.6 s of a pause pulled the level down by about 1 dB. With feedback detection on a main-input detector, the tracker reads the input before the sidechain EQ.
+- **Threshold meter:** the second marker is a 2 px white line at 60 %. The meter has no room under its readout for the mockup's "auto −18.0" caption, so the offset shows only on the Detector page.
+- **Drawer:** the view switch remembers the last page per editor, not in the state, and starts on Detector.
+- **Sidechain EQ:** the shelves are second order with a Butterworth Q. A band at exactly 0 dB is skipped, and its state is cleared, so it starts from rest when it comes back.
+- **Screenshots:** `comp-detector`, `comp-character`, `comp-upward` and `comp-options`, with the mockup's values.

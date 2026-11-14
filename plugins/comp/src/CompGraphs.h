@@ -45,7 +45,7 @@ struct CompParameters
 // The detector's response: Highpass and Lowpass (dimmer) and the three bands. The handles drag a
 // band's Freq and Gain; the wheel sets the bell's Q. It only draws the detector: it never changes
 // the audio path.
-class DetectorCurve final : public juce::Component
+class DetectorCurve final : public juce::Component, public juce::SettableTooltipClient
 {
 public:
     explicit DetectorCurve (CompParameters parameters);

@@ -44,11 +44,13 @@ To use the sidechain in REAPER, route another track to channels 3 and 4 of this 
 
 ## EDIT drawer
 
-Click **EDIT** at the right of the Detector input row to open it, and **Done** to close it.
+Click **EDIT** at the right of the Detector input row to open it, and **Done** to close it. A switch in its title row picks one of four pages: **Detector**, **Character**, **Upward** and **Options**. The drawer opens on the page you used last.
+
+### Options
 
 | Control | Default | What it does |
 |---|---|---|
-| Oversampling | Off | 2x or 4x reduces aliasing at very fast settings, at the cost of CPU and latency. With it on, the detector always averages over at least 0.1 ms |
+| Oversampling | Off | 2x, 4x or 8x reduces aliasing at very fast settings and from Character, at the cost of CPU and latency. With it on, the detector always averages over at least 0.1 ms |
 | Oversampling filter | Linear | Linear keeps wet and dry phase-aligned. Minimum has less pre-ringing |
 | Release curve | Exponential | Linear falls at a constant dB rate, like older compressors |
 | Feedback detection | off | The detector listens to the compressor's own output, for a gentler, more program-dependent response |
@@ -57,6 +59,32 @@ Click **EDIT** at the right of the Detector input row to open it, and **Done** t
 | Output | 0.0 dB | The same control as the header knob |
 
 Aliasing only matters with very fast settings on bright material. In a harsh test (15 kHz sine, attack 0.1 ms, release 1 ms), the worst alias is -56.8 dBFS with oversampling off, -79.2 dBFS at 2x and -100.9 dBFS at 4x.
+
+### Detector
+
+Three bands shape what the detector hears, after Highpass and Lowpass: a **low shelf**, a **bell** and a **high shelf**, each with Freq and Gain, and Q on the bell. They never touch the audio you hear. A band at 0 dB is off. Boost a band to make the compressor react more to that range, as a de-esser does with the bell on sibilance, or cut the low shelf so kick drums stop pumping a mix. **Preview filter** plays the whole detector chain, bands included.
+
+The curve at the top draws the detector's response: Highpass and Lowpass dimmer, the bands brighter. Drag a handle to set its band's Freq and Gain, and use the mouse wheel for the bell's Q.
+
+**Auto threshold** keeps the gain reduction steady when the input gets louder or quieter, for example between a quiet verse and a loud chorus, or across songs at different levels. It measures the detector's long-term level (about 3 s) and moves Threshold and Up threshold with it, so Threshold is set as if the input sat at -18 dBFS RMS. At -18 dBFS nothing changes; 6 dB louder moves both thresholds up 6 dB. Silence and pauses don't pull it down: below -60 dBFS, or 40 dB under the long-term level, it holds. The offset shows next to the checkbox, and the Threshold meter draws the threshold in use as a thin white line under the handle. The offset is limited to ±24 dB.
+
+### Character
+
+A saturation stage inside the compressor, using Fancy Sature's curves.
+
+| Control | Default | What it does |
+|---|---|---|
+| Type | Off | **Warm**: a soft, asymmetric curve with the lows tilted into it, so even harmonics and a thicker low end. **Bright**: a harder, symmetric knee with the highs tilted into it, so odd harmonics and edge |
+| Position | Post | **Pre** saturates before the compressor, so the compressor hears the rounded peaks and reacts a little less. **Post** saturates after make-up gain |
+| Drive | 6.0 dB | How hard the curve is driven. Quiet material passes untouched, so turning Drive up rounds the peaks rather than making everything louder: at Drive 12 dB, peaks above about -12 dBFS are rounded and held near that level. Lower Threshold or raise Wet if the result is quieter than you want |
+
+The graph shows the curve for the current Type and Drive, input against output. Changing Type or Position while playing fades the stage out and back in over 20 ms, without a click. Use 4x or 8x oversampling with high Drive on bright material, to keep aliasing down.
+
+### Upward
+
+Upward compression raises quiet passages, as in Fancy MultiComp: below **Up threshold** the level is raised by **Up ratio** (1:2 lifts a signal 10 dB under the Up threshold by 5 dB), up to **Max lift**. Below **Floor** nothing is raised, and the lift fades out over the 8 dB above it, so noise and silence stay where they are. Up threshold is held at or below Threshold. The lift uses Attack and Release (and Auto release) like the downward part.
+
+The graph draws the whole static curve, downward in teal and upward in green, with a dot at the current level. The GR meter still shows only the reduction.
 
 ## Attack and release times
 
@@ -69,6 +97,7 @@ Attack and release are time constants: the time to cover about 63 % of the dista
 | Base | 0 samples |
 | Oversampling 2x | 55 samples, FIR |
 | Oversampling 4x | 69 samples, FIR |
+| Oversampling 8x | a few samples more than 4x, FIR (shown in REAPER) |
 | Limit output | adds 104 samples at 48 kHz |
 | Pre-comp | adds the set time |
 

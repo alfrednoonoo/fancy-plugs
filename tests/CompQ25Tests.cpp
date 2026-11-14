@@ -187,7 +187,7 @@ Stereo programme (int numSamples, unsigned seed)
 TEST_CASE ("Q2.5 at its defaults renders exactly as Comp did before it", "[comp][q25]")
 {
     const auto oversampling = GENERATE (0, 1, 2);
-    const auto variant = GENERATE (range (0, 6));
+    const auto variant = GENERATE (0, 1, 2, 3, 4, 5);
 
     LegacyCompDsp::Targets old;
     old.thresholdDb = -24.0;

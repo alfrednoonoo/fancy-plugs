@@ -92,3 +92,19 @@ Tell me "Comp OK", or list which items failed and what you saw. Once it's OK, I'
 - [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
 - [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
 - [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
+
+## Character, Upward, Auto threshold and sidechain EQ (Phase 3 Q2.5)
+
+- [ ] Open a project saved with v1.3.0 that uses Fancy Comp: it loads, looks and sounds as before. Render it and null it against a v1.3.0 render if you have one.
+- [ ] Open EDIT: the title row has **Detector | Character | Upward | Options**. Options holds the old drawer, and Oversampling now offers 8x.
+- [ ] **Character:** on a drum bus, Type Warm, Post, Drive 6 dB: thicker, without a jump in level. Bright: more edge. Switch Type and Position while playing: no clicks.
+- [ ] Pre against Post with Drive 18 dB: with Pre the GR meter moves a little less.
+- [ ] Type Off: Position and Drive dim, and the sound is exactly the plugin without Character.
+- [ ] **Upward:** on a vocal, 3:1 down at -20 dB, then Upward on with Up ratio 1:3: quiet words come up; the green part of the curve and the dot show the lift; the GR meter shows only the reduction. Silence between phrases isn't raised.
+- [ ] **Auto threshold:** on a song with a quiet verse and a loud chorus, Threshold so the chorus gets about 4 dB of reduction, then Auto threshold on: the verse gets about the same after a few seconds. The thin white line on the Threshold meter moves, and the offset shows in the Detector page.
+- [ ] Stop and start: the offset holds through the pause.
+- [ ] **Sidechain EQ:** bell +12 dB at 6 kHz on a vocal, Preview filter on: you hear the sibilance boosted; off, the compressor now ducks on the "s" sounds. Drag the bell's handle on the curve and use the wheel on it: the knobs follow.
+- [ ] Low shelf -12 dB at 100 Hz on a mix bus: the kick pumps the mix less.
+- [ ] Oversampling 8x: the latency changes once with a short dropout, and REAPER compensates it.
+- [ ] The three new presets (Warm Bus, Upward Vocal, Level Rider) load from the preset browser, in Bus and Vocals.
+- [ ] Save the project with every stage on, close and reopen: everything comes back, including the drawer's settings.
