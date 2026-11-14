@@ -31,11 +31,19 @@ To type a value, click it, or Ctrl-click anywhere on a knob or fader. Enter or c
 
 File, Echo generator and Reverb Generator add to whatever is already in the chain. The others change it.
 
-**File** loads an impulse from disk. Use `<` and `>` or the dropdown to step through the folder.
+**File** loads an impulse from disk or from the built-in library. The dropdown opens on the **Library** (Rooms, Halls, Plates, Chambers and Special: 32 IRs made with the Verb's own generators), then the files in your IR folder. Use `<` and `>` to step through the folder, or through a library category. A library IR is saved in the project by name, so the project stays small and opens anywhere.
+
+**True stereo:** a normal IR sends left to left and right to right. A true-stereo IR also sends each input to the other side, so a source on the left reaches the right through its own reflections. The card shows a purple **TS** next to its title when one is loaded. It comes from:
+
+- a four-channel file, read as left-to-left, left-to-right, right-to-left, right-to-right;
+- **Pair right input…** in the dropdown, which adds a second stereo file for the right input (the first one is then the left input's); **Remove pair** takes it away;
+- the library's IRs marked TS.
+
+Projects saved before 1.5 that used a four-channel file keep playing its first two channels, as they did; choose the file again to make it true stereo. True stereo costs about 1.1 to 1.3 times the CPU of a normal IR.
 
 | Control | What it does |
 |---|---|
-| Mix to mono | Sums the file's channels |
+| Mix to mono | Sums the file's channels; a true-stereo IR becomes one mono IR |
 | Gain dropdown | Trims the file by 0 to -18 dB. SRC-gain also keeps the level the same when the file's sample rate differs from the session's, which no SRC-gain doesn't |
 
 **LP/HP** is a 24 dB/oct filter. Lowpass at the top of its range and Highpass at the bottom are off.
@@ -66,6 +74,24 @@ File, Echo generator and Reverb Generator add to whatever is already in the chai
 | Density | 0–100 % | Lower starts sparser, and it fills in over 100 ms |
 | Damping | 0–100 % | How fast the highs die away |
 | Stereo spread | 0–100 % | 0 is mono |
+| Low RT, High RT | 0.25–4 x | Decay below 250 Hz and above 4 kHz, as a multiple of Decay. 1 x leaves the decay the same at every frequency |
+| Size | 2–60 m | The room for the early reflections, with Early set to Room or Hall |
+| Build-up | 0–300 ms | How long the tail takes to reach full density; with Room or Hall, it also fades the tail in under the early reflections |
+| Early | Off, Room, Hall, Plate | Room and Hall add discrete early reflections from a simple box model (Room has more, closer together); Plate makes the tail dense from the first sample, with no reflections |
+| True stereo | off/on | Makes a true-stereo IR, with its own cross paths |
+
+With Low RT, High RT, Size, Build-up, Early and True stereo at their defaults, the generator makes exactly the IR it did before 1.5.
+
+**Modulate** moves the tail slowly, so long reverbs don't ring statically, without changing pitch. It plays the tail after Start in two versions with the same decay and spectrum but different fine detail, and crossfades between them. The early part never moves. Only one Modulate fits in a chain, and where it sits doesn't matter: it always acts on the finished IR.
+
+| Control | Range | What it does |
+|---|---|---|
+| Start | 20–500 ms | Where the moving tail begins. Changing it rebuilds the IR |
+| Rate | 0.05–2 Hz | How fast the tail moves; it drifts a little, so it never repeats exactly |
+| Depth | 0–100 % | How far it moves: at 100 % the two versions swap fully |
+| Spread | 0–100 % | How far apart the left and right move, for a wider motion |
+
+Rate, Depth and Spread change smoothly while you play, without a rebuild. Modulate costs about twice the CPU of the same IR without it.
 
 ## Right column
 

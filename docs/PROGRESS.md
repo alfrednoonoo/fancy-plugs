@@ -6,7 +6,9 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 - **Current item: Verb (Q2.8)**: IR library, true stereo, modulation. Design (every recommended option) and mockup (`reference/phase3/24__verb_q28_mockup.png`) approved by the user on 14 November 2026; `docs/verb.md`, "Phase 3 Q2.8".
   - Push 1, true stereo: green, run 43648226467 (`91a7204`), 482 test cases. Bit-identical to the legacy convolver and builder for direct IRs. CPU, 3 s IR: Zero latency 1.26 x direct, Low CPU 1.09 x (target < 1.6 x). The IR display keeps one lane (the mockup drew two).
-  - Next: push 2 (Reverb generator settings, library tool and 32 IRs, Library menu), then push 3 (Modulate, presets, docs).
+  - Push 2 (generator settings, library tool and 32 IRs as a Windows resource, Library menu): run 43650494608 (`b833304`) built, and 486 of 487 test cases passed; the one failure was an old generator test that set the raw value array, fixed in push 3.
+  - Push 3 (Modulate, five presets, screenshots `verb-library` and `verb-generators`, manual, checklist, As built in section 10) pushed in one push with that fix.
+  - Next: CPU into `docs/measurements/verb-q28.txt`, screenshots against the mockup, then the user's REAPER check (`docs/verb-checklist.md`, the Q2.8 section).
 - **Latest release:** [v1.4.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.4.0), 14 November 2026.
 
 ## Releases

@@ -32,6 +32,16 @@ public:
                int irLength, Mode mode, int maxBlock);
 
     bool isTrueStereo() const noexcept { return trueStereo; }
+
+    // Modulate (Phase 3 Q2.8): this convolver plays the early part, and the two tails are
+    // crossfaded at equal power by a slow, seeded LFO. Call before the convolver is offered.
+    void attachTails (std::unique_ptr<Convolver> tailA, std::unique_ptr<Convolver> tailB,
+                      double sampleRate, int seed, double rateHz, double depth, double spread);
+
+    bool isModulated() const noexcept { return modulatedTailA != nullptr; }
+
+    // Audio thread, before process(). Depth and Spread are smoothed over 20 ms.
+    void setModulation (double rateHz, double depth, double spread) noexcept;
     ~Convolver();
 
     static int latencyOf (Mode mode) noexcept { return mode == Mode::lowCpu ? lowCpuLatency : 0; }
@@ -46,7 +56,11 @@ public:
                   float* outLeft, float* outRight, int numSamples, bool offline) noexcept;
 
     // Blocks that played silence in one stage because its job was late.
-    int getLateBlocks() const noexcept { return lateBlocks.load (std::memory_order_relaxed); }
+    int getLateBlocks() const noexcept
+    {
+        return lateBlocks.load (std::memory_order_relaxed)
+             + (modulatedTailA != nullptr ? modulatedTailA->getLateBlocks() + modulatedTailB->getLateBlocks() : 0);
+    }
 
     // Background jobs the audio thread had to run itself because the worker hadn't started them.
     int getTakenOverJobs() const noexcept { return takenOverJobs.load (std::memory_order_relaxed); }
@@ -91,6 +105,12 @@ private:
         Convolver& convolver;
     };
 
+    void processOwn (const float* inLeft, const float* inRight,
+                     float* outLeft, float* outRight, int numSamples, bool offline) noexcept;
+    void mixTails (const float* inLeft, const float* inRight,
+                   float* outLeft, float* outRight, int numSamples, bool offline) noexcept;
+    void resetLfo() noexcept;
+
     void processDirect (const float* inLeft, const float* inRight,
                         float* outLeft, float* outRight, int numSamples) noexcept;
     void finishBlock (Stage& stage, bool offline) noexcept;
@@ -118,6 +138,16 @@ private:
     std::atomic<int> lateBlocks { 0 };
     std::atomic<int> takenOverJobs { 0 };
     std::unique_ptr<Worker> worker;
+
+    // Modulate (Phase 3 Q2.8).
+    static constexpr int scratchSize = 2048;
+    std::unique_ptr<Convolver> modulatedTailA, modulatedTailB;
+    std::vector<float> scratch[4]; // A left, A right, B left, B right
+    double lfoRate = 48000.0, rate = 0.3, depthTarget = 0.5, spreadTarget = 1.0;
+    double depthNow = 0.5, spreadNow = 1.0, smoothing = 0.0, driftSmoothing = 0.0;
+    double phase = 0.0, drift = 0.0, driftTarget = 0.0;
+    int driftCountdown = 0, lfoSeed = 1;
+    juce::Random lfoRandom;
 };
 
 } // namespace verb

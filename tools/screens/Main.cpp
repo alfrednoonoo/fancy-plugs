@@ -240,7 +240,14 @@ bool renderVerb (const juce::File& outputDir)
     ok = writeBothScales (*editor, "verb-edit", outputDir) && ok;
 
     editor->showPreview (VerbEditor::Preview::scrolled);
-    return writeBothScales (*editor, "verb-scrolled", outputDir) && ok;
+    ok = writeBothScales (*editor, "verb-scrolled", outputDir) && ok;
+
+    // Phase 3 Q2.8: a library IR in true stereo, and the Reverb generator with Modulate.
+    editor->showPreview (VerbEditor::Preview::library);
+    ok = writeBothScales (*editor, "verb-library", outputDir) && ok;
+
+    editor->showPreview (VerbEditor::Preview::generators);
+    return writeBothScales (*editor, "verb-generators", outputDir) && ok;
 }
 #endif
 

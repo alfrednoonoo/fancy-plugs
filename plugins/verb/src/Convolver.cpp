@@ -299,8 +299,50 @@ Convolver::~Convolver()
     }
 }
 
+void Convolver::attachTails (std::unique_ptr<Convolver> tailA, std::unique_ptr<Convolver> tailB,
+                             double sampleRate, int seed, double rateHz, double depth, double spread)
+{
+    modulatedTailA = std::move (tailA);
+    modulatedTailB = std::move (tailB);
+
+    for (auto& buffer : scratch)
+        buffer.assign ((size_t) scratchSize, 0.0f);
+
+    lfoRate = sampleRate;
+    lfoSeed = seed;
+    smoothing = 1.0 - std::exp (-1.0 / (0.02 * sampleRate));
+    driftSmoothing = 1.0 - std::exp (-1.0 / (0.5 * sampleRate));
+    rate = rateHz;
+    depthTarget = depthNow = depth;
+    spreadTarget = spreadNow = spread;
+    resetLfo();
+}
+
+void Convolver::setModulation (double rateHz, double depth, double spread) noexcept
+{
+    rate = rateHz;
+    depthTarget = depth;
+    spreadTarget = spread;
+}
+
+void Convolver::resetLfo() noexcept
+{
+    phase = drift = driftTarget = 0.0;
+    driftCountdown = 0;
+    depthNow = depthTarget;
+    spreadNow = spreadTarget;
+    lfoRandom.setSeed ((juce::int64) lfoSeed);
+}
+
 void Convolver::reset() noexcept
 {
+    if (modulatedTailA != nullptr)
+    {
+        modulatedTailA->reset();
+        modulatedTailB->reset();
+        resetLfo();
+    }
+
     for (auto& stage : stages)
     {
         auto expected = (int) jobPosted;
@@ -317,6 +359,53 @@ void Convolver::reset() noexcept
     historyPosition = 0;
     chunkFill = 0;
     lateBlocks.store (0, std::memory_order_relaxed);
+}
+
+void Convolver::mixTails (const float* inLeft, const float* inRight,
+                          float* outLeft, float* outRight, int numSamples, bool offline) noexcept
+{
+    constexpr double halfPi = 1.5707963267948966;
+    constexpr double twoPi = 6.283185307179586;
+    constexpr int driftInterval = 256;
+
+    for (int position = 0; position < numSamples;)
+    {
+        const auto count = std::min (numSamples - position, (int) scratchSize);
+
+        for (auto& buffer : scratch)
+            std::fill (buffer.begin(), buffer.begin() + count, 0.0f);
+
+        modulatedTailA->process (inLeft + position, inRight + position, scratch[0].data(), scratch[1].data(), count, offline);
+        modulatedTailB->process (inLeft + position, inRight + position, scratch[2].data(), scratch[3].data(), count, offline);
+
+        for (int i = 0; i < count; ++i)
+        {
+            // A smoothed random walk nudges the speed, so the motion never repeats exactly.
+            if (--driftCountdown <= 0)
+            {
+                driftTarget = lfoRandom.nextDouble() * 2.0 - 1.0;
+                driftCountdown = driftInterval;
+            }
+
+            drift += (driftTarget - drift) * driftSmoothing;
+            depthNow += (depthTarget - depthNow) * smoothing;
+            spreadNow += (spreadTarget - spreadNow) * smoothing;
+
+            phase += twoPi * rate * (1.0 + 0.5 * drift) / lfoRate;
+
+            if (phase >= twoPi)
+                phase -= twoPi;
+
+            const auto left = depthNow * (0.5 - 0.5 * std::cos (phase)) * halfPi;
+            const auto right = depthNow * (0.5 - 0.5 * std::cos (phase + spreadNow * halfPi)) * halfPi;
+
+            const auto index = (size_t) i;
+            outLeft[position + i] += (float) (std::cos (left) * scratch[0][index] + std::sin (left) * scratch[2][index]);
+            outRight[position + i] += (float) (std::cos (right) * scratch[1][index] + std::sin (right) * scratch[3][index]);
+        }
+
+        position += count;
+    }
 }
 
 void Convolver::processDirect (const float* inLeft, const float* inRight,
@@ -405,6 +494,15 @@ void Convolver::finishBlock (Stage& stage, bool offline) noexcept
 
 void Convolver::process (const float* inLeft, const float* inRight,
                          float* outLeft, float* outRight, int numSamples, bool offline) noexcept
+{
+    processOwn (inLeft, inRight, outLeft, outRight, numSamples, offline);
+
+    if (modulatedTailA != nullptr)
+        mixTails (inLeft, inRight, outLeft, outRight, numSamples, offline);
+}
+
+void Convolver::processOwn (const float* inLeft, const float* inRight,
+                            float* outLeft, float* outRight, int numSamples, bool offline) noexcept
 {
     for (int position = 0; position < numSamples;)
     {

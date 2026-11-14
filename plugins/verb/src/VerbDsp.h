@@ -24,6 +24,9 @@ public:
         double width = 1.0;  // 0 to 1
         double wet = 1.0, dry = 1.0, output = 1.0;
         bool bypass = false;
+
+        // Modulate's live settings (Phase 3 Q2.8), for a modulated convolver.
+        double modRate = 0.3, modDepth = 0.5, modSpread = 1.0;
     };
 
     ~VerbDsp();

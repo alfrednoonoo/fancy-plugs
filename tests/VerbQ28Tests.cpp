@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <complex>
 #include <cstdio>
 #include <numbers>
 #include <random>
@@ -757,6 +758,280 @@ TEST_CASE ("a File module plays a library IR, true stereo where it is", "[verb][
     CHECK_FALSE ((bool) module.getProperty (verb::ids::trueStereo, false));
 }
 
+// Push 3: Modulate -------------------------------------------------------------------------
+
+namespace
+{
+double correlationOf (const std::vector<double>& a, const std::vector<double>& b, size_t from)
+{
+    auto ab = 0.0, aa = 0.0, bb = 0.0;
+
+    for (size_t i = from; i < a.size(); ++i)
+    {
+        ab += a[i] * b[i];
+        aa += a[i] * a[i];
+        bb += b[i] * b[i];
+    }
+
+    return ab / std::sqrt (aa * bb);
+}
+
+double blockEnergyDb (const std::vector<double>& x, size_t start, size_t count)
+{
+    auto sum = 0.0;
+
+    for (size_t i = start; i < std::min (x.size(), start + count); ++i)
+        sum += x[i] * x[i];
+
+    return 10.0 * std::log10 (std::max (sum, 1.0e-30));
+}
+
+int addModulated (VerbProcessor& processor, float depth)
+{
+    const auto reverb = processor.addModule (ModuleType::reverb, 0);
+    processor.setModuleValue (reverb, "length", 2.0f);
+    processor.setModuleValue (reverb, "decay", 1.4f);
+
+    const auto modulate = processor.addModule (ModuleType::modulate, 1);
+    processor.setModuleValue (modulate, "depth", depth);
+    return modulate;
+}
+
+juce::AudioBuffer<float> renderTone (VerbProcessor& processor, double hz, int numSamples)
+{
+    juce::AudioBuffer<float> buffer (2, numSamples);
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        const auto sample = (float) (0.25 * std::sin (2.0 * std::numbers::pi * hz * i / rate));
+        buffer.setSample (0, i, sample);
+        buffer.setSample (1, i, sample);
+    }
+
+    juce::MidiBuffer midi;
+
+    for (int start = 0; start < numSamples; start += 512)
+    {
+        juce::AudioBuffer<float> view (buffer.getArrayOfWritePointers(), 2, start, std::min (512, numSamples - start));
+        processor.processBlock (view, midi);
+    }
+
+    return buffer;
+}
+
+double toneLevelDb (const float* samples, int from, int count, double hz)
+{
+    std::complex<double> sum = 0.0;
+    auto windowSum = 0.0;
+
+    for (int i = 0; i < count; ++i)
+    {
+        const auto window = 0.5 - 0.5 * std::cos (2.0 * std::numbers::pi * i / count);
+        const auto phase = 2.0 * std::numbers::pi * hz * i / rate;
+        sum += (double) samples[from + i] * window * std::complex<double> (std::cos (phase), -std::sin (phase));
+        windowSum += window;
+    }
+
+    return 20.0 * std::log10 (std::max (2.0 * std::abs (sum) / windowSum, 1.0e-12));
+}
+} // namespace
+
+TEST_CASE ("the decorrelated tail keeps the envelope and loses the fine structure", "[verb][q28][modulate]")
+{
+    const auto length = (int) (2.0 * rate);
+    const auto source = noise (length, 111, 0.4 * rate);
+    const std::vector<double> tail (source.begin(), source.end());
+
+    const auto other = verb::decorrelate (tail, 5);
+    REQUIRE (other.size() == tail.size());
+
+    CHECK (std::abs (correlationOf (tail, other, 0)) < 0.2);
+
+    // The energy envelope over 100 ms blocks, through most of the decay.
+    const auto block = (size_t) (0.1 * rate);
+
+    for (size_t start = block; start + block < (size_t) (1.4 * rate); start += block)
+    {
+        INFO ("block at " << (double) start / rate << " s");
+        CHECK (std::abs (blockEnergyDb (tail, start, block) - blockEnergyDb (other, start, block)) < 1.0);
+    }
+
+    CHECK (verb::decorrelate (tail, 5) == other); // seeded, so repeatable
+}
+
+TEST_CASE ("Modulate splits the IR so early + tail is the whole", "[verb][q28][modulate]")
+{
+    verb::ChainSpec chain;
+    chain.modules.push_back (reverbModule ({ { "length", 1.5f }, { "trueStereo", 1.0f } }));
+
+    const auto plain = verb::buildIr (chain, rate);
+
+    auto modulate = moduleOf (ModuleType::modulate);
+    chain.modules.push_back (modulate);
+    const auto split = verb::buildIr (chain, rate);
+
+    REQUIRE (split.modulation.on);
+    REQUIRE (split.audio.getNumChannels() == 4);
+    REQUIRE (split.tailA.getNumChannels() == 4);
+    CHECK (split.modulation.rateHz == Catch::Approx (0.3));
+    CHECK (split.modulation.depth == Catch::Approx (0.5));
+
+    const auto start = (int) (0.08 * rate);
+
+    for (int ch = 0; ch < 4; ++ch)
+    {
+        for (int i = 0; i < plain.audio.getNumSamples(); i += 37)
+            REQUIRE (split.audio.getSample (ch, i) + split.tailA.getSample (ch, i) == Catch::Approx (plain.audio.getSample (ch, i)).margin (1.0e-6));
+
+        // The early part is untouched, and the tails start at Start.
+        CHECK (split.tailB.getMagnitude (ch, 0, start) == 0.0f);
+        CHECK (split.audio.getMagnitude (ch, start + (int) (0.011 * rate), plain.audio.getNumSamples() - start - (int) (0.011 * rate)) == 0.0f);
+    }
+
+    // The preview shows the whole IR.
+    CHECK (split.preview.columns.size() == plain.preview.columns.size());
+}
+
+TEST_CASE ("Modulate at depth 0 sounds like no Modulate, and its renders repeat", "[verb][q28][modulate]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    const auto input = noise (48000, 121);
+    std::vector<juce::AudioBuffer<float>> outputs;
+
+    // No Modulate, depth 0, depth 100, and depth 100 again in a fresh instance.
+    for (const auto variant : { 0, 1, 2, 3 })
+    {
+        VerbProcessor processor;
+        const auto reverb = processor.addModule (ModuleType::reverb, 0);
+        processor.setModuleValue (reverb, "length", 2.0f);
+
+        if (variant > 0)
+        {
+            const auto modulate = processor.addModule (ModuleType::modulate, 1);
+            processor.setModuleValue (modulate, "depth", variant == 1 ? 0.0f : 100.0f);
+        }
+
+        processor.setNonRealtime (true);
+        processor.prepareToPlay (rate, 512);
+        REQUIRE (processor.waitForBuild (20000));
+
+        outputs.push_back (renderLeftOnly (processor, 96000));
+    }
+
+    CHECK (sameAudio (outputs[2], outputs[3]));
+
+    // Depth 0: the early part and the unmoved tail add up to the whole, within float rounding.
+    auto worst = 0.0, peak = 0.0;
+
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        for (int i = 0; i < 96000; ++i)
+        {
+            worst = std::max (worst, (double) std::abs (outputs[1].getSample (ch, i) - outputs[0].getSample (ch, i)));
+            peak = std::max (peak, (double) std::abs (outputs[0].getSample (ch, i)));
+        }
+    }
+
+    CHECK (worst < peak * 1.0e-4);
+
+    // Depth 100: the tail moves.
+    auto moved = 0.0;
+
+    for (int i = 0; i < 96000; ++i)
+        moved = std::max (moved, (double) std::abs (outputs[2].getSample (1, i) - outputs[0].getSample (1, i)));
+
+    CHECK (moved > peak * 1.0e-3);
+}
+
+TEST_CASE ("Modulate doesn't change pitch", "[verb][q28][modulate]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    VerbProcessor processor;
+    addModulated (processor, 100.0f);
+
+    processor.setNonRealtime (true);
+    processor.prepareToPlay (rate, 512);
+    REQUIRE (processor.waitForBuild (20000));
+
+    const auto length = (int) (12.0 * rate);
+    const auto out = renderTone (processor, 1000.0, length);
+
+    // Eight seconds of the steady state: everything beyond 2 Hz from the tone stays 60 dB down.
+    const auto from = (int) (4.0 * rate), count = (int) (8.0 * rate);
+    const auto* left = out.getReadPointer (0);
+    const auto tone = toneLevelDb (left, from, count, 1000.0);
+
+    for (const auto offset : { 3.0, 5.0, 10.0, 20.0, 50.0 })
+    {
+        INFO ("offset " << offset << " Hz");
+        CHECK (toneLevelDb (left, from, count, 1000.0 + offset) < tone - 60.0);
+        CHECK (toneLevelDb (left, from, count, 1000.0 - offset) < tone - 60.0);
+    }
+}
+
+TEST_CASE ("Modulate's Rate and Depth act without a rebuild, and one Modulate is the limit", "[verb][q28][modulate]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    VerbProcessor processor;
+    const auto modulate = addModulated (processor, 50.0f);
+
+    processor.setNonRealtime (true);
+    processor.prepareToPlay (rate, 512);
+    REQUIRE (processor.waitForBuild (20000));
+
+    const auto revision = processor.getBuildRevision();
+
+    processor.setModuleValue (modulate, "rate", 1.2f);
+    processor.setModuleValue (modulate, "depth", 80.0f);
+    processor.setModuleValue (modulate, "spread", 20.0f);
+    REQUIRE (processor.waitForBuild (20000));
+    CHECK (processor.getBuildRevision() == revision);
+
+    processor.setModuleValue (modulate, "start", 200.0f);
+    REQUIRE (processor.waitForBuild (20000));
+    CHECK (processor.getBuildRevision() != revision);
+
+    CHECK (processor.addModule (ModuleType::modulate, 0) == 0);
+
+    // The state keeps the settings.
+    juce::MemoryBlock state;
+    processor.getStateInformation (state);
+
+    VerbProcessor copy;
+    copy.setStateInformation (state.getData(), (int) state.getSize());
+    const auto restored = copy.getChain().getChildWithProperty (verb::ids::uid, modulate);
+    CHECK ((float) restored.getProperty ("rate") == Catch::Approx (1.2f));
+    CHECK ((float) restored.getProperty ("depth") == Catch::Approx (80.0f));
+    REQUIRE (copy.waitForBuild (20000));
+}
+
+TEST_CASE ("the Q2.8 factory presets build", "[verb][q28][presets]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    VerbProcessor processor;
+    auto& presets = processor.getPresets();
+    const auto names = presets.getNames();
+
+    for (const auto* name : { "Library Hall", "Library Plate", "True Stereo Room", "Modulated Hall", "Endless" })
+    {
+        INFO (name);
+        const auto index = names.indexOf (name);
+        REQUIRE (index >= 0);
+
+        presets.load (index);
+        REQUIRE (processor.waitForBuild (60000));
+        CHECK (processor.getPreview().peakDb > -80.0);
+        CHECK (processor.getPreview().numChannels == 4);
+
+        for (const auto module : processor.getChain())
+            CHECK_FALSE (processor.isMissing ((int) module[verb::ids::uid]));
+    }
+}
+
 // 8. CPU (section 0.4) ----------------------------------------------------------
 
 TEST_CASE ("verb Q2.8 true stereo CPU", "[.measure]")
@@ -798,6 +1073,56 @@ TEST_CASE ("verb Q2.8 true stereo CPU", "[.measure]")
         }
 
         std::printf ("verb q28 cpu, 3 s IR, %s (median of %d, 48 kHz, 128 samples, process time incl. waits): direct %.3f %%, true stereo %.3f %% (%.2f x, target < 1.6 x)\n",
+                     mode == Convolver::Mode::zeroLatency ? "Zero latency" : "Low CPU", runs, results[0], results[1], results[1] / results[0]);
+    }
+
+    // Modulate: the early part (to Start, 80 ms, plus a 10 ms fade) and two tails.
+    const auto start = (int) (0.09 * rate);
+    const std::vector<float> early (ll.begin(), ll.begin() + start), earlyRight (rr.begin(), rr.begin() + start);
+    std::vector<float> tailLeft (ll), tailRight (rr);
+    std::fill (tailLeft.begin(), tailLeft.begin() + start, 0.0f);
+    std::fill (tailRight.begin(), tailRight.begin() + start, 0.0f);
+
+    for (const auto mode : { Convolver::Mode::zeroLatency, Convolver::Mode::lowCpu })
+    {
+        double results[2] {};
+
+        for (int modulated = 0; modulated < 2; ++modulated)
+        {
+            std::vector<double> times;
+
+            for (int run = 0; run < runs; ++run)
+            {
+                std::unique_ptr<Convolver> convolver;
+
+                if (modulated == 0)
+                {
+                    convolver = std::make_unique<Convolver> (ll.data(), rr.data(), irLength, mode, 32768);
+                }
+                else
+                {
+                    convolver = std::make_unique<Convolver> (early.data(), earlyRight.data(), start, mode, 32768);
+                    convolver->attachTails (std::make_unique<Convolver> (tailLeft.data(), tailRight.data(), irLength, mode, 32768),
+                                            std::make_unique<Convolver> (tailRight.data(), tailLeft.data(), irLength, mode, 32768),
+                                            rate, 3, 0.3, 0.5, 1.0);
+                }
+
+                const auto input = noise (blockSize, 106);
+                std::vector<float> left (blockSize), right (blockSize);
+                const auto begin = std::chrono::steady_clock::now();
+
+                for (int i = 0; i < numBlocks; ++i)
+                    convolver->process (input.data(), input.data(), left.data(), right.data(), blockSize, true);
+
+                const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - begin;
+                times.push_back (100.0 * elapsed.count() / ((double) (numBlocks * blockSize) / rate));
+            }
+
+            std::sort (times.begin(), times.end());
+            results[modulated] = times[runs / 2];
+        }
+
+        std::printf ("verb q28 cpu, 3 s IR, %s (median of %d): direct %.3f %%, modulated %.3f %% (%.2f x, target < 1.8 x)\n",
                      mode == Convolver::Mode::zeroLatency ? "Zero latency" : "Low CPU", runs, results[0], results[1], results[1] / results[0]);
     }
 }

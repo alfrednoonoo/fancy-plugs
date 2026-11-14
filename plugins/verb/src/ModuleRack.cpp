@@ -31,7 +31,7 @@ juce::Colour accentOf (ModuleType type)
 
 juce::String valueText (const verb::Setting& setting, float value)
 {
-    if (juce::String (setting.unit) == "Hz")
+    if (juce::String (setting.unit) == "Hz" && setting.decimals == 0)
     {
         if (value < 1000.0f)
             return juce::String (juce::roundToInt (value)) + " Hz";
@@ -156,6 +156,7 @@ int ModuleCard::widthOf (ModuleType type)
         case ModuleType::lpHp:      return 147;
         case ModuleType::normalize: return 163;
         case ModuleType::reverse:   return 163;
+        case ModuleType::modulate:  return 247;
         default:                    return 356;
     }
 }
@@ -232,7 +233,7 @@ void ModuleCard::addSettingKnobs()
         });
 
         const auto colour = accent();
-        const auto& style = type == ModuleType::reverb ? Knob::tightStyle
+        const auto& style = type == ModuleType::reverb || type == ModuleType::modulate ? Knob::tightStyle
                           : controls.size() >= 3       ? Knob::smallStyle
                                                        : Knob::mediumStyle;
         const auto bipolar = juce::String (setting.id) == "gain";
@@ -311,6 +312,12 @@ void ModuleCard::placeKnobs()
         place (10, { 80, 268, 110, 28 });
         place (11, { 206, 272, 140, 20 });
         updateDimming();
+    }
+    else if (type == ModuleType::modulate)
+    {
+        // Phase 3 Q2.8: one row of four small knobs (reference/phase3/24__verb_q28_mockup.png).
+        for (size_t i = 0; i < controls.size(); ++i)
+            place (i, { 1 + 61 * (int) i, 110, 62, 99 });
     }
     else if (type == ModuleType::trim)
     {
@@ -615,6 +622,13 @@ void ModuleCard::paint (juce::Graphics& g)
         g.setFont (font (Weight::medium, 12.0f));
         g.drawText (breadcrumb(), 24, 71, 248, 14, juce::Justification::centredLeft, true);
     }
+    else if (type == ModuleType::modulate)
+    {
+        g.setColour (colours::textSecondary.withMultipliedAlpha (dim));
+        g.setFont (font (Weight::regular, 11.0f));
+        g.drawFittedText ("Moves the tail after Start between two versions with the same decay. The early part and the pitch don't change.",
+                          24, 236, getWidth() - 48, 60, juce::Justification::topLeft, 4);
+    }
     else if (type == ModuleType::reverb)
     {
         g.setColour (colours::textPrimary.withMultipliedAlpha (dim));
@@ -763,7 +777,11 @@ ModuleRack::ModuleRack (VerbProcessor& processorToUse) : processor (processorToU
         panelButton->setBounds (16, y, panelButton->idealWidth(), 32);
         addPanel.addAndMakeVisible (*panelButton);
         addButtons.push_back (std::move (panelButton));
-        y += 42;
+        y += 38; // eight types since Phase 3 Q2.8, inside the 352 tall panel
+
+        // An empty rack has nothing to modulate.
+        if (type == verb::ModuleType::modulate)
+            continue;
 
         auto emptyButton = std::make_unique<AddButton> (verb::menuNameOf (type), add);
         addChildComponent (*emptyButton);
@@ -785,6 +803,16 @@ int ModuleRack::indexOf (const ModuleCard& card) const
 void ModuleRack::rebuild()
 {
     cards.clear();
+
+    // One Modulate per chain: its button is greyed while the chain has one.
+    const auto hasModulate = processor.getChain().getChildWithProperty (verb::ids::type, verb::storedName (verb::ModuleType::modulate)).isValid();
+
+    for (size_t i = 0; i < addButtons.size() && i < verb::allModuleTypes.size(); ++i)
+    {
+        const auto disabled = verb::allModuleTypes[i] == verb::ModuleType::modulate && hasModulate;
+        addButtons[i]->setEnabled (! disabled);
+        addButtons[i]->setAlpha (disabled ? 0.4f : 1.0f);
+    }
 
     for (const auto module : processor.getChain())
     {

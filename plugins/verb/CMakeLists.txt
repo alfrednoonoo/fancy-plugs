@@ -19,6 +19,7 @@ target_link_libraries(verb-library
     PRIVATE
         juce::juce_audio_formats
         juce::juce_data_structures
+        juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags)
 

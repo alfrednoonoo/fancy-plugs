@@ -1,6 +1,7 @@
 #include "IrBuilder.h"
 
 #include <juce_core/juce_core.h>
+#include <juce_dsp/juce_dsp.h>
 
 #include <algorithm>
 #include <cmath>
@@ -473,9 +474,9 @@ void addReverbExtended (Channels& ir, const ModuleSpec& module, double sampleRat
     const auto density = (double) module.values[2] * 0.01;
     const auto damping = (double) module.values[3] * 0.01;
     const auto spread = (double) module.values[4] * 0.01;
-    const auto lowMultiplier = (double) module.values[5];
-    const auto highMultiplier = (double) module.values[6];
-    const auto size = (double) module.values[7];
+    const auto lowMultiplier = juce::jlimit (0.25, 4.0, (double) module.values[5]);
+    const auto highMultiplier = juce::jlimit (0.25, 4.0, (double) module.values[6]);
+    const auto size = juce::jlimit (2.0, 60.0, (double) module.values[7]);
     const auto buildUpSeconds = (double) module.values[8] / 1000.0;
     const auto early = (EarlyType) juce::jlimit (0, 3, juce::roundToInt (module.values[9]));
     const auto trueStereo = module.values[10] >= 0.5f;
@@ -788,6 +789,126 @@ std::vector<double> resample (const double* source, int numSamples, double ratio
     return output;
 }
 
+std::vector<double> decorrelate (const std::vector<double>& signal, int seed)
+{
+    constexpr int order = 11, size = 1 << order, hop = size / 4;
+
+    const auto length = (int) signal.size();
+    std::vector<double> output ((size_t) length, 0.0);
+
+    if (length == 0)
+        return output;
+
+    juce::dsp::FFT fft (order);
+    juce::Random random ((juce::int64) seed);
+
+    std::vector<float> window ((size_t) size), frame ((size_t) size * 2);
+
+    for (int n = 0; n < size; ++n)
+        window[(size_t) n] = (float) std::sqrt (0.5 - 0.5 * std::cos (2.0 * pi * n / size));
+
+    for (int start = hop - size; start < length; start += hop)
+    {
+        std::fill (frame.begin(), frame.end(), 0.0f);
+
+        for (int n = 0; n < size; ++n)
+            if (const auto index = start + n; index >= 0 && index < length)
+                frame[(size_t) n] = (float) signal[(size_t) index] * window[(size_t) n];
+
+        fft.performRealOnlyForwardTransform (frame.data(), true);
+
+        for (int k = 1; k < size / 2; ++k)
+        {
+            const auto magnitude = std::hypot ((double) frame[(size_t) (2 * k)], (double) frame[(size_t) (2 * k + 1)]);
+            const auto phase = random.nextDouble() * 2.0 * pi;
+            frame[(size_t) (2 * k)] = (float) (magnitude * std::cos (phase));
+            frame[(size_t) (2 * k + 1)] = (float) (magnitude * std::sin (phase));
+        }
+
+        fft.performRealOnlyInverseTransform (frame.data());
+
+        for (int n = 0; n < size; ++n)
+            if (const auto index = start + n; index >= 0 && index < length)
+                output[(size_t) index] += (double) frame[(size_t) n] * window[(size_t) n];
+    }
+
+    // The same total energy as the input, whatever the transform's scaling.
+    auto energyIn = 0.0, energyOut = 0.0;
+
+    for (size_t i = 0; i < output.size(); ++i)
+    {
+        energyIn += signal[i] * signal[i];
+        energyOut += output[i] * output[i];
+    }
+
+    if (energyOut > 0.0)
+        for (auto& sample : output)
+            sample *= std::sqrt (energyIn / energyOut);
+
+    return output;
+}
+
+namespace
+{
+// Splits the finished IR for a Modulate module: early part, tail as it is, tail decorrelated.
+void splitForModulation (const Channels& ir, const ModuleSpec& modulate, double sampleRate, BuiltIr& built)
+{
+    const auto length = lengthOf (ir);
+    const auto start = (size_t) ((double) modulate.values[0] * 0.001 * sampleRate);
+    const auto fade = (size_t) (0.01 * sampleRate);
+
+    if (length == 0 || start + fade >= length)
+        return;
+
+    const auto paths = isTrueStereo (ir) ? 4 : 2;
+
+    built.modulation.on = true;
+    built.modulation.rateHz = (double) modulate.values[1];
+    built.modulation.depth = (double) modulate.values[2] * 0.01;
+    built.modulation.spread = (double) modulate.values[3] * 0.01;
+    built.modulation.seed = modulate.seed;
+
+    built.tailA.setSize (paths, (int) length);
+    built.tailB.setSize (paths, (int) length);
+
+    for (int p = 0; p < paths; ++p)
+    {
+        const auto& source = ir[(size_t) p];
+        const auto weight = [start, fade] (size_t i) { return i < start ? 0.0 : i < start + fade ? (double) (i - start) / (double) fade : 1.0; };
+
+        std::vector<double> tail (length, 0.0);
+
+        for (size_t i = start; i < length; ++i)
+            tail[i] = source[i];
+
+        auto other = decorrelate (tail, modulate.seed * 13 + p);
+
+        auto energyA = 0.0, energyB = 0.0;
+
+        for (size_t i = 0; i < length; ++i)
+        {
+            other[i] *= weight (i);
+            energyA += source[i] * weight (i) * source[i] * weight (i);
+            energyB += other[i] * other[i];
+        }
+
+        const auto match = energyB > 0.0 ? std::sqrt (energyA / energyB) : 0.0;
+
+        auto* early = built.audio.getWritePointer (p);
+        auto* a = built.tailA.getWritePointer (p);
+        auto* b = built.tailB.getWritePointer (p);
+
+        for (size_t i = 0; i < length; ++i)
+        {
+            const auto w = weight (i);
+            early[i] = (float) (source[i] * (1.0 - w));
+            a[i] = (float) (source[i] * w);
+            b[i] = (float) (other[i] * match);
+        }
+    }
+}
+} // namespace
+
 BuiltIr buildIr (const ChainSpec& chain, double sampleRate)
 {
     BuiltIr built;
@@ -836,6 +957,16 @@ BuiltIr buildIr (const ChainSpec& chain, double sampleRate)
 
         for (size_t i = 0; i < length; ++i)
             out[i] = (float) ir[(size_t) ch][i];
+    }
+
+    // Modulate acts on the finished IR, wherever it sits in the chain (Phase 3 Q2.8).
+    for (const auto& module : chain.modules)
+    {
+        if (module.type == ModuleType::modulate && module.on)
+        {
+            splitForModulation (ir, module, sampleRate, built);
+            break;
+        }
     }
 
     return built;

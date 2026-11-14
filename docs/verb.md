@@ -309,3 +309,18 @@ Three pushes, checked in REAPER together:
 3. Modulate and the presets, then screenshots, the manual, the checklist and CPU.
 
 Before push 2, a Python model of the image-source early pattern and the per-band decay, to check the recipes sound as named before they're baked.
+
+### 10. As built
+
+Three pushes, as planned. The models are `docs/research/verb-q28-model.py`.
+
+- **Compatibility:** `tests/LegacyVerbConvolver.*` and `tests/LegacyVerbIrBuilder.*` are the convolver and builder at commit `1e24056`. A test builds four chains (every module type, files of several shapes) with both and requires identical IRs, previews and convolver output in both latency modes.
+- **True stereo (push 1):** the convolver carries the RL and LR spectra and direct taps only for a true-stereo IR. The builder's four slots hold LL, RR, RL, LR, with the cross pair empty for a direct IR. A File module is true stereo only with `ts`, set when a four-channel file is chosen or a pair made; a project that used a four-channel file before keeps its first two channels. Files with more than two channels are read per channel. CPU, 3 s IR: 1.26 x direct in Zero latency and 1.09 x in Low CPU (target 1.6 x).
+- **IR display:** it has one lane, as before (the mockup drew two). The info line reads "4ch true stereo".
+- **Generator (push 2):** the original loop runs when every new setting is at its default. Otherwise: three bands from independent noises through fourth-order Butterworth filters (power-complementary, so flat at 1 x), image-source early reflections (Room: order 3, absorption 0.8; Hall: order 2, 0.85), the tail faded in over Build-up with Room or Hall, Plate dense from the start, and true-stereo cross paths at 0.5 rising to 0.85 of the direct level over Build-up.
+- **Library (push 2):** `tools/verb-library` builds the 32 recipes in `plugins/verb/library/recipes.json` at build time and packs them as 24-bit FLAC into one file, which is a Windows resource (`FANCYVERBLIBRARY`) in the VST3, the Standalone, the tests and the screens tool. JUCE binary data would have generated a source file of about 100 MB. **Loudness is matched over each IR's loudest 0.5 s**, not its first 0.5 s, because Reverse Swell starts at its quietest. A Mac build will need another way to embed the file.
+- **Modulate (push 3):** the builder splits the finished IR at Start with a 10 ms crossfade: the early part, the tail as it is, and the tail decorrelated (STFT frames of 2048, hop 512, root-Hann, seeded random phases, energy-matched). The main convolver plays the early part and carries two tail convolvers, crossfaded at equal power per channel by `cos` and `sin` of `depth · (1 − cos φ) / 2 · π/2`, where φ runs at Rate with a smoothed random drift of ±50 %, and the right channel is Spread × a quarter cycle ahead. Rate, Depth and Spread reach the convolver as live values, without a rebuild; Start rebuilds.
+- **Depth 0** isn't bit-identical to no Modulate, because the IR is then convolved in two parts; the test requires the difference to stay under 1e-4 of the peak (section 8 asked for bit-identical).
+- **The display** doesn't draw the decorrelated copy's outline from the mockup; it shows the whole IR, as without Modulate.
+- **Add panel:** eight buttons at 38 px spacing (42 before), to fit the 352 px panel. Modulate isn't offered in the empty rack, and it's greyed in the add panel while the chain has one (no tooltip).
+- **Accuracy test:** the true-stereo convolver is checked against direct convolution with the existing test's tolerance; section 8's -100 dB is tighter than the single-precision convolver reaches.

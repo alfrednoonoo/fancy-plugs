@@ -203,6 +203,12 @@ void VerbDsp::processChunk (float* const* channels, int numChannels, int offset,
         for (auto& channel : *buffer)
             std::fill (channel.begin(), channel.begin() + numSamples, 0.0f);
 
+    if (active != nullptr && active->isModulated())
+        active->setModulation (current.modRate, current.modDepth, current.modSpread);
+
+    if (outgoing != nullptr && outgoing->isModulated())
+        outgoing->setModulation (current.modRate, current.modDepth, current.modSpread);
+
     if (active != nullptr)
     {
         active->process (wetInput[0].data(), wetInput[1].data(), wetNew[0].data(), wetNew[1].data(), numSamples, offline);

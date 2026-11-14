@@ -55,6 +55,13 @@ const std::vector<Setting> reverbSettings {
     { "early", "Early", 0.0f, 3.0f, 0.0f, 1.0f, 1.0f, 0, "", false, Setting::Kind::choice },
     { "trueStereo", "True stereo", 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0, "", false, Setting::Kind::toggle },
 };
+// Phase 3 Q2.8. Rate, Depth and Spread change smoothly without a rebuild; Start rebuilds.
+const std::vector<Setting> modulateSettings {
+    { "start", "Start", 20.0f, 500.0f, 80.0f, 1.0f, 0.5f, 0, "ms" },
+    { "rate", "Rate", 0.05f, 2.0f, 0.3f, 0.01f, 1.0f, 2, "Hz", true },
+    { "depth", "Depth", 0.0f, 100.0f, 50.0f, 1.0f, 1.0f, 0, "%" },
+    { "spread", "Spread", 0.0f, 100.0f, 100.0f, 1.0f, 1.0f, 0, "%" },
+};
 } // namespace
 
 const juce::StringArray& earlyTypeNames()
@@ -72,6 +79,7 @@ const std::vector<Setting>& settingsOf (ModuleType type)
         case ModuleType::normalize: return normalizeSettings;
         case ModuleType::trim:      return trimSettings;
         case ModuleType::reverb:    return reverbSettings;
+        case ModuleType::modulate:  return modulateSettings;
         case ModuleType::file:
         case ModuleType::reverse:
         default:                    return noSettings;
@@ -89,6 +97,7 @@ juce::String storedName (ModuleType type)
         case ModuleType::trim:      return "trim";
         case ModuleType::reverse:   return "reverse";
         case ModuleType::reverb:    return "reverb";
+        case ModuleType::modulate:  return "modulate";
         default:                    return {};
     }
 }
@@ -104,6 +113,7 @@ juce::String titleOf (ModuleType type)
         case ModuleType::trim:      return "TRIM, GAIN, STRETCH";
         case ModuleType::reverse:   return "Reverse";
         case ModuleType::reverb:    return "REVERB GENERATOR";
+        case ModuleType::modulate:  return "MODULATE";
         default:                    return {};
     }
 }
@@ -119,6 +129,7 @@ juce::String chipOf (ModuleType type)
         case ModuleType::trim:      return "TRIM";
         case ModuleType::reverse:   return "REVERSE";
         case ModuleType::reverb:    return "REVERB";
+        case ModuleType::modulate:  return "MODULATE";
         default:                    return {};
     }
 }
@@ -134,6 +145,7 @@ juce::String menuNameOf (ModuleType type)
         case ModuleType::trim:      return "Trim, Gain, Stretch";
         case ModuleType::reverse:   return "Reverse";
         case ModuleType::reverb:    return "Reverb Generator";
+        case ModuleType::modulate:  return "Modulate";
         default:                    return {};
     }
 }

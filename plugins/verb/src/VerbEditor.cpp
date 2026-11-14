@@ -252,6 +252,35 @@ void VerbEditor::showPreview (Preview preview)
         processor.setModuleValue (normalize, "peak", -34.3f);
     }
 
+    // Phase 3 Q2.8: a library IR in true stereo, and the Reverb generator with Modulate.
+    if (preview == Preview::library || preview == Preview::generators)
+    {
+        while (processor.getChain().getNumChildren() > 0)
+            processor.removeModule ((int) processor.getChain().getChild (0)[verb::ids::uid]);
+
+        if (preview == Preview::library)
+        {
+            const auto file = processor.addModule (ModuleType::file, 0);
+            processor.loadLibrary (file, "Halls/Concert Hall");
+
+            const auto filter = processor.addModule (ModuleType::lpHp, 1);
+            processor.setModuleValue (filter, "highpass", 93.0f);
+        }
+        else
+        {
+            const auto reverb = processor.addModule (ModuleType::reverb, 0);
+
+            const std::pair<const char*, float> reverbValues[] {
+                { "lowDecay", 1.4f }, { "highDecay", 0.6f }, { "size", 24.0f }, { "buildUp", 60.0f }, { "early", 2.0f }, { "trueStereo", 1.0f }
+            };
+
+            for (const auto& [id, value] : reverbValues)
+                processor.setModuleValue (reverb, id, value);
+
+            processor.addModule (ModuleType::modulate, 1);
+        }
+    }
+
     processor.waitForBuild (20000);
 
     rack.rebuild();

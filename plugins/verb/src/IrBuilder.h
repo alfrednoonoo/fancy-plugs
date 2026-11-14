@@ -27,13 +27,31 @@ struct IrPreview
     double peakDb = -200.0;
 };
 
+// Modulate (Phase 3 Q2.8): the tail after Start in two versions with the same decay, which the
+// convolver crossfades slowly.
+struct Modulation
+{
+    bool on = false;
+    double rateHz = 0.3, depth = 0.5, spread = 1.0;
+    int seed = 1;
+};
+
 struct BuiltIr
 {
     // Two channels, equal for a mono IR. A true-stereo IR (Phase 3 Q2.8) has four: left in to
     // left out, right in to right out, then right in to left out (RL) and left in to right out (LR).
     juce::AudioBuffer<float> audio;
     IrPreview preview;
+
+    // With Modulate on, audio holds the early part only, and the tail after Start is here as it
+    // is (A) and decorrelated (B). early + A is the whole IR.
+    Modulation modulation;
+    juce::AudioBuffer<float> tailA, tailB;
 };
+
+// The same spectrum and envelope with a different fine structure: short-time FFT frames (2048,
+// hop 512, root-Hann) with their phases randomised from the seed. Off the audio thread.
+std::vector<double> decorrelate (const std::vector<double>& signal, int seed);
 
 // One early reflection of the Reverb generator's image-source box (Phase 3 Q2.8): its delay
 // after the direct sound, and its gain relative to the direct sound.

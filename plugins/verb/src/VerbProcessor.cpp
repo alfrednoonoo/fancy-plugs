@@ -77,6 +77,13 @@ std::vector<fancy::FactoryPreset> factoryPresets()
         { "Hall", Values { { "predelay", 24.0f }, { "wet", -12.0f } }, "hall" },
         { "Long Tail", Values { { "predelay", 40.0f }, { "wet", -14.0f } }, "long" },
         { "Slapback", Values { { "wet", -6.0f } }, "slap" },
+
+        // Phase 3 Q2.8: the library, true stereo and Modulate.
+        { "Library Hall", Values { { "predelay", 20.0f }, { "wet", -12.0f } }, "libraryHall" },
+        { "Library Plate", Values { { "predelay", 10.0f }, { "wet", -11.0f } }, "libraryPlate" },
+        { "True Stereo Room", Values { { "wet", -10.0f } }, "trueStereoRoom" },
+        { "Modulated Hall", Values { { "predelay", 20.0f }, { "wet", -12.0f } }, "modulatedHall" },
+        { "Endless", Values { { "predelay", 30.0f }, { "wet", -14.0f } }, "endless" },
     };
 
     // Phase 3 Q2.1: the preset browser's categories.
@@ -86,6 +93,11 @@ std::vector<fancy::FactoryPreset> factoryPresets()
         { "Hall", "Halls" },
         { "Long Tail", "Halls" },
         { "Slapback", "Echo" },
+        { "Library Hall", "Halls" },
+        { "Library Plate", "Plates" },
+        { "True Stereo Room", "Rooms" },
+        { "Modulated Hall", "Halls" },
+        { "Endless", "Special" },
     });
 
     return presets;
@@ -101,9 +113,46 @@ void addFactoryModule (juce::ValueTree& chain, ModuleType type, std::initializer
     chain.appendChild (module, nullptr);
 }
 
+// A File module playing a library IR (Phase 3 Q2.8).
+void addLibraryModule (juce::ValueTree& chain, const juce::String& libraryKey, bool trueStereo)
+{
+    auto module = verb::makeModule (ModuleType::file, chain.getNumChildren() + 1);
+    module.setProperty (verb::ids::factory, libraryKey, nullptr);
+    module.setProperty (verb::ids::mono, false, nullptr);
+
+    if (trueStereo)
+        module.setProperty (verb::ids::trueStereo, true, nullptr);
+
+    chain.appendChild (module, nullptr);
+}
+
 juce::ValueTree factoryChain (const juce::String& key)
 {
     auto chain = verb::makeChain();
+
+    if (key == "libraryHall")
+    {
+        addLibraryModule (chain, "Halls/Concert Hall", true);
+    }
+    else if (key == "libraryPlate")
+    {
+        addLibraryModule (chain, "Plates/Vocal Plate", true);
+        addFactoryModule (chain, ModuleType::lpHp, { { "highpass", 150.0f } });
+    }
+    else if (key == "trueStereoRoom")
+    {
+        addLibraryModule (chain, "Rooms/Studio Live", true);
+    }
+    else if (key == "modulatedHall")
+    {
+        addLibraryModule (chain, "Halls/Concert Hall", true);
+        addFactoryModule (chain, ModuleType::modulate, {});
+    }
+    else if (key == "endless")
+    {
+        addLibraryModule (chain, "Special/Endless Cloud", true);
+        addFactoryModule (chain, ModuleType::modulate, { { "start", 150.0f }, { "rate", 0.2f }, { "depth", 100.0f } });
+    }
 
     if (key == "room")
     {
@@ -190,6 +239,9 @@ VerbDsp::Targets VerbProcessor::readTargets()
     targets.dry = fancy::levelToGain (read ("dry"), mixFloorDb);
     targets.output = fancy::dbToGain ((double) read ("output"));
     targets.bypass = read ("bypass") >= 0.5f;
+    targets.modRate = (double) modulationRate.load (std::memory_order_relaxed);
+    targets.modDepth = (double) modulationDepth.load (std::memory_order_relaxed);
+    targets.modSpread = (double) modulationSpread.load (std::memory_order_relaxed);
     return targets;
 }
 
@@ -226,12 +278,24 @@ void VerbProcessor::buildNow()
     auto built = verb::buildIr (chain, buildRate.load());
 
     // A true-stereo IR (Phase 3 Q2.8) has the cross paths as channels 2 (RL) and 3 (LR).
-    const auto trueStereo = built.audio.getNumChannels() >= 4;
+    const auto makeConvolver = [mode, maxBlock] (const juce::AudioBuffer<float>& audio)
+    {
+        const auto trueStereo = audio.getNumChannels() >= 4;
 
-    dsp.offer (std::make_unique<Convolver> (built.audio.getReadPointer (0), built.audio.getReadPointer (1),
-                                            trueStereo ? built.audio.getReadPointer (2) : nullptr,
-                                            trueStereo ? built.audio.getReadPointer (3) : nullptr,
-                                            built.audio.getNumSamples(), mode, maxBlock));
+        return std::make_unique<Convolver> (audio.getReadPointer (0), audio.getReadPointer (1),
+                                            trueStereo ? audio.getReadPointer (2) : nullptr,
+                                            trueStereo ? audio.getReadPointer (3) : nullptr,
+                                            audio.getNumSamples(), mode, maxBlock);
+    };
+
+    auto convolver = makeConvolver (built.audio);
+
+    // Modulate: the early part here, and the two tails crossfaded by the convolver.
+    if (built.modulation.on)
+        convolver->attachTails (makeConvolver (built.tailA), makeConvolver (built.tailB), buildRate.load(), built.modulation.seed,
+                                built.modulation.rateHz, built.modulation.depth, built.modulation.spread);
+
+    dsp.offer (std::move (convolver));
 
     irSeconds.store (built.preview.trimmedSeconds);
 
@@ -372,9 +436,24 @@ void VerbProcessor::factoryPresetLoaded (const juce::String& data)
     stateApplied();
 }
 
+void VerbProcessor::updateModulation()
+{
+    for (const auto module : getChain())
+    {
+        if (module[verb::ids::type].toString() == verb::storedName (ModuleType::modulate))
+        {
+            modulationRate.store ((float) module.getProperty ("rate", 0.3f));
+            modulationDepth.store ((float) module.getProperty ("depth", 50.0f) * 0.01f);
+            modulationSpread.store ((float) module.getProperty ("spread", 100.0f) * 0.01f);
+            return;
+        }
+    }
+}
+
 void VerbProcessor::chainEdited (bool structural)
 {
     noteEdited();
+    updateModulation();
 
     if (structural)
         chainRevision.fetch_add (1);
@@ -402,6 +481,10 @@ int VerbProcessor::addModule (ModuleType type, int position)
     auto chain = getChain();
 
     if (chain.getNumChildren() >= verb::maxModules)
+        return 0;
+
+    // One Modulate per chain (Phase 3 Q2.8).
+    if (type == ModuleType::modulate && chain.getChildWithProperty (verb::ids::type, verb::storedName (ModuleType::modulate)).isValid())
         return 0;
 
     const auto uid = nextUid();
@@ -442,6 +525,15 @@ void VerbProcessor::setModuleValue (int uid, const juce::Identifier& id, const j
         return;
 
     module.setProperty (id, value, nullptr);
+
+    // Modulate's Rate, Depth and Spread act live on the convolver, without a rebuild (Phase 3 Q2.8).
+    if (module[verb::ids::type].toString() == verb::storedName (ModuleType::modulate) && id != juce::Identifier ("start"))
+    {
+        noteEdited();
+        updateModulation();
+        return;
+    }
+
     chainEdited (false);
 }
 

@@ -10,7 +10,7 @@ class VerbEditor final : public fancy::ui::ShellEditor
 public:
     static constexpr int baseWidth = 866, baseHeight = 677;
 
-    enum class Preview { rack, addPanel, setup, scrolled };
+    enum class Preview { rack, addPanel, setup, scrolled, library, generators };
 
     explicit VerbEditor (VerbProcessor& processor);
 

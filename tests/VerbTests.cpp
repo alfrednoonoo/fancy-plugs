@@ -546,7 +546,11 @@ TEST_CASE ("normalize, reverse and trim", "[verb][modules]")
 TEST_CASE ("reverb generator is repeatable and decays at its RT60", "[verb][modules]")
 {
     auto reverb = moduleOf (ModuleType::reverb);
-    reverb.values = { 2.0f, 0.6f, 100.0f, 0.0f, 100.0f, 0.0f, 0.0f };
+    // Length, Decay, Density, Damping, Stereo spread; the Q2.8 settings keep their defaults.
+    const float firstFive[] { 2.0f, 0.6f, 100.0f, 0.0f, 100.0f };
+
+    for (size_t i = 0; i < 5; ++i)
+        reverb.values[i] = firstFive[i];
 
     verb::ChainSpec chain;
     chain.modules.push_back (reverb);

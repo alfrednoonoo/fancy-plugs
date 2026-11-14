@@ -89,6 +89,7 @@ private:
     juce::ValueTree findModule (int uid);
     int nextUid();
     void chainEdited (bool structural);
+    void updateModulation();
     void requestBuild();
     bool buildPending();
     void buildNow();
@@ -108,6 +109,9 @@ private:
     std::atomic<int> requestedBuild { 1 }, completedBuild { 0 };
     std::atomic<int> chainRevision { 0 };
     std::atomic<int> builtMode { -1 }, builtMaxBlock { -1 };
+
+    // Modulate's live settings (Phase 3 Q2.8), read by the audio thread.
+    std::atomic<float> modulationRate { 0.3f }, modulationDepth { 0.5f }, modulationSpread { 1.0f };
 
     BuildThread buildThread;
 

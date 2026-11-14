@@ -98,3 +98,17 @@
 - [ ] Save the project with B active and reopen it: B is still active, and A is as you left it.
 - [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
 - [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
+
+## Library, true stereo and Modulate (Phase 3 Q2.8)
+
+- [ ] Open a project saved with v1.4.0 that uses Fancy Verb: it loads, looks and sounds as before. Render it and null it against a v1.4.0 render if you have one.
+- [ ] Add a File module and open its dropdown: a LIBRARY section with Rooms, Halls, Plates, Chambers and Special, each with its IRs, and the TS mark on the true-stereo ones. Pick Halls > Concert Hall: the card reads "/ Library / Halls", shows TS, and the display says "4ch true stereo".
+- [ ] Step with `<` and `>`: it moves through Halls only. Try a few from each category: rooms sound like rooms, plates like plates, nothing clicks or jumps in level.
+- [ ] Pan a mono source hard left into a true-stereo IR: the reverb comes from both sides, and the right side has its own reflections. Switch to a normal library IR: the reverb stays on the left.
+- [ ] **Pair right input…** with two stereo IR files: TS appears, both names show on the dropdown; **Remove pair** goes back to one.
+- [ ] Load a four-channel WAV, if you have one: TS appears and Mix to mono is unticked.
+- [ ] **Reverb generator:** Low RT 2 x and High RT 0.5 x make a darker, longer low end; Early Room and Hall with Size give audible early reflections; Plate is dense at once; Build-up fades the tail in; True stereo shows 4ch on the display. Size dims unless Early is Room or Hall.
+- [ ] **Modulate:** add it to a long hall. The tail moves gently, with no pitch wobble on a sustained note; Depth 0 sounds like no Modulate; Rate and Depth change smoothly while playing. The add panel greys Modulate once the chain has one.
+- [ ] The five new presets (Library Hall, Library Plate, True Stereo Room, Modulated Hall, Endless) load from the preset browser.
+- [ ] Save a project with a library IR, a pair and Modulate, close and reopen: everything comes back, and the project file is small with the library IR.
+- [ ] Render offline twice with Modulate on: the renders are identical.
