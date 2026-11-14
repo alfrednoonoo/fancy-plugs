@@ -186,7 +186,7 @@ The convolver's worker runs at JUCE `highest`, which is below the audio thread i
 
 ## Phase 3 Q2.8: IR library, true stereo and modulation
 
-Brief: Q2.8 of `docs/BUILD_PROMPT_PHASE3.md`. **Draft, waiting for the user's approval.** Six decisions are marked; **(R)** is the recommended option, and nothing is coded until they're settled. Then a mockup of the changed cards comes first, as for Q2.4 and Q2.5.
+Brief: Q2.8 of `docs/BUILD_PROMPT_PHASE3.md`. **Approved by the user on 14 November 2026, with every recommended option (R):** 1 A, 2 A, 3 A, 4 A, 5 A and the five presets. Mockup: `design/phase3-mockup-src/verb-q28.html`, rendered as `reference/phase3/24__verb_q28_mockup.png`, waiting for the user's approval before any code.
 
 ### 1. Signal path
 

@@ -1,0 +1,119 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy Verb Q2.8 mockup</title><link rel="stylesheet" href="common.css"><link rel="stylesheet" href="kit2.css"><script src="lib2.js"></script>
+<style>
+body{--a:#9A59B5}
+.sheet{display:flex;flex-direction:column;gap:18px;width:1120px}
+.h{font-size:13px;font-weight:700;color:#fff;margin:4px 0 2px}.n{font-size:11px;color:#8D8D8D;margin-bottom:8px;line-height:1.45;max-width:1100px}
+.row{display:flex;gap:4px;align-items:flex-start}
+/* Rack cards at native size: 352 tall, the rack's bg-body, a power glyph, title, X and + */
+.rack{background:#262626;padding:0;display:inline-flex;gap:4px;vertical-align:top}
+.card{position:relative;height:352px;background:#303030;flex:none}
+.card .pw{position:absolute;left:16px;top:17px;width:18px;height:18px;border:2px solid var(--c);border-top-color:transparent;border-radius:50%}
+.card .pw:after{content:"";position:absolute;left:6px;top:-5px;width:2px;height:9px;background:var(--c)}
+.card .ttl{position:absolute;left:42px;top:15px;font-size:16px;font-weight:600;letter-spacing:.02em}
+.card .x{position:absolute;right:14px;top:12px;font-size:18px;color:#8D8D8D}
+.card .plus{position:absolute;right:14px;bottom:10px;font-size:22px;color:#fff}
+.abs{position:absolute}
+.ddv{background:#3a3a3a;border-radius:4px;font-size:16px;padding:0 10px;height:32px;display:flex;align-items:center;justify-content:space-between}
+.ddv:after{content:"⌃⌄";font-size:8px;color:#8D8D8D;writing-mode:vertical-lr;line-height:6px}
+.btn2{background:#3a3a3a;border-radius:4px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.ts{background:#9A59B5;color:#141414;border-radius:3px;font-size:10px;font-weight:700;padding:2px 5px;letter-spacing:.04em}
+.menu{background:#262626;border:1px solid #434343;border-radius:6px;padding:5px 0;font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,.6);color:#EDEDED}
+.menu .sec{padding:6px 12px 3px;font-size:10px;color:#909090;letter-spacing:.06em;text-transform:uppercase;background:none;border-radius:0}
+.menu .it{padding:4px 12px 4px 22px;display:flex;justify-content:space-between}
+.menu .it.a{background:#383838}
+.menu .sub:after{content:"›";color:#909090}
+.menu .sep{height:1px;background:#3a3a3a;margin:4px 0}
+.k50 .lbl{font-size:12px}.k50 .val{font-size:12px}
+.chip{background:#303030;border-radius:3px;height:24px;display:flex;align-items:center;gap:6px;padding:0 10px;font-size:11px;font-weight:600;letter-spacing:.06em;color:#8D8D8D}
+</style></head><body>
+<div class="sheet">
+
+<div><div class="h">1 · FILE card with a library IR, and the open dropdown (Decisions 2 and 3)</div><div class="n">The dropdown's menu (the shared Phase 2.1 S menu) gets a LIBRARY section above the IR folder's files, with the five categories as sub-menus; Halls is open. The path line reads "Library / Halls" for a library IR. The purple TS mark, right of the title, shows a true-stereo IR (four paths). "Pair right input…" pairs the loaded stereo file with a second one for the right input; with a pair loaded the line under the dropdown names the second file. Mix to mono and the SRC-gain dropdown are unchanged.</div>
+<div class="row" style="gap:16px">
+ <div class="rack"><div class="card" style="width:296px;--c:#9A59B5">
+  <div class="pw"></div><div class="ttl">FILE</div><span class="ts abs" style="left:92px;top:19px">TS</span><div class="x">✕</div>
+  <div class="abs" style="left:24px;top:68px;font-size:12px;color:#8D8D8D">/ Library / Halls</div>
+  <div class="abs ddv" style="left:24px;top:94px;width:248px">Concert Hall</div>
+  <div class="abs btn2" style="left:24px;top:142px;width:45px">‹</div><div class="abs btn2" style="left:73px;top:142px;width:47px">›</div><div class="abs btn2" style="left:152px;top:142px;width:120px">Browse…</div>
+  <div class="abs cb" style="left:24px;top:220px;font-size:15px"><i></i>Mix to mono</div>
+  <div class="abs ddv" style="left:24px;top:253px;width:248px">no SRC-gain, -18dB</div>
+  <div class="plus">+</div>
+ </div></div>
+ <div class="menu" style="width:210px;margin-top:94px">
+  <div class="sec">Library</div>
+  <div class="it sub">Rooms</div><div class="it sub a">Halls</div><div class="it sub">Plates</div><div class="it sub">Chambers</div><div class="it sub">Special</div>
+  <div class="sep"></div>
+  <div class="sec">IR folder</div>
+  <div class="it">100-Reverb.wav</div><div class="it">Big Room.wav</div><div class="it">Spring 2.wav</div>
+  <div class="sep"></div>
+  <div class="it">Pair right input…</div>
+ </div>
+ <div class="menu" style="width:170px;margin-top:150px;margin-left:-18px">
+  <div class="it">Recital Hall</div><div class="it">Small Hall</div><div class="it a">✓ Concert Hall<span>TS</span></div><div class="it">Dark Hall</div><div class="it">Bright Hall</div><div class="it">Cathedral<span>TS</span></div><div class="it">Arena<span>TS</span></div>
+ </div>
+</div></div>
+
+<div><div class="h">2 · REVERB GENERATOR card with the new settings (Decision 1)</div><div class="n">Same 356 width and teal module accent. Two rows of five small knobs: Length, Decay, Density, Damping, Stereo spread (today's five, now small), then Low RT and High RT (the Low and High decay multipliers), Size, Build-up and an empty slot kept for symmetry with Echo's grid. Below: the Early dropdown (Off, Room, Hall, Plate) and a True stereo checkbox. Size dims while Early is Off. With every new setting at its default the card makes today's IR.</div>
+<div class="rack"><div class="card" style="width:356px;--c:#00A985">
+ <div class="pw"></div><div class="ttl">REVERB GENERATOR</div><div class="x">✕</div>
+ <div class="abs" style="left:12px;top:56px;display:flex">
+  <div class="knob k50" data-k data-v=".45" data-c="#00A985" data-s="38" data-l="Length" data-t="2.5 s" style="width:66px"></div>
+  <div class="knob k50" data-k data-v=".4" data-c="#00A985" data-s="38" data-l="Decay" data-t="1.80 s" style="width:66px"></div>
+  <div class="knob k50" data-k data-v=".8" data-c="#00A985" data-s="38" data-l="Density" data-t="80 %" style="width:66px"></div>
+  <div class="knob k50" data-k data-v=".4" data-c="#00A985" data-s="38" data-l="Damping" data-t="40 %" style="width:66px"></div>
+  <div class="knob k50" data-k data-v="1" data-c="#00A985" data-s="38" data-l="Spread" data-t="100 %" style="width:66px"></div>
+ </div>
+ <div class="abs" style="left:12px;top:158px;display:flex">
+  <div class="knob k50" data-k data-v=".62" data-c="#00A985" data-s="38" data-l="Low RT" data-t="1.40x" style="width:66px"></div>
+  <div class="knob k50" data-k data-v=".35" data-c="#00A985" data-s="38" data-l="High RT" data-t="0.60x" style="width:66px"></div>
+  <div class="knob k50" data-k data-v=".55" data-c="#00A985" data-s="38" data-l="Size" data-t="24 m" style="width:66px"></div>
+  <div class="knob k50" data-k data-v=".25" data-c="#00A985" data-s="38" data-l="Build-up" data-t="60 ms" style="width:66px"></div>
+ </div>
+ <div class="abs" style="left:24px;top:270px;font-size:14px;height:28px;display:flex;align-items:center">Early</div>
+ <div class="abs ddv" style="left:80px;top:268px;width:110px;height:28px;font-size:14px">Hall</div>
+ <div class="abs" style="left:206px;top:270px;height:28px;display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap"><span style="width:14px;height:14px;border-radius:3px;background:#00A985;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#141414;font-weight:700">✓</span>True stereo</div>
+ <div class="plus">+</div>
+</div></div></div>
+
+<div><div class="h">3 · MODULATE card (Decisions 4 and 5) and the add panel</div><div class="n">A new 247-wide card in the teal module accent: Start, Rate, Depth and Spread as small knobs in one row, with a small caption under them. In the add panel (203 wide, the existing list of module names) Modulate appears last; with a Modulate already in the chain it's greyed and its tooltip says "One Modulate per chain". In the chain strip it's a chip like the others.</div>
+<div class="row" style="gap:16px">
+ <div class="rack"><div class="card" style="width:247px;--c:#00A985">
+  <div class="pw"></div><div class="ttl">MODULATE</div><div class="x">✕</div>
+  <div class="abs" style="left:-1px;top:110px;display:flex">
+   <div class="knob k50" data-k data-v=".2" data-c="#00A985" data-s="38" data-l="Start" data-t="80 ms" style="width:62px"></div>
+   <div class="knob k50" data-k data-v=".45" data-c="#00A985" data-s="38" data-l="Rate" data-t="0.30 Hz" style="width:62px"></div>
+   <div class="knob k50" data-k data-v=".5" data-c="#00A985" data-s="38" data-l="Depth" data-t="50 %" style="width:62px"></div>
+   <div class="knob k50" data-k data-v="1" data-c="#00A985" data-s="38" data-l="Spread" data-t="100 %" style="width:62px"></div>
+  </div>
+  <div class="abs" style="left:24px;top:236px;width:200px;font-size:11px;color:#8D8D8D;line-height:1.5">Moves the tail after Start between two versions with the same decay. The early part and the pitch don't change.</div>
+  <div class="plus">+</div>
+ </div></div>
+ <div class="rack"><div class="card" style="width:203px;background:#262626;border:1px solid #3a3a3a">
+  <div class="abs" style="left:18px;top:16px;font-size:12px;font-weight:600;letter-spacing:.06em;color:#8D8D8D">ADD MODULE</div>
+  <div class="abs" style="left:18px;top:44px;display:flex;flex-direction:column;gap:6px;width:166px">
+   <div class="chip" style="color:#9A59B5">⏻ FILE</div><div class="chip" style="color:#3598DB">⏻ LP/HP</div><div class="chip" style="color:#00A985">⏻ ECHO</div><div class="chip" style="color:#2DCC70">⏻ NORMALIZE</div><div class="chip" style="color:#00A985">⏻ TRIM</div><div class="chip" style="color:#00A985">⏻ REVERSE</div><div class="chip" style="color:#00A985">⏻ REVERB</div><div class="chip" style="color:#00A985;outline:1px solid #00A985">⏻ MODULATE</div>
+  </div>
+ </div></div>
+</div></div>
+
+<div><div class="h">4 · IR display with a true-stereo IR</div><div class="n">The display keeps its two lanes, now labelled by output: "→L" is LL + RL, "→R" is LR + RR. The info string adds "true stereo" and the channel count. With a Modulate module the tail after Start is drawn with a faint second outline (the decorrelated copy) and a dashed line at Start.</div>
+<svg id="ird" width="734" height="200" style="background:#141414;display:block"></svg>
+</div>
+
+</div>
+<script>
+(()=>{const W=734,H=200;let s='';
+[1,2,3,4].forEach(t=>{const x=t*W/4.5;s+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#262626"/><text x="${x-4}" y="${H-6}" fill="#8D8D8D" font-size="12" text-anchor="end">${t}.0</text>`});
+s+=`<text x="${W-14}" y="22" fill="#8D8D8D" font-size="15" text-anchor="end">3.1s, 48kHz, 4ch true stereo, max: -21.0dB</text>`;
+const lane=(cy,seed,amp)=>{let p=`M0,${cy}`;let r=seed;const rnd=()=>{r=(r*16807)%2147483647;return r/2147483647};
+for(let x=0;x<=W*0.75;x+=2){const t=x/(W*0.75);const e=Math.exp(-4.2*t)*(t<0.02?t/0.02:1);p+=`L${x},${cy-amp*e*(0.55+0.45*rnd())}`}
+for(let x=W*0.75;x>=0;x-=2){const t=x/(W*0.75);const e=Math.exp(-4.2*t)*(t<0.02?t/0.02:1);p+=`L${x},${cy+amp*e*(0.55+0.45*rnd())}`}
+return p+'Z'};
+s+=`<path d="${lane(55,7,40)}" fill="#9A59B5" fill-opacity=".85"/><path d="${lane(140,11,40)}" fill="#9A59B5" fill-opacity=".85"/>`;
+s+=`<g clip-path="url(#tail)"><path d="${lane(55,23,40)}" fill="none" stroke="#fff" stroke-opacity=".3"/><path d="${lane(140,29,40)}" fill="none" stroke="#fff" stroke-opacity=".3"/></g>`;
+s=`<defs><clipPath id="tail"><rect x="${0.08*W}" y="0" width="${W}" height="${H}"/></clipPath></defs>`+s;
+[ [55,'→L'],[140,'→R'] ].forEach(([y,t])=>s+=`<text x="10" y="${y-34}" fill="#EDEDED" font-size="11" font-weight="600">${t}</text>`);
+const sx=0.08*W*0.75/0.75*1; s+=`<line x1="${sx}" y1="8" x2="${sx}" y2="${H-20}" stroke="#00A985" stroke-dasharray="3 3"/><text x="${sx+4}" y="${H-24}" fill="#00A985" font-size="10">Start 80 ms</text>`;
+s+=`<line x1="2" y1="0" x2="2" y2="${H}" stroke="#2DCC70"/><line x1="${W*0.75}" y1="0" x2="${W*0.75}" y2="${H}" stroke="#2DCC70" stroke-opacity=".5"/>`;
+document.getElementById('ird').innerHTML=s})();
+</script></body></html>
