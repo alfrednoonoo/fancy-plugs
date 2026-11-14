@@ -178,7 +178,9 @@ TEST_CASE ("a direct IR builds and convolves exactly as before Q2.8", "[verb][q2
 
         const auto length = built.audio.getNumSamples();
         Convolver current (built.audio.getReadPointer (0), built.audio.getReadPointer (1), length, mode, 32768);
-        verb::legacy::Convolver legacy (old.audio.getReadPointer (0), old.audio.getReadPointer (1), length, mode, 32768);
+        const auto legacyMode = mode == Convolver::Mode::zeroLatency ? verb::legacy::Convolver::Mode::zeroLatency
+                                                                     : verb::legacy::Convolver::Mode::lowCpu;
+        verb::legacy::Convolver legacy (old.audio.getReadPointer (0), old.audio.getReadPointer (1), length, legacyMode, 32768);
 
         const auto inputLeft = noise (60000, 31);
         const auto inputRight = noise (60000, 32);
@@ -438,7 +440,8 @@ TEST_CASE ("choosing a four-channel file or a pair makes the File module true st
 
     for (const auto pair : { false, true })
     {
-        INFO (pair ? "pair" : "four-channel file");
+        const juce::String label (pair ? "pair" : "four-channel file");
+        INFO (label);
 
         if (pair)
         {
