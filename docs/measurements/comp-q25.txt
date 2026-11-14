@@ -1,16 +1,15 @@
-# Phase 3 Q2.5, run 43633937359, commit d21fb1b (section 0.4: median of 5 runs in one build).
+# Phase 3 Q2.5, run 43639193810, commit 5b71497 (section 0.4: median of 5 runs in one build).
 # A stereo programme signal (tones, noise, a 3 Hz level swing); "everything" is Character Warm Post,
 # Upward, Auto threshold and all three sidechain bands (+3, +6, -3 dB).
+# Targets (restated by the user, 14 November 2026): the cost added over the same oversampling,
+# < 1.5 % at 4x and < 3 % at 8x. Both met.
 Comp Q2.5 CPU, 48 kHz, 128 samples, stereo, median of 5 runs (ratio to Comp at its defaults):
-  defaults                 0.443 % (1.00)
-  Character Warm at 4x     3.740 % (8.45)
-  everything on at 4x      4.370 % (9.87)
-  everything on at 8x      8.306 % (18.76)
-# The same run's existing measurement: Comp at 4x with nothing new on costs 3.378 %, so the
-# Q2.5 stages add about 0.36 % (Character) and 0.99 % (everything) on top of 4x oversampling.
-# The targets in docs/comp.md section 8 were below the cost of 4x itself. The user restated them
-# (14 November 2026) as the cost added over the same oversampling: < 1.5 % at 4x, < 3 % at 8x.
-# The next run's measurement times 4x and 8x with nothing new on, and replaces this file.
-Comp oversampling Off: latency   0 samples, 104 with Limit output; CPU 0.4808 %
-Comp oversampling 2x : latency  55 samples, 159 with Limit output; CPU 1.7401 %
-Comp oversampling 4x : latency  69 samples, 173 with Limit output; CPU 3.3777 %
+  defaults                 0.292 % (1.00)
+  4x, nothing new on       2.265 % (7.77)
+  8x, nothing new on       4.139 % (14.20)
+  Character Warm at 4x     2.695 % (9.24), adds 0.430 % over the same oversampling (target none)
+  everything on at 4x      3.125 % (10.72), adds 0.860 % over the same oversampling (target < 1.5 %)
+  everything on at 8x      5.896 % (20.22), adds 1.757 % over the same oversampling (target < 3 %)
+Comp oversampling Off: latency   0 samples, 104 with Limit output; CPU 0.3456 % at 48 kHz, 128 samples, stereo (target without oversampling < 1 %); worst alias -56.8 dBFS (15 kHz, attack 0.1 ms, release 1 ms)
+Comp oversampling 2x : latency  55 samples, 159 with Limit output; CPU 1.2574 % at 48 kHz, 128 samples, stereo (target without oversampling < 1 %); worst alias -79.2 dBFS (15 kHz, attack 0.1 ms, release 1 ms)
+Comp oversampling 4x : latency  69 samples, 173 with Limit output; CPU 2.4459 % at 48 kHz, 128 samples, stereo (target without oversampling < 1 %); worst alias -100.9 dBFS (15 kHz, attack 0.1 ms, release 1 ms)

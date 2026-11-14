@@ -10,7 +10,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
   - Next: the user's REAPER check (`docs/eq-checklist.md`, the two Q2.4 sections), then the release (v1.4.0), then Comp (Q2.5).
 - **Comp (Q2.5): built, green, waiting for the user's REAPER check.** Design and "As built" (section 10) in `docs/comp.md`; mockup `reference/phase3/23__comp_q25_mockup.png` (approved 14 November 2026).
   - Green: run 43633937359 (`d21fb1b`), 476 test cases. Screenshots `comp-detector`, `comp-character`, `comp-upward`, `comp-options` checked against the mockup. CPU in `docs/measurements/comp-q25.txt`.
-  - CPU targets restated by the user (14 November 2026) as the cost added over the same oversampling: < 1.5 % at 4x (about 1.0 % measured), < 3 % at 8x (next run). The aliasing targets were lowered to what the model allows (As built).
+  - CPU targets restated by the user (14 November 2026) as the cost added over the same oversampling: < 1.5 % at 4x (0.86 % measured), < 3 % at 8x (1.76 %), run 43639193810. The aliasing targets were lowered to what the model allows (As built).
   - Built before EQ's REAPER sign-off, at the user's request: v1.4.0 can carry both, or EQ can be released from `25fb11c` first.
   - Next: the user's REAPER check (`docs/comp-checklist.md`, the Q2.5 section).
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
@@ -41,7 +41,7 @@ Every item below is built, green in CI and passed by the user in REAPER. Each ha
 - **Phase 3 new plugins:** Fancy Limit (`docs/limit.md`), Fancy DS (`docs/ds.md`), Fancy DS-Mini (`docs/ds-mini.md`), Fancy Sature (`docs/sature.md`), Kicker's Sub mode (`docs/kicker-sub.md`), Fancy Room (`docs/room.md`). REAPER checks passed on 10 November (Limit) and 13 November 2026 (the rest).
 - **§0.3 Listen rule:** Listen and preview switches are temporary, never parameters (`FancyProcessor::setListening`, `ListenCheckbox`), retrofitted to Comp's and Gate's Preview filter and FIR's Listen. Limit's "Listen to removed" stays a parameter, by the user's choice.
 
-Latest green run: 43633937359 (commit `d21fb1b`, Comp Q2.5), 476 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
+Latest green run: 43639193810 (commit `5b71497`, Comp Q2.5), 476 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
 
 ## Still to do in Phase 3
 
