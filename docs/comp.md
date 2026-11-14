@@ -249,7 +249,7 @@ Plus "8x" in `oversampling` under Decision 5 A. Up ratio is shown and typed as `
 11. **8x:** latency reported matches the measured delay in both filter modes; wet and dry stay aligned; the limiter still holds the ceiling.
 12. **Automation:** the existing bit-identical automation test covers every new parameter.
 13. **Host:** H's offline-render and flood tests cover the new parameters.
-14. **CPU (§0.4):** defaults (today's ratio, 1.00 by definition), Character on at 4x, everything on at 4x, and everything on at 8x, in `docs/measurements/comp-q25.txt`. Targets: everything on at 4x under 1.5 %, and at 8x under 3 %.
+14. **CPU (§0.4):** defaults (today's ratio, 1.00 by definition), Character on at 4x, everything on at 4x, and everything on at 8x, in `docs/measurements/comp-q25.txt`. Targets, restated by the user on 14 November 2026 as the cost the stages add over the same oversampling: everything on adds under 1.5 % at 4x and under 3 % at 8x. The measurement also times 4x and 8x with nothing new on.
 
 ### 9. Build order
 
@@ -276,4 +276,4 @@ Push 1 holds the whole item: the moves into `fancy-core`, 8x, Character, Upward,
 - **Sidechain EQ:** the shelves are second order with a Butterworth Q. A band at exactly 0 dB is skipped, and its state is cleared, so it starts from rest when it comes back.
 - **Screenshots:** `comp-detector`, `comp-character`, `comp-upward` and `comp-options`, with the mockup's values.
 - **Green:** run 43633937359 (`d21fb1b`), 476 test cases, pluginval, Steinberg's validator, the host harness and FancyBench. The first push (`9b77d50`) failed to compile: a tooltip on a plain component and Catch's `range` without its header.
-- **CPU misses its targets** (`docs/measurements/comp-q25.txt`): everything on at 4x is 4.37 % against under 1.5 %, and at 8x 8.3 % against under 3 %. The targets were wrong rather than the stages: Comp at 4x with nothing new on already costs 3.38 % in the same run. The stages add about 1.0 % over 4x. Waiting for the user's decision on the targets.
+- **CPU targets restated** (`docs/measurements/comp-q25.txt`): as first written, everything on at 4x (4.37 %) and 8x (8.3 %) missed 1.5 % and 3 %, because Comp at 4x with nothing new on already costs 3.38 %. On 14 November 2026 the user restated the targets as the cost added over the same oversampling. At 4x that's about 1.0 %, inside 1.5 %; the 8x figure comes from the next run.

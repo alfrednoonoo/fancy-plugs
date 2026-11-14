@@ -4,11 +4,13 @@
 Comp Q2.5 CPU, 48 kHz, 128 samples, stereo, median of 5 runs (ratio to Comp at its defaults):
   defaults                 0.443 % (1.00)
   Character Warm at 4x     3.740 % (8.45)
-  everything on at 4x      4.370 % (9.87)   target < 1.5 %: missed
-  everything on at 8x      8.306 % (18.76)  target < 3 %: missed
+  everything on at 4x      4.370 % (9.87)
+  everything on at 8x      8.306 % (18.76)
 # The same run's existing measurement: Comp at 4x with nothing new on costs 3.378 %, so the
 # Q2.5 stages add about 0.36 % (Character) and 0.99 % (everything) on top of 4x oversampling.
-# The targets in docs/comp.md section 8 were below the cost of 4x itself.
+# The targets in docs/comp.md section 8 were below the cost of 4x itself. The user restated them
+# (14 November 2026) as the cost added over the same oversampling: < 1.5 % at 4x, < 3 % at 8x.
+# The next run's measurement times 4x and 8x with nothing new on, and replaces this file.
 Comp oversampling Off: latency   0 samples, 104 with Limit output; CPU 0.4808 %
 Comp oversampling 2x : latency  55 samples, 159 with Limit output; CPU 1.7401 %
 Comp oversampling 4x : latency  69 samples, 173 with Limit output; CPU 3.3777 %

@@ -801,14 +801,29 @@ TEST_CASE ("comp Q2.5 CPU measurement", "[.measure]")
     auto everything8 = everything;
     everything8.oversampling = CompDsp::x8;
 
+    auto plain4 = defaults;
+    plain4.oversampling = CompDsp::x4;
+
+    auto plain8 = defaults;
+    plain8.oversampling = CompDsp::x8;
+
+    const auto base4 = timeOf (plain4);
+    const auto base8 = timeOf (plain8);
+
+    // The targets are the cost the Q2.5 stages add over the same oversampling (docs/comp.md,
+    // section 8, test 14, restated by the user on 14 November 2026).
     std::printf ("Comp Q2.5 CPU, 48 kHz, 128 samples, stereo, median of %d runs (ratio to Comp at its defaults):\n", runs);
     std::printf ("  defaults                 %.3f %% (1.00)\n", reference);
+    std::printf ("  4x, nothing new on       %.3f %% (%.2f)\n", base4, base4 / reference);
+    std::printf ("  8x, nothing new on       %.3f %% (%.2f)\n", base8, base8 / reference);
 
-    for (const auto& [name, targets] : { std::pair { "Character Warm at 4x     ", character },
-                                         std::pair { "everything on at 4x      ", everything },
-                                         std::pair { "everything on at 8x      ", everything8 } })
+    const auto row = [&] (const char* name, const CompDsp::Targets& targets, double base, const char* target)
     {
         const auto percent = timeOf (targets);
-        std::printf ("  %s%.3f %% (%.2f)\n", name, percent, percent / reference);
-    }
+        std::printf ("  %s%.3f %% (%.2f), adds %.3f %% over the same oversampling (target %s)\n", name, percent, percent / reference, percent - base, target);
+    };
+
+    row ("Character Warm at 4x     ", character, base4, "none");
+    row ("everything on at 4x      ", everything, base4, "< 1.5 %");
+    row ("everything on at 8x      ", everything8, base8, "< 3 %");
 }

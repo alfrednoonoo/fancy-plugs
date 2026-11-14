@@ -10,7 +10,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
   - Next: the user's REAPER check (`docs/eq-checklist.md`, the two Q2.4 sections), then the release (v1.4.0), then Comp (Q2.5).
 - **Comp (Q2.5): built, green, waiting for the user's REAPER check.** Design and "As built" (section 10) in `docs/comp.md`; mockup `reference/phase3/23__comp_q25_mockup.png` (approved 14 November 2026).
   - Green: run 43633937359 (`d21fb1b`), 476 test cases. Screenshots `comp-detector`, `comp-character`, `comp-upward`, `comp-options` checked against the mockup. CPU in `docs/measurements/comp-q25.txt`.
-  - Open: the CPU targets (everything on at 4x 4.37 % against 1.5 %; 4x alone is 3.38 %); the aliasing targets were lowered to what the model allows (As built).
+  - CPU targets restated by the user (14 November 2026) as the cost added over the same oversampling: < 1.5 % at 4x (about 1.0 % measured), < 3 % at 8x (next run). The aliasing targets were lowered to what the model allows (As built).
   - Built before EQ's REAPER sign-off, at the user's request: v1.4.0 can carry both, or EQ can be released from `25fb11c` first.
   - Next: the user's REAPER check (`docs/comp-checklist.md`, the Q2.5 section).
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
