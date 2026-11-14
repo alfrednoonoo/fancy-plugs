@@ -415,6 +415,16 @@ TEST_CASE ("EQ: an offline render matches playback", "[host][offline]")
                                  join ({ alternate ("b2gain", -6.0f, 6.0f), alternate ("b2freq", 300.0f, 1500.0f, 1234) }), {}, linear > 0.5f });
 }
 
+// Phase 3 Q2.4: bands on Left, Mid, Side and Right, in both phase modes.
+TEST_CASE ("EQ: an offline render with bands on mixed channels matches playback", "[host][offline]")
+{
+    const auto linear = GENERATE (0.0f, 1.0f);
+    checkRenders<EqProcessor> (linear > 0.5f ? "EQ, mixed channels, linear phase" : "EQ, mixed channels, minimum phase",
+                               { { { "phase", linear }, { "b1chan", 1.0f }, { "b1gain", 3.0f }, { "b2chan", 3.0f },
+                                   { "b3chan", 4.0f }, { "b3gain", 4.0f }, { "b4chan", 2.0f }, { "b4gain", -3.0f } },
+                                 join ({ alternate ("b2gain", -6.0f, 6.0f), alternate ("b2freq", 300.0f, 1500.0f, 1234) }), {}, linear > 0.5f });
+}
+
 // Phase 2.1 D: dynamic bands, Above and Below, with their thresholds and gains automated.
 TEST_CASE ("EQ: an offline render with dynamic bands matches playback", "[host][offline]")
 {

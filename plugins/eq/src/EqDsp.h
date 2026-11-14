@@ -33,7 +33,9 @@ public:
         bool bypass = false;
     };
 
-    void prepare (double sampleRate);
+    // The channel count is the bus's, when it's known: Linear phase designs for it (a mono bus
+    // treats every band as Stereo). process() corrects it if the host sends something else.
+    void prepare (double sampleRate, int numChannels = maxChannels);
     void reset();
 
     void setTargets (const Targets& targets) noexcept { current = targets; }
@@ -157,6 +159,7 @@ public:
 
 private:
     std::atomic<bool> designRequested { false };
+    std::atomic<int> busChannels { maxChannels };
     juce::SpinLock designLock;
     std::array<eq::BandSpec, eq::maxBands> designedBands;
     int designedLength = -1;

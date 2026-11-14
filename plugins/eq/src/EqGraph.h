@@ -3,6 +3,7 @@
 #include "EqProcessor.h"
 
 #include <array>
+#include <complex>
 #include <functional>
 #include <vector>
 
@@ -108,6 +109,12 @@ private:
 
     std::array<BandDisplay, eq::maxBands> bands;
     std::vector<float> composite, phase;
+
+    // Phase 3 Q2.4: with any band off Stereo, the total is drawn for one channel: the selected
+    // band's, or Mid for a Stereo band.
+    bool mixedChannels = false;
+    eq::Channel totalChannel = eq::Channel::mid;
+    bool lastStereoBus = true;
     std::array<eq::BandSpec, eq::maxBands> lastSpecs;
     std::array<bool, eq::maxBands> lastUsed {};
     std::array<DynamicState, eq::maxBands> lastDynamics {};

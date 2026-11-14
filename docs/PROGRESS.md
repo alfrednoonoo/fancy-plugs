@@ -4,7 +4,10 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 ## Now
 
-- **Current item: Q2.4, Fancy EQ** (channel per band, 24 bands, Match). Design section "Phase 3 Q2.4" in `docs/eq.md`, approved 13 November 2026 with every recommended option: a Channel chip left of DYN, a `MATCH` header link opening a card over the graph, full Linear-phase support (up to four FIRs). Mockup of the visible changes: `design/phase3-mockup-src/eq-q24.html`, approved 13 November 2026. Nothing coded yet. Then build in two pushes: (1) 24 bands and Channel, (2) Match. Suggested split: Sonnet for 24 bands, Channel in Minimum phase and the chip; Opus for the Linear-phase matrix and Match.
+- **Current item: Q2.4, Fancy EQ** (channel per band, 24 bands, Match). Design section "Phase 3 Q2.4" in `docs/eq.md` and mockup `design/phase3-mockup-src/eq-q24.html`, both approved 13 November 2026.
+  - Push 1, green (run 43453578254, `8463d43`): 24 bands, per-band Channel in Minimum phase, the Channel chip, handle letters; `stateVersion` 4.
+  - Push 1b, pushed 14 November, run not yet checked: Linear phase follows Channel (one, two or four FIRs), the total curve for the selected band's channel with its "total: Mid" label, Channel on the band's right-click menu, the analyzer's Channel setting (`anaChan`, EDIT drawer), screenshot `eq-channel`.
+  - Still to do: Match (push 2), then the manual, the checklist, measurements in `docs/measurements/eq-q24.txt`, the "As built" section, REAPER and the release.
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
 
 ## Releases

@@ -1171,6 +1171,179 @@ TEST_CASE ("a dynamic Side band reacts to a Side signal and not to a Mid one", "
     CHECK (changeFor (false) == 0.0f);
 }
 
+// Phase 3 Q2.4: Linear phase follows each band's Channel. Each band's magnitude is real, so the
+// EQ is a real 2 x 2 matrix at every frequency.
+namespace
+{
+double gainAt (const BandSpec& spec, double hz)
+{
+    return fancy::dbToGain (responseDb (spec, rate, hz));
+}
+
+// The levels of both channels for a tone through a Linear-phase EQ, as gains.
+std::pair<double, double> linearGains (EqDsp::Targets targets, double hz, double leftAmplitude, double rightAmplitude)
+{
+    targets.linearPhase = true;
+    targets.firLength = 2;
+
+    EqDsp dsp;
+    prepare (dsp, targets);
+
+    auto signal = sine (hz, 1.0, rate, 48000);
+
+    for (size_t i = 0; i < signal.left.size(); ++i)
+    {
+        signal.right[i] = (float) rightAmplitude * signal.left[i];
+        signal.left[i] *= (float) leftAmplitude;
+    }
+
+    signal.process (dsp);
+
+    return { fancy::dbToGain (levelAt (signal.left, 24000, hz, rate)), fancy::dbToGain (levelAt (signal.right, 24000, hz, rate)) };
+}
+
+const double linearTones[] { 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 8000.0, 16000.0 };
+} // namespace
+
+TEST_CASE ("linear phase: Left and Right bands filter their own channel", "[eq][channel][linear]")
+{
+    auto targets = flatTargets();
+    targets.bands[0] = makeBand (BandType::band, 1000.0, 6.0, 2.0);
+    targets.bands[1] = onChannel (makeBand (BandType::highShelf, 8000.0, -6.0, 0.707, 2), eq::Channel::left);
+    targets.bands[2] = onChannel (makeBand (BandType::lowShelf, 200.0, 4.0, 0.707, 2), eq::Channel::right);
+
+    for (const auto hz : linearTones)
+    {
+        const auto [left, right] = linearGains (targets, hz, 0.1, 0.1);
+        const auto bell = responseDb (targets.bands[0], rate, hz);
+
+        INFO (hz << " Hz");
+        CHECK (fancy::gainToDb (left) == Catch::Approx (-20.0 + bell + responseDb (targets.bands[1], rate, hz)).margin (0.1));
+        CHECK (fancy::gainToDb (right) == Catch::Approx (-20.0 + bell + responseDb (targets.bands[2], rate, hz)).margin (0.1));
+    }
+}
+
+TEST_CASE ("linear phase: Mid and Side bands filter the sum and the difference", "[eq][channel][linear]")
+{
+    auto targets = flatTargets();
+    targets.bands[0] = makeBand (BandType::band, 1000.0, 6.0, 2.0);
+    targets.bands[1] = onChannel (makeBand (BandType::highShelf, 8000.0, -6.0, 0.707, 2), eq::Channel::mid);
+    targets.bands[2] = onChannel (makeBand (BandType::lowShelf, 200.0, 4.0, 0.707, 2), eq::Channel::side);
+
+    for (const auto hz : linearTones)
+    {
+        const auto bell = responseDb (targets.bands[0], rate, hz);
+
+        // L = R is all Mid, and stays so.
+        const auto [midLeft, midRight] = linearGains (targets, hz, 0.1, 0.1);
+
+        INFO (hz << " Hz");
+        CHECK (fancy::gainToDb (midLeft) == Catch::Approx (-20.0 + bell + responseDb (targets.bands[1], rate, hz)).margin (0.1));
+        CHECK (midRight == Catch::Approx (midLeft).margin (1.0e-5));
+
+        // L = -R is all Side.
+        const auto [sideLeft, sideRight] = linearGains (targets, hz, 0.1, -0.1);
+
+        CHECK (fancy::gainToDb (sideLeft) == Catch::Approx (-20.0 + bell + responseDb (targets.bands[2], rate, hz)).margin (0.1));
+        CHECK (sideRight == Catch::Approx (sideLeft).margin (1.0e-5));
+    }
+}
+
+TEST_CASE ("linear phase: mixed channels follow the matrix of the bands' magnitudes", "[eq][channel][linear]")
+{
+    auto targets = flatTargets();
+    targets.bands[0] = onChannel (makeBand (BandType::band, 1000.0, 6.0, 1.0), eq::Channel::left);
+    targets.bands[1] = onChannel (makeBand (BandType::highShelf, 4000.0, -6.0, 0.707, 2), eq::Channel::mid);
+    targets.bands[2] = onChannel (makeBand (BandType::band, 300.0, 4.0, 1.0), eq::Channel::side);
+    targets.bands[3] = makeBand (BandType::lowShelf, 100.0, 3.0, 0.707, 2);
+
+    for (const auto hz : linearTones)
+    {
+        // A signal in the left channel alone: (1, 0) through each band in order.
+        auto l = 1.0, r = 0.0;
+
+        l *= gainAt (targets.bands[0], hz);
+
+        {
+            const auto mid = 0.5 * (l + r) * gainAt (targets.bands[1], hz), side = 0.5 * (l - r);
+            l = mid + side;
+            r = mid - side;
+        }
+
+        {
+            const auto mid = 0.5 * (l + r), side = 0.5 * (l - r) * gainAt (targets.bands[2], hz);
+            l = mid + side;
+            r = mid - side;
+        }
+
+        l *= gainAt (targets.bands[3], hz);
+        r *= gainAt (targets.bands[3], hz);
+
+        const auto [left, right] = linearGains (targets, hz, 0.1, 0.0);
+
+        // 0.1 dB of the input's level.
+        INFO (hz << " Hz");
+        CHECK (left == Catch::Approx (0.1 * std::abs (l)).margin (0.0012));
+        CHECK (right == Catch::Approx (0.1 * std::abs (r)).margin (0.0012));
+    }
+}
+
+TEST_CASE ("linear phase: Stereo bands share one filter, and a mono bus ignores Channel", "[eq][channel][linear]")
+{
+    const auto render = [] (eq::Channel channel, int numChannels)
+    {
+        auto targets = flatTargets();
+        targets.bands[0] = onChannel (makeBand (BandType::band, 1000.0, 9.0, 1.0), channel);
+        targets.bands[1] = makeBand (BandType::highShelf, 6000.0, -4.0, 0.707, 2);
+        targets.linearPhase = true;
+        targets.firLength = 0;
+
+        EqDsp dsp;
+        prepare (dsp, targets);
+
+        auto signal = sine (700.0, 0.2, rate, 12000);
+
+        for (int start = 0; start < signal.size(); start += 256)
+        {
+            float* channels[] { signal.left.data() + start, signal.right.data() + start };
+            dsp.process (channels, numChannels, std::min (256, signal.size() - start));
+        }
+
+        return signal;
+    };
+
+    const auto stereo = render (eq::Channel::stereo, 2);
+    const auto mono = render (eq::Channel::stereo, 1);
+
+    CHECK (levelAt (stereo.left, 6000, 700.0, rate) > -20.0);
+    CHECK (stereo.left == stereo.right);
+    CHECK (mono.left == stereo.left);
+
+    for (const auto channel : { eq::Channel::left, eq::Channel::right, eq::Channel::mid, eq::Channel::side })
+        CHECK (render (channel, 1).left == mono.left);
+}
+
+TEST_CASE ("analyzer FIFO can carry Side, Left or Right", "[eq][channel]")
+{
+    auto fifo = std::make_unique<fancy::dsp::SampleFifo>();
+
+    const float left[] { 1.0f, 0.5f, 0.0f };
+    const float right[] { 1.0f, -0.5f, 1.0f };
+
+    float out[4] {};
+
+    fifo->pushWeighted (left, right, 0.5f, -0.5f, 3);
+    REQUIRE (fifo->pop (out, 4) == 3);
+    CHECK (out[0] == 0.0f);
+    CHECK (out[1] == 0.5f);
+    CHECK (out[2] == -0.5f);
+
+    fifo->pushWeighted (left, right, 0.0f, 1.0f, 3);
+    REQUIRE (fifo->pop (out, 4) == 3);
+    CHECK (out[1] == -0.5f);
+    CHECK (out[2] == 1.0f);
+}
+
 TEST_CASE ("the 17th to 24th bands and every Channel default to the old sound", "[eq][channel]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInitialiser;
@@ -1354,6 +1527,36 @@ TEST_CASE ("eq measurements", "[.measure]")
     {
         targets.firLength = i;
         measure (targets, lengths[i]);
+    }
+
+    // Phase 3 Q2.4: 24 bells, Stereo and with mixed channels, and Linear phase's two- and
+    // four-FIR routings.
+    {
+        auto many = flatTargets();
+
+        for (int b = 0; b < eq::maxBands; ++b)
+            many.bands[(size_t) b] = makeBand (BandType::band, 40.0 * std::pow (1.3, b), b % 2 == 0 ? 3.0 : -3.0, 2.0);
+
+        measure (many, "24 bells (target < 1.5 %)");
+
+        auto mixed = many;
+        const eq::Channel cycle[] { eq::Channel::stereo, eq::Channel::mid, eq::Channel::left, eq::Channel::side, eq::Channel::right };
+
+        for (int b = 0; b < eq::maxBands; ++b)
+            mixed.bands[(size_t) b].channel = cycle[b % 5];
+
+        measure (mixed, "24 bells, mixed channels");
+
+        auto midSide = many;
+
+        for (int b = 0; b < eq::maxBands; ++b)
+            midSide.bands[(size_t) b].channel = b % 2 == 0 ? eq::Channel::mid : eq::Channel::side;
+
+        midSide.linearPhase = mixed.linearPhase = true;
+        midSide.firLength = mixed.firLength = 2;
+
+        measure (midSide, "linear 8192, Mid/Side");
+        measure (mixed, "linear 8192, mixed (< 1.5 %)");
     }
 
     double bellError = 0.0;

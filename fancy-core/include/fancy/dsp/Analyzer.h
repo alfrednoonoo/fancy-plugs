@@ -39,6 +39,21 @@ public:
         writeIndex.store (write, std::memory_order_release);
     }
 
+    // Two channels mixed with a gain each: (0.5, -0.5) is the side signal, (1, 0) the left.
+    void pushWeighted (const float* first, const float* second, float firstGain, float secondGain, int numSamples) noexcept
+    {
+        auto write = writeIndex.load (std::memory_order_relaxed);
+        const auto read = readIndex.load (std::memory_order_acquire);
+
+        if ((int) (write - read) + numSamples > capacity)
+            return;
+
+        for (int i = 0; i < numSamples; ++i)
+            buffer[write++ & (capacity - 1)] = first[i] * firstGain + second[i] * secondGain;
+
+        writeIndex.store (write, std::memory_order_release);
+    }
+
     int pop (float* destination, int maxSamples) noexcept
     {
         auto read = readIndex.load (std::memory_order_relaxed);

@@ -23,6 +23,9 @@ public:
     // Panel 3 of the Phase 2.1 mockup: band 2 dynamic, 3.6 dB into its -6 dB reach.
     void showDynamicPreview (bool compact);
 
+    // Panel 2 of the Q2.4 mockup: band 3 on Mid and selected, band 5 on Side.
+    void showChannelPreview();
+
 private:
     class Panels final : public juce::Component
     {
@@ -154,8 +157,8 @@ private:
 
     fancy::ui::EditLink editLink;
     fancy::ui::EditDrawer drawer;
-    juce::Label phaseLabel, firLabel, oversamplingLabel, slopeLabel, rangeLabel, analyzerLabel, fftLabel, windowLabel, overlapLabel;
-    fancy::ui::ParamDropdown phaseDropdown, firDropdown, oversamplingDropdown, rangeDropdown, analyzerDropdown, fftDropdown, windowDropdown, overlapDropdown;
+    juce::Label phaseLabel, firLabel, oversamplingLabel, slopeLabel, rangeLabel, analyzerLabel, fftLabel, windowLabel, overlapLabel, analyzerChannelLabel;
+    fancy::ui::ParamDropdown phaseDropdown, firDropdown, oversamplingDropdown, rangeDropdown, analyzerDropdown, fftDropdown, windowDropdown, overlapDropdown, analyzerChannelDropdown;
     std::vector<std::unique_ptr<fancy::ui::ParamDropdown>> slopeDropdowns;
     fancy::ui::ParamCheckbox tiltCheckbox, peakCheckbox;
     fancy::ui::Knob smoothingKnob;

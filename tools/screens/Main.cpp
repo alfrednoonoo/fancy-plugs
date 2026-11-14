@@ -181,7 +181,11 @@ bool renderEq (const juce::File& outputDir)
     ok = writeBothScales (*editor, "eq-dynamic", outputDir) && ok;
 
     editor->showDynamicPreview (true);
-    return writeBothScales (*editor, "eq-dynamic-compact", outputDir) && ok;
+    ok = writeBothScales (*editor, "eq-dynamic-compact", outputDir) && ok;
+
+    // Phase 3 Q2.4: a Mid band selected and a Side band, with the total for Mid.
+    editor->showChannelPreview();
+    return writeBothScales (*editor, "eq-channel", outputDir) && ok;
 }
 #endif
 

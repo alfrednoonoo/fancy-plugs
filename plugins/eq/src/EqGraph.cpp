@@ -160,6 +160,9 @@ void EqGraph::setSelectedBand (int band)
     if (band != selectedBand)
     {
         selectedBand = band;
+
+        // The total follows the selected band's channel.
+        needsRecalculation = needsRecalculation || mixedChannels;
         repaint();
     }
 }
@@ -235,6 +238,15 @@ void EqGraph::update()
         needsRecalculation = true;
     }
 
+    // On a mono bus every band acts on the one channel.
+    const auto stereoBus = processor.getMainBusNumInputChannels() >= 2;
+
+    if (stereoBus != lastStereoBus)
+    {
+        lastStereoBus = stereoBus;
+        needsRecalculation = true;
+    }
+
     for (int b = 0; b < eq::maxBands; ++b)
     {
         const auto spec = processor.readBand (b);
@@ -293,6 +305,53 @@ void EqGraph::recalculate()
     std::fill (phase.begin(), phase.end(), 0.0f);
 
     const auto linear = processor.readTargets().linearPhase;
+
+    // Phase 3 Q2.4: with every band Stereo the total is the sum of the bands, as it always was.
+    // Otherwise the EQ is a 2 x 2 matrix from (L, R) to (L, R) at each frequency, the bands
+    // multiplying in order, and the total is one path through it.
+    mixedChannels = false;
+
+    for (int b = 0; b < eq::maxBands; ++b)
+        mixedChannels = mixedChannels || (lastStereoBus && lastUsed[(size_t) b] && lastSpecs[(size_t) b].on
+                                          && lastSpecs[(size_t) b].channel != eq::Channel::stereo);
+
+    totalChannel = eq::Channel::mid;
+
+    if (juce::isPositiveAndBelow (selectedBand, eq::maxBands) && lastUsed[(size_t) selectedBand]
+        && lastSpecs[(size_t) selectedBand].channel != eq::Channel::stereo)
+        totalChannel = lastSpecs[(size_t) selectedBand].channel;
+
+    using Complex = std::complex<double>;
+
+    struct Matrix
+    {
+        Complex t00 { 1.0 }, t01 { 0.0 }, t10 { 0.0 }, t11 { 1.0 };
+    };
+
+    std::vector<Matrix> matrices (mixedChannels ? (size_t) width : (size_t) 0);
+
+    const auto applyBand = [] (Matrix& t, Complex h, eq::Channel channel)
+    {
+        switch (channel)
+        {
+            case eq::Channel::left:  t.t00 *= h; t.t01 *= h; break;
+            case eq::Channel::right: t.t10 *= h; t.t11 *= h; break;
+
+            case eq::Channel::mid:
+            case eq::Channel::side:
+            {
+                const auto same = 0.5 * (h + 1.0);
+                const auto cross = channel == eq::Channel::mid ? 0.5 * (h - 1.0) : 0.5 * (1.0 - h);
+                const Matrix n { same * t.t00 + cross * t.t10, same * t.t01 + cross * t.t11,
+                                 cross * t.t00 + same * t.t10, cross * t.t01 + same * t.t11 };
+                t = n;
+                break;
+            }
+
+            case eq::Channel::stereo:
+            default: t.t00 *= h; t.t01 *= h; t.t10 *= h; t.t11 *= h; break;
+        }
+    };
 
     for (int b = 0; b < eq::maxBands; ++b)
     {
@@ -353,6 +412,10 @@ void EqGraph::recalculate()
                 const auto live = band.dynamic ? liveFilter.responseAt (w) : response;
                 composite[(size_t) x] += band.dynamic ? (float) fancy::gainToDb (std::abs (live), -200.0) : db;
                 phase[(size_t) x] += linear ? 0.0f : (float) std::arg (live);
+
+                // Linear phase works on each band's magnitude.
+                if (mixedChannels)
+                    applyBand (matrices[(size_t) x], linear ? Complex (std::abs (live)) : live, band.spec.channel);
             }
         }
 
@@ -361,6 +424,30 @@ void EqGraph::recalculate()
 
         band.handle = { (float) xForHz (band.spec.frequencyHz, (double) width),
                         juce::jlimit (selectedRadius, (float) getHeight() - selectedRadius, yForDb (handleDb)) };
+    }
+
+    if (mixedChannels)
+    {
+        for (int x = 0; x < width; ++x)
+        {
+            const auto& t = matrices[(size_t) x];
+            Complex path;
+
+            // Mid is what a signal with L = R keeps of itself, Side the same for L = -R, and Left
+            // and Right what a signal in that channel alone keeps there.
+            switch (totalChannel)
+            {
+                case eq::Channel::left:  path = t.t00; break;
+                case eq::Channel::right: path = t.t11; break;
+                case eq::Channel::side:  path = 0.5 * (t.t00 - t.t01 - t.t10 + t.t11); break;
+                case eq::Channel::mid:
+                case eq::Channel::stereo:
+                default:                 path = 0.5 * (t.t00 + t.t01 + t.t10 + t.t11); break;
+            }
+
+            composite[(size_t) x] = (float) fancy::gainToDb (std::abs (path), -200.0);
+            phase[(size_t) x] = linear ? 0.0f : (float) std::arg (path);
+        }
     }
 
     repaint();
@@ -440,6 +527,16 @@ void EqGraph::paintLabels (juce::Graphics& g)
 
     if (analyzerMode != 0)
         g.drawText (analyzerMode == 1 ? "pre" : "post", 40, 4, 30, 14, juce::Justification::centredLeft, false);
+
+    // Which channel the white total is for, while any band isn't Stereo (Phase 3 Q2.4). It sits
+    // left of the right axis's top label.
+    if (mixedChannels)
+    {
+        static const char* const names[] { "Mid", "Left", "Right", "Mid", "Side" };
+
+        g.drawText (juce::String ("total: ") + names[juce::jlimit (0, 4, (int) totalChannel)],
+                    width - 170, 4, 120, 14, juce::Justification::centredRight, false);
+    }
 }
 
 void EqGraph::paintSpectrum (juce::Graphics& g)
@@ -819,7 +916,7 @@ void EqGraph::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWh
 
 void EqGraph::showBandMenu (int band, juce::Point<float> position)
 {
-    constexpr int typeBase = 100, slopeBase = 200, freqItem = 1, gainItem = 2, powerItem = 3, resetItem = 4, deleteItem = 5;
+    constexpr int typeBase = 100, slopeBase = 200, channelBase = 300, freqItem = 1, gainItem = 2, powerItem = 3, resetItem = 4, deleteItem = 5;
 
     auto& type = bandParameter (band, "type");
     auto& slope = bandParameter (band, "slope");
@@ -848,6 +945,19 @@ void EqGraph::showBandMenu (int band, juce::Point<float> position)
 
     if (eq::hasSlope (spec.type))
         menu.addSubMenu ("Slope", std::move (slopeMenu));
+
+    // Phase 3 Q2.4: the band's Channel, as the chip has it. A mono bus has only the one.
+    {
+        auto& channel = bandParameter (band, "chan");
+        const auto channels = channel.getAllValueStrings();
+
+        fancy::ui::Menu channelMenu;
+
+        for (int i = 0; i < channels.size(); ++i)
+            channelMenu.addItem (channelBase + i, channels[i], true, channels[i] == channel.getCurrentValueAsText());
+
+        menu.addSubMenu ("Channel", std::move (channelMenu), processor.getMainBusNumInputChannels() >= 2);
+    }
 
     menu.addItem (powerItem, "Enabled", true, spec.on);
     menu.addSeparator();
@@ -878,6 +988,10 @@ void EqGraph::showBandMenu (int band, juce::Point<float> position)
         {
             if (self.onDeleteBand != nullptr)
                 self.onDeleteBand (band);
+        }
+        else if (result >= channelBase)
+        {
+            self.setValue (band, "chan", (float) (result - channelBase));
         }
         else if (result >= slopeBase)
         {

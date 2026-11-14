@@ -528,6 +528,7 @@ EqEditor::EqEditor (EqProcessor& processor)
       fftDropdown (parameter ("anaFft")),
       windowDropdown (parameter ("anaWindow")),
       overlapDropdown (parameter ("anaOverlap")),
+      analyzerChannelDropdown (parameter ("anaChan")),
       tiltCheckbox (parameter ("anaTilt"), "Pink tilt"),
       peakCheckbox (parameter ("anaPeak"), "Peak hold"),
       smoothingKnob (parameter ("anaSmooth"), "Smoothing", colours::uiTeal, Knob::smallStyle)
@@ -580,7 +581,8 @@ EqEditor::EqEditor (EqProcessor& processor)
 
     const std::pair<juce::Label*, const char*> labels[] {
         { &phaseLabel, "Phase" }, { &firLabel, "FIR length" }, { &oversamplingLabel, "Oversampling" }, { &slopeLabel, "Slope" },
-        { &rangeLabel, "Graph range" }, { &analyzerLabel, "Analyzer" }, { &fftLabel, "Size" }, { &windowLabel, "Window" }, { &overlapLabel, "Overlap" }
+        { &rangeLabel, "Graph range" }, { &analyzerLabel, "Analyzer" }, { &fftLabel, "Size" }, { &windowLabel, "Window" }, { &overlapLabel, "Overlap" },
+        { &analyzerChannelLabel, "Channel" }
     };
 
     for (const auto& [label, text] : labels)
@@ -610,6 +612,8 @@ EqEditor::EqEditor (EqProcessor& processor)
     windowDropdown.setBounds (controlX2, row (2), 140, rowHeight);
     overlapLabel.setBounds (labelX2, row (3), 66, rowHeight);
     overlapDropdown.setBounds (controlX2, row (3), 140, rowHeight);
+    analyzerChannelLabel.setBounds (labelX2, row (4), 66, rowHeight);
+    analyzerChannelDropdown.setBounds (controlX2, row (4), 140, rowHeight);
 
     rangeLabel.setBounds (labelX3, row (0), 86, rowHeight);
     rangeDropdown.setBounds (controlX3, row (0), 110, rowHeight);
@@ -619,6 +623,7 @@ EqEditor::EqEditor (EqProcessor& processor)
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &phaseDropdown, &firDropdown, &oversamplingDropdown, &analyzerDropdown, &fftDropdown, &windowDropdown, &overlapDropdown,
+             &analyzerChannelDropdown,
              &rangeDropdown, &tiltCheckbox, &peakCheckbox, &smoothingKnob })
         drawer.addAndMakeVisible (item);
 
@@ -842,6 +847,11 @@ void EqEditor::onTick (float)
 
     oversamplingDropdown.setAlpha (eqProcessor().readTargets().linearPhase ? 0.4f : 1.0f);
 
+    // A mono bus has nothing but the one channel to show.
+    const auto stereoBus = eqProcessor().getMainBusNumInputChannels() >= 2;
+    analyzerChannelDropdown.setEnabled (stereoBus);
+    analyzerChannelDropdown.setAlpha (stereoBus ? 1.0f : 0.4f);
+
     graph.update();
 }
 
@@ -901,6 +911,32 @@ void EqEditor::showDynamicPreview (bool compact)
     selectBand (1);
     bandEditors[(size_t) selectedBand]->update();
     layoutEditors();
+    graph.update();
+}
+
+void EqEditor::showChannelPreview()
+{
+    applyPreviewValues();
+
+    auto& processor = eqProcessor();
+    processor.setParameter ("b2dyn", 0.0f);
+    graph.showPreviewChange (-1, 0.0f);
+    processor.setParameter ("b3chan", 3.0f);
+    processor.setParameter ("b3gain", -4.0f);
+    processor.setParameter ("b3freq", 3200.0f);
+    processor.setParameter ("b3q", 1.2f);
+
+    const auto added = processor.addBand (6000.0f, 5.0f);
+
+    if (added >= 0)
+        processor.setParameter (EqProcessor::id (added, "chan"), 4.0f);
+
+    parameter ("compact").setValueNotifyingHost (0.0f);
+    compactMode = false;
+    drawer.setVisible (false);
+    selectBand (2);
+    layoutEditors();
+    bandEditors[(size_t) selectedBand]->update();
     graph.update();
 }
 

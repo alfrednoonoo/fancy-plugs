@@ -41,9 +41,10 @@ double distancePast (double distanceDb) noexcept
 }
 } // namespace
 
-void EqDsp::prepare (double newSampleRate)
+void EqDsp::prepare (double newSampleRate, int numChannels)
 {
     sampleRate = newSampleRate;
+    busChannels.store (std::clamp (numChannels, 1, (int) maxChannels));
 
     for (int stages = 1; stages <= numOversamplers; ++stages)
     {
@@ -418,7 +419,7 @@ void EqDsp::updateLinearDesign (const Targets& targets) noexcept
     if (! requested && designedLength == targets.firLength && designedBands == targets.bands)
         return;
 
-    linear.design (targets.bands, targets.firLength);
+    linear.design (targets.bands, targets.firLength, busChannels.load() >= 2);
 
     designedBands = targets.bands;
     designedLength = targets.firLength;
@@ -798,6 +799,10 @@ void EqDsp::process (float* const* channels, int numChannels, int numSamples,
                      const float* const* sidechain, int numSidechain) noexcept
 {
     numChannels = std::min (numChannels, (int) maxChannels);
+
+    // Linear phase designs for the bus it runs on (Phase 3 Q2.4).
+    if (numChannels > 0 && busChannels.exchange (numChannels) != numChannels)
+        designRequested.store (true);
 
     for (int done = 0; done < numSamples;)
     {

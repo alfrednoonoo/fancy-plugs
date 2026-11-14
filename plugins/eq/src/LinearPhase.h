@@ -30,7 +30,9 @@ public:
     void setLength (int lengthIndex) noexcept;
     void clear() noexcept;
 
-    void design (const std::array<BandSpec, maxBands>& bands, int lengthIndex) noexcept;
+    // With a stereo bus each band's Channel counts (Phase 3 Q2.4); a mono bus treats every band
+    // as Stereo.
+    void design (const std::array<BandSpec, maxBands>& bands, int lengthIndex, bool stereoBus = true) noexcept;
 
     // Each channel's signal is replaced by the filtered signal.
     void process (float* const* channels, int numChannels, int numSamples) noexcept;
@@ -40,10 +42,22 @@ public:
     int getMaxLatencySamples() const noexcept { return getLatencySamples (numLengths - 1); }
 
 private:
+    // How a design's FIRs connect the two channels (Phase 3 Q2.4). Each band's magnitude is real,
+    // so the whole EQ is a real 2 x 2 matrix at every frequency, and only its distinct entries
+    // need an FIR:
+    //   same       one FIR on both channels: every band is Stereo
+    //   leftRight  FIR 0 on L and FIR 1 on R: Stereo, Left and Right bands
+    //   midSide    FIR 0 on M and FIR 1 on S: Stereo, Mid and Side bands
+    //   matrix     FIRs 0-3 are L to L, R to L, L to R and R to R: both kinds mixed
+    enum class Routing { same, leftRight, midSide, matrix };
+
+    static constexpr int maxFirs = 4;
+
     struct Slot
     {
-        std::vector<float> spectrum;
+        std::vector<float> spectrum; // maxFirs FIRs, each numPartitions spectra
         int lengthIndex = -1;
+        Routing routing = Routing::same;
     };
 
     struct Channel
@@ -57,7 +71,10 @@ private:
 
     void processPartition (int numChannels) noexcept;
     void takeReadySlot() noexcept;
-    void convolve (const Channel& channel, const Slot& slot, float* result) const noexcept;
+    void render (const Slot& slot, int numChannels, bool toPrevious) noexcept;
+    void convolve (const Channel& channel, const float* fir, float* result) const noexcept;
+    void convolveBoth (const float* firLeft, const float* firRight, float* result) const noexcept;
+    void convolveMidSide (const float* firMid, const float* firSide, float* left, float* right) const noexcept;
 
     double rate = 48000.0;
     int baseLength = 2048;
@@ -70,7 +87,8 @@ private:
 
     std::array<Channel, 2> channels;
     std::vector<float> designSpectrum, designImpulse, designPartition, window;
-    mutable std::vector<float> convolveScratch;
+    std::array<std::vector<float>, maxFirs> designGains;
+    mutable std::vector<float> convolveScratch, convolveScratch2;
     std::vector<float> forwardScratch;
 
     int activeLength = 0;

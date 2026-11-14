@@ -147,6 +147,9 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
                                               "Band " + juce::String (band + 1) + " Channel",
                                               juce::StringArray { "Stereo", "Left", "Right", "Mid", "Side" }, 0));
 
+    // What the analyzer shows. Mid is the (L+R)/2 it always showed.
+    layout.add (setting ("anaChan", "Analyzer channel", { "Mid", "Side", "Left", "Right" }, 0));
+
     return layout;
 }
 
@@ -325,7 +328,7 @@ void EqProcessor::prepareAudio (double sampleRate, int)
 {
     designThread.stopThread (2000);
 
-    dsp.prepare (sampleRate);
+    dsp.prepare (sampleRate, juce::jlimit (1, 2, getMainBusNumInputChannels()));
     dsp.snapToTargets (readTargets());
     setLatencySamples (dsp.getLatencySamples());
 
@@ -396,8 +399,21 @@ void EqProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuff
     const auto* const* sidechain = numSidechain > 0 ? sidechainBuffer.getArrayOfReadPointers() : nullptr;
     const auto analyzerSource = analyzerActive.load (std::memory_order_relaxed) ? juce::roundToInt (read ("analyzer")) : 0;
 
+    const auto analyzerChannel = numChannels >= 2 ? juce::jlimit (0, 3, juce::roundToInt (read ("anaChan"))) : 0;
+
+    // Mid is the plain mono sum; Side, Left and Right are a weighted pair (Phase 3 Q2.4).
+    const auto feedAnalyzer = [&]
+    {
+        constexpr float weights[][2] { { 0.5f, 0.5f }, { 0.5f, -0.5f }, { 1.0f, 0.0f }, { 0.0f, 1.0f } };
+
+        if (analyzerChannel == 0)
+            analyzerFifo.push (channels, numChannels, numSamples);
+        else
+            analyzerFifo.pushWeighted (channels[0], channels[1], weights[analyzerChannel][0], weights[analyzerChannel][1], numSamples);
+    };
+
     if (analyzerSource == 1)
-        analyzerFifo.push (channels, numChannels, numSamples);
+        feedAnalyzer();
 
     const auto targets = readTargets();
     auto sidechainChosen = false;
@@ -414,7 +430,7 @@ void EqProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuff
     dsp.process (channels, numChannels, numSamples, sidechain, numSidechain);
 
     if (analyzerSource == 2)
-        analyzerFifo.push (channels, numChannels, numSamples);
+        feedAnalyzer();
 
     if (getLatencySamples() != dsp.getLatencySamples())
         setLatencySamples (dsp.getLatencySamples());
