@@ -25,7 +25,12 @@ std::shared_ptr<const IrAudio> readFrom (juce::AudioFormatReader& reader, double
     ir->sampleRate = sampleRate;
     ir->audio.setSize (numChannels, numSamples);
 
-    if (! reader.read (&ir->audio, 0, numSamples, 0, true, true))
+    // One or two channels read as they always have. More, for true stereo, through the
+    // per-channel call, which fills exactly the channels it's given.
+    const auto ok = numChannels <= 2 ? reader.read (&ir->audio, 0, numSamples, 0, true, true)
+                                     : reader.read (ir->audio.getArrayOfWritePointers(), numChannels, 0, numSamples);
+
+    if (! ok)
         return nullptr;
 
     return ir;

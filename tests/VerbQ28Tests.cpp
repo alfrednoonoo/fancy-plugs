@@ -458,24 +458,34 @@ TEST_CASE ("choosing a four-channel file or a pair makes the File module true st
         CHECK ((bool) module.getProperty (verb::ids::trueStereo, false));
         CHECK_FALSE ((bool) module.getProperty (verb::ids::mono, true));
 
-        processor.setNonRealtime (true);
-        processor.prepareToPlay (rate, 512);
-        REQUIRE (processor.waitForBuild (20000));
+        {
+            INFO ("step: prepare and build");
+            processor.setNonRealtime (true);
+            processor.prepareToPlay (rate, 512);
+            REQUIRE (processor.waitForBuild (20000));
+            CHECK (processor.getPreview().numChannels == 4);
+        }
 
-        // Only LR is set: the left input comes out on the right alone.
-        const auto out = renderLeftOnly (processor, 30000);
-        CHECK (peakOf (out, 0) < 0.6); // the dry left input, at 0.5 peak
-        CHECK (peakOf (out, 1) > 0.05);
+        {
+            // Only LR is set: the left input comes out on the right alone.
+            INFO ("step: render");
+            const auto out = renderLeftOnly (processor, 30000);
+            CHECK (peakOf (out, 0) < 0.6); // the dry left input, at 0.5 peak
+            CHECK (peakOf (out, 1) > 0.05);
+        }
 
-        // The state keeps it.
-        juce::MemoryBlock state;
-        processor.getStateInformation (state);
+        {
+            INFO ("step: state");
+            juce::MemoryBlock state;
+            processor.getStateInformation (state);
 
-        VerbProcessor copy;
-        copy.setStateInformation (state.getData(), (int) state.getSize());
-        const auto copied = copy.getChain().getChildWithProperty (verb::ids::uid, uid);
-        CHECK ((bool) copied.getProperty (verb::ids::trueStereo, false));
-        CHECK (copied[verb::ids::pairPath].toString().isNotEmpty() == pair);
+            VerbProcessor copy;
+            copy.setStateInformation (state.getData(), (int) state.getSize());
+            const auto copied = copy.getChain().getChildWithProperty (verb::ids::uid, uid);
+            CHECK ((bool) copied.getProperty (verb::ids::trueStereo, false));
+            CHECK (copied[verb::ids::pairPath].toString().isNotEmpty() == pair);
+            REQUIRE (copy.waitForBuild (20000));
+        }
     }
 
     processor.clearPair (uid);
