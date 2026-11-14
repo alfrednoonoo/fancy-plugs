@@ -13,7 +13,8 @@ namespace verb
 
 // Non-uniform partitioned stereo convolver (§5.3). The constructor allocates and does the
 // partition FFTs, so build it on a worker thread. process() and reset() never allocate.
-// The channels convolve in parallel: left in with left IR, right in with right IR.
+// The channels convolve in parallel: left in with left IR, right in with right IR. A true-stereo
+// convolver (Phase 3 Q2.8) adds the cross paths, right in to left out and left in to right out.
 class Convolver
 {
 public:
@@ -24,6 +25,13 @@ public:
 
     // irRight may equal irLeft. maxBlock caps the largest partition, at 8192 or 32768.
     Convolver (const float* irLeft, const float* irRight, int irLength, Mode mode, int maxBlock);
+
+    // True stereo: crossToLeft is right in to left out (RL), crossToRight left in to right out
+    // (LR). Both null gives the convolver above, to the bit.
+    Convolver (const float* irLeft, const float* irRight, const float* crossToLeft, const float* crossToRight,
+               int irLength, Mode mode, int maxBlock);
+
+    bool isTrueStereo() const noexcept { return trueStereo; }
     ~Convolver();
 
     static int latencyOf (Mode mode) noexcept { return mode == Mode::lowCpu ? lowCpuLatency : 0; }
@@ -51,7 +59,7 @@ private:
     struct Stage
     {
         Stage (int blockSize, int irStart, int numPartitions, bool runsOnWorker,
-               const float* irLeft, const float* irRight, int irLength);
+               const float* irLeft, const float* irRight, const float* crossToLeft, const float* crossToRight, int irLength);
 
         void clear() noexcept;
         void transform() noexcept; // consumes jobInput, fills result
@@ -61,6 +69,7 @@ private:
         bool background;
 
         juce::dsp::FFT fft;
+        std::vector<Complex> spectraCrossLeft, spectraCrossRight; // true stereo only: RL and LR
         std::vector<Complex> spectraLeft, spectraRight; // partitions × (size + 1)
         std::vector<Complex> delayLeft, delayRight;     // the frequency-domain delay line
         std::vector<Complex> time, frequency;           // 2 × size
@@ -89,11 +98,14 @@ private:
     bool runNextJob() noexcept;
 
     Mode convolverMode;
+    bool trueStereo = false;
     int chunkSize = 2048;
     bool hasDirect = false;
 
     alignas (16) float directLeft[directTaps] {}; // reversed, so the history reads forwards
     alignas (16) float directRight[directTaps] {};
+    alignas (16) float directCrossLeft[directTaps] {};  // true stereo: right history to left out
+    alignas (16) float directCrossRight[directTaps] {}; // true stereo: left history to right out
     alignas (16) float historyLeft[directTaps * 2] {};
     alignas (16) float historyRight[directTaps * 2] {};
     int historyPosition = 0;

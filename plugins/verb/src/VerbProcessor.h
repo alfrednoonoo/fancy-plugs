@@ -40,6 +40,11 @@ public:
     void setModuleOn (int uid, bool on);
     void setModuleValue (int uid, const juce::Identifier& id, const juce::var& value);
     bool loadFile (int uid, const juce::File& file);
+
+    // Phase 3 Q2.8: pairs the File module's file with a second one for the right input, which
+    // makes it true stereo, or removes the pair.
+    bool loadPair (int uid, const juce::File& file);
+    void clearPair (int uid);
     void setTrim (double startSeconds, double endSeconds);
 
     // Bumped when modules are added, removed or reordered, so the rack knows to rebuild.

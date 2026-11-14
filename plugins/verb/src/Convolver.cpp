@@ -75,7 +75,7 @@ inline void multiplyAccumulate (juce::dsp::Complex<float>* out, const juce::dsp:
 } // namespace
 
 Convolver::Stage::Stage (int blockSize, int irStart, int numPartitions, bool runsOnWorker,
-                         const float* irLeft, const float* irRight, int irLength)
+                         const float* irLeft, const float* irRight, const float* crossToLeft, const float* crossToRight, int irLength)
     : size (blockSize),
       partitions (numPartitions),
       background (runsOnWorker),
@@ -98,29 +98,42 @@ Convolver::Stage::Stage (int blockSize, int irStart, int numPartitions, bool run
 
     const auto n = size * 2;
 
-    for (int p = 0; p < partitions; ++p)
+    // Two real IRs in one complex FFT, separated into their spectra.
+    const auto transformPair = [&] (const float* first, const float* second, std::vector<Complex>& firstSpectra, std::vector<Complex>& secondSpectra)
     {
-        const auto start = irStart + p * size;
-        const auto count = std::clamp (irLength - start, 0, size);
-
-        std::fill (time.begin(), time.end(), Complex {});
-
-        for (int i = 0; i < count; ++i)
-            time[(size_t) i] = { irLeft[start + i], irRight[start + i] };
-
-        fft.perform (time.data(), frequency.data(), false);
-
-        auto* left = spectraLeft.data() + (size_t) p * bins;
-        auto* right = spectraRight.data() + (size_t) p * bins;
-
-        for (int k = 0; k <= size; ++k)
+        for (int p = 0; p < partitions; ++p)
         {
-            const auto z = frequency[(size_t) k];
-            const auto mirrored = std::conj (frequency[(size_t) ((n - k) % n)]);
+            const auto start = irStart + p * size;
+            const auto count = std::clamp (irLength - start, 0, size);
 
-            left[k] = (z + mirrored) * 0.5f;
-            right[k] = (z - mirrored) * Complex { 0.0f, -0.5f };
+            std::fill (time.begin(), time.end(), Complex {});
+
+            for (int i = 0; i < count; ++i)
+                time[(size_t) i] = { first[start + i], second[start + i] };
+
+            fft.perform (time.data(), frequency.data(), false);
+
+            auto* left = firstSpectra.data() + (size_t) p * bins;
+            auto* right = secondSpectra.data() + (size_t) p * bins;
+
+            for (int k = 0; k <= size; ++k)
+            {
+                const auto z = frequency[(size_t) k];
+                const auto mirrored = std::conj (frequency[(size_t) ((n - k) % n)]);
+
+                left[k] = (z + mirrored) * 0.5f;
+                right[k] = (z - mirrored) * Complex { 0.0f, -0.5f };
+            }
         }
+    };
+
+    transformPair (irLeft, irRight, spectraLeft, spectraRight);
+
+    if (crossToLeft != nullptr && crossToRight != nullptr)
+    {
+        spectraCrossLeft.resize (bins * (size_t) partitions);
+        spectraCrossRight.resize (bins * (size_t) partitions);
+        transformPair (crossToLeft, crossToRight, spectraCrossLeft, spectraCrossRight);
     }
 }
 
@@ -166,12 +179,23 @@ void Convolver::Stage::transform() noexcept
     auto* sumRight = time.data();
     auto position = delayPosition;
 
+    const auto cross = ! spectraCrossLeft.empty();
+
     for (int p = 0; p < partitions; ++p)
     {
         multiplyAccumulate (sumLeft, spectraLeft.data() + (size_t) p * (size_t) bins,
                             delayLeft.data() + (size_t) position * (size_t) bins, bins);
         multiplyAccumulate (sumRight, spectraRight.data() + (size_t) p * (size_t) bins,
                             delayRight.data() + (size_t) position * (size_t) bins, bins);
+
+        // True stereo: right in to left out, and left in to right out.
+        if (cross)
+        {
+            multiplyAccumulate (sumLeft, spectraCrossLeft.data() + (size_t) p * (size_t) bins,
+                                delayRight.data() + (size_t) position * (size_t) bins, bins);
+            multiplyAccumulate (sumRight, spectraCrossRight.data() + (size_t) p * (size_t) bins,
+                                delayLeft.data() + (size_t) position * (size_t) bins, bins);
+        }
 
         position = position == 0 ? partitions - 1 : position - 1;
     }
@@ -198,9 +222,19 @@ void Convolver::Stage::transform() noexcept
 }
 
 Convolver::Convolver (const float* irLeft, const float* irRight, int irLength, Mode mode, int maxBlock)
-    : convolverMode (mode)
+    : Convolver (irLeft, irRight, nullptr, nullptr, irLength, mode, maxBlock)
+{
+}
+
+Convolver::Convolver (const float* irLeft, const float* irRight, const float* crossToLeft, const float* crossToRight,
+                      int irLength, Mode mode, int maxBlock)
+    : convolverMode (mode),
+      trueStereo (crossToLeft != nullptr && crossToRight != nullptr)
 {
     const auto length = std::max (irLength, 0);
+
+    if (! trueStereo)
+        crossToLeft = crossToRight = nullptr;
 
     if (mode == Mode::zeroLatency && length > 0)
     {
@@ -210,6 +244,12 @@ Convolver::Convolver (const float* irLeft, const float* irRight, int irLength, M
         {
             directLeft[directTaps - 1 - i] = irLeft[i];
             directRight[directTaps - 1 - i] = irRight[i];
+
+            if (trueStereo)
+            {
+                directCrossLeft[directTaps - 1 - i] = crossToLeft[i];
+                directCrossRight[directTaps - 1 - i] = crossToRight[i];
+            }
         }
     }
 
@@ -225,7 +265,7 @@ Convolver::Convolver (const float* irLeft, const float* irRight, int irLength, M
             const auto count = isLast ? needed : std::min (definition.partitions, needed);
 
             stages.push_back (std::make_unique<Stage> (definition.size, definition.irStart, count, definition.background,
-                                                       irLeft, irRight, length));
+                                                       irLeft, irRight, crossToLeft, crossToRight, length));
         }
     };
 
@@ -291,6 +331,12 @@ void Convolver::processDirect (const float* inLeft, const float* inRight,
 
         outLeft[i] += dot (directLeft, historyLeft + historyPosition, directTaps);
         outRight[i] += dot (directRight, historyRight + historyPosition, directTaps);
+
+        if (trueStereo)
+        {
+            outLeft[i] += dot (directCrossLeft, historyRight + historyPosition, directTaps);
+            outRight[i] += dot (directCrossRight, historyLeft + historyPosition, directTaps);
+        }
     }
 }
 

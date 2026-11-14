@@ -33,6 +33,9 @@ public:
     // Keeps the file controls current with the last build.
     void refresh();
 
+    // Phase 3 Q2.8: a true-stereo IR, from a four-channel file or a pair.
+    bool isTrueStereo() const;
+
 private:
     struct Link final : public juce::AudioProcessorParameter::Listener
     {
@@ -84,6 +87,7 @@ public:
 private:
     void browse();
     void stepFile (int direction);
+    void browsePair(); // Phase 3 Q2.8
 
     juce::File currentFile() const;
     juce::String breadcrumb() const;

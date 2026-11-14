@@ -31,7 +31,16 @@ public:
     std::vector<int> resolve (ChainSpec& chain, const juce::File& irFolder);
 
 private:
-    std::shared_ptr<const IrAudio> find (const ModuleSpec& module, const juce::File& irFolder);
+    struct Source
+    {
+        const juce::String& path;
+        const juce::String& hash;
+        const juce::String& flac;
+        double flacRate;
+    };
+
+    std::shared_ptr<const IrAudio> find (const Source& source, const juce::File& irFolder);
+    std::shared_ptr<const IrAudio> lookUp (const Source& source, const juce::File& irFolder);
 
     std::map<juce::String, std::shared_ptr<const IrAudio>> cache;
 };

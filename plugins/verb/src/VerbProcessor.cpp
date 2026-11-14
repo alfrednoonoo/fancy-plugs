@@ -224,7 +224,12 @@ void VerbProcessor::buildNow()
 
     auto built = verb::buildIr (chain, buildRate.load());
 
+    // A true-stereo IR (Phase 3 Q2.8) has the cross paths as channels 2 (RL) and 3 (LR).
+    const auto trueStereo = built.audio.getNumChannels() >= 4;
+
     dsp.offer (std::make_unique<Convolver> (built.audio.getReadPointer (0), built.audio.getReadPointer (1),
+                                            trueStereo ? built.audio.getReadPointer (2) : nullptr,
+                                            trueStereo ? built.audio.getReadPointer (3) : nullptr,
                                             built.audio.getNumSamples(), mode, maxBlock));
 
     irSeconds.store (built.preview.trimmedSeconds);
@@ -455,8 +460,58 @@ bool VerbProcessor::loadFile (int uid, const juce::File& file)
     module.setProperty (verb::ids::flac, embed ? verb::encodeFlac (*audio) : juce::String(), nullptr);
     module.setProperty (verb::ids::rate, embed ? audio->sampleRate : 0.0, nullptr);
 
+    // Phase 3 Q2.8: a new file ends any pair. A four-channel file is true stereo, so it's not
+    // mixed to mono; the property is only written when it's on, so other modules are unchanged.
+    for (const auto& id : { verb::ids::pairPath, verb::ids::pairHash, verb::ids::pairFlac, verb::ids::pairRate })
+        module.removeProperty (id, nullptr);
+
+    if (audio->audio.getNumChannels() >= 4)
+    {
+        module.setProperty (verb::ids::trueStereo, true, nullptr);
+        module.setProperty (verb::ids::mono, false, nullptr);
+    }
+    else
+    {
+        module.removeProperty (verb::ids::trueStereo, nullptr);
+    }
+
     chainEdited (true);
     return true;
+}
+
+bool VerbProcessor::loadPair (int uid, const juce::File& file)
+{
+    auto module = findModule (uid);
+    const auto audio = verb::readAudioFile (file);
+
+    if (! module.isValid() || audio == nullptr || module[verb::ids::path].toString().isEmpty())
+        return false;
+
+    const auto storage = juce::roundToInt (read ("irStorage"));
+    const auto embed = storage == 1 || (storage == 0 && file.getSize() < embedLimitBytes);
+
+    module.setProperty (verb::ids::pairPath, file.getFullPathName(), nullptr);
+    module.setProperty (verb::ids::pairHash, verb::hashOfFile (file), nullptr);
+    module.setProperty (verb::ids::pairFlac, embed ? verb::encodeFlac (*audio) : juce::String(), nullptr);
+    module.setProperty (verb::ids::pairRate, embed ? audio->sampleRate : 0.0, nullptr);
+    module.setProperty (verb::ids::trueStereo, true, nullptr);
+    module.setProperty (verb::ids::mono, false, nullptr);
+
+    chainEdited (true);
+    return true;
+}
+
+void VerbProcessor::clearPair (int uid)
+{
+    auto module = findModule (uid);
+
+    if (! module.isValid())
+        return;
+
+    for (const auto& id : { verb::ids::pairPath, verb::ids::pairHash, verb::ids::pairFlac, verb::ids::pairRate, verb::ids::trueStereo })
+        module.removeProperty (id, nullptr);
+
+    chainEdited (true);
 }
 
 void VerbProcessor::setTrim (double startSeconds, double endSeconds)

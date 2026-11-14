@@ -19,7 +19,26 @@ constexpr double pi = juce::MathConstants<double>::pi;
 constexpr double sixtyDbInNepers = 6.907755278982137;
 constexpr int maxEchoesShown = 256;
 
-using Channels = std::array<std::vector<double>, 2>;
+// LL and RR, then the true-stereo cross paths RL (right in, left out) and LR (Phase 3 Q2.8).
+// The cross paths stay empty unless a true-stereo source is added, so every module below works
+// on exactly the samples it did before.
+using Channels = std::array<std::vector<double>, 4>;
+
+constexpr size_t crossToLeft = 2, crossToRight = 3;
+
+bool isTrueStereo (const Channels& ir) noexcept
+{
+    return ! ir[crossToLeft].empty();
+}
+
+void makeTrueStereo (Channels& ir)
+{
+    if (! isTrueStereo (ir))
+    {
+        ir[crossToLeft].assign (ir[0].size(), 0.0);
+        ir[crossToRight].assign (ir[0].size(), 0.0);
+    }
+}
 
 double besselI0 (double x) noexcept
 {
@@ -67,9 +86,86 @@ size_t lengthOf (const Channels& ir) noexcept
 
 void growTo (Channels& ir, size_t length)
 {
-    for (auto& channel : ir)
-        if (channel.size() < length)
-            channel.resize (length, 0.0);
+    const auto paths = isTrueStereo (ir) ? ir.size() : 2;
+
+    for (size_t ch = 0; ch < paths; ++ch)
+        if (ir[ch].size() < length)
+            ir[ch].resize (length, 0.0);
+}
+
+std::vector<double> convertChannel (const juce::AudioBuffer<float>& source, int channel, double ratio)
+{
+    const auto* samples = source.getReadPointer (channel);
+    std::vector<double> input ((size_t) source.getNumSamples());
+
+    for (size_t i = 0; i < input.size(); ++i)
+        input[i] = samples[i];
+
+    if (std::abs (ratio - 1.0) < 1.0e-9)
+        return input;
+
+    return resample (input.data(), (int) input.size(), ratio);
+}
+
+// True stereo (Phase 3 Q2.8): a four-channel file is LL, LR, RL, RR; a pair is the left
+// input's file (LL, LR) and the right input's (RL, RR), each mono or stereo.
+void addTrueStereoFile (Channels& ir, const ModuleSpec& module, double sampleRate, double gain)
+{
+    const auto& first = module.file->audio;
+    const auto* second = module.pairFile != nullptr ? &module.pairFile->audio : nullptr;
+    const auto firstRatio = sampleRate / module.file->sampleRate;
+    const auto secondRatio = second != nullptr ? sampleRate / module.pairFile->sampleRate : firstRatio;
+    const auto maxLength = (size_t) (maxIrSeconds * sampleRate);
+
+    std::array<std::vector<double>, 4> paths; // LL, LR, RL, RR
+
+    paths[0] = convertChannel (first, 0, firstRatio);
+    paths[1] = convertChannel (first, std::min (1, first.getNumChannels() - 1), firstRatio);
+
+    if (second != nullptr)
+    {
+        paths[2] = convertChannel (*second, 0, secondRatio);
+        paths[3] = convertChannel (*second, std::min (1, second->getNumChannels() - 1), secondRatio);
+    }
+    else
+    {
+        paths[2] = convertChannel (first, 2, firstRatio);
+        paths[3] = convertChannel (first, 3, firstRatio);
+    }
+
+    size_t length = 0;
+
+    for (const auto& path : paths)
+        length = std::max (length, std::min (maxLength, path.size()));
+
+    for (auto& path : paths)
+        path.resize (std::max (path.size(), length), 0.0);
+
+    if (module.mono)
+    {
+        // Mix to mono sums every path to one direct IR: what the stereo output gives summed to mono.
+        growTo (ir, length);
+
+        for (size_t i = 0; i < length; ++i)
+        {
+            const auto sum = (paths[0][i] + paths[1][i] + paths[2][i] + paths[3][i]) * 0.5 * gain;
+            ir[0][i] += sum;
+            ir[1][i] += sum;
+        }
+
+        return;
+    }
+
+    makeTrueStereo (ir);
+    growTo (ir, length);
+
+    for (size_t i = 0; i < length; ++i)
+    {
+        ir[0][i] += paths[0][i] * gain;              // LL
+        ir[crossToRight][i] += paths[1][i] * gain;   // LR
+        ir[crossToLeft][i] += paths[2][i] * gain;    // RL
+        ir[1][i] += paths[3][i] * gain;              // RR
+    }
 }
 
 void addFile (Channels& ir, const ModuleSpec& module, double sampleRate)
@@ -86,6 +182,14 @@ void addFile (Channels& ir, const ModuleSpec& module, double sampleRate)
 
     if (gainModeUsesSrc (module.gainMode))
         gain /= ratio; // more samples per second would otherwise make the convolution louder
+
+    const auto pairReady = module.pairFile != nullptr && module.pairFile->audio.getNumSamples() > 0;
+
+    if (module.trueStereo && (pairReady || source.getNumChannels() >= 4))
+    {
+        addTrueStereoFile (ir, module, sampleRate, gain);
+        return;
+    }
 
     Channels converted;
 
@@ -159,6 +263,9 @@ void applyLpHp (Channels& ir, const ModuleSpec& module, double sampleRate)
 
     for (auto& channel : ir)
     {
+        if (channel.empty())
+            continue;
+
         const auto runSections = [&channel, sampleRate] (double hz, bool high)
         {
             auto first = butterworthSection (hz, sampleRate, 0.5411961001461969, high);
@@ -247,6 +354,9 @@ void cutTo (Channels& ir, size_t start, size_t end)
 
     for (auto& channel : ir)
     {
+        if (channel.empty())
+            continue;
+
         channel.erase (channel.begin() + (std::ptrdiff_t) end, channel.end());
         channel.erase (channel.begin(), channel.begin() + (std::ptrdiff_t) start);
     }
@@ -273,6 +383,9 @@ void applyTrim (Channels& ir, const ModuleSpec& module, double sampleRate)
 
     for (auto& channel : ir)
     {
+        if (channel.empty())
+            continue;
+
         for (size_t i = 0; i < fadeIn; ++i)
             channel[i] *= (double) i / (double) fadeIn;
 
@@ -289,6 +402,9 @@ void applyTrim (Channels& ir, const ModuleSpec& module, double sampleRate)
 
         for (auto& channel : ir)
         {
+            if (channel.empty())
+                continue;
+
             channel = resample (channel.data(), (int) channel.size(), stretch);
 
             if (channel.size() > maxLength)
@@ -351,7 +467,7 @@ void addReverb (Channels& ir, const ModuleSpec& module, double sampleRate)
     const auto fade = std::min (length, (size_t) (0.05 * sampleRate));
 
     for (auto& channel : wet)
-        for (size_t i = 0; i < fade; ++i)
+        for (size_t i = 0; i < fade && ! channel.empty(); ++i)
             channel[length - 1 - i] *= (double) i / (double) fade;
 
     // Unit energy, so a long tail comes out about as loud as a short one.
@@ -385,7 +501,8 @@ void makePreview (const Channels& ir, IrPreview& preview)
 
         for (size_t i = begin; i < std::min (end, length); ++i)
         {
-            const auto sample = (ir[0][i] + ir[1][i]) * 0.5;
+            const auto sample = isTrueStereo (ir) ? (ir[0][i] + ir[1][i] + ir[crossToLeft][i] + ir[crossToRight][i]) * 0.5
+                                                  : (ir[0][i] + ir[1][i]) * 0.5;
             low = std::min (low, sample);
             high = std::max (high, sample);
             energy += sample * sample;
@@ -467,11 +584,12 @@ BuiltIr buildIr (const ChainSpec& chain, double sampleRate)
 
     preview.trimmedSeconds = (double) length / sampleRate;
     preview.peakDb = peak > 0.0 ? 20.0 * std::log10 (peak) : -200.0;
-    preview.numChannels = length == 0 ? 0 : (ir[0] == ir[1] ? 1 : 2);
+    const auto trueStereo = isTrueStereo (ir);
+    preview.numChannels = length == 0 ? 0 : (trueStereo ? 4 : (ir[0] == ir[1] ? 1 : 2));
 
-    built.audio.setSize (2, (int) length);
+    built.audio.setSize (trueStereo ? 4 : 2, (int) length);
 
-    for (int ch = 0; ch < 2; ++ch)
+    for (int ch = 0; ch < built.audio.getNumChannels(); ++ch)
     {
         auto* out = built.audio.getWritePointer (ch);
 

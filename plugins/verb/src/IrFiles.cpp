@@ -12,7 +12,9 @@ constexpr double flacNominalRate = 48000.0;
 
 std::shared_ptr<const IrAudio> readFrom (juce::AudioFormatReader& reader, double sampleRate)
 {
-    const auto numChannels = juce::jlimit (1, 2, (int) reader.numChannels);
+    // Up to four channels, for true stereo (Phase 3 Q2.8). The builder uses the first two
+    // unless the File module is set to true stereo.
+    const auto numChannels = juce::jlimit (1, 4, (int) reader.numChannels);
     const auto limit = (juce::int64) (maxIrSeconds * sampleRate);
     const auto numSamples = (int) juce::jmin (reader.lengthInSamples, limit);
 
@@ -121,31 +123,51 @@ juce::Array<juce::File> audioFilesBeside (const juce::File& file)
     return files;
 }
 
-std::shared_ptr<const IrAudio> IrResolver::find (const ModuleSpec& module, const juce::File& irFolder)
+std::shared_ptr<const IrAudio> IrResolver::find (const Source& source, const juce::File& irFolder)
 {
-    if (auto embedded = decodeFlac (module.flac, module.flacRate))
+    if (auto embedded = decodeFlac (source.flac, source.flacRate))
         return embedded;
 
-    if (juce::File::isAbsolutePath (module.path))
+    if (juce::File::isAbsolutePath (source.path))
     {
-        const juce::File file (module.path);
+        const juce::File file (source.path);
 
         if (file.existsAsFile())
             if (auto audio = readAudioFile (file))
                 return audio;
     }
 
-    if (irFolder.isDirectory() && module.path.isNotEmpty() && module.hash.isNotEmpty())
+    if (irFolder.isDirectory() && source.path.isNotEmpty() && source.hash.isNotEmpty())
     {
-        const auto name = module.path.fromLastOccurrenceOf ("\\", false, false).fromLastOccurrenceOf ("/", false, false);
+        const auto name = source.path.fromLastOccurrenceOf ("\\", false, false).fromLastOccurrenceOf ("/", false, false);
 
         for (const auto& candidate : irFolder.findChildFiles (juce::File::findFiles, true, name))
-            if (hashOfFile (candidate) == module.hash)
+            if (hashOfFile (candidate) == source.hash)
                 if (auto audio = readAudioFile (candidate))
                     return audio;
     }
 
     return nullptr;
+}
+
+std::shared_ptr<const IrAudio> IrResolver::lookUp (const Source& source, const juce::File& irFolder)
+{
+    const auto key = source.hash + "|" + source.path;
+
+    if (const auto found = cache.find (key); found != cache.end())
+        return found->second;
+
+    auto audio = find (source, irFolder);
+
+    if (audio != nullptr)
+    {
+        if (cache.size() >= maxCachedFiles)
+            cache.clear();
+
+        cache[key] = audio;
+    }
+
+    return audio;
 }
 
 std::vector<int> IrResolver::resolve (ChainSpec& chain, const juce::File& irFolder)
@@ -157,26 +179,14 @@ std::vector<int> IrResolver::resolve (ChainSpec& chain, const juce::File& irFold
         if (module.type != ModuleType::file || (module.path.isEmpty() && module.flac.isEmpty()))
             continue;
 
-        const auto key = module.hash + "|" + module.path;
+        module.file = lookUp ({ module.path, module.hash, module.flac, module.flacRate }, irFolder);
 
-        if (const auto found = cache.find (key); found != cache.end())
-        {
-            module.file = found->second;
-            continue;
-        }
+        // The right input's file of a true-stereo pair (Phase 3 Q2.8).
+        if (module.trueStereo && module.hasPair())
+            module.pairFile = lookUp ({ module.pairPath, module.pairHash, module.pairFlac, module.pairFlacRate }, irFolder);
 
-        module.file = find (module, irFolder);
-
-        if (module.file == nullptr)
-        {
+        if (module.file == nullptr || (module.trueStereo && module.hasPair() && module.pairFile == nullptr))
             missing.push_back (module.uid);
-            continue;
-        }
-
-        if (cache.size() >= maxCachedFiles)
-            cache.clear();
-
-        cache[key] = module.file;
     }
 
     return missing;

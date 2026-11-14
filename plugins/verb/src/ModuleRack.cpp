@@ -309,8 +309,14 @@ void ModuleCard::refresh()
     const auto path = tree[verb::ids::path].toString();
     const auto name = path.fromLastOccurrenceOf ("\\", false, false).fromLastOccurrenceOf ("/", false, false);
 
+    // A pair shows both files, left input first (Phase 3 Q2.8).
+    const auto pairPath = tree[verb::ids::pairPath].toString();
+    const auto pairName = pairPath.fromLastOccurrenceOf ("\\", false, false).fromLastOccurrenceOf ("/", false, false);
+
     if (processor.isMissing (uid))
         fileDropdown.setText (juce::String::fromUTF8 ("IR missing \xe2\x80\x93 Relink..."), colours::uiRed);
+    else if (name.isNotEmpty() && pairName.isNotEmpty() && isTrueStereo())
+        fileDropdown.setText (name + " + " + pairName, colours::textPrimary);
     else
         fileDropdown.setText (name.isEmpty() ? juce::String ("Choose a file...") : name, colours::textPrimary);
 
@@ -333,6 +339,22 @@ void ModuleCard::browse()
                           });
 }
 
+void ModuleCard::browsePair()
+{
+    const auto start = currentFile();
+
+    chooser = std::make_unique<juce::FileChooser> ("Choose the right input's impulse response",
+                                                   start.existsAsFile() ? start : processor.getIrFolder(),
+                                                   "*.wav;*.aif;*.aiff;*.flac;*.ogg");
+
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                          [this] (const juce::FileChooser& result)
+                          {
+                              if (result.getResult().existsAsFile())
+                                  processor.loadPair (uid, result.getResult());
+                          });
+}
+
 void ModuleCard::stepFile (int direction)
 {
     const auto current = currentFile();
@@ -347,6 +369,11 @@ void ModuleCard::stepFile (int direction)
         return;
 
     processor.loadFile (uid, files[(index + direction + files.size()) % files.size()]);
+}
+
+bool ModuleCard::isTrueStereo() const
+{
+    return type == ModuleType::file && (bool) tree.getProperty (verb::ids::trueStereo, false);
 }
 
 bool ModuleCard::isChanged() const
@@ -382,9 +409,26 @@ void ModuleCard::showFileMenu()
     for (int i = 0; i < files.size(); ++i)
         menu.addItem (i + 1, files[i].getFileName(), true, files[i] == current);
 
+    // Phase 3 Q2.8: true stereo from two stereo files, one per input.
+    constexpr int pairId = 100000, removePairId = 100001;
+    const auto paired = tree[verb::ids::pairPath].toString().isNotEmpty() || tree[verb::ids::pairFlac].toString().isNotEmpty();
+
+    menu.addSeparator();
+    menu.addItem (pairId, paired ? "Change right input..." : "Pair right input...");
+
+    if (paired)
+        menu.addItem (removePairId, "Remove pair");
+
     menu.show (fileDropdown, [safeThis = juce::Component::SafePointer<ModuleCard> (this), files] (int chosen)
     {
-        if (safeThis != nullptr && chosen > 0)
+        if (safeThis == nullptr || chosen <= 0)
+            return;
+
+        if (chosen == pairId)
+            safeThis->browsePair();
+        else if (chosen == removePairId)
+            safeThis->processor.clearPair (safeThis->uid);
+        else if (chosen <= files.size())
             safeThis->processor.loadFile (safeThis->uid, files[chosen - 1]);
     });
 }
@@ -426,6 +470,19 @@ void ModuleCard::paint (juce::Graphics& g)
     g.setColour (colours::textPrimary.withMultipliedAlpha (dim));
     g.setFont (font (Weight::medium, 16.0f));
     g.drawText (verb::titleOf (type), 42, 16, getWidth() - 70, 19, juce::Justification::centredLeft, false);
+
+    if (isTrueStereo())
+    {
+        // The TS mark after the title (reference/phase3/24__verb_q28_mockup.png).
+        const auto titleWidth = juce::GlyphArrangement::getStringWidth (font (Weight::medium, 16.0f), verb::titleOf (type));
+        const juce::Rectangle<float> mark (42.0f + titleWidth + 8.0f, 18.0f, 24.0f, 16.0f);
+
+        g.setColour (accent().withMultipliedAlpha (dim));
+        g.fillRoundedRectangle (mark, 3.0f);
+        g.setColour (colours::bgWell);
+        g.setFont (font (Weight::semiBold, 10.0f));
+        g.drawText ("TS", mark, juce::Justification::centred, false);
+    }
 
     if (type == ModuleType::file)
     {

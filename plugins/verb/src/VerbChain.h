@@ -50,7 +50,10 @@ namespace ids
 {
 inline const juce::Identifier chain ("CHAIN"), module ("MODULE"), type ("type"), on ("on"), uid ("uid"),
     seed ("seed"), path ("path"), hash ("hash"), flac ("flac"), rate ("rate"), mono ("mono"),
-    gainMode ("gainMode"), trimStart ("trimStart"), trimEnd ("trimEnd");
+    gainMode ("gainMode"), trimStart ("trimStart"), trimEnd ("trimEnd"),
+    // Phase 3 Q2.8: true stereo. "ts" is set only when a file is chosen in a version that
+    // knows about it, so a project that used a four-channel file before keeps its first two.
+    trueStereo ("ts"), pairPath ("pairPath"), pairHash ("pairHash"), pairFlac ("pairFlac"), pairRate ("pairRate");
 }
 
 struct IrAudio
@@ -73,6 +76,15 @@ struct ModuleSpec
     juce::String path, hash, flac;
     double flacRate = 0.0;
     std::shared_ptr<const IrAudio> file;
+
+    // Phase 3 Q2.8. With trueStereo, a four-channel file is LL, LR, RL, RR, or a pair is the
+    // left input's file (LL, LR) and the right input's (RL, RR).
+    bool trueStereo = false;
+    juce::String pairPath, pairHash, pairFlac;
+    double pairFlacRate = 0.0;
+    std::shared_ptr<const IrAudio> pairFile;
+
+    bool hasPair() const noexcept { return pairPath.isNotEmpty() || pairFlac.isNotEmpty(); }
 };
 
 struct ChainSpec

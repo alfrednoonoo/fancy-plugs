@@ -253,6 +253,11 @@ ChainSpec readChain (const juce::ValueTree& chain)
             item.hash = module[ids::hash].toString();
             item.flac = module[ids::flac].toString();
             item.flacRate = module[ids::rate];
+            item.trueStereo = module.getProperty (ids::trueStereo, false);
+            item.pairPath = module[ids::pairPath].toString();
+            item.pairHash = module[ids::pairHash].toString();
+            item.pairFlac = module[ids::pairFlac].toString();
+            item.pairFlacRate = module[ids::pairRate];
         }
 
         spec.modules.push_back (std::move (item));

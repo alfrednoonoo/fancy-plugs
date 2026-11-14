@@ -29,7 +29,9 @@ struct IrPreview
 
 struct BuiltIr
 {
-    juce::AudioBuffer<float> audio; // always two channels; both are equal for a mono IR
+    // Two channels, equal for a mono IR. A true-stereo IR (Phase 3 Q2.8) has four: left in to
+    // left out, right in to right out, then right in to left out (RL) and left in to right out (LR).
+    juce::AudioBuffer<float> audio;
     IrPreview preview;
 };
 

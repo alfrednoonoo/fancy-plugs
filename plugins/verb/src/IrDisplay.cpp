@@ -193,7 +193,7 @@ void IrDisplay::paint (juce::Graphics& g)
                                                                                   : juce::String (rateKhz, 1);
 
     const auto info = juce::String (preview.trimmedSeconds, 1) + "s, " + rateText + "kHz, "
-                    + juce::String (preview.numChannels) + "ch, max: " + juce::String (preview.peakDb, 1) + "dB";
+                    + juce::String (preview.numChannels) + (preview.numChannels == 4 ? "ch true stereo, max: " : "ch, max: ") + juce::String (preview.peakDb, 1) + "dB";
 
     g.setFont (font (Weight::medium, 16.0f));
     g.setColour (colours::textSecondary);
