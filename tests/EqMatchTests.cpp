@@ -492,10 +492,16 @@ TEST_CASE ("Match: learning from the main input and the sidechain, and a fit on 
 
     const auto waitFor = [] (const std::function<bool()>& done)
     {
-        for (int i = 0; i < 2000 && ! done(); ++i)
-            std::this_thread::sleep_for (std::chrono::milliseconds (10));
+        // done() is asked once per turn: taking a fit succeeds only once.
+        for (int i = 0; i < 2000; ++i)
+        {
+            if (done())
+                return true;
 
-        return done();
+            std::this_thread::sleep_for (std::chrono::milliseconds (10));
+        }
+
+        return false;
     };
 
     REQUIRE (waitFor ([&] { return engine.isReady(); }));
