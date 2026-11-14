@@ -8,6 +8,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
   - Green: run 43611318357 (`7df8468`), 460 test cases. Screenshots `eq`, `eq-channel` and `eq-match` checked against the mockup. CPU in `docs/measurements/eq-q24.txt`.
   - The EQ's minimum width is 724 px, up from 696, to fit `MATCH` in the header (user, 14 November 2026). Below 781 px the link is its icon alone.
   - Next: the user's REAPER check (`docs/eq-checklist.md`, the two Q2.4 sections), then the release (v1.4.0), then Comp (Q2.5).
+- **Comp (Q2.5) design note approved** (`docs/comp.md`, "Phase 3 Q2.5"): every recommended option, 14 November 2026; no badge. Mockup `reference/phase3/23__comp_q25_mockup.png` (source `design/phase3-mockup-src/comp-q25.html`) waits for the user's approval. Code starts after that and after EQ's REAPER sign-off.
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
 
 ## Releases
