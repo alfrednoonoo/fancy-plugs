@@ -916,6 +916,8 @@ TEST_CASE ("Modulate at depth 0 sounds like no Modulate, and its renders repeat"
         processor.prepareToPlay (rate, 512);
         REQUIRE (processor.waitForBuild (20000));
 
+        // Past the start-up fade-in first, so the burst plays at full level.
+        renderLeftOnly (processor, 48000);
         outputs.push_back (renderLeftOnly (processor, 96000));
     }
 
@@ -933,14 +935,17 @@ TEST_CASE ("Modulate at depth 0 sounds like no Modulate, and its renders repeat"
         }
     }
 
+    INFO ("peak " << peak << ", depth 0 against none " << worst);
+    CHECK (peak > 0.1);
     CHECK (worst < peak * 1.0e-4);
 
-    // Depth 100: the tail moves.
+    // Depth 100: the tail moves. The reverb isn't true stereo, so the left input's tail is on the left.
     auto moved = 0.0;
 
     for (int i = 0; i < 96000; ++i)
-        moved = std::max (moved, (double) std::abs (outputs[2].getSample (1, i) - outputs[0].getSample (1, i)));
+        moved = std::max (moved, (double) std::abs (outputs[2].getSample (0, i) - outputs[0].getSample (0, i)));
 
+    INFO ("depth 100 against none " << moved);
     CHECK (moved > peak * 1.0e-3);
 }
 
