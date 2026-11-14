@@ -1,0 +1,7 @@
+# Phase 3 Q2.4, run 43609486929, commit 1800906 (section 0.4: median of 5 runs in one build).
+# 24 bells from 40 Hz up, Q 2, +/-3 dB, on a stereo sine with less in the right channel.
+# "Mixed" cycles the bands through Stereo, Mid, Left, Side and Right.
+eq q24 cpu (median of 5, 48 kHz, 128 samples, stereo): 24 Stereo bells 0.776 % (target < 1.5 %), 24 mixed-channel bells 0.682 %
+eq q24 cpu, linear 8192 (median of 5): Stereo bands, 1 FIR 0.779 %; Mid/Side bands, 2 FIRs 0.770 %; mixed channels, 4 FIRs 0.965 % (target < 1.5 %)
+eq q24 cpu reference: Fancy Comp default 0.344 % in the same run; 24 Stereo bells / comp = 2.26, 24 mixed / comp = 1.98, linear 1 FIR / comp = 2.26, linear 2 FIRs / comp = 2.24, linear 4 FIRs / comp = 2.81
+# Match adds nothing to the audio path. Its fit of the test's six-band EQ: 8 bands, 0.129 dB RMS between 50 Hz and 16 kHz (target 1 dB).

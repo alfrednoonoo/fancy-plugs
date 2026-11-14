@@ -171,7 +171,7 @@ Changing Phase, FIR length or Oversampling gives one short dropout while the new
 
 ## Resizing
 
-Drag the window's edge in REAPER. The graph takes the extra room. The smallest size is 724 x 464; below 771 wide, MATCH in the header is its icon alone. Parameter > UI size still scales everything.
+Drag the window's edge in REAPER. The graph takes the extra room. The smallest size is 724 x 464; below 781 wide, MATCH in the header is its icon alone. Parameter > UI size still scales everything.
 
 ## Presets
 

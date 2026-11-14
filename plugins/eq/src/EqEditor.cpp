@@ -1213,7 +1213,7 @@ void EqEditor::layoutEditors()
     // Q2.1: every size renders without overlaps). MATCH sits against EDIT, whose own left
     // margin is the gap, and is just its icon when the word doesn't fit.
     constexpr int presetWidest = 170, presetNarrowest = 110;
-    constexpr int matchWide = 74, matchNarrow = 24;
+    constexpr int matchWide = 84, matchNarrow = 24;
 
     setPresetDropdownWidth (presetWidest);
 

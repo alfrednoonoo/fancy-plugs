@@ -4,11 +4,11 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 ## Now
 
-- **Current item: Q2.4, Fancy EQ** (channel per band, 24 bands, Match). Design section "Phase 3 Q2.4" in `docs/eq.md` (section 7 is "As built") and mockup `design/phase3-mockup-src/eq-q24.html`, both approved 13 November 2026.
-  - Green: push 1 (run 43453578254, `8463d43`: 24 bands, Channel in Minimum phase, the chip) and push 1b (run 43606060993, `6d3b753`: Linear phase follows Channel, the total per channel, the analyzer's Channel, screenshot `eq-channel` checked against the mockup).
-  - Push 2, Match, pushed 14 November: check its run before anything else. It adds `plugins/eq/src/EqMatch.*`, the `MATCH` link and card, `FancyProcessor::addProjectData`, `tests/EqMatchTests.cpp`, the manual and checklist sections, and screenshot `eq-match`. When it's green: compare `eq-match` with panel 3 of the mockup, and write `docs/measurements/eq-q24.txt` from the run's "eq q24 cpu" lines.
-  - **For the user to confirm:** the EQ's minimum width went from 696 to 724 px, because the header had no room for `MATCH` at 696 (section 7 of the design note). Below 771 px the link is its icon alone.
-  - Then: the user's REAPER check (`docs/eq-checklist.md`, the two Q2.4 sections), and the release.
+- **Current item: Q2.4, Fancy EQ** (channel per band, 24 bands, Match): built, waiting for the user's REAPER check. Design and "As built" (section 7) in `docs/eq.md`; mockup `design/phase3-mockup-src/eq-q24.html`.
+  - Green: run 43609486929 (`1800906`), 460 test cases: 24 bands, Channel in both phase modes, the total per channel, the analyzer's Channel, Match. Screenshots `eq-channel` and `eq-match` checked against the mockup. CPU in `docs/measurements/eq-q24.txt`.
+  - After that run: the `MATCH` link widened by 10 px (it read "MATC"). Check `eq@1x.png` in the next run's screenshots.
+  - **For the user to confirm:** the EQ's minimum width went from 696 to 724 px, because the header had no room for `MATCH` at 696 (section 7 of the design note). Below 781 px the link is its icon alone.
+  - Next: the user's REAPER check (`docs/eq-checklist.md`, the two Q2.4 sections), then the release (v1.4.0), then Comp (Q2.5).
 - **Latest release:** [v1.3.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.3.0), 13 November 2026.
 
 ## Releases
