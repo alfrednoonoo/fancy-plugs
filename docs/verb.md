@@ -298,7 +298,7 @@ The six existing presets don't change.
    - A 1 kHz tone through a modulated hall shows no sidebands above -60 dB beyond ±2 Hz, so no pitch change.
    - Renders are repeatable.
 7. **State:** a true-stereo, paired, library and modulated chain round-trips. The same state with those parts stripped plays the direct IR without errors.
-8. **CPU (§0.4):** a 3 s IR direct (today's ratio), true stereo, modulated, and both, in Zero latency and Low CPU, in `docs/measurements/verb-q28.txt`. Targets: true stereo under 1.6 times direct, and modulation under 1.8 times direct.
+8. **CPU (§0.4):** a 3 s IR direct (today's ratio), true stereo, modulated, and both, in Zero latency and Low CPU, in `docs/measurements/verb-q28.txt`. Targets: true stereo under 1.6 times direct, and modulation under 2.2 times direct (restated by the user on 14 November 2026 from 1.8 times: Modulate convolves the tail twice).
 
 ### 9. Build order
 
@@ -323,4 +323,6 @@ Three pushes, as planned. The models are `docs/research/verb-q28-model.py`.
 - **Depth 0** isn't bit-identical to no Modulate, because the IR is then convolved in two parts; the test requires the difference to stay under 1e-4 of the peak (section 8 asked for bit-identical).
 - **The display** doesn't draw the decorrelated copy's outline from the mockup; it shows the whole IR, as without Modulate.
 - **Add panel:** eight buttons at 38 px spacing (42 before), to fit the 352 px panel. Modulate isn't offered in the empty rack, and it's greyed in the add panel while the chain has one (no tooltip).
+- **CPU:** run 43652883285 (`9b931eb`), 3 s IR: true stereo 1.15 x direct in Zero latency and 1.07 x in Low CPU; Modulate 3.37 x and 2.08 x, over the first 1.8 x target. Modulate's tails start silent, and in Zero latency their small stages ran over zeros, so the convolver now leaves out any stage (and the direct taps) whose stretch of IR is silent in every path; that changes no output, since those stages only added zeros. The user restated the target as under 2.2 x. The figures after that change are in `docs/measurements/verb-q28.txt`.
+- **Reverb card:** Stereo spread's label is "Spread" on the card, to fit the small knob.
 - **Accuracy test:** the true-stereo convolver is checked against direct convolution with the existing test's tolerance; section 8's -100 dB is tighter than the single-precision convolver reaches.

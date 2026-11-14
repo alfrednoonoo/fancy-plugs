@@ -7,7 +7,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 - **Current item: Verb (Q2.8)**: IR library, true stereo, modulation. Design (every recommended option) and mockup (`reference/phase3/24__verb_q28_mockup.png`) approved by the user on 14 November 2026; `docs/verb.md`, "Phase 3 Q2.8".
   - Push 1, true stereo: green, run 43648226467 (`91a7204`), 482 test cases. Bit-identical to the legacy convolver and builder for direct IRs. CPU, 3 s IR: Zero latency 1.26 x direct, Low CPU 1.09 x (target < 1.6 x). The IR display keeps one lane (the mockup drew two).
   - Push 2 (generator settings, library tool and 32 IRs as a Windows resource, Library menu): run 43650494608 (`b833304`) built, and 486 of 487 test cases passed; the one failure was an old generator test that set the raw value array, fixed in push 3.
-  - Push 3 (Modulate, five presets, screenshots `verb-library` and `verb-generators`, manual, checklist, As built in section 10) pushed in one push with that fix.
+  - Push 3 (Modulate, five presets, screenshots, docs): green in run 43652883285 (`9b931eb`), 493 test cases, after a test-only fix. Modulate cost 3.37 x direct (Zero latency) and 2.08 x (Low CPU), over 1.8 x; the user restated the target as 2.2 x. Follow-up push: silent convolver stages skipped, and the Reverb card's Early and True stereo placed as in the mockup.
   - Next: CPU into `docs/measurements/verb-q28.txt`, screenshots against the mockup, then the user's REAPER check (`docs/verb-checklist.md`, the Q2.8 section).
 - **Latest release:** [v1.4.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.4.0), 14 November 2026.
 
@@ -58,6 +58,7 @@ Mac comes after Windows is finished. Phase 4 holds Kicker's sidechain Duck, a tr
 - Kicker's Sub mode: Divider engine only; a Spectral engine only if Divider disappoints. Q2.2's Harmonics mode is dropped and its Duck moves to Phase 4 (user, 11 November 2026).
 - Limit's CPU target is under 5 % at 4x with True peak (user, 10 November 2026).
 - Comp's Q2.5 CPU targets are the cost added over the same oversampling: under 1.5 % at 4x, under 3 % at 8x (user, 14 November 2026).
+- Verb's Modulate CPU target is under 2.2 times the same IR without it (user, 14 November 2026).
 - The EQ's minimum width is 724 px, to fit `MATCH` in the header (user, 14 November 2026).
 - The preset browser: one click loads and keeps it open; double-click or Enter loads and closes (user, 13 November 2026).
 - Phase 1 reference images live outside the public repo, in `C:/dev/fancy-plugs-private/reference/`. Never commit them.

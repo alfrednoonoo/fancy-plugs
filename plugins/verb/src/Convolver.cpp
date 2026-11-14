@@ -236,7 +236,22 @@ Convolver::Convolver (const float* irLeft, const float* irRight, const float* cr
     if (! trueStereo)
         crossToLeft = crossToRight = nullptr;
 
-    if (mode == Mode::zeroLatency && length > 0)
+    // A stretch of IR that's silent in every path adds nothing but zeros, so its stage (or the
+    // direct taps) is left out. Modulate's tails start silent (Phase 3 Q2.8).
+    const auto silent = [&] (int start, int count)
+    {
+        const auto end = std::min (length, start + count);
+
+        for (const auto* path : { irLeft, irRight, crossToLeft, crossToRight })
+            if (path != nullptr)
+                for (int i = start; i < end; ++i)
+                    if (path[i] != 0.0f)
+                        return false;
+
+        return true;
+    };
+
+    if (mode == Mode::zeroLatency && length > 0 && ! silent (0, directTaps))
     {
         hasDirect = true;
 
@@ -263,6 +278,9 @@ Convolver::Convolver (const float* irLeft, const float* irRight, const float* cr
             const auto isLast = definition.partitions == 0 || definition.size == maxBlock;
             const auto needed = (length - definition.irStart + definition.size - 1) / definition.size;
             const auto count = isLast ? needed : std::min (definition.partitions, needed);
+
+            if (silent (definition.irStart, count * definition.size))
+                continue;
 
             stages.push_back (std::make_unique<Stage> (definition.size, definition.irStart, count, definition.background,
                                                        irLeft, irRight, crossToLeft, crossToRight, length));

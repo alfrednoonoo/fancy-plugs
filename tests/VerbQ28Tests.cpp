@@ -1127,7 +1127,7 @@ TEST_CASE ("verb Q2.8 true stereo CPU", "[.measure]")
             results[modulated] = times[runs / 2];
         }
 
-        std::printf ("verb q28 cpu, 3 s IR, %s (median of %d): direct %.3f %%, modulated %.3f %% (%.2f x, target < 1.8 x)\n",
+        std::printf ("verb q28 cpu, 3 s IR, %s (median of %d): direct %.3f %%, modulated %.3f %% (%.2f x, target < 2.2 x)\n",
                      mode == Convolver::Mode::zeroLatency ? "Zero latency" : "Low CPU", runs, results[0], results[1], results[1] / results[0]);
     }
 }

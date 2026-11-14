@@ -73,7 +73,7 @@ Projects saved before 1.5 that used a four-channel file keep playing its first t
 | Decay | 0.05–20 s | Time to fall 60 dB |
 | Density | 0–100 % | Lower starts sparser, and it fills in over 100 ms |
 | Damping | 0–100 % | How fast the highs die away |
-| Stereo spread | 0–100 % | 0 is mono |
+| Spread | 0–100 % | Stereo spread: 0 is mono |
 | Low RT, High RT | 0.25–4 x | Decay below 250 Hz and above 4 kHz, as a multiple of Decay. 1 x leaves the decay the same at every frequency |
 | Size | 2–60 m | The room for the early reflections, with Early set to Room or Hall |
 | Build-up | 0–300 ms | How long the tail takes to reach full density; with Room or Hall, it also fades the tail in under the early reflections |
@@ -91,7 +91,7 @@ With Low RT, High RT, Size, Build-up, Early and True stereo at their defaults, t
 | Depth | 0–100 % | How far it moves: at 100 % the two versions swap fully |
 | Spread | 0–100 % | How far apart the left and right move, for a wider motion |
 
-Rate, Depth and Spread change smoothly while you play, without a rebuild. Modulate costs about twice the CPU of the same IR without it.
+Rate, Depth and Spread change smoothly while you play, without a rebuild. Modulate costs about twice the CPU of the same IR without it, because the tail is played in two versions.
 
 ## Right column
 

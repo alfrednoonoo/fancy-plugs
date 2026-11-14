@@ -45,7 +45,7 @@ const std::vector<Setting> reverbSettings {
     { "decay", "Decay", 0.05f, 20.0f, 1.8f, 0.01f, 1.0f, 2, "s", true },
     { "density", "Density", 0.0f, 100.0f, 80.0f, 1.0f, 1.0f, 0, "%" },
     { "damping", "Damping", 0.0f, 100.0f, 40.0f, 1.0f, 1.0f, 0, "%" },
-    { "spread", "Stereo spread", 0.0f, 100.0f, 100.0f, 1.0f, 1.0f, 0, "%" },
+    { "spread", "Spread", 0.0f, 100.0f, 100.0f, 1.0f, 1.0f, 0, "%" },
 
     // Phase 3 Q2.8, appended. At these defaults the generator makes the IR it always did.
     { "lowDecay", "Low RT", 0.25f, 4.0f, 1.0f, 0.01f, 1.0f, 2, "x", true },

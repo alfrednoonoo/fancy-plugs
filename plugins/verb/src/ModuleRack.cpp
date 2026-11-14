@@ -306,11 +306,12 @@ void ModuleCard::placeKnobs()
     {
         // Phase 3 Q2.8 (reference/phase3/24__verb_q28_mockup.png): two rows of five small knobs,
         // then the Early dropdown and the True stereo checkbox.
-        for (size_t i = 0; i < controls.size() && i < 10; ++i)
+        // Nine knobs: Length to Stereo spread, then Low RT, High RT, Size and Build-up.
+        for (size_t i = 0; i < controls.size() && i < 9; ++i)
             place (i, { 12 + 66 * (int) (i % 5), i < 5 ? 56 : 158, 66, 99 });
 
-        place (10, { 80, 268, 110, 28 });
-        place (11, { 206, 272, 140, 20 });
+        place (9, { 80, 268, 110, 28 });   // Early
+        place (10, { 206, 272, 140, 20 }); // True stereo
         updateDimming();
     }
     else if (type == ModuleType::modulate)
