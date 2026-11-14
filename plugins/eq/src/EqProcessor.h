@@ -2,6 +2,7 @@
 
 #include <fancy/dsp/Analyzer.h>
 #include "EqDsp.h"
+#include "EqMatch.h"
 
 #include <fancy/plugin/FancyProcessor.h>
 
@@ -21,6 +22,10 @@ public:
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
     bool waitForBackgroundWork (int timeoutMs) override;
     void processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) override;
+
+    // Match's learned spectra and settings go with the project, not with presets or undo.
+    void addProjectData (juce::ValueTree& state) override;
+    void stateApplied() override;
 
     juce::AudioProcessorEditor* createEditor() override;
 
@@ -45,6 +50,31 @@ public:
     void resetBand (int band);
     int addBand (float hz, float gainDb); // returns -1 when all 24 are in use
     void removeBand (int band);
+
+    // EQ Match (Phase 3 Q2.4). Message thread. Match adds nothing to the audio path: its result
+    // is ordinary bands.
+    eq::match::Engine match;
+
+    // A band the last Match wrote and nobody has changed since. The next Match replaces it.
+    bool isMatchBand (int band);
+
+    // The bands a Match may use: the unused ones and the last Match's.
+    int getNumFreeForMatch();
+
+    // What the bands that stay do to a signal in both channels, in dB on Match's grid.
+    eq::match::Curve getMatchExistingDb();
+
+    // What the new bands should add, from the learned spectra and Match's settings.
+    eq::match::Curve getMatchTarget();
+
+    // The settings a fit runs with: Bands is held to the free ones.
+    eq::match::Settings getMatchFitSettings();
+
+    // Writes fitted bands into free bands, as one undo step, replacing the last Match's bands.
+    // Returns how many were written.
+    int applyMatch (const std::vector<eq::BandSpec>& fitted);
+
+    double getMatchRate() const { return getSampleRate() > 0.0 ? getSampleRate() : 48000.0; }
 
     // The analyzer's feed. The editor turns it on only while it's open.
     fancy::dsp::SampleFifo analyzerFifo;

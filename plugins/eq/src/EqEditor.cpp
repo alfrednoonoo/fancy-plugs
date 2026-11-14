@@ -1,5 +1,7 @@
 #include "EqEditor.h"
 
+#include <fancy/plugin/ParamHelpers.h>
+
 #include <cmath>
 
 using namespace fancy::ui;
@@ -9,7 +11,8 @@ namespace
 // Figma ReaEQ frames without the host title bar.
 constexpr int baseWidth = 802;
 constexpr int baseHeight = 625;
-constexpr int minWidth = 696, minHeight = 464, maxWidth = 1800, maxHeight = 1300;
+// 724 wide at the least: 696 until Phase 3 Q2.4, whose MATCH link needs 28 px of the header.
+constexpr int minWidth = 724, minHeight = 464, maxWidth = 1800, maxHeight = 1300;
 
 constexpr int gainColumnWidth = 68;
 constexpr int detailsHeight = 178;
@@ -20,6 +23,35 @@ constexpr int dynamicCardWidth = 720;
 constexpr int tabWidth = 42, tabHeight = 23;
 
 const juce::Identifier selectedBandProperty ("selectedBand");
+
+// Match's Smoothing choices, in octaves.
+constexpr double smoothingOctaves[] { 1.0 / 12.0, 1.0 / 6.0, 1.0 / 4.0, 1.0 / 3.0, 1.0 / 2.0, 1.0 };
+
+int smoothingIndex (double octaves)
+{
+    auto closest = 0;
+
+    for (int i = 1; i < (int) std::size (smoothingOctaves); ++i)
+        if (std::abs (smoothingOctaves[i] - octaves) < std::abs (smoothingOctaves[closest] - octaves))
+            closest = i;
+
+    return closest;
+}
+
+juce::String ellipsis()
+{
+    return juce::String (juce::CharPointer_UTF8 ("\xe2\x80\xa6"));
+}
+
+juce::String secondsText (double seconds)
+{
+    return juce::String (seconds, 1) + " s";
+}
+
+void setPlain (juce::RangedAudioParameter& parameter, float value)
+{
+    parameter.setValueNotifyingHost (parameter.convertTo0to1 (value));
+}
 
 void styleLabel (juce::Label& label, const juce::String& text, juce::Colour colour, juce::Justification justification)
 {
@@ -509,6 +541,290 @@ void EqEditor::BandEditor::update()
     typeDropdown.repaint();
 }
 
+// MatchLink -------------------------------------------------------------------
+
+EqEditor::MatchLink::MatchLink()
+{
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+}
+
+void EqEditor::MatchLink::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    const auto centre = juce::Point<float> (bounds.getX() + 14.0f, bounds.getCentreY());
+
+    g.setColour (lit ? juce::Colours::white : colours::uiTeal);
+
+    // A target: a ring with a dot in it.
+    g.drawEllipse (juce::Rectangle<float> (11.0f, 11.0f).withCentre (centre), 1.3f);
+    g.fillEllipse (juce::Rectangle<float> (4.0f, 4.0f).withCentre (centre));
+
+    // The icon alone, where there's no room for the word.
+    if (getWidth() >= 60)
+    {
+        g.setFont (font (Weight::regular, 14.0f));
+        g.drawText ("MATCH", bounds.withTrimmedLeft (24.0f), juce::Justification::centredLeft, false);
+    }
+}
+
+void EqEditor::MatchLink::mouseUp (const juce::MouseEvent& event)
+{
+    if (onClick != nullptr && contains (event.getPosition()))
+        onClick();
+}
+
+// MatchCard -------------------------------------------------------------------
+
+EqEditor::MatchCard::Link::Link (juce::RangedAudioParameter& parameterToUse, std::function<void (float)> changed)
+    : parameter (parameterToUse), onChange (std::move (changed))
+{
+    parameter.addListener (this);
+}
+
+EqEditor::MatchCard::Link::~Link()
+{
+    parameter.removeListener (this);
+}
+
+void EqEditor::MatchCard::Link::parameterValueChanged (int, float)
+{
+    onChange (parameter.convertFrom0to1 (parameter.getValue()));
+}
+
+EqEditor::MatchCard::MatchCard (EqProcessor& processor)
+    : eqProcessor (processor),
+      engine (processor.match),
+      sourceParameter (juce::ParameterID { "matchSource", 1 }, "Source", juce::StringArray { "Sidechain", "Captured" }, 0),
+      smoothingParameter (juce::ParameterID { "matchSmoothing", 1 }, "Smoothing",
+                          juce::StringArray { "1/12 oct", "1/6 oct", "1/4 oct", "1/3 oct", "1/2 oct", "1 oct" }, 3),
+      amountParameter (fancy::percentParameter ("matchAmount", "Amount", 100.0f)),
+      bandsParameter (fancy::floatParameter (
+          "matchBands", "Bands", juce::NormalisableRange<float> (1.0f, (float) eq::maxBands, 1.0f), 8.0f,
+          juce::AudioParameterFloatAttributes {}
+              .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)); })
+              .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }))),
+      lowParameter (fancy::floatParameter (
+          "matchLow", "Low", fancy::logRange (20.0f, 1000.0f, 1.0f), 30.0f,
+          juce::AudioParameterFloatAttributes {}
+              .withLabel ("Hz")
+              .withStringFromValueFunction ([] (float value, int) { return fancy::formatHz (value); })
+              .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); }))),
+      highParameter (fancy::floatParameter (
+          "matchHigh", "High", fancy::logRange (1000.0f, 20000.0f, 10.0f), 18000.0f,
+          juce::AudioParameterFloatAttributes {}
+              .withLabel ("Hz")
+              .withStringFromValueFunction ([] (float value, int) { return fancy::formatHz (value); })
+              .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); }))),
+      sourceSwitch (sourceParameter, juce::Colour (0xff434343), juce::Colours::white),
+      smoothingKnob (smoothingParameter, "Smoothing", colours::uiTeal, Knob::tightStyle),
+      amountKnob (*amountParameter, "Amount", colours::uiTeal, Knob::tightStyle),
+      bandsKnob (*bandsParameter, "Bands", colours::uiTeal, Knob::tightStyle),
+      lowKnob (*lowParameter, "Low", colours::uiTeal, Knob::tightStyle),
+      highKnob (*highParameter, "High", colours::uiTeal, Knob::tightStyle),
+      learnButton ("Learn"),
+      learnCurrentButton ("Learn current"),
+      clearButton ("Clear"),
+      matchButton ("Match"),
+      closeButton (IconButton::Glyph::cross)
+{
+    using Engine = eq::match::Engine;
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &sourceSwitch, &smoothingKnob, &amountKnob, &bandsKnob, &lowKnob, &highKnob,
+                                                                           &learnButton, &clearButton, &matchButton, &closeButton })
+        addAndMakeVisible (item);
+
+    addChildComponent (learnCurrentButton);
+
+    sourceSwitch.setTextHeight (12.0f);
+    sourceSwitch.setTooltip ("Sidechain: the reference plays into the sidechain while the song plays. Captured: learn the reference, then the song.");
+    smoothingKnob.setTooltip ("How much detail of the difference is kept.");
+    amountKnob.setTooltip ("How far towards the reference the bands go.");
+    bandsKnob.setTooltip ("The most bands Match may use, of the free ones.");
+    lowKnob.setTooltip ("Nothing is matched below this.");
+    highKnob.setTooltip ("Nothing is matched above this.");
+
+    // Each control writes to the engine, which keeps the settings with the project.
+    links.push_back (std::make_unique<Link> (sourceParameter, [this] (float value)
+    {
+        const auto source = value >= 0.5f ? Engine::Source::captured : Engine::Source::sidechain;
+
+        if (source != engine.source)
+        {
+            engine.source = source;
+            engine.setLearning (Engine::Learning::none);
+        }
+    }));
+
+    links.push_back (std::make_unique<Link> (smoothingParameter, [this] (float value)
+    {
+        engine.settings.smoothingOctaves = smoothingOctaves[juce::jlimit (0, (int) std::size (smoothingOctaves) - 1, juce::roundToInt (value))];
+    }));
+
+    links.push_back (std::make_unique<Link> (*amountParameter, [this] (float value) { engine.settings.amount = (double) value * 0.01; }));
+    links.push_back (std::make_unique<Link> (*bandsParameter, [this] (float value) { engine.settings.maxBands = juce::roundToInt (value); }));
+    links.push_back (std::make_unique<Link> (*lowParameter, [this] (float value) { engine.settings.lowHz = (double) value; }));
+    links.push_back (std::make_unique<Link> (*highParameter, [this] (float value) { engine.settings.highHz = (double) value; }));
+
+    learnButton.onClick = [this]
+    {
+        toggle (engine.source == Engine::Source::captured ? Engine::Learning::reference : Engine::Learning::both);
+    };
+
+    learnCurrentButton.onClick = [this] { toggle (Engine::Learning::current); };
+
+    clearButton.onClick = [this]
+    {
+        engine.setLearning (Engine::Learning::none);
+        engine.clear();
+    };
+
+    matchButton.onClick = [this] { startFit(); };
+
+    closeButton.onClick = [this]
+    {
+        if (onClose != nullptr)
+            onClose();
+    };
+
+    readSettings();
+}
+
+EqEditor::MatchCard::~MatchCard()
+{
+    links.clear();
+}
+
+void EqEditor::MatchCard::readSettings()
+{
+    const auto settings = engine.settings;
+    const auto source = engine.source;
+
+    setPlain (sourceParameter, source == eq::match::Engine::Source::captured ? 1.0f : 0.0f);
+    setPlain (smoothingParameter, (float) smoothingIndex (settings.smoothingOctaves));
+    setPlain (*amountParameter, (float) (settings.amount * 100.0));
+    setPlain (*bandsParameter, (float) settings.maxBands);
+    setPlain (*lowParameter, (float) settings.lowHz);
+    setPlain (*highParameter, (float) settings.highHz);
+}
+
+void EqEditor::MatchCard::toggle (eq::match::Engine::Learning mode)
+{
+    engine.setLearning (engine.getLearning() == mode ? eq::match::Engine::Learning::none : mode);
+}
+
+void EqEditor::MatchCard::startFit()
+{
+    if (! engine.isReady() || engine.isFitting())
+        return;
+
+    // The spectra hold still while the fit runs.
+    engine.setLearning (eq::match::Engine::Learning::none);
+    engine.requestFit (eqProcessor.getMatchTarget(), eqProcessor.getMatchFitSettings(), eqProcessor.getMatchRate());
+}
+
+void EqEditor::MatchCard::update()
+{
+    using Engine = eq::match::Engine;
+
+    // A fit that has finished becomes bands, as one undo step.
+    std::vector<eq::BandSpec> fitted;
+
+    if (engine.takeFit (fitted))
+        eqProcessor.applyMatch (fitted);
+
+    const auto learning = engine.getLearning();
+    const auto captured = engine.source == Engine::Source::captured;
+    const auto busy = "Learning" + ellipsis();
+
+    learnButton.setText (captured ? (learning == Engine::Learning::reference ? busy : juce::String ("Learn reference"))
+                                  : (learning == Engine::Learning::both ? busy : juce::String ("Learn")));
+    learnCurrentButton.setText (learning == Engine::Learning::current ? busy : juce::String ("Learn current"));
+
+    if (captured != learnCurrentButton.isVisible())
+    {
+        learnCurrentButton.setVisible (captured);
+        resized();
+    }
+
+    const auto outline = learning == Engine::Learning::none ? juce::Rectangle<int>()
+                       : (learning == Engine::Learning::current ? learnCurrentButton.getBounds() : learnButton.getBounds());
+
+    const auto ready = engine.isReady();
+    const auto fitting = engine.isFitting();
+
+    matchButton.setAlpha (ready && ! fitting ? 1.0f : 0.4f);
+
+    const auto status = "ref " + secondsText (engine.getReferenceSeconds()) + juce::String (juce::CharPointer_UTF8 (" \xc2\xb7 current "))
+                      + secondsText (engine.getCurrentSeconds());
+
+    const auto free = eqProcessor.getNumFreeForMatch();
+    const auto caption = fitting ? "Fitting" + ellipsis()
+                       : (! ready ? juce::String ("Learn 3 s of each")
+                                  : juce::String (free) + (free == 1 ? " band free" : " bands free"));
+
+    if (status != statusText || caption != captionText || outline != learningOutline)
+    {
+        statusText = status;
+        captionText = caption;
+        learningOutline = outline;
+        repaint();
+    }
+}
+
+void EqEditor::MatchCard::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+
+    g.setColour (colours::bgSection.withAlpha (0.96f));
+    g.fillRoundedRectangle (bounds, 8.0f);
+
+    g.setColour (juce::Colour (0xff3a3a3a));
+    g.drawRoundedRectangle (bounds.reduced (0.5f), 8.0f, 1.0f);
+
+    g.setFont (font (Weight::semiBold, 12.0f).withExtraKerningFactor (0.06f));
+    g.setColour (colours::menuHint);
+    g.drawText ("MATCH", 14, 12, 52, 22, juce::Justification::centredLeft, false);
+
+    g.setFont (font (Weight::regular, 12.0f));
+    g.drawText (statusText, 224, 12, getWidth() - 224 - 36, 22, juce::Justification::centredRight, false);
+    g.drawText (captionText, matchButton.getX() - 14, matchButton.getBottom() + 6, matchButton.getWidth() + 28, 14, juce::Justification::centred, false);
+}
+
+void EqEditor::MatchCard::paintOverChildren (juce::Graphics& g)
+{
+    // The button that's learning has the reference's purple round it.
+    if (learningOutline.isEmpty())
+        return;
+
+    const auto area = learningOutline.toFloat().reduced (0.5f);
+
+    g.setColour (colours::accentPurple);
+    g.drawRoundedRectangle (area, area.getHeight() * 0.5f, 1.2f);
+}
+
+void EqEditor::MatchCard::resized()
+{
+    sourceSwitch.setBounds (68, 12, 150, 22);
+    closeButton.setBounds (getWidth() - 26, 17, 12, 12);
+
+    // Sidechain has one Learn button; Captured has one for each spectrum.
+    const auto captured = learnCurrentButton.isVisible();
+
+    learnButton.setBounds (12, captured ? 46 : 60, 112, 24);
+    learnCurrentButton.setBounds (12, 76, 112, 24);
+    clearButton.setBounds (12, captured ? 106 : 92, 112, 24);
+
+    auto x = 132;
+
+    for (auto* knob : { &smoothingKnob, &amountKnob, &bandsKnob, &lowKnob, &highKnob })
+    {
+        knob->setBounds (x, 42, 62, 99);
+        x += 62;
+    }
+
+    matchButton.setBounds (452, 66, 84, 24);
+}
+
 // EqEditor --------------------------------------------------------------------
 
 EqEditor::EqEditor (EqProcessor& processor)
@@ -520,6 +836,7 @@ EqEditor::EqEditor (EqProcessor& processor)
       phaseCheckbox (parameter ("showPhase"), "Show phase"),
       compactCheckbox (parameter ("compact"), "Compact mode"),
       editLink (colours::uiTeal),
+      matchCard (processor),
       phaseDropdown (parameter ("phase")),
       firDropdown (parameter ("firLength")),
       oversamplingDropdown (parameter ("oversampling")),
@@ -574,7 +891,22 @@ EqEditor::EqEditor (EqProcessor& processor)
     tabs.onSelect = [this] (int band) { selectBand (band); };
 
     getRoot().addAndMakeVisible (editLink);
-    editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
+    editLink.onClick = [this]
+    {
+        // The drawer and the Match card share the space over the graph.
+        if (! drawer.isVisible())
+            setMatchOpen (false);
+
+        drawer.setVisible (! drawer.isVisible());
+    };
+
+    // Phase 3 Q2.4: MATCH, left of EDIT, opens the Match card over the graph.
+    getRoot().addAndMakeVisible (matchLink);
+    matchLink.setTooltip ("Match: learn a reference's tone and fit bands to it.");
+    matchLink.onClick = [this] { setMatchOpen (! matchOpen); };
+
+    body.addChildComponent (matchCard);
+    matchCard.onClose = [this] { setMatchOpen (false); };
 
     for (auto* dropdown : { &phaseDropdown, &firDropdown, &oversamplingDropdown })
         addLatencyNote (*dropdown);
@@ -644,6 +976,65 @@ EqEditor::EqEditor (EqProcessor& processor)
     updateSelection();
     layoutEditors();
     graph.update();
+}
+
+EqEditor::~EqEditor()
+{
+    // The Match engine's worker only runs while the card is open.
+    eqProcessor().match.setPanelOpen (false);
+}
+
+void EqEditor::setMatchOpen (bool shouldBeOpen)
+{
+    if (shouldBeOpen == matchOpen)
+        return;
+
+    matchOpen = shouldBeOpen;
+    eqProcessor().match.setPanelOpen (matchOpen);
+
+    if (matchOpen)
+    {
+        drawer.setVisible (false);
+        matchCard.readSettings();
+        matchCard.update();
+    }
+
+    matchCard.setVisible (matchOpen);
+    matchLink.lit = matchOpen;
+    matchLink.repaint();
+
+    layoutEditors();
+    updateSelection();
+    updateMatchOverlay();
+}
+
+void EqEditor::updateMatchOverlay()
+{
+    EqGraph::MatchOverlay overlay;
+    overlay.visible = matchOpen;
+
+    if (matchOpen)
+    {
+        auto& processor = eqProcessor();
+        auto& engine = processor.match;
+        const auto smoothing = engine.settings.smoothingOctaves;
+
+        overlay.hasReference = engine.getReferenceSeconds() > 0.0;
+        overlay.hasCurrent = engine.getCurrentSeconds() > 0.0;
+        overlay.hasTarget = overlay.hasReference && overlay.hasCurrent;
+
+        // Drawn as Match sees them, at its Smoothing.
+        if (overlay.hasReference)
+            overlay.reference = eq::match::smooth (engine.getReferenceDb(), smoothing);
+
+        if (overlay.hasCurrent)
+            overlay.current = eq::match::smooth (engine.getCurrentDb(), smoothing);
+
+        if (overlay.hasTarget)
+            overlay.target = processor.getMatchTarget();
+    }
+
+    graph.setMatchOverlay (overlay);
 }
 
 EqProcessor& EqEditor::eqProcessor() noexcept
@@ -744,7 +1135,8 @@ void EqEditor::updateSelection()
 
     for (int band = 0; band < eq::maxBands; ++band)
     {
-        bandEditors[(size_t) band]->setVisible (anyBand && band == selectedBand);
+        // In Compact mode the Match card takes the band card's place.
+        bandEditors[(size_t) band]->setVisible (anyBand && band == selectedBand && ! (compactMode && matchOpen));
         slopeDropdowns[(size_t) band]->setVisible (band == selectedBand);
     }
 }
@@ -805,6 +1197,11 @@ void EqEditor::layoutEditors()
         editor->toFront (false);
     }
 
+    // The Match card floats over the bottom of the graph, as the Compact-mode card does.
+    matchCard.setBounds ((contentWidth - MatchCard::cardWidth) / 2, juce::jmax (4, graphHeight - cardBottomGap - MatchCard::cardHeight),
+                         MatchCard::cardWidth, MatchCard::cardHeight);
+    matchCard.toFront (false);
+
     drawer.setBounds (0, height - detailsHeight - optionsHeight, contentWidth, detailsHeight + optionsHeight);
     drawer.toFront (false);
 
@@ -812,12 +1209,23 @@ void EqEditor::layoutEditors()
     const auto linkLeft = knobRight - 72;
     editLink.setBounds (linkLeft, 13, 64, 24);
 
-    // In a narrow window the preset pill gives up room, so Compare clears the EDIT link
-    // (Phase 3 Q2.1: every size renders without overlaps).
+    // In a narrow window the preset pill gives up room, so Compare clears the links (Phase 3
+    // Q2.1: every size renders without overlaps). MATCH sits against EDIT, whose own left
+    // margin is the gap, and is just its icon when the word doesn't fit.
     constexpr int presetWidest = 170, presetNarrowest = 110;
+    constexpr int matchWide = 74, matchNarrow = 24;
+
     setPresetDropdownWidth (presetWidest);
 
-    if (const auto overlap = getHeaderFreeLeft() - linkLeft; overlap > 0)
+    auto matchWidth = matchWide;
+
+    if (getHeaderFreeLeft() - (linkLeft - matchWidth) > presetWidest - presetNarrowest)
+        matchWidth = matchNarrow;
+
+    const auto matchLeft = linkLeft - matchWidth;
+    matchLink.setBounds (matchLeft, 13, matchWidth, 24);
+
+    if (const auto overlap = getHeaderFreeLeft() - matchLeft; overlap > 0)
         setPresetDropdownWidth (juce::jmax (presetNarrowest, presetWidest - overlap));
 
     constexpr float ranges[] { 12.0f, 6.0f, 12.0f, 18.0f, 24.0f };
@@ -846,6 +1254,15 @@ void EqEditor::onTick (float)
     slopeDropdowns[(size_t) selectedBand]->setAlpha (usesSlope ? 1.0f : 0.4f);
 
     oversamplingDropdown.setAlpha (eqProcessor().readTargets().linearPhase ? 0.4f : 1.0f);
+
+    if (matchOpen)
+    {
+        matchCard.update();
+
+        // The curves follow the learning at 10 Hz.
+        if (++matchTick % 3 == 0)
+            updateMatchOverlay();
+    }
 
     // A mono bus has nothing but the one channel to show.
     const auto stereoBus = eqProcessor().getMainBusNumInputChannels() >= 2;
@@ -918,6 +1335,8 @@ void EqEditor::showChannelPreview()
 {
     applyPreviewValues();
 
+    setMatchOpen (false);
+
     auto& processor = eqProcessor();
     processor.setParameter ("b2dyn", 0.0f);
     graph.showPreviewChange (-1, 0.0f);
@@ -937,6 +1356,44 @@ void EqEditor::showChannelPreview()
     selectBand (2);
     layoutEditors();
     bandEditors[(size_t) selectedBand]->update();
+    graph.update();
+}
+
+void EqEditor::showMatchPreview()
+{
+    applyPreviewValues();
+
+    auto& processor = eqProcessor();
+    processor.setParameter ("b2dyn", 0.0f);
+    graph.showPreviewChange (-1, 0.0f);
+
+    // The mockup's spectra: a falling line, and a reference with more at 100 Hz and 10 kHz and
+    // less at 2.8 kHz.
+    eq::match::Curve reference {}, current {};
+
+    for (int i = 0; i < eq::match::numPoints; ++i)
+    {
+        const auto decade = std::log10 (eq::match::hzAt (i));
+        const auto base = -52.0 - 9.0 * (decade - 2.0) - (decade < 1.7 ? (1.7 - decade) * 25.0 : 0.0);
+        const auto difference = 3.0 * std::exp (-(decade - 2.0) * (decade - 2.0) / 0.05)
+                              - 2.5 * std::exp (-(decade - 3.45) * (decade - 3.45) / 0.03)
+                              + 2.0 * std::exp (-(decade - 4.0) * (decade - 4.0) / 0.04);
+
+        current[(size_t) i] = base + 0.8 * std::sin (0.9 * i) * std::cos (0.37 * i);
+        reference[(size_t) i] = base + difference + 0.8 * std::sin (1.3 * i) * std::cos (0.23 * i);
+    }
+
+    processor.match.restoreSpectra (reference, current, 24.6);
+
+    parameter ("compact").setValueNotifyingHost (0.0f);
+    compactMode = false;
+    drawer.setVisible (false);
+    selectBand (1);
+    setMatchOpen (true);
+    layoutEditors();
+    bandEditors[(size_t) selectedBand]->update();
+    matchCard.update();
+    updateMatchOverlay();
     graph.update();
 }
 

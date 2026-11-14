@@ -183,7 +183,11 @@ bool renderEq (const juce::File& outputDir)
     editor->showDynamicPreview (true);
     ok = writeBothScales (*editor, "eq-dynamic-compact", outputDir) && ok;
 
-    // Phase 3 Q2.4: a Mid band selected and a Side band, with the total for Mid.
+    // Phase 3 Q2.4: the Match card over a learned reference and current.
+    editor->showMatchPreview();
+    ok = writeBothScales (*editor, "eq-match", outputDir) && ok;
+
+    // A Mid band selected and a Side band, with the total for Mid.
     editor->showChannelPreview();
     return writeBothScales (*editor, "eq-channel", outputDir) && ok;
 }

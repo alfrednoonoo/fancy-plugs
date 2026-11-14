@@ -70,6 +70,11 @@ public:
     // a copy that's about to be saved.
     virtual void addToState (juce::ValueTree& state) { juce::ignoreUnused (state); }
 
+    // Adds data that's saved with the project only: it isn't a setting, so it stays out of
+    // presets, undo steps and the A/B slots. EQ's learned Match spectra are the example. A plugin
+    // reads it back in stateApplied(), where it's absent after anything but a project load.
+    virtual void addProjectData (juce::ValueTree& state) { juce::ignoreUnused (state); }
+
     // Waits until any background thread has caught up with the current settings: a design, a
     // build or an impulse. For tests that render "real time" as a fast machine would hear it.
     virtual bool waitForBackgroundWork (int timeoutMs) { juce::ignoreUnused (timeoutMs); return true; }

@@ -4,6 +4,10 @@
 #include "EqGraph.h"
 #include "EqProcessor.h"
 
+#if FANCY_HAS_COMP
+ #include "CompDsp.h"
+#endif
+
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -1360,6 +1364,78 @@ TEST_CASE ("the 17th to 24th bands and every Channel default to the old sound", 
     CHECK (processor.readBand (23).channel == eq::Channel::side);
 }
 
+TEST_CASE ("a state saved before Q2.4 loads with every new parameter at its default, and renders the same", "[eq][channel]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    // Bands 17 to 24, every band's Channel and the analyzer's channel are new.
+    const auto isNew = [] (const juce::String& id)
+    {
+        return id == "anaChan" || id.endsWith ("chan") || (id.startsWithChar ('b') && id.substring (1).getIntValue() > 16);
+    };
+
+    EqProcessor saved;
+    setParameter (saved, "b2gain", 5.0f);
+    setParameter (saved, "b3freq", 3000.0f);
+    setParameter (saved, "b3gain", -4.0f);
+
+    juce::MemoryBlock state;
+    saved.getStateInformation (state);
+
+    auto xml = juce::AudioProcessor::getXmlFromBinary (state.getData(), (int) state.getSize());
+    REQUIRE (xml != nullptr);
+
+    auto removed = 0;
+
+    for (auto* child = xml->getFirstChildElement(); child != nullptr;)
+    {
+        auto* next = child->getNextElement();
+
+        if (child->hasTagName ("PARAM") && isNew (child->getStringAttribute ("id")))
+        {
+            xml->removeChildElement (child, true);
+            ++removed;
+        }
+        else if (child->hasTagName ("MATCH"))
+        {
+            xml->removeChildElement (child, true);
+        }
+
+        child = next;
+    }
+
+    // Eight bands of fourteen parameters, 24 Channels and the analyzer's.
+    CHECK (removed == 8 * 14 + 24 + 1);
+
+    xml->setAttribute ("stateVersion", 3);
+
+    juce::MemoryBlock oldState;
+    juce::AudioProcessor::copyXmlToBinary (*xml, oldState);
+
+    // Into an instance whose new parameters have been moved.
+    EqProcessor loaded;
+    setParameter (loaded, "b2chan", 3.0f);
+    setParameter (loaded, "b20used", 1.0f);
+    setParameter (loaded, "b20gain", 9.0f);
+    setParameter (loaded, "anaChan", 2.0f);
+
+    loaded.setStateInformation (oldState.getData(), (int) oldState.getSize());
+
+    for (int band = 0; band < eq::maxBands; ++band)
+        CHECK (loaded.readBand (band).channel == eq::Channel::stereo);
+
+    for (int band = 16; band < eq::maxBands; ++band)
+        CHECK_FALSE (loaded.isBandUsed (band));
+
+    CHECK (loaded.getApvts().getRawParameterValue ("anaChan")->load() == 0.0f);
+    CHECK (loaded.readBand (1).gainDb == Catch::Approx (5.0));
+
+    saved.prepareToPlay (rate, 4096);
+    loaded.prepareToPlay (rate, 4096);
+
+    CHECK (render (saved, 4096) == render (loaded, 4096));
+}
+
 TEST_CASE ("eq state round-trips", "[eq]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInitialiser;
@@ -1529,36 +1605,6 @@ TEST_CASE ("eq measurements", "[.measure]")
         measure (targets, lengths[i]);
     }
 
-    // Phase 3 Q2.4: 24 bells, Stereo and with mixed channels, and Linear phase's two- and
-    // four-FIR routings.
-    {
-        auto many = flatTargets();
-
-        for (int b = 0; b < eq::maxBands; ++b)
-            many.bands[(size_t) b] = makeBand (BandType::band, 40.0 * std::pow (1.3, b), b % 2 == 0 ? 3.0 : -3.0, 2.0);
-
-        measure (many, "24 bells (target < 1.5 %)");
-
-        auto mixed = many;
-        const eq::Channel cycle[] { eq::Channel::stereo, eq::Channel::mid, eq::Channel::left, eq::Channel::side, eq::Channel::right };
-
-        for (int b = 0; b < eq::maxBands; ++b)
-            mixed.bands[(size_t) b].channel = cycle[b % 5];
-
-        measure (mixed, "24 bells, mixed channels");
-
-        auto midSide = many;
-
-        for (int b = 0; b < eq::maxBands; ++b)
-            midSide.bands[(size_t) b].channel = b % 2 == 0 ? eq::Channel::mid : eq::Channel::side;
-
-        midSide.linearPhase = mixed.linearPhase = true;
-        midSide.firLength = mixed.firLength = 2;
-
-        measure (midSide, "linear 8192, Mid/Side");
-        measure (mixed, "linear 8192, mixed (< 1.5 %)");
-    }
-
     double bellError = 0.0;
 
     for (int i = 0; i < 400; ++i)
@@ -1591,4 +1637,122 @@ TEST_CASE ("eq measurements", "[.measure]")
 
         std::printf ("Analyzer, -12 dBFS sine at %.1f Hz reads %.2f dB\n", hz, analyzer.levelBetween (hz * 0.97, hz * 1.03));
     }
+}
+
+// Phase 3 Q2.4, by section 0.4 of the Phase 2.1 brief: five runs in one build and the median. The
+// ratio to Fancy Comp comes from the workflow tests' reference line in the same run.
+TEST_CASE ("eq Q2.4 CPU measurement", "[.measure]")
+{
+    constexpr int blockSize = 128;
+    constexpr int numBlocks = 18750; // 50 s of audio
+
+    const auto measure = [&] (EqDsp::Targets targets)
+    {
+        std::vector<double> runs;
+
+        for (int run = 0; run < 5; ++run)
+        {
+            EqDsp dsp;
+            prepare (dsp, targets);
+
+            auto signal = sine (440.0, 0.5, rate, blockSize);
+            const auto original = signal;
+            float* channels[] { signal.left.data(), signal.right.data() };
+
+            // Let a Linear-phase filter come in before the clock starts.
+            for (int i = 0; i < 400; ++i)
+                dsp.process (channels, 2, blockSize);
+
+            const auto start = std::chrono::steady_clock::now();
+
+            for (int i = 0; i < numBlocks; ++i)
+            {
+                // The same input every block, and a little more in the left channel so Side has something.
+                for (int n = 0; n < blockSize; ++n)
+                {
+                    signal.left[(size_t) n] = original.left[(size_t) n];
+                    signal.right[(size_t) n] = 0.7f * original.right[(size_t) n];
+                }
+
+                dsp.process (channels, 2, blockSize);
+            }
+
+            const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
+            runs.push_back (100.0 * elapsed.count() / ((double) (numBlocks * blockSize) / rate));
+        }
+
+        std::sort (runs.begin(), runs.end());
+        return runs[2];
+    };
+
+    auto stereo = flatTargets();
+
+    for (int b = 0; b < eq::maxBands; ++b)
+        stereo.bands[(size_t) b] = makeBand (BandType::band, 40.0 * std::pow (1.3, b), b % 2 == 0 ? 3.0 : -3.0, 2.0);
+
+    auto mixed = stereo;
+    const eq::Channel cycle[] { eq::Channel::stereo, eq::Channel::mid, eq::Channel::left, eq::Channel::side, eq::Channel::right };
+
+    for (int b = 0; b < eq::maxBands; ++b)
+        mixed.bands[(size_t) b].channel = cycle[b % 5];
+
+    auto midSide = stereo;
+
+    for (int b = 0; b < eq::maxBands; ++b)
+        midSide.bands[(size_t) b].channel = b % 2 == 0 ? eq::Channel::mid : eq::Channel::side;
+
+    const auto stereoCpu = measure (stereo);
+    const auto mixedCpu = measure (mixed);
+
+    auto linearStereo = stereo;
+    linearStereo.linearPhase = midSide.linearPhase = mixed.linearPhase = true;
+    linearStereo.firLength = midSide.firLength = mixed.firLength = 2;
+
+    const auto linearCpu = measure (linearStereo);
+    const auto midSideCpu = measure (midSide);
+    const auto linearMixedCpu = measure (mixed);
+
+    std::printf ("eq q24 cpu (median of 5, 48 kHz, 128 samples, stereo): 24 Stereo bells %.3f %% (target < 1.5 %%), 24 mixed-channel bells %.3f %%\n",
+                 stereoCpu, mixedCpu);
+    std::printf ("eq q24 cpu, linear 8192 (median of 5): Stereo bands, 1 FIR %.3f %%; Mid/Side bands, 2 FIRs %.3f %%; mixed channels, 4 FIRs %.3f %% (target < 1.5 %%)\n",
+                 linearCpu, midSideCpu, linearMixedCpu);
+
+   #if FANCY_HAS_COMP
+    std::vector<double> compRuns;
+
+    for (int run = 0; run < 5; ++run)
+    {
+        CompDsp comp;
+        comp.prepare (rate);
+        comp.snapToTargets (CompDsp::Targets {});
+
+        float left[blockSize], right[blockSize];
+        float* channels[] { left, right };
+        std::mt19937 random (8);
+        std::uniform_real_distribution<float> noise (-0.25f, 0.25f);
+        std::chrono::duration<double> spent {};
+
+        for (int block = 0; block < 6000; ++block)
+        {
+            for (int i = 0; i < blockSize; ++i)
+            {
+                left[i] = noise (random);
+                right[i] = noise (random);
+            }
+
+            const auto start = std::chrono::steady_clock::now();
+            comp.process (channels, 2, nullptr, 0, blockSize);
+            spent += std::chrono::steady_clock::now() - start;
+        }
+
+        compRuns.push_back (100.0 * spent.count() / ((double) (6000 * blockSize) / rate));
+    }
+
+    std::sort (compRuns.begin(), compRuns.end());
+    const auto compCpu = compRuns[2];
+
+    std::printf ("eq q24 cpu reference: Fancy Comp default %.3f %% in the same run; 24 Stereo bells / comp = %.2f, 24 mixed / comp = %.2f, "
+                 "linear 1 FIR / comp = %.2f, linear 2 FIRs / comp = %.2f, linear 4 FIRs / comp = %.2f\n",
+                 compCpu, stereoCpu / compCpu, mixedCpu / compCpu, linearCpu / compCpu, midSideCpu / compCpu, linearMixedCpu / compCpu);
+   #endif
 }

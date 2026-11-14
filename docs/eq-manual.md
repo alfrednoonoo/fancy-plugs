@@ -1,6 +1,6 @@
 # Fancy EQ manual
 
-Fancy EQ is a parametric equalizer with up to 16 bands, a spectrum analyzer and an optional linear-phase mode. It doesn't cramp near Nyquist, so a high boost keeps its shape at 44.1 kHz.
+Fancy EQ is a parametric equalizer with up to 24 bands, each on the whole signal or on the left, right, mid or side alone. It has a spectrum analyzer, an optional linear-phase mode, and Match, which fits bands to a reference's tone. It doesn't cramp near Nyquist, so a high boost keeps its shape at 44.1 kHz.
 
 ## The graph
 
@@ -10,7 +10,7 @@ Fancy EQ is a parametric equalizer with up to 16 bands, a spectrum analyzer and 
 | Alt-drag a handle, or use the mouse wheel | Sets Q |
 | Double-click a handle | Resets the band |
 | Double-click empty space | Adds a band there |
-| Right-click a handle | Band type, Slope, On, Delete band |
+| Right-click a handle | Band type, Slope, Channel, On, Delete band |
 
 The white line is the total response. The filled shapes are the individual bands, and the orange line is the analyzer. The left scale is EQ gain in dB. The right scale is for the analyzer, in dBFS.
 
@@ -41,6 +41,23 @@ Click a tab or a handle to choose a band. In Compact mode these controls float o
 | Tilt | yes | yes | Pivots at Freq: -Gain/2 below and +Gain/2 above |
 
 Changing Freq, Gain or Q is smooth. Changing a band's type or slope, or switching it, fades the band out and back in over about 20 ms.
+
+## Channel
+
+The small chip under the type, left of DYN, sets what the band works on:
+
+| Chip | Channel | What the band filters |
+|---|---|---|
+| ST | Stereo | Both channels, the same way. The default |
+| L, R | Left, Right | One channel. The other passes untouched |
+| M | Mid | What the two channels share: `(L + R) / 2`. Vocals, bass, kick and snare in most mixes |
+| S | Side | What differs between them: `(L - R) / 2`. Width, reverb, hard-panned parts |
+
+A band that isn't Stereo carries its letter on its handle. Typical uses: a Side high-pass at 120 Hz to keep the low end mono, a Side high shelf for air without brightening the vocal, a Mid cut around 300 Hz that leaves the guitars at the sides alone.
+
+With any band off Stereo there's no single total, so the white line shows the total for the selected band's channel, and the graph's top right says which: "total: Mid" is what a centred signal hears, "total: Side" what the difference between the channels hears, and "total: Left" or "Right" what a signal in that channel alone keeps there. Select a Stereo band to see Mid. To see what a Side band does to the sound, set the analyzer's Channel to Side in EDIT.
+
+Changing Channel fades the band out and back, as changing its type does, and it can be automated. A dynamic band listens to its own channel. Linear phase follows Channel too. On a mono track every band works on the one channel and the chip is greyed.
 
 ## Dynamic bands
 
@@ -94,10 +111,43 @@ Dynamic bands add no latency. In Compact mode the floating card widens while the
 | Size | 4096, 8192, 16384 | 8192 | Larger shows more low-frequency detail and reacts more slowly |
 | Window | Hann, Blackman-Harris | Blackman-Harris | Blackman-Harris separates a loud tone from nearby quiet ones better |
 | Overlap | 50 %, 75 % | 75 % | Higher updates more smoothly |
+| Channel | Mid, Side, Left, Right | Mid | What the analyzer shows. Mid is the two channels' sum, as before |
 | Graph range | Auto, ±6, ±12, ±18, ±24 dB | Auto | Auto is ±12 dB, or ±18 dB in Compact mode |
 | Pink tilt | off/on | off | Adds 4.5 dB per octave about 1 kHz, so pink noise reads flat |
 | Peak hold | off/on | off | Adds a fainter line at the highest level. Turn it off to clear it |
 | Smoothing | 0–100 % | 50 % | How slowly the analyzer line moves |
+
+## Match
+
+Match makes the track's tone follow a reference's. It learns the long-term average spectrum of both and writes the difference into free bands as ordinary bells and shelves, which you can then move, automate or delete like any others. It adds nothing to the sound path.
+
+Click **MATCH** in the header, left of EDIT. A card opens over the graph.
+
+**With the reference on another track (Sidechain):** send the reference to the EQ's sidechain, as for a dynamic band (see "How to sidechain"). Click **Learn** and play the song: both spectra learn at once. Click it again to stop.
+
+**With one source at a time (Captured):** play the reference through this track and click **Learn reference**; click again to stop. Then play your material and click **Learn current**.
+
+The graph shows the reference in purple, the current in grey, and the correction Match is aiming for as a dashed white line. The card shows the seconds learned. **Match** is ready after 3 s of each; 20 to 30 s of the loudest section gives a steadier result. Silence isn't counted, so gaps do no harm.
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Source | Sidechain, Captured | Sidechain | Where the reference comes from |
+| Smoothing | 1/12 to 1 octave | 1/3 oct | How much detail of the difference is kept. Wider gives fewer, broader bands |
+| Amount | 0-100 % | 100 % | How far towards the reference to go |
+| Bands | 1-24 | 8 | The most bands Match may use. It uses fewer when more wouldn't help, and never more than are free |
+| Low, High | 20 Hz-1 kHz, 1-20 kHz | 30 Hz, 18 kHz | Nothing is matched outside them |
+| Clear | | | Forgets both spectra |
+
+What Match does and doesn't touch:
+
+- It matches tone, not loudness: a reference that's simply louder gives no bands.
+- No band it writes is more than 12 dB, and the correction is held to 12 dB.
+- Your own bands stay, and Match works around them: it aims for the total, your bands included, to reach the reference.
+- Press Match again after changing Amount or Smoothing: the bands it wrote last time are replaced, not added to. A Match band you've edited since is yours, and stays.
+- One Undo takes a whole Match back.
+- It listens before the EQ, to both channels' sum, and writes Stereo bands.
+
+The spectra and the card's settings are saved with the project, so you can reopen it and match again without learning again. They aren't part of presets.
 
 ## Analyzer calibration
 
@@ -121,7 +171,7 @@ Changing Phase, FIR length or Oversampling gives one short dropout while the new
 
 ## Resizing
 
-Drag the window's edge in REAPER. The graph takes the extra room. Parameter > UI size still scales everything.
+Drag the window's edge in REAPER. The graph takes the extra room. The smallest size is 724 x 464; below 771 wide, MATCH in the header is its icon alone. Parameter > UI size still scales everything.
 
 ## Presets
 

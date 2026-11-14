@@ -4,6 +4,7 @@
 #include <fancy/plugin/ParamHelpers.h>
 
 #include <cmath>
+#include <numbers>
 
 namespace
 {
@@ -328,6 +329,8 @@ void EqProcessor::prepareAudio (double sampleRate, int)
 {
     designThread.stopThread (2000);
 
+    match.setSampleRate (sampleRate);
+
     dsp.prepare (sampleRate, juce::jlimit (1, 2, getMainBusNumInputChannels()));
     dsp.snapToTargets (readTargets());
     setLatencySamples (dsp.getLatencySamples());
@@ -423,6 +426,11 @@ void EqProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuff
                                               && targets.bands[(size_t) band].on && eq::supportsDynamics (targets.bands[(size_t) band].type)
                                               && ! targets.linearPhase);
 
+    // Match learns from the input before the EQ, and its reference from the sidechain.
+    match.pushMain (channels, numChannels, numSamples);
+    match.pushSidechain (sidechain, numSidechain, numSamples);
+    sidechainChosen = sidechainChosen || match.isLearningFromSidechain();
+
     sidechainWatch.update (channels, numChannels, sidechain, numSidechain, numSamples, getSampleRate(), sidechainChosen);
 
     dsp.setSynchronousDesign (isNonRealtime());
@@ -478,6 +486,145 @@ void EqProcessor::removeBand (int band)
 {
     const UserEdit edit (*this);
     setParameter (id (band, "used"), 0.0f);
+}
+
+// Match --------------------------------------------------------------------------------------
+
+void EqProcessor::addProjectData (juce::ValueTree& state)
+{
+    state.removeChild (state.getChildWithName (eq::match::Engine::treeType), nullptr);
+    state.appendChild (match.toTree(), nullptr);
+}
+
+void EqProcessor::stateApplied()
+{
+    // Only a project has it. It's kept in the engine, out of the tree that undo and A/B copy.
+    auto& state = getApvts().state;
+
+    if (const auto tree = state.getChildWithName (eq::match::Engine::treeType); tree.isValid())
+    {
+        match.fromTree (tree);
+        state.removeChild (tree, nullptr);
+    }
+}
+
+bool EqProcessor::isMatchBand (int band)
+{
+    if (! isBandUsed (band) || readDynamics (band).on)
+        return false;
+
+    const auto spec = readBand (band);
+
+    if (! spec.on || spec.channel != eq::Channel::stereo)
+        return false;
+
+    for (const auto& entry : match.getWritten())
+        if (entry.band == band)
+            return (int) spec.type == entry.type
+                && std::abs (spec.frequencyHz - (double) entry.frequencyHz) <= 0.06 + 1.0e-4 * spec.frequencyHz
+                && std::abs (spec.gainDb - (double) entry.gainDb) <= 0.01
+                && std::abs (spec.q - (double) entry.q) <= 0.002;
+
+    return false;
+}
+
+int EqProcessor::getNumFreeForMatch()
+{
+    auto count = 0;
+
+    for (int band = 0; band < eq::maxBands; ++band)
+        count += (! isBandUsed (band) || isMatchBand (band)) ? 1 : 0;
+
+    return count;
+}
+
+eq::match::Curve EqProcessor::getMatchExistingDb()
+{
+    eq::match::Curve total {};
+
+    const auto rate = getMatchRate();
+    const auto linear = isOn ("phase");
+    const auto stereoBus = getMainBusNumInputChannels() >= 2;
+
+    for (int band = 0; band < eq::maxBands; ++band)
+    {
+        const auto spec = readBand (band);
+        const auto channel = stereoBus ? spec.channel : eq::Channel::stereo;
+
+        // A Side band does nothing to what both channels share.
+        if (! spec.on || isMatchBand (band) || channel == eq::Channel::side)
+            continue;
+
+        const auto filter = eq::design (spec, rate);
+
+        for (int i = 0; i < eq::match::numPoints; ++i)
+        {
+            const auto w = 2.0 * std::numbers::pi * std::min (eq::match::hzAt (i), 0.499 * rate) / rate;
+            auto response = filter.responseAt (w);
+
+            if (linear)
+                response = std::abs (response);
+
+            // A Left or Right band reaches half of it.
+            if (channel == eq::Channel::left || channel == eq::Channel::right)
+                response = 0.5 * (response + 1.0);
+
+            total[(size_t) i] += fancy::gainToDb (std::abs (response), -200.0);
+        }
+    }
+
+    return total;
+}
+
+eq::match::Settings EqProcessor::getMatchFitSettings()
+{
+    auto settings = match.settings;
+    settings.maxBands = juce::jmin (settings.maxBands, getNumFreeForMatch());
+    return settings;
+}
+
+eq::match::Curve EqProcessor::getMatchTarget()
+{
+    return eq::match::makeTarget (match.getReferenceDb(), match.getCurrentDb(), getMatchExistingDb(), match.settings);
+}
+
+int EqProcessor::applyMatch (const std::vector<eq::BandSpec>& fitted)
+{
+    const UserEdit edit (*this, "Match");
+
+    // The last Match's bands make way, unless they've been changed since: those are the user's.
+    for (const auto& entry : match.getWritten())
+        if (isMatchBand (entry.band))
+            setParameter (id (entry.band, "used"), 0.0f);
+
+    std::vector<eq::match::Engine::Written> written;
+
+    for (const auto& band : fitted)
+    {
+        auto target = -1;
+
+        for (int candidate = 0; candidate < eq::maxBands && target < 0; ++candidate)
+            if (! isBandUsed (candidate))
+                target = candidate;
+
+        if (target < 0)
+            break;
+
+        resetBand (target);
+        setParameter (id (target, "type"), (float) (int) band.type);
+        setParameter (id (target, "freq"), (float) band.frequencyHz);
+        setParameter (id (target, "gain"), (float) band.gainDb);
+        setParameter (id (target, "q"), (float) band.q);
+        setParameter (id (target, "used"), 1.0f);
+
+        // As the parameters hold them, so an edit can be told from rounding.
+        const auto spec = readBand (target);
+        written.push_back ({ target, (int) spec.type, (float) spec.frequencyHz, (float) spec.gainDb, (float) spec.q });
+    }
+
+    const auto count = (int) written.size();
+    match.setWritten (std::move (written));
+    return count;
 }
 
 juce::AudioProcessorEditor* EqProcessor::createEditor()

@@ -125,3 +125,35 @@ Tell me "EQ OK", or list which items failed and what you saw. Once it's OK, I'll
 - [ ] Make a Notch dynamic: quiet, it lets everything through; loud, it cuts at its Freq.
 - [ ] Sidechain: route a kick to the EQ's sidechain (track to 4 channels, send to 3/4, pins 3/4 to Sidechain). The I/O pill reads 4/2. Tick Sidechain on a dynamic low shelf on a bass track: the bass dips on each kick. Unroute it: the "No sidechain signal" warning appears after 2 s.
 - [ ] Open a project saved before this version: every band is static and it sounds as before.
+
+## 24 bands and Channel (Phase 3 Q2.4)
+
+- [ ] Open a project saved with v1.3.0: it loads, looks and sounds as before. Render it and null it against a v1.3.0 render if you have one.
+- [ ] Double-click the graph until no more bands appear: there are 24 tabs, all readable, and a 25th double-click does nothing.
+- [ ] Under the type dropdown there's a small **ST** chip left of DYN, in the Details panel and in the Compact card. Nothing else has moved.
+- [ ] Set band 3 to **M** and add a band set to **S**: both handles carry their letter, the corner reads "total: Mid" with band 3 selected and "total: Side" with the Side band selected, and the white line changes with it.
+- [ ] Right-click a handle: Channel is in the menu, and it follows the chip.
+- [ ] On a stereo mix, a Side high-pass at 150 Hz: the low end narrows to the centre, and the mono sum (REAPER's mono button) sounds the same with the band on and off.
+- [ ] A Left bell at 1 kHz, +12 dB: only the left channel changes.
+- [ ] Switch a band between ST, L, R, M and S while playing: no clicks.
+- [ ] EDIT > Phase > Linear with M and S bands in use: it sounds like the same EQ, with the latency reported. Add a Left band too: still right, no dropouts beyond the one on switching.
+- [ ] EDIT > Analyzer > Channel > Side: the orange line drops on mono material and shows the sides on a wide mix.
+- [ ] Put the EQ on a mono track: the chip is greyed, its tooltip says "Channel needs a stereo bus", and a band set to S still works.
+- [ ] A dynamic band on S reacts to wide material and not to a centred vocal.
+
+## Match (Phase 3 Q2.4)
+
+- [ ] **MATCH** sits left of EDIT in the header. Make the window as narrow as it goes: it becomes just its icon, and nothing in the header overlaps.
+- [ ] Click it: a card opens over the graph, MATCH turns white, and "ref 0.0 s" and "current 0.0 s" show. The X closes it, and so does opening EDIT.
+- [ ] **Sidechain:** send a reference track to the EQ's sidechain (as for a dynamic band; the I/O pill reads 4/2). Click **Learn** and play: both times count up, a purple and a grey spectrum grow on the graph, and a dashed white line appears. With nothing on the sidechain, "No sidechain signal" appears after 2 s.
+- [ ] After 3 s of each, **Match** lights. Click it: up to 8 bands appear in the free slots, the white total follows the dashed line, and the track sounds closer to the reference.
+- [ ] Ctrl+Z once: every Match band is gone. Redo: they're back.
+- [ ] Set Amount to 50 % and click Match again: the same slots are reused, with about half the gains. No bands pile up.
+- [ ] Move one Match band, then Match again: your band stays where you put it, and the others are replaced.
+- [ ] **Captured:** switch Source, click Learn reference while the reference plays, stop, then Learn current on your material, then Match.
+- [ ] Stop playback while learning: the times stop counting. Clear: both go to 0.0 s and the curves vanish.
+- [ ] Type a value into Low (`80`) and High (`8k`): the dashed line fades to 0 outside them.
+- [ ] Add a low shelf of your own, +4 dB at 100 Hz, then Match: your shelf stays, and the dashed line asks for less down there.
+- [ ] Save the project with spectra learned, close and reopen: the card shows the same seconds, and Match works without learning again.
+- [ ] Match doesn't change the sound while it learns: toggle Learn during playback and listen.
+- [ ] Compact mode with the card open: the card takes the band card's place, and the band card returns when it closes.

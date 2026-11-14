@@ -12,6 +12,7 @@ class EqEditor final : public fancy::ui::ShellEditor
 {
 public:
     explicit EqEditor (EqProcessor& processor);
+    ~EqEditor() override;
 
     juce::Colour getAccentColour() override { return bandColour (selectedBand); }
     std::vector<PopupOpener> getPopupOpeners() override;
@@ -25,6 +26,13 @@ public:
 
     // Panel 2 of the Q2.4 mockup: band 3 on Mid and selected, band 5 on Side.
     void showChannelPreview();
+
+    // Panel 3 of the Q2.4 mockup: the Match card open over a learned reference and current.
+    void showMatchPreview();
+
+    // Opens or closes the Match card. While it's open the processor's Match engine runs.
+    void setMatchOpen (bool shouldBeOpen);
+    bool isMatchOpen() const noexcept { return matchOpen; }
 
 private:
     class Panels final : public juce::Component
@@ -127,8 +135,78 @@ private:
         int separatorX = -1, separatorTop = 0;
     };
 
+    // The header's MATCH link, left of EDIT: drawn as EditLink is, with a target for its icon.
+    // White while the card is open. In a narrow window it's the icon alone.
+    class MatchLink final : public juce::Component, public juce::SettableTooltipClient
+    {
+    public:
+        MatchLink();
+
+        void paint (juce::Graphics&) override;
+        void mouseUp (const juce::MouseEvent&) override;
+
+        std::function<void()> onClick;
+        bool lit = false;
+    };
+
+    // The Match card, which floats over the graph as the Compact-mode card does. Its settings
+    // aren't the plugin's parameters, so each control has a parameter of its own that writes to
+    // the Match engine: the shared controls, with typed values, and nothing for a host to see.
+    class MatchCard final : public juce::Component
+    {
+    public:
+        static constexpr int cardWidth = 548, cardHeight = 152;
+
+        explicit MatchCard (EqProcessor& processor);
+        ~MatchCard() override;
+
+        // 30 Hz, from the editor: button texts, the times learned, and a finished fit.
+        void update();
+
+        // Puts the controls back on the engine's settings, after a project loads.
+        void readSettings();
+
+        void paint (juce::Graphics&) override;
+        void paintOverChildren (juce::Graphics&) override;
+        void resized() override;
+
+        std::function<void()> onClose;
+
+    private:
+        struct Link final : public juce::AudioProcessorParameter::Listener
+        {
+            Link (juce::RangedAudioParameter& parameterToUse, std::function<void (float)> changed);
+            ~Link() override;
+
+            void parameterValueChanged (int, float) override;
+            void parameterGestureChanged (int, bool) override {}
+
+            juce::RangedAudioParameter& parameter;
+            std::function<void (float)> onChange;
+        };
+
+        void toggle (eq::match::Engine::Learning mode);
+        void startFit();
+
+        EqProcessor& eqProcessor;
+        eq::match::Engine& engine;
+
+        juce::AudioParameterChoice sourceParameter, smoothingParameter;
+        std::unique_ptr<juce::AudioParameterFloat> amountParameter, bandsParameter, lowParameter, highParameter;
+        std::vector<std::unique_ptr<Link>> links;
+
+        fancy::ui::ParamSegments sourceSwitch;
+        fancy::ui::Knob smoothingKnob, amountKnob, bandsKnob, lowKnob, highKnob;
+        fancy::ui::PillButton learnButton, learnCurrentButton, clearButton, matchButton;
+        fancy::ui::IconButton closeButton;
+
+        juce::String statusText, captionText;
+        juce::Rectangle<int> learningOutline;
+    };
+
     void bodyResized() override;
     void onTick (float seconds) override;
+    void updateMatchOverlay();
 
     // The sidechain counts once the host connects it (Phase 2.1 D), as in Comp: "4 in 2 out".
     int getShownInputs() override { return juce::jmax (getFancyProcessor().getTotalNumInputChannels(), getFancyProcessor().getMainBusNumInputChannels() + 2); }
@@ -156,6 +234,10 @@ private:
     std::vector<std::unique_ptr<BandEditor>> bandEditors;
 
     fancy::ui::EditLink editLink;
+    MatchLink matchLink;
+    MatchCard matchCard;
+    bool matchOpen = false;
+    int matchTick = 0;
     fancy::ui::EditDrawer drawer;
     juce::Label phaseLabel, firLabel, oversamplingLabel, slopeLabel, rangeLabel, analyzerLabel, fftLabel, windowLabel, overlapLabel, analyzerChannelLabel;
     fancy::ui::ParamDropdown phaseDropdown, firDropdown, oversamplingDropdown, rangeDropdown, analyzerDropdown, fftDropdown, windowDropdown, overlapDropdown, analyzerChannelDropdown;

@@ -111,7 +111,7 @@ The graph's corner shows "pre" or "post". Pink tilt adds 4.5 dB per octave about
 
 ## State
 
-The same format as the other plugins: XML with `stateVersion` 1, `uiScale` and `presetName`. The EQ adds `uiWidth`, `uiHeight` and `selectedBand`. A corrupted value falls back to its default.
+The same format as the other plugins: XML with `stateVersion` 1, `uiScale` and `presetName`. The EQ adds `uiWidth`, `uiHeight` and `selectedBand`. A corrupted value falls back to its default. Since Phase 3 Q2.4 a project's state also has a `MATCH` child: Match's learned spectra, its card's settings and the bands it last wrote.
 
 ## §5.1 fixes
 
@@ -212,3 +212,42 @@ This adds a visible control, so it needs the user's approval.
 ### 6. Build order
 
 One item in two pushes: first 24 bands and Channel, with their tests and screenshots, then Match. Both go to REAPER together with the updated manual and checklist, then the release. If the user approves a visible change (the Channel chip or the `MATCH` link), an HTML mockup of it in `design/phase3-mockup-src/eq-q24.html` comes first.
+
+### 7. As built
+
+What differs from sections 1 to 6, or was settled while building.
+
+**Parameters.** As section 1, plus `anaChan` (Analyzer channel: Mid, Side, Left, Right; default Mid; not automatable) after the `bNchan` parameters. It's the setting section 3 describes, in the EDIT drawer's analyzer column.
+
+**Linear phase and Channel.** `LinearPhase` picks one of four routings from the bands in use: one FIR (every band Stereo, which is the old code path, so those renders are unchanged), two on L and R, two on M and S, or four as a matrix. The sum and difference for M and S are taken on the spectra, so the input history stays in L and R and a design of any routing can crossfade into any other. The matrix costs two extra multiply-accumulates per bin and no extra FFTs. Measured with 24 bells at 8192: one FIR 0.72 %, M/S 0.67 %, four FIRs 0.89 %, against section 2's estimate of 1.1 %.
+
+Linear and Minimum agree on the magnitude of each independent path: L and R with Left and Right bands, M and S with Mid and Side bands. With both kinds mixed they differ on the cross paths, and that's inherent: a Mid band alone takes a left-only signal to `(H + 1) / 2` in the left channel, where Minimum's `H` carries its phase and Linear's is the bare magnitude. Each is exactly a Mid band in its own phase mode. Test 7 is therefore three tests: L/R bands and M/S bands against the band responses, and a mixed chain against the matrix of the bands' magnitudes.
+
+A mono bus designs every band as Stereo. `EqDsp::prepare` takes the bus's channel count, and `process` asks for a new design if the host sends a different count.
+
+**Total curve.** With any band off Stereo, the graph multiplies a 2 x 2 complex matrix per pixel in band order, and the white curve is one path through it: Mid is `(T00 + T01 + T10 + T11) / 2`, Side `(T00 - T01 - T10 + T11) / 2`, Left `T00`, Right `T11`. A Left band therefore shows in the Mid total at about half its gain, which is what a centred signal hears. "total: Mid" sits left of the right axis's top label. Channel is also on the handle's right-click menu.
+
+**Match: learning.** A frame counts only if each quarter of it (each hop) is above -60 dBFS, not just the whole frame. A frame that reaches into a gap would otherwise count at part level: with 2 s pieces that pulled the average down 0.36 dB, over the test's 0.2 dB. Each grid point is the mean power of the FFT bins within a 48th of an octave, or an interpolation between two bins below about 400 Hz, where a point is narrower than a bin. The two FIFOs (512 kB each) are made when the card first opens.
+
+**Match: target.** As section 4, in this order: smooth the difference, take out its 200 Hz to 5 kHz mean, scale by Amount, hold to +/-12 dB, subtract what the bands that stay do, fade to 0 over a third of an octave outside Range. "The bands that stay" are the used, switched-on bands that the last Match didn't write. Since the current is learned as `(L + R) / 2`, a Stereo or Mid band counts in full, a Left or Right band as `(H + 1) / 2`, and a Side band not at all. Dynamic bands count at their static gain.
+
+**Match: fit.** `docs/research/eq-match-model.py` is the same fit in Python; it was tried there first. Four things were added to section 4 after the model's first runs, which fitted the curve but with bands nobody would dial in (a -10 dB high shelf against a +7.6 dB bell at 20 kHz):
+
+- A bell's Freq stays inside Range; a low shelf stays between Range's low end and 1 kHz, and a high shelf between 1 kHz and its high end.
+- Every dB of band gain costs as much as 0.03 dB of RMS error, so two bands never grow against each other. It shrinks an honest gain by about 1 %.
+- A shelf is placed only if the range's outer sixth of an octave holds at least 70 % of that end's level. A bell near the edge has fallen away by there.
+- Errors outside Range count a quarter, between 100 Hz and 10 kHz double, and elsewhere once.
+
+It refines after every added band, not every few, which costs little (a fit takes well under 100 ms) and makes the stopping rule exact. A band is kept if it lowers the weighted RMS error by 0.1 dB, or by a twentieth of what's left when that's already under 2 dB; with section 4's plain 0.1 dB, a subtle difference of half a dB got no bands at all. Nothing is added for an error under 0.25 dB, and a fitted band under 0.1 dB is dropped. With fewer than 3 bands allowed there are no shelves. On the model's six-band test case it uses 6 of the 8 bands and comes within 0.13 dB RMS.
+
+**Match: writing and state.** `EqProcessor::applyMatch` is one `UserEdit`, named "Match". The last Match's bands are remembered as their parameters read back, so "edited since" is an exact comparison; a band also stops being Match's if its Channel or DYN changes or it's switched off. Undoing a Match leaves that memory alone: the bands it names are unused again, so nothing follows from it.
+
+The spectra, the card's settings and that memory are saved through a new `FancyProcessor::addProjectData`, which only `getStateInformation` calls: they go with the project, and stay out of presets, undo steps and the A/B slots, where `addToState` would have put them. Loading a preset or undoing therefore keeps what's been learned. The card's six controls are the shared `Knob` and `ParamSegments` on parameters of their own that the host never sees, as Verb's module knobs are, so they have typed values and no automation.
+
+**Match: card and link.** The card is 548 x 152 with the shared 50 px knobs, where the mockup drew 34 px ones in 500 px. In Compact mode it takes the band card's place. Opening EDIT closes it, and the reverse. The learning button reads "Learning..." with the reference's purple round it, since Inter has no filled-circle glyph. The fit runs on the Match worker; the card applies it on the next tick.
+
+**The header had no room.** The mockup drew the header without undo, redo, A/B and Compare, so its "empty space" left of EDIT is 45 px at the default width and nothing at the old 696 px minimum. As built, the preset pill gives up to 60 px as before, `MATCH` is its icon alone below 771 px, and **the minimum width went from 696 to 724 px** so that icon always fits. This is the one change to the approved layout, and it's the user's to confirm; `minWidth` in `EqEditor.cpp` is the only line.
+
+**Compatibility.** There are no `tests/data` fixtures: section 1 and test 1 assumed some. A test covers it instead: a state stripped of every Q2.4 ID and marked version 3, loaded into an instance whose new parameters have been moved, comes up with every band Stereo, bands 17 to 24 unused and the analyzer on Mid, and renders bit-identically to the instance that saved it. The v1.3.0 project check in REAPER is on the checklist.
+
+**CPU (section 0.4)** is in `docs/measurements/eq-q24.txt`.

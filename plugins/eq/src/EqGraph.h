@@ -33,6 +33,16 @@ public:
     // For rendered screenshots: a dynamic band's change, as if the detector had moved it.
     void showPreviewChange (int band, float changeDb) { previewBand = band; previewChangeDb = changeDb; }
 
+    // Phase 3 Q2.4: what the Match card shows on the graph while it's open. The spectra are on
+    // the analyzer's scale and the target on the EQ's.
+    struct MatchOverlay
+    {
+        bool visible = false, hasReference = false, hasCurrent = false, hasTarget = false;
+        eq::match::Curve reference {}, current {}, target {};
+    };
+
+    void setMatchOverlay (const MatchOverlay& overlay);
+
     std::function<void (int)> onBandSelected;
 
     // From the band's right-click menu: type a value ("freq" or "gain"), or delete the band.
@@ -98,6 +108,7 @@ private:
     void paintSpectrum (juce::Graphics&);
     void paintBands (juce::Graphics&);
     void paintHandles (juce::Graphics&);
+    void paintMatch (juce::Graphics&);
 
     int bandAt (juce::Point<float> position) const noexcept;
     void select (int band);
@@ -128,6 +139,8 @@ private:
     std::vector<float> spectrum, peaks;
     std::atomic<int> columns { 0 };
     bool frozenSpectrum = false;
+
+    MatchOverlay matchOverlay;
 
     int selectedBand = 0;
     int dragBand = -1;

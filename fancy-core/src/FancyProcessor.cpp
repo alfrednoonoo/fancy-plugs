@@ -52,6 +52,7 @@ void FancyProcessor::getStateInformation (juce::MemoryBlock& destData)
     state.setProperty ("stateVersion", stateVersion, nullptr);
     presets.addToState (state);
     addToState (state);
+    addProjectData (state);
 
     if (juce::MessageManager::existsAndIsCurrentThread())
         workflow->commit();

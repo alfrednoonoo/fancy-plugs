@@ -466,6 +466,7 @@ void EqGraph::paint (juce::Graphics& g)
         paintSpectrum (g);
 
     paintBands (g);
+    paintMatch (g);
     paintHandles (g);
 }
 
@@ -703,6 +704,86 @@ void EqGraph::paintBands (juce::Graphics& g)
         g.setColour (colours::menuHint);
         g.drawText (text, 76, 4, 260, 14, juce::Justification::centredLeft, false);
     }
+}
+
+void EqGraph::setMatchOverlay (const MatchOverlay& overlay)
+{
+    matchOverlay = overlay;
+    repaint();
+}
+
+// The Match card's curves, as panel 3 of the Q2.4 mockup: the reference in purple, the current
+// in grey and the target as a dashed white line.
+void EqGraph::paintMatch (juce::Graphics& g)
+{
+    if (! matchOverlay.visible)
+        return;
+
+    const auto width = (double) getWidth();
+    const auto bottom = (float) getHeight() + 2.0f;
+    const auto floorDb = dbForY ((float) getHeight() + 4.0f);
+    const auto topDb = dbForY (-4.0f);
+
+    const auto pathOf = [&] (const eq::match::Curve& curve, bool spectrum)
+    {
+        juce::Path path;
+
+        for (int i = 0; i < eq::match::numPoints; ++i)
+        {
+            const auto x = (float) xForHz (eq::match::hzAt (i), width);
+            const auto value = (float) curve[(size_t) i];
+            const auto y = spectrum ? juce::jlimit (-2.0f, bottom, yForSpectrum (juce::jmax (-200.0f, value)))
+                                    : yForDb (juce::jlimit (floorDb, topDb, value));
+
+            if (i == 0)
+                path.startNewSubPath (x, y);
+            else
+                path.lineTo (x, y);
+        }
+
+        return path;
+    };
+
+    if (matchOverlay.hasCurrent)
+    {
+        g.setColour (colours::textSecondary.withAlpha (0.8f));
+        g.strokePath (pathOf (matchOverlay.current, true), juce::PathStrokeType (1.2f));
+    }
+
+    if (matchOverlay.hasReference)
+    {
+        g.setColour (colours::accentPurple);
+        g.strokePath (pathOf (matchOverlay.reference, true), juce::PathStrokeType (1.6f));
+    }
+
+    const float dashes[] { 5.0f, 4.0f };
+
+    if (matchOverlay.hasTarget)
+    {
+        juce::Path dashed;
+        juce::PathStrokeType (1.6f).createDashedStroke (dashed, pathOf (matchOverlay.target, false), dashes, 2);
+
+        g.setColour (juce::Colours::white);
+        g.fillPath (dashed);
+    }
+
+    // The key, under the corner's "post".
+    g.setFont (font (Weight::regular, 12.0f));
+
+    g.setColour (colours::accentPurple);
+    g.drawText ("reference", 40, 20, 62, 14, juce::Justification::centredLeft, false);
+
+    g.setColour (colours::textSecondary);
+    g.drawText ("current", 106, 20, 50, 14, juce::Justification::centredLeft, false);
+
+    juce::Path key, keyDashed;
+    key.startNewSubPath (160.0f, 27.5f);
+    key.lineTo (178.0f, 27.5f);
+    juce::PathStrokeType (1.6f).createDashedStroke (keyDashed, key, dashes, 2);
+
+    g.setColour (juce::Colours::white);
+    g.fillPath (keyDashed);
+    g.drawText ("target", 183, 20, 50, 14, juce::Justification::centredLeft, false);
 }
 
 void EqGraph::paintHandles (juce::Graphics& g)
