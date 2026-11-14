@@ -34,6 +34,39 @@ std::unique_ptr<juce::AudioParameterFloat> filterParameter (const juce::String& 
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); }));
 }
 
+std::unique_ptr<juce::AudioParameterFloat> hzParameter (const juce::String& id, const juce::String& name, float low, float high, float defaultHz)
+{
+    return fancy::floatParameter (
+        id, name, fancy::logRange (low, high, 1.0f), defaultHz,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("Hz")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFilterHz (value); })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); }));
+}
+
+juce::String signedDb (float db)
+{
+    return (db > 0.0f ? "+" : "") + fancy::formatFixed (db, 1) + " dB";
+}
+
+std::unique_ptr<juce::AudioParameterFloat> gainParameter (const juce::String& id, const juce::String& name, float low, float high, float defaultDb)
+{
+    return fancy::floatParameter (
+        id, name, juce::NormalisableRange<float> (low, high, 0.1f), defaultDb,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("dB")
+            .withStringFromValueFunction ([] (float value, int) { return signedDb (value); })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
+}
+
+// "2", "1:2" and "1:2.0" are all 1:2, as in MultiComp. "2:1" reads the same, since only lifting is possible.
+float upRatioFromText (const juce::String& text)
+{
+    const auto parts = juce::StringArray::fromTokens (text.trim(), ":", "");
+    const auto value = parts.size() >= 2 ? juce::jmax (fancy::parseNumber (parts[0]), fancy::parseNumber (parts[1])) : fancy::parseNumber (text);
+    return juce::jlimit (1.0f, 10.0f, value);
+}
+
 juce::String ratioText (float ratio)
 {
     if (ratio >= (float) CompDsp::infiniteRatio)
@@ -89,7 +122,7 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (toggle ("makeup", "Auto make-up", false));
     layout.add (toggle ("limit", "Limit output", false));
 
-    layout.add (std::make_unique<Choice> (juce::ParameterID { "oversampling", 1 }, "Oversampling", juce::StringArray { "Off", "2x", "4x" }, 0));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "oversampling", 1 }, "Oversampling", juce::StringArray { "Off", "2x", "4x", "8x" }, 0));
     layout.add (std::make_unique<Choice> (juce::ParameterID { "osPhase", 1 }, "Oversampling filter", juce::StringArray { "Linear", "Minimum" }, 0));
     layout.add (toggle ("feedback", "Feedback detection", false));
     layout.add (fancy::percentParameter ("linkAmount", "Link amount", 100.0f));
@@ -98,6 +131,36 @@ fancy::FancyProcessor::Layout createLayout()
 
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
     layout.add (toggle ("bypass", "Bypass", false));
+
+    // Phase 3 Q2.5, appended so no ID or index moves (docs/comp.md section 7). The defaults
+    // leave the sound as it was.
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "charType", 1 }, "Character", juce::StringArray { "Off", "Warm", "Bright" }, 0));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "charPos", 1 }, "Character position", juce::StringArray { "Pre", "Post" }, 1));
+    layout.add (gainParameter ("charDrive", "Drive", 0.0f, 24.0f, 6.0f));
+
+    layout.add (toggle ("up", "Upward", false));
+    layout.add (fancy::levelParameter ("upThr", "Up threshold", -80.0f, 0.0f, -40.0f, -100.0f));
+    layout.add (fancy::floatParameter (
+        "upRatio", "Up ratio", fancy::logRange (1.0f, 10.0f, 0.01f), 2.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withStringFromValueFunction ([] (float value, int) { return "1:" + fancy::formatFixed (value, 1); })
+            .withValueFromStringFunction ([] (const juce::String& text) { return upRatioFromText (text); })));
+    layout.add (gainParameter ("upLift", "Max lift", 0.0f, 30.0f, 12.0f));
+    layout.add (fancy::levelParameter ("upFloor", "Floor", -100.0f, -40.0f, -70.0f, -200.0f));
+
+    layout.add (toggle ("autoThr", "Auto threshold", false));
+
+    layout.add (hzParameter ("scLowFreq", "SC low freq", 20.0f, 1000.0f, 100.0f));
+    layout.add (gainParameter ("scLowGain", "SC low gain", -18.0f, 18.0f, 0.0f));
+    layout.add (hzParameter ("scMidFreq", "SC mid freq", 100.0f, 10000.0f, 1000.0f));
+    layout.add (gainParameter ("scMidGain", "SC mid gain", -18.0f, 18.0f, 0.0f));
+    layout.add (fancy::floatParameter (
+        "scMidQ", "SC mid Q", fancy::logRange (0.3f, 8.0f, 0.01f), 1.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2); })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    layout.add (hzParameter ("scHighFreq", "SC high freq", 1000.0f, 20000.0f, 8000.0f));
+    layout.add (gainParameter ("scHighGain", "SC high gain", -18.0f, 18.0f, 0.0f));
 
     return layout;
 }
@@ -111,6 +174,14 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Drum Punch", { { "threshold", -16.0f }, { "ratio", 4.0f }, { "attack", 25.0f }, { "release", 100.0f }, { "rms", 0.0f }, { "highpass", 80.0f } } },
         { "Parallel Crush", { { "threshold", -36.0f }, { "ratio", 10.0f }, { "attack", 1.0f }, { "release", 80.0f }, { "wet", -6.0f }, { "dry", 0.0f }, { "makeup", 1.0f } } },
         { "Brickwall", { { "threshold", -6.0f }, { "ratio", (float) CompDsp::infiniteRatio }, { "attack", 0.5f }, { "release", 80.0f }, { "precomp", 2.0f }, { "rms", 0.0f }, { "limit", 1.0f } } },
+
+        // Phase 3 Q2.5.
+        { "Warm Bus", { { "threshold", -18.0f }, { "ratio", 2.0f }, { "knee", 6.0f }, { "attack", 30.0f }, { "release", 300.0f }, { "makeup", 1.0f },
+                        { "charType", 1.0f }, { "charPos", 1.0f }, { "charDrive", 6.0f } } },
+        { "Upward Vocal", { { "threshold", -20.0f }, { "ratio", 3.0f }, { "knee", 3.0f }, { "attack", 5.0f }, { "release", 120.0f }, { "makeup", 1.0f },
+                            { "up", 1.0f }, { "upThr", -40.0f }, { "upRatio", 3.0f }, { "upLift", 12.0f }, { "upFloor", -70.0f } } },
+        { "Level Rider", { { "threshold", -18.0f }, { "ratio", 2.0f }, { "knee", 6.0f }, { "attack", 20.0f }, { "release", 250.0f }, { "auto", 1.0f },
+                           { "autoThr", 1.0f }, { "up", 1.0f }, { "upThr", -30.0f }, { "upRatio", 2.0f }, { "upLift", 9.0f } } },
     };
 
     // Phase 3 Q2.1: the preset browser's categories.
@@ -120,6 +191,9 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Drum Punch", "Drums" },
         { "Parallel Crush", "Drums" },
         { "Brickwall", "Limiting" },
+        { "Warm Bus", "Bus" },
+        { "Upward Vocal", "Vocals" },
+        { "Level Rider", "Bus" },
     });
 
     return presets;
@@ -176,6 +250,27 @@ CompDsp::Targets CompProcessor::readTargets()
     targets.previewFilter = isListening();
     targets.limitOutput = isOn ("limit");
     targets.bypass = isOn ("bypass");
+
+    targets.character = juce::roundToInt (read ("charType"));
+    targets.characterPost = isOn ("charPos");
+    targets.driveDb = (double) read ("charDrive");
+    targets.upward = isOn ("up");
+    targets.upThresholdDb = (double) read ("upThr");
+    targets.upRatio = (double) read ("upRatio");
+    targets.maxLiftDb = (double) read ("upLift");
+    targets.floorDb = (double) read ("upFloor");
+    targets.autoThreshold = isOn ("autoThr");
+
+    const char* const frequencyIds[] { "scLowFreq", "scMidFreq", "scHighFreq" };
+    const char* const gainIds[] { "scLowGain", "scMidGain", "scHighGain" };
+
+    for (size_t b = 0; b < (size_t) CompDsp::numEqBands; ++b)
+    {
+        targets.eq[b].frequencyHz = (double) read (frequencyIds[b]);
+        targets.eq[b].gainDb = (double) read (gainIds[b]);
+    }
+
+    targets.eq[(size_t) CompDsp::bell].q = (double) read ("scMidQ");
     return targets;
 }
 

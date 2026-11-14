@@ -6,5 +6,6 @@ fancy_add_plugin(FancyComp
     SOURCES
         src/CompDsp.cpp
         src/CompProcessor.cpp
+        src/CompGraphs.cpp
         src/CompEditor.cpp
     ENTRY src/PluginEntry.cpp)

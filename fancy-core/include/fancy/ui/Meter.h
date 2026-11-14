@@ -142,6 +142,10 @@ public:
     // A second read-out line in the gate style, such as "relative" (Fancy DS). A close threshold takes its place.
     void setReadoutNote (const juce::String& note);
 
+    // A second, thinner marker at the threshold actually in use, such as Fancy Comp's Auto
+    // threshold (Phase 3 Q2.5). Any value below -199 dB hides it, which is the default.
+    void setEffectiveThreshold (float db);
+
     void paint (juce::Graphics&) override;
     juce::Colour getAccentColour() const override { return meterStyle.accent; }
 
@@ -155,6 +159,7 @@ private:
     bool isCompressing = false;
     float closeDb = -200.0f;
     juce::String readoutNote;
+    float effectiveDb = -200.0f;
 };
 
 // Gain reduction falling from the top: a stereo pair with a scale and one readout per channel,

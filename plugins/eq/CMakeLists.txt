@@ -4,7 +4,6 @@ fancy_add_plugin(FancyEq
     BUNDLE_ID com.fancyplugs.eq
     SCREEN_MACRO FANCY_HAS_EQ
     SOURCES
-        src/EqFilters.cpp
         src/LinearPhase.cpp
         src/EqDsp.cpp
         src/EqMatch.cpp

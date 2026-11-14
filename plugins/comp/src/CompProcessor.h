@@ -21,6 +21,11 @@ public:
 
     float takeGainReduction (int channel) noexcept { return dsp.takeGainReduction (channel); }
 
+    // Phase 3 Q2.5, for the editor.
+    float getAutoThresholdOffset() const noexcept { return dsp.getAutoThresholdOffset(); }
+    float getDisplayLevel() const noexcept { return dsp.getDisplayLevel(); }
+    float getDisplayLift() const noexcept { return dsp.getDisplayLift(); }
+
 private:
     CompDsp::Targets readTargets();
     float read (const char* id);

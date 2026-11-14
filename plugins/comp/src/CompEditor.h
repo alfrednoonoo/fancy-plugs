@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CompGraphs.h"
 #include "CompProcessor.h"
 
 #include <fancy/ui/Meter.h>
@@ -15,6 +16,9 @@ public:
     // For rendered screenshots: mockup values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
 
+    // The drawer open on one tab (DrawerTabs::Tab), with the Q2.5 mockup's values.
+    void showDrawerPreview (int tab);
+
 private:
     class Panels final : public juce::Component
     {
@@ -23,6 +27,9 @@ private:
     };
 
     void onTick (float seconds) override;
+    void showTab (int tab);
+    void updateDimming();
+    CompParameters makeParameters();
 
     Panels panels;
 
@@ -49,6 +56,27 @@ private:
     fancy::ui::ParamDropdown oversamplingDropdown, phaseDropdown, releaseCurveDropdown;
     fancy::ui::ParamCheckbox feedbackCheckbox, attack90Checkbox;
     fancy::ui::Knob linkAmountKnob, drawerOutputKnob;
+
+    // Phase 3 Q2.5: the drawer's tabs.
+    DrawerTabs drawerTabs;
+
+    DetectorCurve detectorCurve;
+    juce::Label lowShelfLabel, bellLabel, highShelfLabel;
+    fancy::ui::Knob scLowFreqKnob, scLowGainKnob, scMidFreqKnob, scMidGainKnob, scMidQKnob, scHighFreqKnob, scHighGainKnob;
+    fancy::ui::ParamCheckbox autoThresholdCheckbox;
+    juce::Label autoOffsetLabel;
+
+    juce::Label typeLabel, positionLabel, characterNote;
+    fancy::ui::ParamSegments typeSegments, positionSegments;
+    fancy::ui::Knob driveKnob;
+    CharacterCurve characterCurve;
+
+    fancy::ui::ParamCheckbox upwardCheckbox;
+    fancy::ui::Knob upThresholdKnob, upRatioKnob, maxLiftKnob, floorKnob;
+    UpwardCurve upwardCurve;
+
+    std::vector<juce::Component*> tabContents[DrawerTabs::numTabs];
+    juce::String graphSignature;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CompEditor)
 };

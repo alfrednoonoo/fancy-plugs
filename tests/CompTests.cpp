@@ -202,7 +202,7 @@ TEST_CASE ("static curve", "[comp]")
 
 TEST_CASE ("compression matches the static curve", "[comp]")
 {
-    const auto oversampling = GENERATE ((int) CompDsp::off, (int) CompDsp::x2, (int) CompDsp::x4);
+    const auto oversampling = GENERATE ((int) CompDsp::off, (int) CompDsp::x2, (int) CompDsp::x4, (int) CompDsp::x8);
 
     auto targets = peakTargets();
     targets.oversampling = oversampling;
@@ -371,7 +371,7 @@ TEST_CASE ("aliasing is below -90 dBFS at 4x", "[comp]")
 
 TEST_CASE ("limiter holds the ceiling at extreme levels", "[comp]")
 {
-    const auto oversampling = GENERATE ((int) CompDsp::off, (int) CompDsp::x2, (int) CompDsp::x4);
+    const auto oversampling = GENERATE ((int) CompDsp::off, (int) CompDsp::x2, (int) CompDsp::x4, (int) CompDsp::x8);
     const auto gainDb = GENERATE (0.0, 24.0, 100.0, 200.0);
 
     CompDsp::Targets targets;
@@ -399,7 +399,7 @@ TEST_CASE ("limiter holds the ceiling at extreme levels", "[comp]")
 
 TEST_CASE ("pre-comp latency is reported and wet and dry stay aligned", "[comp]")
 {
-    const auto oversampling = GENERATE ((int) CompDsp::off, (int) CompDsp::x2, (int) CompDsp::x4);
+    const auto oversampling = GENERATE ((int) CompDsp::off, (int) CompDsp::x2, (int) CompDsp::x4, (int) CompDsp::x8);
     const auto limit = GENERATE (false, true);
 
     CompDsp::Targets targets;
@@ -660,8 +660,10 @@ TEST_CASE ("comp works at every supported sample rate and in mono", "[comp]")
 {
     const auto sampleRate = GENERATE (44100.0, 96000.0, 192000.0, 384000.0);
 
+    const auto oversampling = GENERATE ((int) CompDsp::x4, (int) CompDsp::x8);
+
     auto targets = peakTargets();
-    targets.oversampling = CompDsp::x4;
+    targets.oversampling = oversampling;
     targets.preCompMs = 250.0;
     targets.limitOutput = true;
 

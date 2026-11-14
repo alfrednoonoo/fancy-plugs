@@ -1,5 +1,7 @@
 #include "MultiCompDsp.h"
 
+#include <fancy/dsp/Upward.h>
+
 #include <algorithm>
 #include <cmath>
 
@@ -327,17 +329,7 @@ bool MultiCompDsp::needsKey() const noexcept
 
 double MultiCompDsp::liftFor (double levelDb, double thresholdDb, const BandSpec& band) noexcept
 {
-    constexpr double floorFadeDb = 8.0;
-
-    // An Up threshold above the Threshold acts as the Threshold.
-    const auto upThreshold = std::min (band.upThresholdDb, thresholdDb);
-
-    if (levelDb >= upThreshold || levelDb < band.floorDb)
-        return 0.0;
-
-    const auto lift = std::min (band.maxLiftDb, (upThreshold - levelDb) * (1.0 - 1.0 / std::max (1.0, band.upRatio)));
-    const auto fade = std::clamp ((levelDb - band.floorDb) / floorFadeDb, 0.0, 1.0);
-    return lift * fade;
+    return fancy::dsp::upward::liftFor (levelDb, thresholdDb, { band.upThresholdDb, band.upRatio, band.maxLiftDb, band.floorDb });
 }
 
 double MultiCompDsp::staticChangeDb (double levelDb, const BandSpec& band, double depth) noexcept

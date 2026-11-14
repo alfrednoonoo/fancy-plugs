@@ -193,6 +193,30 @@ bool renderEq (const juce::File& outputDir)
 }
 #endif
 
+#if FANCY_HAS_COMP
+// Phase 3 Q2.5: the EDIT drawer's four tabs, with the mockup's values.
+bool renderCompDrawer (const juce::File& outputDir)
+{
+    CompProcessor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<CompEditor*> (base.get());
+
+    if (editor == nullptr)
+        return false;
+
+    auto ok = true;
+    const char* const names[] { "comp-detector", "comp-character", "comp-upward", "comp-options" };
+
+    for (int tab = 0; tab < DrawerTabs::numTabs; ++tab)
+    {
+        editor->showDrawerPreview (tab);
+        ok = writeBothScales (*editor, names[tab], outputDir) && ok;
+    }
+
+    return ok;
+}
+#endif
+
 #if FANCY_HAS_VERB
 bool renderVerb (const juce::File& outputDir)
 {
@@ -550,6 +574,7 @@ int main (int argc, char** argv)
    #if FANCY_HAS_COMP
     ok = renderPlugin<CompProcessor, CompEditor> ("comp", outputDir) && ok;
     ok = renderListening<CompProcessor, CompEditor> ("comp", outputDir) && ok;
+    ok = renderCompDrawer (outputDir) && ok;
    #endif
 
    #if FANCY_HAS_EQ

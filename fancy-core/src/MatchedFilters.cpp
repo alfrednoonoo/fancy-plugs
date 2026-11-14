@@ -1,10 +1,10 @@
-#include "EqFilters.h"
+#include <fancy/dsp/MatchedFilters.h>
 
 #include <algorithm>
 #include <cmath>
 #include <numbers>
 
-namespace eq
+namespace fancy::dsp::matched
 {
 
 namespace
@@ -415,4 +415,4 @@ BandFilter design (const BandSpec& spec, double sampleRate) noexcept
     return filter;
 }
 
-} // namespace eq
+} // namespace fancy::dsp::matched

@@ -69,7 +69,26 @@ CompEditor::CompEditor (CompProcessor& processor)
       feedbackCheckbox (parameter ("feedback"), "Feedback detection"),
       attack90Checkbox (parameter ("attack90"), "Attack = 90 % rise"),
       linkAmountKnob (parameter ("linkAmount"), "Link amount", colours::uiTeal, Knob::smallStyle),
-      drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle)
+      drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
+      detectorCurve (makeParameters()),
+      scLowFreqKnob (parameter ("scLowFreq"), "Freq", colours::uiBlue, Knob::tightStyle),
+      scLowGainKnob (parameter ("scLowGain"), "Gain", colours::uiBlue, Knob::tightStyle, true),
+      scMidFreqKnob (parameter ("scMidFreq"), "Freq", colours::uiBlue, Knob::tightStyle),
+      scMidGainKnob (parameter ("scMidGain"), "Gain", colours::uiBlue, Knob::tightStyle, true),
+      scMidQKnob (parameter ("scMidQ"), "Q", colours::uiBlue, Knob::tightStyle),
+      scHighFreqKnob (parameter ("scHighFreq"), "Freq", colours::uiBlue, Knob::tightStyle),
+      scHighGainKnob (parameter ("scHighGain"), "Gain", colours::uiBlue, Knob::tightStyle, true),
+      autoThresholdCheckbox (parameter ("autoThr"), "Auto threshold"),
+      typeSegments (parameter ("charType"), colours::uiTeal, colours::bgWell),
+      positionSegments (parameter ("charPos"), colours::uiTeal, colours::bgWell),
+      driveKnob (parameter ("charDrive"), "Drive", colours::uiTeal, Knob::mediumStyle),
+      characterCurve (makeParameters()),
+      upwardCheckbox (parameter ("up"), "Upward", colours::accentGreen),
+      upThresholdKnob (parameter ("upThr"), "Up thresh", colours::accentGreen, Knob::tightStyle),
+      upRatioKnob (parameter ("upRatio"), "Up ratio", colours::accentGreen, Knob::tightStyle),
+      maxLiftKnob (parameter ("upLift"), "Max lift", colours::accentGreen, Knob::tightStyle),
+      floorKnob (parameter ("upFloor"), "Floor", colours::accentGreen, Knob::tightStyle),
+      upwardCurve (makeParameters())
 {
     auto& body = getBody();
 
@@ -142,10 +161,91 @@ CompEditor::CompEditor (CompProcessor& processor)
     linkAmountKnob.setBounds (306, 60, 90, 99);
     drawerOutputKnob.setBounds (412, 60, 90, 99);
 
+    // Phase 3 Q2.5: the view switch in the drawer's title row, after "EDIT".
+    drawerTabs.setBounds (82, 12, 280, 24);
+    drawerTabs.onChange = [this] (int tab) { showTab (tab); };
+    drawer.addAndMakeVisible (drawerTabs);
+
+    // Detector tab.
+    detectorCurve.setBounds (24, 52, 476, 104);
+
+    const auto groupLabel = [] (juce::Label& label, const juce::String& text)
+    {
+        styleLabel (label, text.toUpperCase(), colours::textSecondary, juce::Justification::centredLeft);
+        label.setFont (font (Weight::semiBold, 11.0f).withExtraKerningFactor (0.06f));
+    };
+
+    groupLabel (lowShelfLabel, "Low shelf");
+    groupLabel (bellLabel, "Bell");
+    groupLabel (highShelfLabel, "High shelf");
+    lowShelfLabel.setBounds (30, 162, 120, 14);
+    bellLabel.setBounds (178, 162, 120, 14);
+    highShelfLabel.setBounds (388, 162, 120, 14);
+
+    {
+        auto x = 18;
+
+        for (auto* knob : { &scLowFreqKnob, &scLowGainKnob, &scMidFreqKnob, &scMidGainKnob, &scMidQKnob, &scHighFreqKnob, &scHighGainKnob })
+        {
+            knob->setBounds (x, 178, 66, 99);
+            x += 66;
+
+            if (knob == &scLowGainKnob || knob == &scMidQKnob)
+                x += 14;
+        }
+    }
+
+    autoThresholdCheckbox.setBounds (24, 322, 150, 20);
+    styleLabel (autoOffsetLabel, {}, colours::textSecondary, juce::Justification::centredLeft);
+    autoOffsetLabel.setFont (font (Weight::regular, 12.0f));
+    autoOffsetLabel.setBounds (180, 322, 320, 20);
+
+    tabContents[DrawerTabs::detector] = { &detectorCurve, &lowShelfLabel, &bellLabel, &highShelfLabel,
+                                          &scLowFreqKnob, &scLowGainKnob, &scMidFreqKnob, &scMidGainKnob, &scMidQKnob, &scHighFreqKnob, &scHighGainKnob,
+                                          &autoThresholdCheckbox, &autoOffsetLabel };
+
+    // Character tab.
+    styleLabel (typeLabel, "Type", colours::textPrimary, juce::Justification::centredLeft);
+    styleLabel (positionLabel, "Position", colours::textPrimary, juce::Justification::centredLeft);
+    typeLabel.setBounds (24, 64, 80, 24);
+    positionLabel.setBounds (24, 104, 80, 24);
+    typeSegments.setBounds (110, 64, 150, 24);
+    positionSegments.setBounds (110, 104, 100, 24);
+    typeSegments.setTextHeight (12.0f);
+    positionSegments.setTextHeight (12.0f);
+    driveKnob.setBounds (24, 146, 90, 123);
+
+    styleLabel (characterNote, "Warm: even harmonics, lows saturate more.\nBright: odd harmonics, highs saturate more.\nQuiet material passes at unity.",
+                colours::textSecondary, juce::Justification::topLeft);
+    characterNote.setFont (font (Weight::regular, 11.0f));
+    characterNote.setBounds (24, 284, 240, 60);
+    characterCurve.setBounds (276, 60, 224, 224);
+
+    tabContents[DrawerTabs::character] = { &typeLabel, &positionLabel, &typeSegments, &positionSegments, &driveKnob, &characterNote, &characterCurve };
+
+    // Upward tab.
+    upwardCheckbox.setBounds (24, 62, 120, 20);
+    upThresholdKnob.setBounds (14, 96, 66, 99);
+    upRatioKnob.setBounds (80, 96, 66, 99);
+    maxLiftKnob.setBounds (14, 200, 66, 99);
+    floorKnob.setBounds (80, 200, 66, 99);
+    upwardCurve.setBounds (176, 60, 324, 290);
+
+    tabContents[DrawerTabs::upward] = { &upwardCheckbox, &upThresholdKnob, &upRatioKnob, &maxLiftKnob, &floorKnob, &upwardCurve };
+
+    tabContents[DrawerTabs::options] = { &oversamplingLabel, &oversamplingDropdown, &phaseLabel, &phaseDropdown, &releaseCurveLabel, &releaseCurveDropdown,
+                                         &feedbackCheckbox, &attack90Checkbox, &linkAmountKnob, &drawerOutputKnob };
+
+    for (auto& contents : tabContents)
+        for (auto* item : contents)
+            drawer.addChildComponent (item);
+
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &oversamplingLabel, &oversamplingDropdown, &phaseLabel, &phaseDropdown, &releaseCurveLabel, &releaseCurveDropdown,
              &feedbackCheckbox, &attack90Checkbox, &linkAmountKnob, &drawerOutputKnob })
-        drawer.addAndMakeVisible (item);
+        drawer.addChildComponent (item);
+
+    showTab (DrawerTabs::detector);
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
@@ -159,6 +259,37 @@ CompEditor::CompEditor (CompProcessor& processor)
     detectorDropdown.addSection (6, "Mid/side");
 
     attackKnob.setTooltip ("Time constant: the time to reach about 63 % of the target. Change this in EDIT.");
+    detectorCurve.setTooltip ("Drag a handle to set its band's Freq and Gain. The wheel sets the bell's Q. The bands shape only what the detector hears.");
+    autoThresholdCheckbox.setTooltip ("Follows the input's long-term level, so the gain reduction stays steady. Threshold is set as if the input sat at -18 dBFS RMS.");
+
+    updateDimming();
+}
+
+CompParameters CompEditor::makeParameters()
+{
+    return { [this] (const juce::String& id) -> juce::RangedAudioParameter& { return parameter (id); } };
+}
+
+void CompEditor::showTab (int tab)
+{
+    drawerTabs.setSelected (tab);
+
+    for (int t = 0; t < DrawerTabs::numTabs; ++t)
+        for (auto* item : tabContents[t])
+            item->setVisible (t == tab);
+}
+
+void CompEditor::updateDimming()
+{
+    // A stage's settings dim while it's off, as Comp's other dependent controls do.
+    const auto characterOn = parameter ("charType").getValue() > 0.01f;
+    const auto upwardOn = parameter ("up").getValue() >= 0.5f;
+
+    for (auto* item : std::initializer_list<juce::Component*> { &positionLabel, &positionSegments, &driveKnob })
+        item->setAlpha (characterOn ? 1.0f : 0.4f);
+
+    for (auto* item : std::initializer_list<juce::Component*> { &upThresholdKnob, &upRatioKnob, &maxLiftKnob, &floorKnob })
+        item->setAlpha (upwardOn ? 1.0f : 0.4f);
 }
 
 void CompEditor::onTick (float seconds)
@@ -169,6 +300,37 @@ void CompEditor::onTick (float seconds)
     const auto right = processor.takeGainReduction (1);
 
     thresholdMeter.update (processor.inputMeter, juce::jmax (left, right) > 0.5f, seconds);
+
+    // Phase 3 Q2.5: the threshold in use while Auto threshold is on, and the drawer's graphs.
+    const auto autoOn = parameter ("autoThr").getValue() >= 0.5f;
+    const auto offset = processor.getAutoThresholdOffset();
+    const auto thresholdDb = parameter ("threshold").convertFrom0to1 (parameter ("threshold").getValue());
+
+    thresholdMeter.setEffectiveThreshold (autoOn ? thresholdDb + offset : -200.0f);
+    autoOffsetLabel.setText (autoOn ? "offset " + juce::String (offset >= 0.0f ? "+" : "") + juce::String (offset, 1) + " dB  -  reference -18 dBFS RMS"
+                                    : "reference -18 dBFS RMS",
+                             juce::dontSendNotification);
+
+    updateDimming();
+
+    if (drawer.isVisible())
+    {
+        juce::String signature;
+
+        for (const auto* id : { "highpass", "lowpass", "scLowFreq", "scLowGain", "scMidFreq", "scMidGain", "scMidQ", "scHighFreq", "scHighGain",
+                                "charType", "charDrive", "threshold", "ratio", "knee", "weird", "up", "upThr", "upRatio", "upLift", "upFloor", "autoThr" })
+            signature << juce::String (parameter (id).getValue(), 5) << ";";
+
+        if (signature != graphSignature)
+        {
+            graphSignature = signature;
+            detectorCurve.repaint();
+            characterCurve.repaint();
+            upwardCurve.repaint();
+        }
+
+        upwardCurve.setCurrent (processor.getDisplayLevel(), processor.getDisplayLift(), offset);
+    }
     gainReductionMeter.update (left, right, seconds);
     outMeter.update (processor.outputMeter, seconds);
 }
@@ -192,13 +354,34 @@ void CompEditor::showPreview (bool drawerOpen)
     outMeter.show (-4.2f, -5.8f);
 
     drawer.setVisible (drawerOpen);
+    showTab (DrawerTabs::detector);
+}
+
+void CompEditor::showDrawerPreview (int tab)
+{
+    showPreview (true);
+
+    // The values drawn in reference/phase3/23__comp_q25_mockup.png.
+    setValue (parameter ("scMidFreq"), 3000.0f);
+    setValue (parameter ("scMidGain"), 12.0f);
+    setValue (parameter ("autoThr"), 1.0f);
+    setValue (parameter ("charType"), 1.0f);
+    setValue (parameter ("up"), 1.0f);
+    setValue (parameter ("threshold"), -18.0f);
+
+    thresholdMeter.setEffectiveThreshold (-12.0f);
+    autoOffsetLabel.setText ("offset +6.0 dB  -  reference -18 dBFS RMS", juce::dontSendNotification);
+    upwardCurve.setCurrent (-52.0f, 6.0f, 0.0f);
+    updateDimming();
+
+    showTab (tab);
 }
 
 std::vector<ShellEditor::PopupOpener> CompEditor::getPopupOpeners()
 {
     auto openers = ShellEditor::getPopupOpeners();
     openers.push_back ({ "dropdown-detector", [this] { detectorDropdown.click(); } });
-    openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); oversamplingDropdown.click(); } });
+    openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); showTab (DrawerTabs::options); oversamplingDropdown.click(); } });
     openers.push_back ({ "tooltip-attack", [this] { showTip (attackKnob, attackKnob.getTooltip()); } });
     openers.push_back ({ "value-threshold", [this] { thresholdMeter.openValueEditor(); } });
     openers.push_back ({ "sidechain-notice", [this] { forceSidechainNotice (true); } });

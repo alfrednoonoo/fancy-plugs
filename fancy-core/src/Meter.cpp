@@ -381,6 +381,13 @@ void ThresholdMeter::paint (juce::Graphics& g)
             g.fillRect (x, y - 1.0f, 2.0f, 2.0f);
     }
 
+    if (effectiveDb > -199.0f)
+    {
+        // The threshold in use: a thin line across the bars, under the handle.
+        g.setColour (colours::textPrimary.withAlpha (0.6f));
+        g.fillRect (wellX - 2.0f, yFor (effectiveDb) - 1.0f, wellWidth + 4.0f, 2.0f);
+    }
+
     const auto handleY = wellTop + (1.0f - getNormalised()) * wellHeight;
     const auto handle = juce::Rectangle<float> (style.gateReadouts ? 24.0f : 34.0f, style.gateReadouts ? 10.0f : 12.0f)
                             .withCentre ({ wellX + wellWidth * 0.5f, handleY });
@@ -420,6 +427,15 @@ void ThresholdMeter::paint (juce::Graphics& g)
     g.setFont (font (Weight::regular, 14.0f));
     g.setColour (colours::textPrimary);
     g.drawText (getValueText(), bounds.withTop (bounds.getBottom() - 23.0f), juce::Justification::centred, false);
+}
+
+void ThresholdMeter::setEffectiveThreshold (float db)
+{
+    if (std::abs (db - effectiveDb) >= 0.05f || ((db > -199.0f) != (effectiveDb > -199.0f)))
+    {
+        effectiveDb = db;
+        repaint();
+    }
 }
 
 void ThresholdMeter::setReadoutNote (const juce::String& note)
