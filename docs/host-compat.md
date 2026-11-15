@@ -149,7 +149,7 @@ Every plugin is a universal VST3 and Audio Unit (AU) on macOS 11 and later. CI r
 
 AU notes:
 
-- **Types.** Every plugin is an effect (`aufx`), except Fancy Gate, which is a music effect (`aumf`) so it may send MIDI (Decision 5). Logic lists music effects under **Audio Units > Fancy Plugs** in an instrument track's MIDI FX-less insert slots and in audio tracks' inserts on recent versions; if Gate is missing from an audio track, look for it on a software-instrument track.
+- **Types.** Every plugin is an effect (`aufx`), except Fancy Gate, which is a music effect (`aumf`) so it may send MIDI (Decision 5). Where Logic offers a music effect (audio-track inserts, instrument-track inserts, or both) depends on its version, so that's one of the Logic checks below.
 - **Sidechain.** In Logic, the sidechain is the **Side Chain** menu at the top right of the plugin window; it feeds the same bus the VST3 calls its sidechain, so Detector input works the same way.
 - **Typed values.** On a Mac, Ctrl-click is a right-click, so typing a value is Cmd-click on a control (or a click on its value), not Ctrl-click.
 
@@ -158,7 +158,7 @@ AU notes:
 - [ ] After installing with `install.sh`, Logic's Plug-in Manager lists all fourteen Fancy Plugs AUs as "successfully validated".
 - [ ] Load each plugin: window, pop-ups, Cmd-click to type a value, resizing.
 - [ ] Sidechain Comp, MultiComp, FIR and Gate from the Side Chain menu, with Detector input set to Sidechain L+R.
-- [ ] Gate: tick MIDI on open/close and route its output to an instrument; note whether Logic offers it as a MIDI source, and whether the gate keeps gating either way.
+- [ ] Gate: note where Logic lists it (audio tracks, instrument tracks or both). Tick MIDI on open/close and route its output to an instrument; note whether Logic offers it as a MIDI source, and whether the gate keeps gating either way.
 - [ ] Automate a knob, then play back: the knob follows.
 - [ ] Turn Gate's Lookahead, EQ's linear phase or FIR's Low latency on and off while stopped, then play: the track stays in time.
 - [ ] Bounce in real time and offline: both match playback.
