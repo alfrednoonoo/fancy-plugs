@@ -8,6 +8,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
   - Push 1, true stereo: green, run 43648226467 (`91a7204`), 482 test cases. Bit-identical to the legacy convolver and builder for direct IRs. CPU, 3 s IR: Zero latency 1.26 x direct, Low CPU 1.09 x (target < 1.6 x). The IR display keeps one lane (the mockup drew two).
   - Push 2 (generator settings, library tool and 32 IRs as a Windows resource, Library menu): run 43650494608 (`b833304`) built, and 486 of 487 test cases passed; the one failure was an old generator test that set the raw value array, fixed in push 3.
   - Push 3 (Modulate, five presets, screenshots, docs): green. Follow-up `7a1b820` (silent stages skipped, Reverb card layout fixed): green, run 43655069240, 493 test cases. CPU in `docs/measurements/verb-q28.txt`: Modulate 1.85 x (Zero latency) and 2.04 x (Low CPU), inside 2.2 x; true stereo 1.15 x and 1.14 x. Screenshots `verb-library`, `verb-generators` and `verb-add` checked against the mockup.
+  - Add module (user, 15 November 2026): the cards' + goes; a dashed "+ Add module" box after the last card opens the add panel there, with Cancel. Mockup `reference/phase3/25__verb_add_module_mockup.png` (source `design/phase3-mockup-src/verb-q28-add.html`) waits for the user's approval.
   - Next: the user's REAPER check (`docs/verb-checklist.md`, the Q2.8 section), then the release (v1.5.0).
 - **Latest release:** [v1.4.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.4.0), 14 November 2026.
 

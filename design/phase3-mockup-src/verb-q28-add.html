@@ -1,0 +1,89 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy Verb Q2.8: Add module button</title><link rel="stylesheet" href="common.css"><link rel="stylesheet" href="kit2.css"><script src="lib2.js"></script>
+<style>
+body{--a:#9A59B5}
+.sheet{display:flex;flex-direction:column;gap:20px;width:1000px}
+.h{font-size:13px;font-weight:700;color:#fff;margin:4px 0 2px}.n{font-size:11px;color:#8D8D8D;margin-bottom:8px;line-height:1.45;max-width:980px}
+/* The rack at native size: 734 x 352, cards 4 px apart on bg-section, then the chain strip */
+.rack{position:relative;width:734px;height:352px;background:#262626;display:flex;gap:4px;overflow:hidden}
+.card{position:relative;height:352px;background:#303030;flex:none}
+.card .pw{position:absolute;left:16px;top:17px;width:18px;height:18px;border:2px solid var(--c);border-top-color:transparent;border-radius:50%}
+.card .pw:after{content:"";position:absolute;left:6px;top:-5px;width:2px;height:9px;background:var(--c)}
+.card .ttl{position:absolute;left:42px;top:15px;font-size:16px;font-weight:600;letter-spacing:.02em}
+.card .x{position:absolute;right:14px;top:12px;font-size:18px;color:#8D8D8D}
+.abs{position:absolute}
+.k50 .lbl{font-size:12px}.k50 .val{font-size:12px}
+.add{flex:none;width:203px;height:352px;border:1.5px dashed #4C4C4C;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#8D8D8D;box-sizing:border-box}
+.add .plus{width:40px;height:40px;border-radius:20px;background:#303030;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff}
+.add span{font-size:14px;font-weight:600;letter-spacing:.02em}
+.panel{flex:none;width:203px;height:352px;background:#262626;position:relative;outline:1px solid #3a3a3a}
+.panel .b{position:absolute;left:16px;height:28px;padding:0 10px;border-radius:4px;background:#3a3a3a;font-size:14px;display:flex;align-items:center;color:#fff}
+.panel .b.off{opacity:.4}
+.panel .cancel{position:absolute;left:16px;right:16px;top:304px;height:32px;border-radius:4px;border:1px solid #4C4C4C;font-size:14px;display:flex;align-items:center;justify-content:center;color:#EDEDED}
+.strip{width:734px;height:72px;background:#1E1E1E;position:relative}
+.strip .box{position:absolute;left:16px;top:16px;width:700px;height:40px;border:1px solid #8D8D8D;border-radius:6px}
+.strip .chip{position:absolute;top:24px;height:24px;background:#303030;border-radius:3px;font-size:11px;font-weight:600;letter-spacing:.06em;color:#8D8D8D;display:flex;align-items:center;padding:0 10px;gap:6px}
+</style></head><body>
+<div class="sheet">
+
+<div><div class="h">1 · The rack with room to spare: + Add module after the last card</div><div class="n">The cards lose their bottom-right +. After the last card sits a dashed box the size of the add panel (203 × 352), with a round + and "Add module". It's always the last thing in the rack: when the chain is wider than the rack, it's past the last card and you scroll to it, as you do to the last card now. An empty rack keeps today's centred buttons and has no box.</div>
+<div class="rack" id="rackA">
+ <div class="card" style="width:356px;--c:#00A985">
+  <div class="pw"></div><div class="ttl">REVERB GENERATOR</div><div class="x">✕</div>
+  <div class="abs" style="left:12px;top:56px;display:flex">
+   <div class="knob k50" data-k data-v=".45" data-c="#00A985" data-s="38" data-l="Length" data-t="2.50 s" style="width:66px"></div>
+   <div class="knob k50" data-k data-v=".4" data-c="#00A985" data-s="38" data-l="Decay" data-t="1.60 s" style="width:66px"></div>
+   <div class="knob k50" data-k data-v="1" data-c="#00A985" data-s="38" data-l="Density" data-t="100 %" style="width:66px"></div>
+   <div class="knob k50" data-k data-v=".2" data-c="#00A985" data-s="38" data-l="Damping" data-t="20 %" style="width:66px"></div>
+   <div class="knob k50" data-k data-v="1" data-c="#00A985" data-s="38" data-l="Spread" data-t="100 %" style="width:66px"></div>
+  </div>
+  <div class="abs" style="left:12px;top:158px;display:flex">
+   <div class="knob k50" data-k data-v=".5" data-c="#00A985" data-s="38" data-l="Low RT" data-t="1.00 x" style="width:66px"></div>
+   <div class="knob k50" data-k data-v=".5" data-c="#00A985" data-s="38" data-l="High RT" data-t="1.00 x" style="width:66px"></div>
+   <div class="knob k50" data-k data-v=".5" data-c="#00A985" data-s="38" data-l="Size" data-t="20.0 m" style="width:66px;opacity:.4"></div>
+   <div class="knob k50" data-k data-v=".33" data-c="#00A985" data-s="38" data-l="Build-up" data-t="100 ms" style="width:66px"></div>
+  </div>
+  <div class="abs" style="left:24px;top:268px;font-size:14px;height:28px;display:flex;align-items:center">Early</div>
+  <div class="abs" style="left:80px;top:268px;width:110px;height:28px;font-size:14px;display:flex;align-items:center;padding:0 8px">Off</div>
+  <div class="abs" style="left:206px;top:270px;height:28px;display:flex;align-items:center;gap:8px;font-size:14px"><span style="width:14px;height:14px;border-radius:3px;border:1px solid #4C4C4C;background:#1E1E1E"></span>True stereo</div>
+ </div>
+ <div class="card" style="width:147px;--c:#3598DB">
+  <div class="pw"></div><div class="ttl">LP/HP</div><div class="x">✕</div>
+  <div class="abs" style="left:28px;top:63px"><div class="knob" data-k data-v=".7" data-c="#3598DB" data-s="54" data-l="Lowpass" data-t="8 kHz" style="width:90px"></div></div>
+  <div class="abs" style="left:28px;top:202px"><div class="knob" data-k data-v=".3" data-c="#3598DB" data-s="54" data-l="Highpass" data-t="180 Hz" style="width:90px"></div></div>
+ </div>
+ <div class="add"><div class="plus">+</div><span>Add module</span></div>
+</div>
+<div class="strip"><div class="box"></div>
+ <div class="chip" style="left:24px;width:406px;color:#00A985">⏻ REVERB</div><div class="chip" style="left:434px;width:166px;color:#3598DB">⏻ LP/HP</div>
+</div>
+</div>
+
+<div><div class="h">2 · After a click: the add panel in its place, with Cancel</div><div class="n">The panel replaces the box, at the same size, so nothing moves. The eight types are the existing buttons, 28 high at 34 px spacing (they were 32 at 38) so Cancel fits under them. A type adds its module at the end of the chain and closes the panel; Cancel, Esc or a click elsewhere in the rack closes it without adding. Modulate is greyed while the chain has one. To put a new module earlier in the chain, drag its card by the side grip, as now.</div>
+<div class="rack">
+ <div class="card" style="width:356px;--c:#00A985;opacity:.999">
+  <div class="pw"></div><div class="ttl">REVERB GENERATOR</div><div class="x">✕</div>
+  <div class="abs" style="left:24px;top:150px;font-size:12px;color:#8D8D8D">(as above)</div>
+ </div>
+ <div class="card" style="width:147px;--c:#3598DB">
+  <div class="pw"></div><div class="ttl">LP/HP</div><div class="x">✕</div>
+  <div class="abs" style="left:24px;top:150px;font-size:12px;color:#8D8D8D">(as above)</div>
+ </div>
+ <div class="panel" id="panel"></div>
+</div>
+</div>
+
+<div><div class="h">3 · A full rack, scrolled to its end</div><div class="n">With the chain wider than the rack, the box follows the last card, here after MODULATE. Opening it scrolls the rack so the whole panel shows, as the card + did.</div>
+<div class="rack">
+ <div class="card" style="width:147px;--c:#3598DB;margin-left:-40px"><div class="pw"></div><div class="ttl">LP/HP</div><div class="x">✕</div></div>
+ <div class="card" style="width:163px;--c:#2DCC70"><div class="pw"></div><div class="ttl">Normalize</div><div class="x">✕</div></div>
+ <div class="card" style="width:247px;--c:#00A985"><div class="pw"></div><div class="ttl">MODULATE</div><div class="x">✕</div></div>
+ <div class="add"><div class="plus">+</div><span>Add module</span></div>
+</div>
+</div>
+
+</div>
+<script>
+(()=>{const names=["File","LP/HP","Echo generator","Normalize","Trim, Gain, Stretch","Reverse","Reverb Generator","Modulate"];let s='';
+names.forEach((n,i)=>s+=`<div class="b" style="top:${16+34*i}px">${n}</div>`);
+s+=`<div class="cancel">Cancel</div>`;document.getElementById('panel').innerHTML=s})();
+</script></body></html>
