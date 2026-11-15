@@ -23,6 +23,7 @@ public:
 
 private:
     void bodyResized() override;
+    bool keyPressed (const juce::KeyPress&) override;
     void onTick (float seconds) override;
     bool listsParameter (const juce::AudioProcessorParameter&) override;
 

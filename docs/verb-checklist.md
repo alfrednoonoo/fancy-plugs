@@ -19,7 +19,7 @@
 ## Rack
 
 - [ ] Every button on the empty state adds its module.
-- [ ] **+** on a card opens the add panel after it, and clicking **+** again closes it.
+- [ ] The cards have no **+**. The dashed **+ Add module** box after the last card opens the add panel there; a module from it lands at the end. **Cancel**, Esc and a click on the rack's empty space close it without adding. With a full rack, scroll right to reach the box.
 - [ ] A new module lands in the right place, and the sound and waveform follow.
 - [ ] **×** removes a card, and removing the last one brings the empty state back.
 - [ ] The power icon on a card and on its chain-strip chip each bypass that module, and they stay in step.

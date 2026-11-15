@@ -114,7 +114,7 @@ The standard `FancyProcessor` XML. It adds one non-audio property, `selectedTap`
 
 ## Phase 3 Q2.3: character
 
-Brief: Q2.3 of `docs/BUILD_PROMPT_PHASE3.md`. **Draft, waiting for the user's approval.** Five decisions are marked; **(R)** is the recommended option. Mockup: `design/phase3-mockup-src/delay-q23.html`, rendered as `reference/phase3/27__delay_q23_mockup.png`. Every new setting defaults to today's sound, so old projects render bit-identically (tested against a legacy copy of today's DSP).
+Brief: Q2.3 of `docs/BUILD_PROMPT_PHASE3.md`. **Approved by the user on 15 November 2026, with every recommended option (R)**, mockup included. Mockup: `design/phase3-mockup-src/delay-q23.html`, rendered as `reference/phase3/27__delay_q23_mockup.png`. Every new setting defaults to today's sound, so old projects render bit-identically (tested against a legacy copy of today's DSP).
 
 ### 1. Signal path, per tap
 

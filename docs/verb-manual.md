@@ -20,8 +20,9 @@ Modules run left to right.
 |---|---|
 | Power icon | Takes the module out without losing its settings |
 | × | Removes the module |
-| + | Opens the add panel, and the new module lands after this one |
 | Grip at the left edge | Drag to reorder |
+
+To add a module, click the dashed **+ Add module** box after the last card. The add panel opens in its place; pick a module and it lands at the end of the chain, or click **Cancel** (or press Esc, or click the rack's empty space) to close it. Drag the new card by its grip to move it earlier. An empty rack shows its module buttons in the middle instead.
 
 Scroll with the mouse wheel, or drag in the chain strip at the bottom. The outline there shows the part of the rack you can see, and the power icons on its chips work too.
 

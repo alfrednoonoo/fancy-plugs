@@ -588,7 +588,6 @@ void ModuleCard::showGainMenu()
 
 juce::Rectangle<int> ModuleCard::powerArea() const { return { 12, 13, 24, 24 }; }
 juce::Rectangle<int> ModuleCard::closeArea() const { return { getWidth() - 26, 3, 24, 24 }; }
-juce::Rectangle<int> ModuleCard::plusArea() const { return { getWidth() - 34, getHeight() - 34, 34, 34 }; }
 juce::Rectangle<int> ModuleCard::gripArea() const { return { 0, getHeight() / 2 - 20, gripWidth, gripHeight + 18 }; }
 
 void ModuleCard::paint (juce::Graphics& g)
@@ -649,9 +648,6 @@ void ModuleCard::paint (juce::Graphics& g)
     g.drawLine ({ close.getTopLeft(), close.getBottomRight() }, 1.5f);
     g.drawLine ({ close.getBottomLeft(), close.getTopRight() }, 1.5f);
 
-    g.setColour (colours::textPrimary);
-    g.strokePath (icons::plus (plusArea().toFloat().withSizeKeepingCentre (14.0f, 14.0f)), juce::PathStrokeType (1.5f));
-
     g.setColour (colours::grey6);
 
     const auto gripY = (float) (getHeight() - gripHeight) * 0.5f;
@@ -710,38 +706,72 @@ void ModuleCard::mouseUp (const juce::MouseEvent& event)
         else
             remove();
     }
-    else if (plusArea().contains (position))
-    {
-        const auto& cards = owner.getCards();
-
-        for (size_t i = 0; i < cards.size(); ++i)
-            if (cards[i].get() == this)
-                owner.showAddPanel ((int) i + 1);
-    }
 }
 
 // ModuleRack::AddButton -------------------------------------------------------
 
-ModuleRack::AddButton::AddButton (const juce::String& text, std::function<void()> clicked)
-    : buttonText (text), onClick (std::move (clicked))
+ModuleRack::AddButton::AddButton (const juce::String& text, std::function<void()> clicked, float textHeight, bool outlined)
+    : buttonText (text), onClick (std::move (clicked)), height (textHeight), outline (outlined)
 {
 }
 
 int ModuleRack::AddButton::idealWidth() const
 {
     juce::GlyphArrangement glyphs;
-    glyphs.addLineOfText (font (Weight::medium, 16.0f), buttonText, 0.0f, 0.0f);
-    return juce::roundToInt (glyphs.getBoundingBox (0, -1, true).getWidth()) + 20;
+    glyphs.addLineOfText (font (Weight::medium, height), buttonText, 0.0f, 0.0f);
+    return juce::roundToInt (glyphs.getBoundingBox (0, -1, true).getWidth()) + juce::roundToInt (height * 1.25f);
 }
 
 void ModuleRack::AddButton::paint (juce::Graphics& g)
 {
-    g.setColour (colours::grey5);
-    g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);
+    if (outline)
+    {
+        g.setColour (colours::grey6);
+        g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 4.0f, 1.0f);
+    }
+    else
+    {
+        g.setColour (colours::grey5);
+        g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);
+    }
 
     g.setColour (colours::textPrimary);
-    g.setFont (font (Weight::medium, 16.0f));
+    g.setFont (font (Weight::medium, height));
     g.drawText (buttonText, getLocalBounds(), juce::Justification::centred, false);
+}
+
+// ModuleRack::AddBox ----------------------------------------------------------
+
+void ModuleRack::AddBox::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat().reduced (1.0f);
+
+    juce::Path outline;
+    outline.addRoundedRectangle (bounds, 6.0f);
+
+    juce::Path dashed;
+    const float dashes[] { 4.0f, 4.0f };
+    juce::PathStrokeType (1.5f).createDashedStroke (dashed, outline, dashes, 2);
+    g.setColour (colours::grey6);
+    g.fillPath (dashed);
+
+    const auto centre = bounds.getCentre().translated (0.0f, -14.0f);
+    const auto circle = juce::Rectangle<float> (40.0f, 40.0f).withCentre (centre);
+
+    g.setColour (colours::bgBody);
+    g.fillEllipse (circle);
+    g.setColour (colours::textPrimary);
+    g.strokePath (icons::plus (circle.withSizeKeepingCentre (16.0f, 16.0f)), juce::PathStrokeType (2.0f));
+
+    g.setColour (colours::textSecondary);
+    g.setFont (font (Weight::semiBold, 14.0f));
+    g.drawText ("Add module", juce::Rectangle<float> (bounds.getX(), centre.y + 26.0f, bounds.getWidth(), 20.0f), juce::Justification::centred, false);
+}
+
+void ModuleRack::AddBox::mouseUp (const juce::MouseEvent& event)
+{
+    if (onClick != nullptr && contains (event.getPosition()))
+        onClick();
 }
 
 void ModuleRack::AddButton::mouseUp (const juce::MouseEvent& event)
@@ -752,7 +782,9 @@ void ModuleRack::AddButton::mouseUp (const juce::MouseEvent& event)
 
 // ModuleRack ------------------------------------------------------------------
 
-ModuleRack::ModuleRack (VerbProcessor& processorToUse) : processor (processorToUse)
+ModuleRack::ModuleRack (VerbProcessor& processorToUse)
+    : processor (processorToUse),
+      addBox ([this] { showAddPanel ((int) cards.size()); })
 {
     viewport.setViewedComponent (&content, false);
     viewport.setScrollBarsShown (false, false, true, true);
@@ -762,8 +794,11 @@ ModuleRack::ModuleRack (VerbProcessor& processorToUse) : processor (processorToU
     addAndMakeVisible (viewport);
 
     content.addChildComponent (addPanel);
+    content.addChildComponent (addBox);
+    content.addMouseListener (this, false);
 
-    int y = 34;
+    // Phase 3 Q2.8: eight types at 34 px spacing, then Cancel, inside the 352 tall panel.
+    int y = 16;
 
     for (const auto type : verb::allModuleTypes)
     {
@@ -774,11 +809,11 @@ ModuleRack::ModuleRack (VerbProcessor& processorToUse) : processor (processorToU
             processor.addModule (type, position);
         };
 
-        auto panelButton = std::make_unique<AddButton> (verb::menuNameOf (type), add);
-        panelButton->setBounds (16, y, panelButton->idealWidth(), 32);
+        auto panelButton = std::make_unique<AddButton> (verb::menuNameOf (type), add, 14.0f);
+        panelButton->setBounds (16, y, panelButton->idealWidth(), 28);
         addPanel.addAndMakeVisible (*panelButton);
         addButtons.push_back (std::move (panelButton));
-        y += 38; // eight types since Phase 3 Q2.8, inside the 352 tall panel
+        y += 34;
 
         // An empty rack has nothing to modulate.
         if (type == verb::ModuleType::modulate)
@@ -789,7 +824,17 @@ ModuleRack::ModuleRack (VerbProcessor& processorToUse) : processor (processorToU
         emptyButtons.push_back (std::move (emptyButton));
     }
 
+    cancelButton = std::make_unique<AddButton> ("Cancel", [this] { hideAddPanel(); }, 14.0f, true);
+    cancelButton->setBounds (16, 304, addPanelWidth - 32, 32);
+    addPanel.addAndMakeVisible (*cancelButton);
+
     rebuild();
+}
+
+void ModuleRack::mouseDown (const juce::MouseEvent& event)
+{
+    if (event.eventComponent == &content && isAddPanelOpen())
+        hideAddPanel();
 }
 
 int ModuleRack::indexOf (const ModuleCard& card) const
@@ -856,6 +901,17 @@ void ModuleRack::layoutContent()
     }
 
     addPanel.setVisible (addPosition >= 0);
+
+    // The Add module box follows the last card while the panel is closed (Phase 3 Q2.8).
+    const auto showBox = addPosition < 0 && ! cards.empty();
+    addBox.setVisible (showBox);
+
+    if (showBox)
+    {
+        addBox.setBounds (x, 0, addPanelWidth, ModuleCard::height);
+        x += addPanelWidth + cardGap;
+    }
+
     content.setSize (juce::jmax (getWidth(), x - cardGap), ModuleCard::height);
 }
 

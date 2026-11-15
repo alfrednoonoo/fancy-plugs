@@ -165,7 +165,7 @@ The standard `FancyProcessor` XML, plus the editor's selected band as a `selecte
 
 ## Phase 3 Q2.6: lookahead, mid/side and CPU
 
-Brief: Q2.6 of `docs/BUILD_PROMPT_PHASE3.md`. Upward compression, Depth, Time and "Big squash" are done (Phase 2.1 U). **Draft, waiting for the user's approval.** Four decisions are marked; **(R)** is the recommended option. Mockup: `design/phase3-mockup-src/multicomp-q26.html`, rendered as `reference/phase3/26__multicomp_q26_mockup.png`.
+Brief: Q2.6 of `docs/BUILD_PROMPT_PHASE3.md`. Upward compression, Depth, Time and "Big squash" are done (Phase 2.1 U). **Approved by the user on 15 November 2026, with every recommended option (R)**, mockup included. Mockup: `design/phase3-mockup-src/multicomp-q26.html`, rendered as `reference/phase3/26__multicomp_q26_mockup.png`.
 
 ### 1. Lookahead
 

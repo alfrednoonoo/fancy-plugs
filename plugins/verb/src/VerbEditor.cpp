@@ -154,6 +154,18 @@ void VerbEditor::bodyResized()
     setupButton.setBounds (column + 25, 580, 82, 24);
 }
 
+// Esc closes the add panel (Phase 3 Q2.8); every other key goes on as before.
+bool VerbEditor::keyPressed (const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::escapeKey && rack.isAddPanelOpen())
+    {
+        rack.hideAddPanel();
+        return true;
+    }
+
+    return ShellEditor::keyPressed (key);
+}
+
 bool VerbEditor::listsParameter (const juce::AudioProcessorParameter& candidate)
 {
     return candidate.isAutomatable();
@@ -288,7 +300,7 @@ void VerbEditor::showPreview (Preview preview)
     updateDisplay();
 
     if (preview == Preview::addPanel)
-        rack.showAddPanel (1);
+        rack.showAddPanel ((int) rack.getCards().size()); // at the end, as the Add module box opens it
 
     if (preview == Preview::scrolled)
         rack.setScroll (rack.getContentWidth());

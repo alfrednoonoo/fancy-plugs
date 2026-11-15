@@ -98,7 +98,6 @@ private:
 
     juce::Rectangle<int> powerArea() const;
     juce::Rectangle<int> closeArea() const;
-    juce::Rectangle<int> plusArea() const;
     juce::Rectangle<int> gripArea() const;
 
     VerbProcessor& processor;
@@ -129,6 +128,9 @@ public:
     void resized() override;
     void paint (juce::Graphics&) override;
 
+    // A click on the rack's empty space closes the add panel (Phase 3 Q2.8).
+    void mouseDown (const juce::MouseEvent&) override;
+
     // Opens the add panel so that a new module lands at this position.
     void showAddPanel (int position);
     void hideAddPanel();
@@ -150,7 +152,7 @@ private:
     class AddButton final : public juce::Component
     {
     public:
-        AddButton (const juce::String& text, std::function<void()> clicked);
+        AddButton (const juce::String& text, std::function<void()> clicked, float textHeight = 16.0f, bool outlined = false);
 
         void paint (juce::Graphics&) override;
         void mouseUp (const juce::MouseEvent&) override;
@@ -159,6 +161,22 @@ private:
 
     private:
         juce::String buttonText;
+        std::function<void()> onClick;
+        float height;
+        bool outline;
+    };
+
+    // The dashed box after the last card that opens the add panel there (Phase 3 Q2.8,
+    // reference/phase3/25__verb_add_module_mockup.png).
+    class AddBox final : public juce::Component
+    {
+    public:
+        explicit AddBox (std::function<void()> clicked) : onClick (std::move (clicked)) {}
+
+        void paint (juce::Graphics&) override;
+        void mouseUp (const juce::MouseEvent&) override;
+
+    private:
         std::function<void()> onClick;
     };
 
@@ -169,6 +187,8 @@ private:
     juce::Viewport viewport;
     juce::Component content;
     juce::Component addPanel;
+    AddBox addBox;
+    std::unique_ptr<AddButton> cancelButton;
 
     std::vector<std::unique_ptr<ModuleCard>> cards;
     std::vector<std::unique_ptr<AddButton>> addButtons, emptyButtons;
