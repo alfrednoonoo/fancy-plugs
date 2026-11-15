@@ -1,6 +1,6 @@
 # Fancy Plugs
 
-Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and signed off by ear in REAPER. Version **1.5.0**.
+Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and signed off by ear in REAPER. Version **1.6.0**.
 
 | Plugin | What it does |
 |---|---|
@@ -11,7 +11,7 @@ Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and si
 | Fancy Verb | Convolution reverb built from a chain of modules: impulse file, filters, echo generator, normalize; new in 1.5.0, a built-in IR library, true stereo and Modulate |
 | Fancy Delay | Up to 16 delay taps, each with its own feedback, loop filters, bit crush, width, pan and ping-pong; new in 1.5.0, Tape and BBD character, modulation, diffusion, ducking and swing |
 | Fancy MultiComp | Up to 8 bands of compression behind flat-summing crossovers, with upward compression and, new in 1.5.0, lookahead and mid/side per band |
-| Fancy FIR | Spectral processor: drawable EQ, Gate, Compressor, noise Subtract and Convolve, with adaptive noise tracking in 1.2.0 |
+| Fancy FIR | Spectral processor: drawable EQ, Gate, Compressor, noise Subtract and Convolve, with adaptive noise tracking and, new in 1.6.0, Resonance |
 | Fancy Gate | Gate with a filtered detector, a sidechain and a MIDI trigger output |
 | Fancy Limit | New in 1.3.0: true-peak brickwall limiter with lookahead, three styles, Auto release, a loudness meter and dither |
 | Fancy DS | New in 1.3.0: de-esser with a relative threshold, split or wide cuts, minimum- or linear-phase split filters and a history display |
@@ -19,7 +19,16 @@ Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and si
 | Fancy Sature | New in 1.3.0: saturator with Tape, Tube, Transistor and Clip curves, even/odd Character, Tone, oversampling and auto gain |
 | Fancy Room | New in 1.3.0: algorithmic reverb from small room to long hall, with Freeze, tempo-synced pre-delay, a send mode and ducking |
 
-## What's new in 1.5.0
+## What's new in 1.6.0
+
+- **Fancy FIR: Resonance mode.** A sixth mode that finds narrow peaks standing above the spectrum around them, such as a ringing snare, a boxy vocal or a room mode, and turns each one down by up to Depth only while it's there. Broadband material, plain noise included, changes by well under 0.5 dB.
+- **Depth, Sharpness, Attack, Release and Range.** Sharpness sets how narrow a peak must be to count; Range (Low and High) keeps it to part of the spectrum, and the graph dims what's outside. The cut shows in green, hanging from 0 dB.
+- **Linked stereo:** both channels get the same cut, so the image never moves. **Listen to removed resonances** plays only what's taken out.
+- **Two new presets:** Resonance Tamer and Harsh Vocal (Restoration).
+
+Projects saved with 1.0 to 1.5 load and sound exactly as before.
+
+## What was new in 1.5.0
 
 - **Fancy Verb: IR library.** 32 impulse responses built in, in Rooms, Halls, Plates, Chambers and Special, from a LIBRARY section in the File module's dropdown. A project that uses one stays small, because it stores the name, not the audio.
 - **Fancy Verb: true stereo.** Library IRs marked TS, four-channel WAVs and a pair of stereo files (**Pair right input…**) keep each input side's own reflections, so a source panned left still fills the room. The Reverb generator gains Low and High RT, Early reflections (Room or Hall, with Size; Plate is dense from the start), Build-up and a True stereo switch.
@@ -115,6 +124,10 @@ Band 2 set to Mid (the M chip and the M on its handle):
 Shown in Subtract mode with Adaptive tracking. The dashed line is the tracked noise profile.
 
 <img src="docs/images/fir-adaptive.png" width="760" alt="Fancy FIR with adaptive noise tracking">
+
+Resonance mode, turning down resonances at 700 Hz and 3 kHz:
+
+<img src="docs/images/fir-resonance.png" width="760" alt="Fancy FIR in Resonance mode">
 
 ### Fancy Gate
 

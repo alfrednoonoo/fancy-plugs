@@ -303,18 +303,44 @@ TEST_CASE ("Resonance leaves a resonance outside Range alone", "[fir][q27]")
 
 TEST_CASE ("Resonance gives both channels the same gain", "[fir][q27]")
 {
+    // Exact checks, since a cross-spectrum estimate weights a gain that moves over time
+    // differently on two different signals (run 43741706340: -3.54 and -3.08 dB).
     const auto left = peaking (shapedNoise (true, 1), 3000.0, 12.0, 8.0);
-    const auto right = shapedNoise (true, 7);
+    const auto settings = resonanceSettings (6.0);
 
-    const auto run = runEngine (left, right, resonanceSettings (6.0));
+    // 1. The right channel is the left at half level: if both get the same gain, the right
+    //    output is exactly half the left.
+    std::vector<float> half (left.size());
+
+    for (size_t i = 0; i < left.size(); ++i)
+        half[i] = 0.5f * left[i];
+
+    const auto scaled = runEngine (left, half, settings);
+
+    auto worst = 0.0, peak = 0.0;
+
+    for (size_t i = 0; i < left.size(); ++i)
+    {
+        worst = std::max (worst, std::abs ((double) scaled.right[i] - 0.5 * (double) scaled.left[i]));
+        peak = std::max (peak, std::abs ((double) scaled.left[i]));
+    }
+
+    CHECK (worst < 1.0e-5 * peak);
+    CHECK (transferDb (scaled.left, left, scaled.latency, 3000.0) < -2.0);
+
+    // 2. A resonance in one channel only is still cut, and swapping the channels swaps the
+    //    outputs exactly.
+    const auto right = shapedNoise (true, 7);
+    const auto run = runEngine (left, right, settings);
+    const auto swapped = runEngine (right, left, settings);
 
     const auto leftGain = transferDb (run.left, left, run.latency, 3000.0);
-    const auto rightGain = transferDb (run.right, right, run.latency, 3000.0);
-
-    std::printf ("fir resonance linked: left %+.2f dB, right %+.2f dB at 3 kHz\n", leftGain, rightGain);
+    std::printf ("fir resonance linked: resonance in the left only, left %+.2f dB at 3 kHz; scaled copy within %.2g of half\n",
+                 leftGain, worst / peak);
 
     CHECK (leftGain < -2.0);
-    CHECK (rightGain == Approx (leftGain).margin (0.3));
+    CHECK (swapped.left == run.right);
+    CHECK (swapped.right == run.left);
 }
 
 // 7. Ballistics --------------------------------------------------------------------------------

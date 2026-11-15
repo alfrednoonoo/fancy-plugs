@@ -368,8 +368,8 @@ FirEditor::FirEditor (FirProcessor& processor)
 
     rangeLowLabel.setBounds (rangeLowCentre - 33, cardY + 24, 66, 16);
     rangeHighLabel.setBounds (rangeHighCentre - 33, cardY + 24, 66, 16);
-    resLowKnob.setBounds (rangeLowCentre - 33, cardY + 36, 66, 74);
-    resHighKnob.setBounds (rangeHighCentre - 33, cardY + 36, 66, 74);
+    resLowKnob.setBounds (rangeLowCentre - 33, cardY + 39, 66, 72);
+    resHighKnob.setBounds (rangeHighCentre - 33, cardY + 39, 66, 72);
     resLowKnob.setTooltip ("Resonance works between Low and High, fading out over half an octave outside.");
     resHighKnob.setTooltip (resLowKnob.getTooltip());
     resSharpnessKnob.setTooltip ("Higher finds only narrower peaks; lower also takes broader bumps.");
