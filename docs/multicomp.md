@@ -162,3 +162,65 @@ The standard `FancyProcessor` XML, plus the editor's selected band as a `selecte
 | Users want a multiband limiter | Limit output after the band sum | Output stays below 0 dBFS with ∞:1, 0 ms attack and Limit output on. The manual explains the setup |
 | Unpredictable level with auto make-up | Estimated from Threshold, Ratio and Knee | The make-up doesn't change with the signal, and the read-out shows it |
 | Moving crossovers clicks | Log-frequency smoothing with per-sample coefficients | A sweep from 100 Hz to 2 kHz in 200 ms adds no jump beyond the input's own, within a stated margin |
+
+## Phase 3 Q2.6: lookahead, mid/side and CPU
+
+Brief: Q2.6 of `docs/BUILD_PROMPT_PHASE3.md`. Upward compression, Depth, Time and "Big squash" are done (Phase 2.1 U). **Draft, waiting for the user's approval.** Four decisions are marked; **(R)** is the recommended option. Mockup: `design/phase3-mockup-src/multicomp-q26.html`, rendered as `reference/phase3/26__multicomp_q26_mockup.png`.
+
+### 1. Lookahead
+
+- **What:** the audio is delayed by Lookahead and the detectors aren't, so each band's gain starts moving before the transient it reacts to. 0 to 10 ms, default 0, in 0.1 ms steps.
+- **Latency:** reported to the host, added to the crossover's and the limiter's. Dry and the bypass path are delayed to match, so wet and dry stay aligned. A change goes through the existing debounced switch (50 ms settle, 2 ms fade), because the latency changes.
+- **Decision 1: one Lookahead for all bands, or one per band.**
+  - **A (R).** One, global. Every band then shares the same delay, so the bands stay aligned and sum flat; per-band lookahead would need the longest delay everywhere anyway.
+  - **B.** Per band. It sounds flexible, but every band must still be delayed by the largest value, so it only changes how early each detector looks, at the cost of 8 more controls.
+- **Where:** the EDIT drawer, as a small knob.
+
+### 2. Channel per band (mid/side)
+
+- **What:** each band compresses Stereo (today), Left, Right, Mid or Side, from a chip on the band row, as Fancy EQ's bands do. A Mid band converts the band's signal to M = (L+R)/2 and S = (L−R)/2, compresses M with its detector reading M, leaves S as it is, and converts back. Left and Right work the same way on one channel. With every band on Stereo the path is today's, to the bit.
+- **Upward, sidechain, Solo and Active** work as before on the chosen channel. The band's Sidechain detector reads the same channel of the sidechain.
+- **Decision 2: what a non-stereo band does with the other channel.**
+  - **A (R).** Passes it untouched, so a Mid band leaves that band's sides alone. One channel per frequency range: Mid and Side of the same frequencies can't be compressed differently.
+  - **B.** Two compressors per band, one for Mid and one for Side, each with its own settings. Everything per band doubles (about 200 more parameters), and the band row needs a Mid/Side switch to choose which settings it shows.
+- **UI:** a chip reading ST, L, R, M or S between the band name and the S button, with the shared menu; the graph's handle shows the letter for a non-stereo band, as in EQ. On a mono bus the chip is greyed ("Channel needs a stereo bus") and the band works on the mono signal.
+
+### 3. CPU
+
+- **Today:** 4 bands in LR 24 cost about 2.3 % at 48 kHz/128 samples (`docs/measurements/multicomp.txt`). Most of it is `log10` (the detector level) and `pow` (the gain) on every sample, for every band.
+- **Change:** a fast base-2 log and exponent (a range reduction and a 5th-order polynomial, accurate to better than 0.005 dB), and the detector's level and the gain computed once per sample per band, already stereo-linked, instead of per channel. Target: 4 bands in LR 24 under 1.5 %.
+- **The catch:** the faster maths can't be bit-identical to today's, which the rule for saved projects requires. The brief's own test allows 0.05 dB.
+- **Decision 3: how old projects stay identical.**
+  - **A (R).** A new **Precision** setting, Exact or Fast, in the EDIT drawer. New instances and presets start on Fast. A project saved before Q2.6 has no Precision, so it loads as Exact and renders as before; the user can switch it.
+  - **B.** Fast everywhere. Old projects then change by up to 0.05 dB, which breaks the bit-identical rule, so it would need the user's explicit waiver.
+- **Test:** on the existing MultiComp tests, upward compression included, Fast's gain stays within 0.05 dB of Exact's, and Exact renders bit-identically to v1.4.0 (a legacy copy of today's DSP in `tests/`, as for Comp and Verb).
+
+### 4. Controls and layout
+
+- **Main layout:** the only addition is the channel chip on the band row (and the letter on non-stereo handles).
+- **EDIT drawer:** today Attack = 90 % rise, Log-scale automated freq. and Output. It gains **Lookahead** (small knob, with the latency next to it) and **Precision** (a dropdown: Exact, Fast).
+- **Decision 4 (R):** two factory presets: "Lookahead Glue" (Bus: 4 bands, 2 ms lookahead, gentle ratios) and "Mid/Side Master" (Mastering: low band Mid only, high band Side only, light ratios).
+
+### 5. Parameters and state
+
+Appended after Phase 2.1 U's, so nothing moves:
+
+| ID | Name | Range | Default | Unit | Skew |
+|---|---|---|---|---|---|
+| `b1chan` … `b8chan` | Band N channel | Stereo, Left, Right, Mid, Side | Stereo | | |
+| `lookahead` | Lookahead | 0 to 10 | 0 | ms | linear |
+| `precision` | Precision | Exact, Fast | Fast (new instance); Exact for a state without it | | |
+
+`stateVersion` stays at 4. The Precision migration is "absent means Exact", done where the state is applied, and tested.
+
+### 6. Tests
+
+1. **Compatibility:** a v1.4.0 state renders bit-identically (Exact), against a legacy copy of the DSP, in all three crossover modes.
+2. **Fast:** within 0.05 dB of Exact on the existing tests, upward compression and expansion included.
+3. **Lookahead:** reported latency matches the measured delay; a step at 0 dBFS through ∞:1, 0 ms attack, 5 ms lookahead overshoots the threshold by under 1 dB, against over 6 dB at 0 ms; wet and dry stay aligned.
+4. **Channel:** a Mid band at ∞:1 on a signal whose sides are louder than its middle leaves the sides within 0.01 dB; a Side band does the reverse; Stereo is bit-identical to today.
+5. **CPU (§0.4):** 4 bands LR 24, Exact and Fast, and Fast with everything on, in `docs/measurements/multicomp-q26.txt`. Target: Fast under 1.5 %.
+
+### 7. Build order
+
+One push: lookahead, channel, Fast/Exact with the legacy copy, the chip, the drawer, presets, tests; then the screenshots against the mockup, the manual, the checklist and CPU.

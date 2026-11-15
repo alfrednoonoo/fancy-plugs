@@ -111,3 +111,98 @@ The standard `FancyProcessor` XML. It adds one non-audio property, `selectedTap`
 | Feedback runs away | Capped at 100 %, with a safety curve and `tanh` when Saturate is on | 100 % feedback with a 90 to 180 BPM ramp over 30 s stays below 0 dBFS with no NaN or inf, Saturate on and off |
 | Clicks when time is automated | Two read heads crossfading, or a smoothed read position | A 375 to 500 ms step adds no jump beyond the input's own, in both modes |
 | No delay heard when Dry is -inf | Wet and Dry are independent gains after the network | Dry -inf and Wet 0 dB give the delayed signal at full level |
+
+## Phase 3 Q2.3: character
+
+Brief: Q2.3 of `docs/BUILD_PROMPT_PHASE3.md`. **Draft, waiting for the user's approval.** Five decisions are marked; **(R)** is the recommended option. Mockup: `design/phase3-mockup-src/delay-q23.html`, rendered as `reference/phase3/27__delay_q23_mockup.png`. Every new setting defaults to today's sound, so old projects render bit-identically (tested against a legacy copy of today's DSP).
+
+### 1. Signal path, per tap
+
+```
+in ─ × gate ─ + ─ ring ─ read (Hermite while modulated) ─ LP ─ HP ─ bits ─ CHARACTER ─ shape ─ width ─ pan ─ × Volume ─ × Wet × DUCK
+              ▲                                                  │
+              └─ × Feedback ─ DC block ─ DIFFUSION ─ shape ──────┘
+```
+
+New parts in capitals. Character sits after the filters, so with Filters inside feedback loop on (the default) every repeat goes through it again, which is how tape and bucket-brigade delays darken and thicken with each repeat.
+
+### 2. Modulation (wow and flutter)
+
+- **Per tap:** **Mod rate** 0.1 to 10 Hz (log, default 0.8), **Mod depth** 0 to 50 cents of pitch deviation (default 0), **Random** 0 to 100 % (default 30).
+- **How:** the read position moves by a slow sine at Rate, plus a smoothed random walk weighted by Random, scaled so the peak pitch deviation is Depth. The read goes through the existing 4-point Hermite interpolation while Depth is above 0; at 0 it's today's whole-sample read, to the bit.
+- **Stereo:** the right channel's LFO runs a quarter cycle ahead, so modulated repeats widen a little; Width still scales it.
+- **Test:** the measured pitch deviation of a 1 kHz tone matches Depth within 10 %, at three rates; Depth 0 is bit-exact.
+
+### 3. Character
+
+- **Per tap:** **Character** Clean (today), Tape or BBD, and **Amount** 0 to 100 % (default 50).
+- **Tape:** a soft saturation (Fancy Sature's soft curve, with ADAA), a head bump (a +2 dB bell at 90 Hz, scaled by Amount), and a high-frequency loss (a one-pole low-pass from 14 kHz down to 5 kHz as Amount rises). Inside the loop each repeat gets darker and rounder.
+- **BBD:** a band limit that follows the delay time, as a bucket-brigade chip's clock does (a 4th-order low-pass at 0.4 × the clock, which is 4096 stages over the delay time, held between 2.5 and 15 kHz); a compander (a 2:1 compressor before the line and a 1:2 expander after, so quiet repeats breathe); and clock noise, a faint 30 kHz-sampled hiss, about −80 dBFS at Amount 100 %.
+- **Original models,** not a recreation of any named unit.
+- **Click-free:** changing Character crossfades over 30 ms, as the other toggles do.
+
+### 4. Diffusion
+
+- **Per tap:** **Diffusion** 0 to 100 % (default 0). Four all-passes in series inside the feedback loop (prime delays of 7.3, 11.9, 17.1 and 23.7 ms, coefficient up to 0.65), so the repeats smear into a wash. At 0 % the loop is today's, to the bit.
+
+### 5. Ducking and Groove (global)
+
+- **Ducking:** **Duck amount** 0 to 24 dB (default 0, off), **Duck threshold** −60 to 0 dB (default −24), **Duck release** 20 to 2000 ms (default 250). The wet signal is turned down by up to Amount while the input is above the threshold, so repeats sit under the performance and swell in the gaps. The detector is the input's peak level with a 1 ms attack.
+- **Groove:** **Swing** 50 to 75 % (default 50, straight). For Note-mode taps only: a tap whose time lands on an off-beat of its own note value moves later, so a 1/8 tap at 60 % lands at 60 % of the quarter rather than half. ms-mode taps don't move.
+- **Decision 1: does Swing also move the feedback repeats?**
+  - **A (R).** No: it moves where each tap lands; its repeats keep the tap's own interval. Simple and predictable, and the multi-tap pattern carries the groove.
+  - **B.** Yes: odd and even repeats alternate between the long and short interval. More musical for single-tap delays, but it needs two read heads per tap and makes the feedback loop's timing alternate.
+
+### 6. CPU
+
+- **Today:** 4 taps with every option on cost 1.7 to 3.1 %; Saturate's `tanh`, four times a sample per tap, is most of it.
+- **Change:** a rational approximation of `tanh` (a 7th-order Padé form, clamped), within 0.0005 of `tanh`, that keeps the 0 dBFS guarantee: its output never exceeds 1.
+- **Target:** 4 taps with everything on, new features included, under 2 %.
+- **Decision 2: old projects with Saturate on.** The approximation can't be bit-identical to `tanh`.
+  - **A (R).** Keep `std::tanh` for a state saved before Q2.3 (a hidden flag, set by the state migration), and use the fast form for new instances. Old projects stay bit-identical.
+  - **B.** Fast everywhere; projects with Saturate on change by under 0.005 dB, which needs your waiver of the bit-identical rule.
+
+### 7. Controls and layout
+
+The tap card is full: the TIME card and the row of knobs and Volume.
+
+- **Decision 3: where the per-tap controls go.**
+  - **A (R).** The knob card gets a two-way switch at its top left, **Tone | Motion**. Tone shows today's row (Feedback, Lowpass, Highpass, Resolution, Width, Pan); Motion shows **Character** (a segment: Clean, Tape, BBD), **Amount**, **Rate**, **Depth**, **Random** and **Diffusion** (Rate and Depth are the Mod rate and Mod depth parameters, shortened on the page to fit). Volume stays at the right on both. It's a view switch, not a parameter, and the card keeps its size.
+  - **B.** In the EDIT drawer, for the selected tap. Out of the way, but sound-design controls you'd tweak often would hide behind a click.
+- **Decision 4: the tab chip shows the tap's character.** **(R)** A small "T" or "B" in the tap's tab when its Character is Tape or BBD, so a project doesn't hide it. Say no if you'd rather keep the tabs plain.
+- **EDIT drawer:** today Multiplier and Output. It gains **Ducking** (Amount, Threshold, Release as small knobs) and **Swing** (a small knob).
+- **Decision 5 (R):** four factory presets: "Tape Echo" (Tape 60 %, 1/4 dotted, 45 % feedback, 12 cents at 0.6 Hz), "BBD Chorus Echo" (BBD 50 %, 1/8, 35 %, 20 cents at 1.1 Hz), "Diffused Wash" (two taps, 70 % diffusion, 60 % feedback), "Ducked Vocal Echo" (1/4, 30 % feedback, 12 dB ducking).
+
+### 8. Parameters and state
+
+Appended per tap (`t1` to `t16`) and globally, after everything, so nothing moves:
+
+| ID | Name | Range | Default | Unit | Skew |
+|---|---|---|---|---|---|
+| `tNchar` | Character | Clean, Tape, BBD | Clean | | |
+| `tNcharAmt` | Amount | 0 to 100 | 50 | % | linear |
+| `tNmodRate` | Mod rate | 0.1 to 10 | 0.8 | Hz | log |
+| `tNmodDepth` | Mod depth | 0 to 50 | 0 | cents | linear |
+| `tNmodRand` | Random | 0 to 100 | 30 | % | linear |
+| `tNdiff` | Diffusion | 0 to 100 | 0 | % | linear |
+| `duckAmt` | Duck amount | 0 to 24 | 0 | dB | linear |
+| `duckThr` | Duck threshold | −60 to 0 | −24 | dB | linear |
+| `duckRel` | Duck release | 20 to 2000 | 250 | ms | log |
+| `swing` | Swing | 50 to 75 | 50 | % | linear |
+
+Plus the hidden "exact tanh" flag under Decision 2 A. `stateVersion` stays at 4.
+
+### 9. Tests
+
+1. **Compatibility:** v1.4.0 states, with Saturate off and on, render bit-identically against a legacy copy of the DSP.
+2. **Modulation:** as in section 2.
+3. **Character:** Tape at 100 % on a 1 kHz tone at −6 dBFS adds a 3rd harmonic above −40 dB; with Filters inside the loop and 60 % feedback, each Tape repeat has less energy above 5 kHz than the one before. BBD at a 500 ms time has nothing above 4 kHz beyond −40 dB, and its noise floor is under −75 dBFS. Switching Character under signal is click-free.
+4. **Diffusion:** at 70 %, a click's repeats spread to more than 20 peaks within 50 ms; 0 % is bit-exact.
+5. **Ducking:** with Amount 12 dB, the wet level drops by 12 dB ± 1 while the input is above the threshold and is back within 1 dB a Release after it stops; Amount 0 is bit-exact.
+6. **Swing:** at 60 % and 120 BPM, a 1/8 tap lands at 300 ms (60 % of the 500 ms quarter), ±1 sample; a 1/4 tap doesn't move.
+7. **Fast tanh:** never above 1 in magnitude, within 0.0005 of `tanh`; the 100 % feedback safety test still holds.
+8. **CPU (§0.4):** 4 plain taps, 4 taps with everything on, in `docs/measurements/delay-q23.txt`. Target: under 2 % with everything on.
+
+### 10. Build order
+
+Two pushes: the DSP (modulation, character, diffusion, ducking, swing, fast tanh, legacy copy, tests), then the UI (Tone | Motion, the drawer, tab letters), presets, screenshots, manual, checklist and CPU.

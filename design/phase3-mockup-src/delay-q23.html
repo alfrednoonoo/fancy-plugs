@@ -1,0 +1,60 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy Delay Q2.3 mockup</title><link rel="stylesheet" href="common.css"><link rel="stylesheet" href="kit2.css"><script src="lib2.js"></script>
+<style>
+body{--a:#F1C40F}
+.sheet{display:flex;flex-direction:column;gap:18px;width:1000px}
+.h{font-size:13px;font-weight:700;color:#fff;margin:4px 0 2px}.n{font-size:11px;color:#8D8D8D;margin-bottom:8px;line-height:1.45;max-width:980px}
+.shot{position:relative;width:760px;height:448px}
+.shot img{width:760px;height:448px;display:block}
+.abs{position:absolute}
+.new{outline:1px dashed #FFCF07;outline-offset:3px}
+.cover{background:#262626}
+.k50 .lbl{font-size:12px}.k50 .val{font-size:12px}
+.drawer{position:relative;width:656px;height:207px;background:#262626}
+.drawer .t{position:absolute;left:24px;top:0;height:48px;display:flex;align-items:center;font-size:14px;font-weight:600;letter-spacing:.06em}
+.drawer .done{position:absolute;left:578px;top:12px;width:62px;height:24px;border-radius:12px;background:#303030;font-size:12px;display:flex;align-items:center;justify-content:center}
+.ddv{background:#303030;border-radius:3px;font-size:12px;padding:0 8px;height:24px;display:flex;align-items:center;justify-content:space-between}
+.ddv:after{content:"⌃⌄";font-size:7px;color:#8D8D8D;writing-mode:vertical-lr;line-height:5px}
+.grp{font-size:11px;font-weight:600;letter-spacing:.06em;color:#8D8D8D}
+</style></head><body>
+<div class="sheet">
+
+<div><div class="h">1 · Tap card, Tone page: today's knobs, with the Tone | Motion switch (Decision 3) and the tab letter (Decision 4)</div><div class="n">The switch sits in the tap row, after the tap's time, so the cards keep their size. Tone shows today's row. Tap 1 is set to Tape, so its tab carries a small "T" (B for BBD). New items are ringed in yellow here only.</div>
+<div class="shot"><img src="../../docs/images/delay.png">
+ <div class="abs seg new" style="left:400px;top:243px;font-size:12px"><span class="a" style="padding:3px 10px">Tone</span><span style="padding:3px 10px">Motion</span></div>
+ <div class="abs new" style="left:34px;top:241px;width:9px;height:9px;border-radius:2px;background:#141414;color:#F1C40F;font-size:7px;font-weight:800;display:flex;align-items:center;justify-content:center">T</div>
+</div></div>
+
+<div><div class="h">2 · Tap card, Motion page: Character, Amount, Mod rate, Mod depth, Random, Diffusion</div><div class="n">The same card with Motion selected. Character is a three-way segment; the knobs are the card's existing size, in the tap's colour. Volume stays on the right. Mod depth at 0 means no modulation; Diffusion at 0 means none.</div>
+<div class="shot"><img src="../../docs/images/delay.png">
+ <div class="abs seg" style="left:400px;top:243px;font-size:12px"><span style="padding:3px 10px">Tone</span><span class="a" style="padding:3px 10px">Motion</span></div>
+ <div class="abs cover" style="left:208px;top:273px;width:380px;height:142px;border-radius:6px"></div>
+ <div class="abs" style="left:222px;top:282px;display:flex;flex-direction:column;gap:6px">
+  <div style="font-size:12px">Character</div>
+  <div class="seg" style="font-size:10.5px"><span style="padding:3px 5px">Clean</span><span class="m" style="padding:3px 5px">Tape</span><span style="padding:3px 5px">BBD</span></div>
+ </div>
+ <div class="abs" style="left:216px;top:330px"><div class="knob k50" data-k data-v=".6" data-c="#F1C40F" data-s="34" data-l="Amount" data-t="60 %" style="width:64px"></div></div>
+ <div class="abs" style="left:352px;top:282px;display:flex">
+  <div class="knob k50" data-k data-v=".42" data-c="#F1C40F" data-s="42" data-l="Rate" data-t="0.60 Hz" style="width:58px"></div>
+  <div class="knob k50" data-k data-v=".24" data-c="#F1C40F" data-s="42" data-l="Depth" data-t="12 cents" style="width:58px"></div>
+  <div class="knob k50" data-k data-v=".3" data-c="#F1C40F" data-s="42" data-l="Random" data-t="30 %" style="width:58px"></div>
+  <div class="knob k50" data-k data-v="0" data-c="#F1C40F" data-s="42" data-l="Diffusion" data-t="0 %" style="width:58px"></div>
+ </div>
+</div></div>
+
+<div><div class="h">3 · EDIT drawer: Ducking and Swing (global)</div><div class="n">The drawer keeps its size and today's Note multiplier and Output. Ducking is three small knobs in a group; Swing is a small knob, for Note-mode taps. Duck amount at 0 dB is off.</div>
+<div class="drawer">
+ <div class="t">EDIT</div><div class="done">Done</div>
+ <div class="abs" style="left:24px;top:60px;font-size:14px;height:24px;display:flex;align-items:center">Note multiplier</div>
+ <div class="abs ddv" style="left:140px;top:60px;width:80px">×1</div>
+ <div class="abs new" style="left:24px;top:104px"><div class="knob k50" data-k data-v="0" data-c="#00A985" data-s="34" data-l="Swing" data-t="50 %" style="width:64px"></div></div>
+ <div class="abs" style="left:236px;top:56px"><div class="knob k50" data-k data-v=".5" data-c="#00A985" data-s="42" data-bi data-l="Output" data-t="0.0 dB" style="width:80px"></div></div>
+ <div class="abs grp" style="left:350px;top:44px">DUCKING</div>
+ <div class="abs new" style="left:340px;top:66px;display:flex">
+  <div class="knob k50" data-k data-v=".5" data-c="#00A985" data-s="34" data-l="Amount" data-t="12.0 dB" style="width:72px"></div>
+  <div class="knob k50" data-k data-v=".6" data-c="#00A985" data-s="34" data-l="Threshold" data-t="-24 dB" style="width:72px"></div>
+  <div class="knob k50" data-k data-v=".4" data-c="#00A985" data-s="34" data-l="Release" data-t="250 ms" style="width:72px"></div>
+ </div>
+</div>
+</div>
+
+</div></body></html>
