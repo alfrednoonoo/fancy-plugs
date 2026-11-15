@@ -47,14 +47,14 @@ Every item below is built, green in CI and passed by the user in REAPER. Each ha
 - **Phase 3 new plugins:** Fancy Limit (`docs/limit.md`), Fancy DS (`docs/ds.md`), Fancy DS-Mini (`docs/ds-mini.md`), Fancy Sature (`docs/sature.md`), Kicker's Sub mode (`docs/kicker-sub.md`), Fancy Room (`docs/room.md`). REAPER checks passed on 10 November (Limit) and 13 November 2026 (the rest).
 - **§0.3 Listen rule:** Listen and preview switches are temporary, never parameters (`FancyProcessor::setListening`, `ListenCheckbox`), retrofitted to Comp's and Gate's Preview filter and FIR's Listen. Limit's "Listen to removed" stays a parameter, by the user's choice.
 
-Latest green run: 43655069240 (commit `7a1b820`, Verb Q2.8), 493 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
+Latest green run: 43683895341 (commit `16fa05b`, Verb Q2.8, MultiComp Q2.6, Delay Q2.3), pluginval, Steinberg's validator, the host harness and FancyBench.
 
 ## Still to do in Phase 3
 
 In Q2's order (`docs/BUILD_PROMPT_PHASE3.md`), each with an approved design note first and signed off in REAPER before the next:
 
-1. Verb (Q2.8): content, true stereo and modulation. Next.
-2. Then MultiComp (Q2.6), Delay (Q2.3), FIR (Q2.7) and Kicker (Q2.2, now reduced to Sub mode, which is done). Confirm this part of the order with the user when Verb is done.
+1. Verb (Q2.8), MultiComp (Q2.6) and Delay (Q2.3): built and green; waiting for the REAPER check, then v1.5.0.
+2. Then FIR (Q2.7) and Kicker (Q2.2, now reduced to Sub mode, which is done).
 
 Mac comes after Windows is finished. Phase 4 holds Kicker's sidechain Duck, a transient shaper and a chorus.
 
