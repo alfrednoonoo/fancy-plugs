@@ -97,6 +97,7 @@ private:
 
     public:
         void showMotion (bool motion) { showPage (motion); }
+    };
 
     void onTick (float seconds) override;
     bool listsParameter (const juce::AudioProcessorParameter&) override;
