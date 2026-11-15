@@ -4,9 +4,9 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 ## Now
 
-- **Current item: FIR (Q2.7)**: Resonance mode and CPU stability. Design note (`docs/fir.md`, "Phase 3 Q2.7"), model (`docs/research/fir-resonance-model.py`) and mockup (`reference/phase3/28__fir_q27_mockup.png`) **approved by the user on 15 November 2026, every recommended option.**
-  - Push 1 (everything: DSP, parameters, UI, presets, screenshots `fir-resonance` and `fir-resonance-range`, `tests/FirQ27Tests.cpp`, the paced CPU benchmark, manual, checklist): CI pending.
-- **Then:** Kicker (Q2.2) is already reduced to Sub mode, which is done, so Phase 3's Q2 list ends with FIR. Mac comes after Windows; Phase 4 holds Kicker's Duck, a transient shaper and a chorus.
+- **FIR (Q2.7)**: Resonance mode and CPU stability, green in run 43742763641 (commit `ff534e3`, 516 test cases); as built in `docs/fir.md`. **Waiting for:** the v1.6.0 GitHub release (stopped once by low memory on the PC; rerun only when the user says so), the README's `fir-resonance.png` from `screens-ff534e3`, and the user's REAPER check (`docs/fir-checklist.md`, Resonance section). Fixes go out as 1.6.1. The paced FIR benchmark's second run must agree with 43742763641 within 20 %.
+- **Current item: Mac** (`docs/mac.md`), **approved by the user on 15 November 2026, every recommended option.** Step 1 (portable code, Windows only, bit-identical): push 1 CI pending. Then step 2, the macOS job.
+- **Then:** Phase 3's Q2 list is done with FIR. Phase 4 holds Kicker's Duck, a transient shaper and a chorus. Q3's saved-state fixtures for v1.1.0/v1.2.0 (`tests/data/`) are still open, and FancyBench head-to-heads for Verb, MultiComp and FIR are the user's.
 - **Latest release:** [v1.5.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.5.0), 15 November 2026: Verb Q2.8, MultiComp Q2.6, Delay Q2.3, all passed in REAPER by the user on 15 November 2026.
 
 ## Releases
@@ -45,10 +45,10 @@ Latest green run: 43737725969 (commit `947168b`, release 1.5.0), 507 test cases,
 
 In Q2's order (`docs/BUILD_PROMPT_PHASE3.md`), each with an approved design note first and signed off in REAPER before the next:
 
-1. FIR (Q2.7): design waiting for approval.
+1. FIR (Q2.7): green, waiting for release and the REAPER check.
 2. Kicker (Q2.2) is reduced to Sub mode, which is done.
 
-Mac comes after Windows is finished. Phase 4 holds Kicker's sidechain Duck, a transient shaper and a chorus.
+Mac (`docs/mac.md`) is approved and in progress. Phase 4 holds Kicker's sidechain Duck, a transient shaper and a chorus.
 
 ## Standing decisions
 

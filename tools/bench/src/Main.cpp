@@ -8,17 +8,9 @@
 // Each plugin is measured in a child process (FancyBench --one ...), so one that crashes or hangs
 // can't lose the rest of the session.
 
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <mmsystem.h>
-#include <shellapi.h>
-
-#pragma comment(lib, "winmm.lib")
-#pragma comment(lib, "shell32.lib")
-
 #include "Analysis.h"
 #include "Host.h"
+#include "Platform.h"
 #include "Report.h"
 #include "TestFile.h"
 
@@ -120,8 +112,8 @@ int measureOne (const juce::StringArray& args)
     if (args.size() < 6)
         return 2;
 
-    SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
-    timeBeginPeriod (1);
+    bench::platform::suppressCrashDialogs();
+    const bench::platform::ScopedTimerResolution timerResolution;
 
     const juce::File testFile (args[1]), resultFile (args[3]), logFile (args[4]);
     RunOptions options;
@@ -153,7 +145,6 @@ int measureOne (const juce::StringArray& args)
 
     resultFile.replaceWithText (juce::JSON::toString (result));
     log ("done");
-    timeEndPeriod (1);
     return 0;
 }
 
@@ -365,7 +356,7 @@ int smoke (const juce::StringArray& args)
     if (args.size() < 5)
         return usage();
 
-    timeBeginPeriod (1);
+    const bench::platform::ScopedTimerResolution timerResolution;
 
     const auto dist = argumentFile (args[1]);
     const auto measurements = argumentFile (args[2]);
@@ -534,27 +525,16 @@ int smoke (const juce::StringArray& args)
 
     out.getChildFile ("smoke.txt").replaceWithText (checks.lines.joinIntoString ("\n") + "\n");
     print (checks.failures == 0 ? "All bench checks passed" : juce::String (checks.failures) + " bench checks failed");
-    timeEndPeriod (1);
     return checks.failures == 0 ? 0 : 1;
 }
 
 } // namespace
 
-int main()
+int main (int argc, char* argv[])
 {
-    SetConsoleOutputCP (CP_UTF8);
+    bench::platform::prepareConsole();
 
-    // The wide command line, so paths outside the ANSI code page survive.
-    juce::StringArray args;
-    int count = 0;
-
-    if (auto** wide = CommandLineToArgvW (GetCommandLineW(), &count))
-    {
-        for (int i = 1; i < count; ++i)
-            args.add (juce::String (wide[i]));
-
-        LocalFree (wide);
-    }
+    auto args = bench::platform::arguments (argc, argv);
 
     if (args.isEmpty())
         return usage();

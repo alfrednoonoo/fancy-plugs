@@ -1,8 +1,6 @@
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include "Host.h"
+
+#include "Platform.h"
 
 #include <juce_events/juce_events.h>
 
@@ -53,30 +51,8 @@ double rounded (double value, double step = 0.001)
     return std::round (value / step) * step;
 }
 
-juce::uint64 ticks (const FILETIME& time)
-{
-    return ((juce::uint64) time.dwHighDateTime << 32) | time.dwLowDateTime;
-}
-
-double threadCpuSeconds()
-{
-    FILETIME created, exited, kernel, user;
-
-    if (! GetThreadTimes (GetCurrentThread(), &created, &exited, &kernel, &user))
-        return 0.0;
-
-    return (double) (ticks (kernel) + ticks (user)) * 1.0e-7;
-}
-
-double processCpuSeconds()
-{
-    FILETIME created, exited, kernel, user;
-
-    if (! GetProcessTimes (GetCurrentProcess(), &created, &exited, &kernel, &user))
-        return 0.0;
-
-    return (double) (ticks (kernel) + ticks (user)) * 1.0e-7;
-}
+using platform::processCpuSeconds;
+using platform::threadCpuSeconds;
 
 Signal zeros (int numSamples) { return Signal ((size_t) std::max (0, numSamples), 0.0f); }
 
@@ -623,7 +599,7 @@ Rig::Timing Rig::time (const Signal& input, int block, bool pace)
     Timing timing;
     timing.blockLoads.reserve (input.size() / (size_t) block + 1);
 
-    SetThreadPriority (GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+    platform::setAudioPriority (true);
     const auto cpuBefore = processCpuSeconds();
     const auto threadBefore = threadCpuSeconds();
     const auto start = Clock::now();
@@ -646,16 +622,16 @@ Rig::Timing Rig::time (const Signal& input, int block, bool pace)
             for (auto now = Clock::now(); now < deadline; now = Clock::now())
             {
                 if (deadline - now > std::chrono::milliseconds (2))
-                    Sleep (1);
+                    platform::sleepBriefly();
                 else
-                    SwitchToThread();
+                    platform::yieldThread();
             }
         }
     }
 
     // Other threads only: this thread's own time includes the pacing wait, not just the plugin.
     timing.otherThreadsCpuSeconds = std::max (0.0, (processCpuSeconds() - cpuBefore) - (threadCpuSeconds() - threadBefore));
-    SetThreadPriority (GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+    platform::setAudioPriority (false);
     return timing;
 }
 

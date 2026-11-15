@@ -2,7 +2,9 @@
 // kept so a test can check that true stereo changed nothing for a direct IR. See docs/verb.md.
 #include "LegacyVerbConvolver.h"
 
-#include <immintrin.h>
+#include "ConvolverKernels.h"
+
+#include <fancy/dsp/CpuPause.h>
 
 #include <algorithm>
 #include <cmath>
@@ -37,42 +39,8 @@ constexpr StageDefinition lowCpuStages[] {
     { 32768, 61440, 0, true },
 };
 
-inline float dot (const float* aligned, const float* other, int count) noexcept
-{
-    auto sum = _mm_setzero_ps();
-
-    for (int i = 0; i < count; i += 4)
-        sum = _mm_add_ps (sum, _mm_mul_ps (_mm_load_ps (aligned + i), _mm_loadu_ps (other + i)));
-
-    alignas (16) float parts[4];
-    _mm_store_ps (parts, sum);
-    return parts[0] + parts[1] + parts[2] + parts[3];
-}
-
-// out += a * b for interleaved single-precision complex numbers.
-inline void multiplyAccumulate (juce::dsp::Complex<float>* out, const juce::dsp::Complex<float>* a,
-                                const juce::dsp::Complex<float>* b, int count) noexcept
-{
-    auto* o = reinterpret_cast<float*> (out);
-    const auto* x = reinterpret_cast<const float*> (a);
-    const auto* y = reinterpret_cast<const float*> (b);
-
-    int i = 0;
-
-    for (; i + 2 <= count; i += 2)
-    {
-        const auto va = _mm_loadu_ps (x + i * 2);
-        const auto vb = _mm_loadu_ps (y + i * 2);
-        const auto real = _mm_moveldup_ps (va);
-        const auto imaginary = _mm_movehdup_ps (va);
-        const auto swapped = _mm_shuffle_ps (vb, vb, _MM_SHUFFLE (2, 3, 0, 1));
-        const auto product = _mm_addsub_ps (_mm_mul_ps (real, vb), _mm_mul_ps (imaginary, swapped));
-        _mm_storeu_ps (o + i * 2, _mm_add_ps (_mm_loadu_ps (o + i * 2), product));
-    }
-
-    for (; i < count; ++i)
-        out[i] += a[i] * b[i];
-}
+using kernels::dot;
+using kernels::multiplyAccumulate;
 
 } // namespace
 
@@ -269,7 +237,7 @@ void Convolver::reset() noexcept
         stage->state.compare_exchange_strong (expected, jobIdle, std::memory_order_acq_rel);
 
         while (stage->state.load (std::memory_order_acquire) == jobRunning)
-            _mm_pause();
+            fancy::dsp::cpuPause();
 
         stage->clear();
     }
@@ -321,7 +289,7 @@ bool Convolver::collect (Stage& stage, bool offline) noexcept
             if (! offline && juce::Time::getHighResolutionTicks() > limit)
                 return false;
 
-            _mm_pause();
+            fancy::dsp::cpuPause();
         }
     }
 

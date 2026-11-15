@@ -1,7 +1,8 @@
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <immintrin.h>
+#include "Platform.h"
+
+#include <fancy/dsp/CpuPause.h>
 
 #include "Convolver.h"
 #include "IrBuilder.h"
@@ -160,27 +161,8 @@ bool allFinite (const juce::AudioBuffer<float>& buffer)
     return true;
 }
 
-double secondsOf (const FILETIME& time)
-{
-    ULARGE_INTEGER value;
-    value.LowPart = time.dwLowDateTime;
-    value.HighPart = time.dwHighDateTime;
-    return (double) value.QuadPart * 1.0e-7;
-}
-
-double processCpuSeconds()
-{
-    FILETIME created, exited, kernel, user;
-    GetProcessTimes (GetCurrentProcess(), &created, &exited, &kernel, &user);
-    return secondsOf (kernel) + secondsOf (user);
-}
-
-double threadCpuSeconds()
-{
-    FILETIME created, exited, kernel, user;
-    GetThreadTimes (GetCurrentThread(), &created, &exited, &kernel, &user);
-    return secondsOf (kernel) + secondsOf (user);
-}
+using bench::platform::processCpuSeconds;
+using bench::platform::threadCpuSeconds;
 
 juce::File scratchFolder (const juce::String& name)
 {
@@ -1205,9 +1187,9 @@ TEST_CASE ("verb measurements", "[.measure]")
     // has in a host. CPU is everything the process used, except this thread's own waiting.
     // A host's audio thread runs above the worker, so this one is raised to match. At normal
     // priority the worker preempts it for a whole FFT job, which no host would see.
-    const auto measure = [] (bool lowCpu, const char* name, int priority)
+    const auto measure = [] (bool lowCpu, const char* name, bool audioPriority)
     {
-        SetThreadPriority (GetCurrentThread(), priority);
+        const bench::platform::ScopedAudioPriority priority (audioPriority);
 
         const auto left = noise (192000, 20, 40000.0);
         const auto right = noise (192000, 21, 40000.0);
@@ -1245,7 +1227,7 @@ TEST_CASE ("verb measurements", "[.measure]")
             deadline += blockTime;
 
             while (Clock::now() < deadline)
-                _mm_pause();
+                fancy::dsp::cpuPause();
         }
 
         const auto wall = std::chrono::duration<double> (Clock::now() - start).count();
@@ -1258,10 +1240,9 @@ TEST_CASE ("verb measurements", "[.measure]")
         for (const auto block : overBudget)
             std::printf ("  over budget at block %d\n", block);
 
-        SetThreadPriority (GetCurrentThread(), THREAD_PRIORITY_NORMAL);
     };
 
-    measure (false, "Zero latency (target < 5 %)", THREAD_PRIORITY_TIME_CRITICAL);
-    measure (true, "Low CPU", THREAD_PRIORITY_TIME_CRITICAL);
-    measure (false, "Zero latency, below the worker's priority", THREAD_PRIORITY_NORMAL);
+    measure (false, "Zero latency (target < 5 %)", true);
+    measure (true, "Low CPU", true);
+    measure (false, "Zero latency, below the worker's priority", false);
 }

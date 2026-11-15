@@ -7,7 +7,11 @@ target_sources(FancyBench PRIVATE
     src/Analysis.cpp
     src/TestFile.cpp
     src/Host.cpp
+    src/Platform.cpp
     src/Report.cpp)
+
+# Only for fancy/dsp/CpuPause.h, used by the platform layer.
+target_include_directories(FancyBench PRIVATE "${CMAKE_SOURCE_DIR}/fancy-core/include")
 
 target_compile_definitions(FancyBench PRIVATE
     JUCE_PLUGINHOST_VST3=1

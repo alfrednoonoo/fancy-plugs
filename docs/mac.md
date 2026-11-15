@@ -1,6 +1,6 @@
 # Fancy Plugs on Mac: plan
 
-**Draft, 15 November 2026, waiting for the user's decisions.** `docs/BUILD_PROMPT_PHASE3.md` makes Mac its own phase, after Windows is finished. This note is the plan for it: what has to change, how it's built and tested without a Mac on this side, and the decisions only the user can make. No code until it's approved.
+**Approved by the user on 15 November 2026, every recommended option (R):** VST3 and AU, no Developer ID (ad-hoc signing and the install script), one universal build, macOS 11 and later, Gate's AU as a music effect, and a listening check on a Mac before the Mac release. `docs/BUILD_PROMPT_PHASE3.md` makes Mac its own phase, after Windows is finished. This note is the plan for it: what has to change, how it's built and tested without a Mac on this side, and the decisions only the user can make. No code until it's approved.
 
 Goal: all fourteen plugins on macOS, on Intel and Apple silicon (M1 and later), sounding and looking as they do on Windows, from the same source and the same CI.
 
@@ -10,8 +10,8 @@ JUCE is cross-platform, and almost everything is already portable. A search of t
 
 | Where | What's Windows-only | Change |
 |---|---|---|
-| `plugins/verb/src/VerbLibrary.cpp`, `plugins/verb/CMakeLists.txt` | The IR library is a Windows resource (`.rc`, `FindResourceW`) | Embed it with JUCE's `juce_add_binary_data` on every platform, so there's one path. Windows output stays bit-identical (same bytes, read another way) |
-| `plugins/verb/src/Convolver.cpp` | SSE intrinsics (`_mm_*`) in the convolver's inner loops | Keep SSE on x86 (Intel Macs too); add a NEON path for Apple silicon, or a plain loop the compiler vectorises. The Verb's bit-identity tests run on both |
+| `plugins/verb/src/VerbLibrary.cpp`, `plugins/verb/CMakeLists.txt` | The IR library is a Windows resource (`.rc`, `FindResourceW`) | Windows keeps its resource. On Mac the same file is embedded with the assembler's `.incbin`, in step 2, when there's a Mac build to test it: JUCE binary data would turn the 22 MB file into about 100 MB of source (`docs/verb.md`). Same bytes, so the same IRs |
+| `plugins/verb/src/Convolver.cpp` | SSE intrinsics (`_mm_*`) in the convolver's inner loops | Keep SSE on x86 (Intel Macs too); on Apple silicon, plain loops doing the same float operations in the same order (`ConvolverKernels.h`), which a test proves bit-identical to SSE |
 | `tools/bench/src/Host.cpp`, `Main.cpp` (FancyBench) | Thread priority and timing via Win32 | A small platform layer: Win32 on Windows, Mach thread policy and `mach_absolute_time` on Mac |
 | `tests/VerbTests.cpp`, `tests/FirQ27Tests.cpp` | CPU benchmarks use Win32 priority and cycle counters | The same platform layer; the correctness tests are already portable |
 | `scripts/install.ps1`, `get-latest.ps1` | PowerShell, `%USERPROFILE%\VST3-Dev` | `install.sh` and `get-latest.sh`, into `~/Library/Audio/Plug-Ins/VST3` (and `Components` for AU) |
@@ -76,6 +76,10 @@ Each step is one push or a few, green on both platforms before the next:
 5. **Listening check** (Decision 6), then the release with both zips.
 
 Steps 1 and 2 need no decisions beyond 3 and 4; steps 3 to 5 need Decisions 1, 2, 5 and 6.
+
+## 9. As built
+
+- **Step 1 (push 1):** `fancy/dsp/CpuPause.h` (`pause` on x86, `yield` on ARM) replaces `_mm_pause`. The convolver's kernels moved to `plugins/verb/src/ConvolverKernels.h`: SSE on x86 as before, and portable versions with four running sums in SSE's lane order and the complex product written as SSE's `addsub` computes it. `tests/PortabilityTests.cpp` checks they match SSE bit for bit. FancyBench and the CPU tests use `tools/bench/src/Platform.h` (priority, CPU time, thread cycles, short waits, timer resolution, command line): Win32 calls moved there unchanged; the Mac half (Mach time-constraint policy, `CLOCK_THREAD_CPUTIME_ID`, `getrusage`) is written but first compiled in step 2. The Verb library stays a Windows resource for now. CI pending.
 
 ## 8. Risks
 

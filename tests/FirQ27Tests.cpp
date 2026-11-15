@@ -1,14 +1,13 @@
 // Phase 3 Q2.7: Fancy FIR's Resonance mode and CPU stability. See docs/fir.md, "Phase 3 Q2.7",
 // and the model the figures come from, docs/research/fir-resonance-model.py.
 
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <immintrin.h>
-
 #include "FirDsp.h"
 #include "FirProcessor.h"
 #include "SpectralEngine.h"
+
+#include "Platform.h"
+
+#include <fancy/dsp/CpuPause.h>
 
 #if FANCY_HAS_COMP
  #include "CompProcessor.h"
@@ -572,21 +571,7 @@ TEST_CASE ("Resonance's latency is the measured impulse delay", "[fir][q27]")
 
 namespace
 {
-// Thread cycles per second, measured by spinning: used to turn a block's cycles into time.
-double cyclesPerSecond()
-{
-    ULONG64 startCycles = 0, endCycles = 0;
-    const auto start = std::chrono::steady_clock::now();
-    QueryThreadCycleTime (GetCurrentThread(), &startCycles);
-
-    while (std::chrono::steady_clock::now() - start < std::chrono::milliseconds (200))
-        _mm_pause();
-
-    QueryThreadCycleTime (GetCurrentThread(), &endCycles);
-    const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
-
-    return (double) (endCycles - startCycles) / wall.count();
-}
+using bench::platform::cyclesPerSecond;
 
 struct Timing
 {
@@ -611,20 +596,19 @@ Timing timeRun (ProcessBlock&& processBlock, int numBlocks, int blockSize, doubl
     auto cycleSeconds = 0.0;
     Timing timing;
 
-    SetThreadPriority (GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+    bench::platform::setAudioPriority (true);
 
     auto deadline = Clock::now();
 
     for (int block = 0; block < numBlocks; ++block)
     {
-        ULONG64 cyclesBefore = 0, cyclesAfter = 0;
-        QueryThreadCycleTime (GetCurrentThread(), &cyclesBefore);
+        const auto cyclesBefore = bench::platform::threadCycles();
         const auto start = Clock::now();
 
         processBlock (block);
 
         const std::chrono::duration<double> used = Clock::now() - start;
-        QueryThreadCycleTime (GetCurrentThread(), &cyclesAfter);
+        const auto cyclesAfter = bench::platform::threadCycles();
 
         const auto cycles = (double) (cyclesAfter - cyclesBefore) / cycleRate;
 
@@ -637,10 +621,10 @@ Timing timeRun (ProcessBlock&& processBlock, int numBlocks, int blockSize, doubl
         deadline += blockTime;
 
         while (Clock::now() < deadline)
-            _mm_pause();
+            fancy::dsp::cpuPause();
     }
 
-    SetThreadPriority (GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+    bench::platform::setAudioPriority (false);
 
     auto total = 0.0;
 
