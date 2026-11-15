@@ -331,8 +331,15 @@ TEST_CASE ("Bench: test files", "[bench]")
 
     // FANCY_VST3 defaults to the install folder.
     if (juce::SystemStats::getEnvironmentVariable ("FANCY_VST3", {}).isEmpty())
+    {
+       #if JUCE_MAC
+        CHECK (expandPath ("%FANCY_VST3%/Fancy Comp.vst3")
+               == juce::File::getSpecialLocation (juce::File::userHomeDirectory).getFullPathName() + "/Library/Audio/Plug-Ins/VST3/Fancy Comp.vst3");
+       #else
         CHECK (expandPath ("%FANCY_VST3%/Fancy Comp.vst3")
                == juce::SystemStats::getEnvironmentVariable ("USERPROFILE", {}) + "\\VST3-Dev\\Fancy Comp.vst3");
+       #endif
+    }
 
     CHECK (expandPath ("%NO_SUCH_VARIABLE_FOR_BENCH%/x") == "%NO_SUCH_VARIABLE_FOR_BENCH%" + juce::File::getSeparatorString() + "x");
 }

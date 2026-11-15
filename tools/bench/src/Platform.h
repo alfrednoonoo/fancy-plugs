@@ -30,7 +30,7 @@ double threadCpuSeconds();
 double processCpuSeconds();
 
 // A fine counter of the calling thread's own running time, in units only cyclesPerSecond()
-// converts (Windows: cycles; macOS: nanoseconds).
+// converts (Windows: cycles; macOS: nanoseconds, to the microsecond).
 std::uint64_t threadCycles();
 
 // Measured by spinning for 200 ms.

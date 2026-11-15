@@ -87,7 +87,7 @@ Steps 1 and 2 need no decisions beyond 3 and 4; steps 3 to 5 need Decisions 1, 2
   - *Steinberg's validator* was never built: its steps were skipped after the test failure, and pluginval failed for want of it. Both steps now run unless the job is cancelled.
   - *FancyBench:* `expandPath` turned `/` into `\`, so on Mac no path resolved. It now uses each platform's separator.
   - *Mac CPU timings* had 127 of 1000 blocks preempted: a Mach time-constraint thread that spins is demoted by the kernel. The benchmarks now use the highest QoS class instead.
-  CI pending.
+- **Run 43770725166:** Windows green. Mac: Steinberg's validator, pluginval, the host harness and FancyBench's smoke checks all passed on every plugin. Two tests still failed: a FancyBench test expected the Windows install folder (now per platform), and under Rosetta `CLOCK_THREAD_CPUTIME_ID` counts 24 MHz ticks while claiming nanoseconds, so thread CPU read 2.4 % of the truth. Thread time on Mac now comes from the kernel's `thread_info`. CI pending.
 
 ## 8. Risks
 

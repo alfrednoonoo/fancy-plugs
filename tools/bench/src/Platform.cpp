@@ -137,11 +137,38 @@ void setAudioPriority (bool on)
    #endif
 }
 
-double threadCpuSeconds()
+#if defined (__APPLE__)
+// The thread's user and system time from the kernel, in nanoseconds. Not
+// CLOCK_THREAD_CPUTIME_ID: under Rosetta it counts 24 MHz ticks while claiming nanoseconds
+// (run 43770725166 measured 0.024 s per second of spinning).
+std::uint64_t threadNanoseconds()
+{
+    thread_basic_info_data_t info {};
+    mach_msg_type_number_t count = THREAD_BASIC_INFO_COUNT;
+    const auto thread = pthread_mach_thread_np (pthread_self());
+
+    if (thread_info (thread, THREAD_BASIC_INFO, (thread_info_t) &info, &count) != KERN_SUCCESS)
+        return 0;
+
+    const auto micros = [] (const time_value_t& time)
+    {
+        return (std::uint64_t) time.seconds * 1000000u + (std::uint64_t) time.microseconds;
+    };
+
+    return (micros (info.user_time) + micros (info.system_time)) * 1000u;
+}
+#else
+std::uint64_t threadNanoseconds()
 {
     timespec time {};
     clock_gettime (CLOCK_THREAD_CPUTIME_ID, &time);
-    return (double) time.tv_sec + 1.0e-9 * (double) time.tv_nsec;
+    return (std::uint64_t) time.tv_sec * 1000000000u + (std::uint64_t) time.tv_nsec;
+}
+#endif
+
+double threadCpuSeconds()
+{
+    return 1.0e-9 * (double) threadNanoseconds();
 }
 
 double processCpuSeconds()
@@ -153,9 +180,7 @@ double processCpuSeconds()
 
 std::uint64_t threadCycles()
 {
-    timespec time {};
-    clock_gettime (CLOCK_THREAD_CPUTIME_ID, &time);
-    return (std::uint64_t) time.tv_sec * 1000000000u + (std::uint64_t) time.tv_nsec;
+    return threadNanoseconds();
 }
 
 void sleepBriefly() { usleep (1000); }
