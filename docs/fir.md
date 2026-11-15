@@ -256,3 +256,14 @@ Appended after `adaptSpeed`, so nothing moves. `mode` gains "Resonance" at the e
 ### 8. Build order
 
 Two pushes. First the DSP, the parameters, the tests and the CPU work. Then the UI (switch, Range card, knobs, graph), presets, screenshots, manual and checklist. Before the first, a pre-push check that the C++ test signals give the model's figures, as Room's did.
+
+### 9. As built
+
+Released in v1.6.0, run 43742763641 (commit `ff534e3`), 516 test cases.
+
+- **As designed,** with the model's constants (`SpectralEngine::computeResonance`). The C++ gives the model's figures: Depth 3 dB cuts −2.99 dB at 3 kHz and Depth 6 dB −5.32 dB (model −2.98 and −5.2 to −5.4), 0.00 dB at 1.5 kHz; broadband 0.04 dB at worst in any octave; Listen plus output equals the input to −139 dB; release 63 % after 1963 ms of 2000 at 1024 and 8192 points.
+- **Attack** is tested at 1024 points only, from 10 % to 63 % (0.889 of the time constant: 853 ms against 889 expected). At 8192 a frame is 170 ms long and the target itself ramps in over it, so attack reads short there, as the model showed.
+- **Linked test:** the first version compared the cross-spectrum gain of two different signals and failed by 0.16 dB (run 43741706340), because a gain that moves over time is weighted differently on each. It now checks exactly: a half-level copy in the right channel comes out at exactly half, and swapping the channels swaps the outputs bit for bit.
+- **Compatibility:** there's no legacy copy of the engine, since the five old modes' code didn't change. The test removes the six new parameters from a saved state (a v1.5.0 state), checks the mode loads unchanged and the new parameters take their defaults, and checks an old mode renders bit-identically whatever the new parameters are set to.
+- **Range readouts** use whole Hz and one decimal of kHz ("100 Hz", "1.5 kHz", "20 kHz"), Fancy EQ's knob format; the mockup drew "20.0 kHz".
+- **CPU** (`docs/measurements/fir-q27.txt`): Resonance 1.84 %, 1.04 x Compressor mode (targets 3 % and 1.3 x). Paced at time-critical priority, no block in any mode was preempted, the 99th-percentile block was 11 to 19 % of its time and the worst 26 %. The clock and the thread's own cycles agree within 0.02 % on the mean. The old flat-out benchmark, in the same run, had its worst block at 57 % of its time, against 1878 % in the run recorded in `fir.txt`, on code that is the same for those modes. That fits section 5's explanation (the runner preempting the thread), but one quiet run doesn't prove it; the paced benchmark counts preempted blocks from now on, so a noisy run will show it. The stability target (two runs within 20 % on each mode's median) needs a second run with the paced benchmark; it's checked on the next push.

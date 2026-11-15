@@ -1,0 +1,22 @@
+# Phase 3 Q2.7, run 43742763641 (commit ff534e3). Paced at real time, time-critical priority, median of 5 runs of 2000 blocks (48 kHz, 128 samples, stereo, FFT 4096).
+fir q27 cpu, Compressor: mean 1.764 % (by thread cycles 1.778 %), p99 block 14.2 %, worst block 25.5 % of its time, 0 preempted blocks, 2.32 x Fancy Comp
+fir q27 cpu, Convolve L/R: mean 0.689 % (by thread cycles 0.704 %), p99 block 18.8 %, worst block 22.0 % of its time, 0 preempted blocks, 0.91 x Fancy Comp
+fir q27 cpu, EQ: mean 1.509 % (by thread cycles 1.525 %), p99 block 12.3 %, worst block 22.0 % of its time, 0 preempted blocks, 1.99 x Fancy Comp
+fir q27 cpu, Fancy Comp at its defaults (reference): mean 0.760 % (by thread cycles 0.775 %), p99 block 1.2 %, worst block 1.9 % of its time, 0 preempted blocks, 1.00 x Fancy Comp
+fir q27 cpu, Gate: mean 1.847 % (by thread cycles 1.860 %), p99 block 15.5 %, worst block 26.3 % of its time, 0 preempted blocks, 2.43 x Fancy Comp
+fir q27 cpu, Resonance: mean 1.842 % (by thread cycles 1.856 %), p99 block 14.6 %, worst block 26.1 % of its time, 0 preempted blocks, 2.42 x Fancy Comp
+fir q27 cpu, Subtract: mean 1.400 % (by thread cycles 1.415 %), p99 block 11.2 %, worst block 20.3 % of its time, 0 preempted blocks, 1.84 x Fancy Comp
+fir q27 cpu: 48 kHz, 128 samples, FFT 4096, median of 5 paced runs at time-critical priority; Resonance 1.842 % (target < 3 %), 1.04 x Compressor mode (target < 1.3 x)
+
+# The old flat-out benchmark (normal priority, wall clock), same run:
+fir cpu: mode 0, size 128: 1.39 %, worst block 4 % of its time
+fir cpu: mode 0, size 4096: 1.50 %, worst block 25 % of its time
+fir cpu: mode 1, size 4096: 1.71 %, worst block 16 % of its time
+fir cpu: mode 2, size 4096: 1.66 %, worst block 17 % of its time
+fir cpu: mode 3, size 32768: 1.82 %, worst block 57 % of its time
+fir cpu: mode 3, size 4096 low latency: 1.33 %, worst block 13 % of its time
+fir cpu: mode 3, size 4096: 1.37 %, worst block 20 % of its time
+fir cpu: mode 4, size 4096: 0.65 %, worst block 19 % of its time
+fir cpu: mode 5, size 4096: 1.76 %, worst block 19 % of its time
+
+# Resonance, same run:
