@@ -1,6 +1,6 @@
 # Fancy Plugs
 
-Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and signed off by ear in REAPER. Version **1.4.0**.
+Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and signed off by ear in REAPER. Version **1.5.0**.
 
 | Plugin | What it does |
 |---|---|
@@ -8,9 +8,9 @@ Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and si
 | Fancy Exciter | Parallel high-frequency exciter with clip boost and a mix-back control |
 | Fancy Comp | Compressor with a Threshold fader over the input meter, a filtered detector, a sidechain and an output limiter; new in 1.4.0, Character, upward compression, Auto threshold and a detector EQ |
 | Fancy EQ | Up to 24 bands with draggable handles, a live analyzer, dynamic bands and, new in 1.4.0, mid/side per band and Match |
-| Fancy Verb | Convolution reverb built from a chain of modules: impulse file, filters, echo generator, normalize |
-| Fancy Delay | Up to 16 delay taps, each with its own feedback, loop filters, bit crush, width, pan and ping-pong |
-| Fancy MultiComp | Up to 8 bands of compression behind flat-summing crossovers and, new in 1.2.0, upward compression |
+| Fancy Verb | Convolution reverb built from a chain of modules: impulse file, filters, echo generator, normalize; new in 1.5.0, a built-in IR library, true stereo and Modulate |
+| Fancy Delay | Up to 16 delay taps, each with its own feedback, loop filters, bit crush, width, pan and ping-pong; new in 1.5.0, Tape and BBD character, modulation, diffusion, ducking and swing |
+| Fancy MultiComp | Up to 8 bands of compression behind flat-summing crossovers, with upward compression and, new in 1.5.0, lookahead and mid/side per band |
 | Fancy FIR | Spectral processor: drawable EQ, Gate, Compressor, noise Subtract and Convolve, with adaptive noise tracking in 1.2.0 |
 | Fancy Gate | Gate with a filtered detector, a sidechain and a MIDI trigger output |
 | Fancy Limit | New in 1.3.0: true-peak brickwall limiter with lookahead, three styles, Auto release, a loudness meter and dither |
@@ -19,7 +19,19 @@ Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and si
 | Fancy Sature | New in 1.3.0: saturator with Tape, Tube, Transistor and Clip curves, even/odd Character, Tone, oversampling and auto gain |
 | Fancy Room | New in 1.3.0: algorithmic reverb from small room to long hall, with Freeze, tempo-synced pre-delay, a send mode and ducking |
 
-## What's new in 1.4.0
+## What's new in 1.5.0
+
+- **Fancy Verb: IR library.** 32 impulse responses built in, in Rooms, Halls, Plates, Chambers and Special, from a LIBRARY section in the File module's dropdown. A project that uses one stays small, because it stores the name, not the audio.
+- **Fancy Verb: true stereo.** Library IRs marked TS, four-channel WAVs and a pair of stereo files (**Pair right input…**) keep each input side's own reflections, so a source panned left still fills the room. The Reverb generator gains Low and High RT, Early reflections (Room or Hall, with Size; Plate is dense from the start), Build-up and a True stereo switch.
+- **Fancy Verb: Modulate.** A new module that moves a long tail gently, without pitch wobble, with Rate and Depth. Offline renders stay identical.
+- **Fancy Verb: Add module** is now a card in the chain with every module type.
+- **Fancy MultiComp: lookahead** from 0 to 10 ms, reported to the host, and **a channel per band:** Stereo, Left, Right, Mid or Side, from a chip on the band row.
+- **Fancy Delay: character and motion.** Each tap can be Clean, Tape or BBD, with Amount, and the Motion page adds Rate, Depth, Random and Diffusion. The EDIT drawer adds Ducking and Swing.
+- **New presets:** Library Hall, Library Plate, True Stereo Room, Modulated Hall and Endless (Verb); Lookahead Glue and Mid/Side Master (MultiComp); Tape Echo, BBD Chorus Echo, Diffused Wash and Ducked Vocal Echo (Delay).
+
+Projects saved with 1.0 to 1.4 load and sound exactly as before. Every new setting defaults to the old behaviour.
+
+## What was new in 1.4.0
 
 - **Fancy EQ: 24 bands and a channel per band.** Up to 24 bands, and each one can work on Stereo, Left, Right, Mid or Side, from a small chip under its type. The white curve shows the total for the selected band's channel, Linear phase follows the channels in use, and the analyzer can show any one channel.
 - **Fancy EQ: Match.** Learn a reference and your material, from the sidechain or captured one after the other, and Match writes ordinary bands into free slots to move your track towards the reference, as one undo step. Amount, Smoothing, the number of bands and a frequency range set how far it goes.
@@ -76,15 +88,27 @@ The Match card over a learned reference (purple), the current material (grey) an
 
 <img src="docs/images/verb.png" width="866" alt="Fancy Verb">
 
+A true-stereo hall from the built-in library:
+
+<img src="docs/images/verb-library.png" width="866" alt="Fancy Verb with a library IR in true stereo">
+
 ### Fancy Delay
 
 <img src="docs/images/delay.png" width="760" alt="Fancy Delay">
+
+The Motion page, with a Tape tap:
+
+<img src="docs/images/delay-motion.png" width="760" alt="Fancy Delay's Motion page">
 
 ### Fancy MultiComp
 
 Shown with the Upward row for the selected band and the global Depth and Time knobs.
 
 <img src="docs/images/multicomp.png" width="760" alt="Fancy MultiComp with upward compression">
+
+Band 2 set to Mid (the M chip and the M on its handle):
+
+<img src="docs/images/multicomp-channel.png" width="760" alt="Fancy MultiComp with a mid-only band">
 
 ### Fancy FIR
 
