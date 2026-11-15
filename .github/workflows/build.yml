@@ -254,11 +254,10 @@ jobs:
 
   # macOS (docs/mac.md, step 2): the same sources as one universal build for Intel and Apple
   # silicon, tested natively and, for the Intel half, under Rosetta. Its own job, so a Mac failure
-  # can't hide a Windows one. While it's being brought up it may fail without failing the run.
+  # can't hide a Windows one. Green from run 43773992670 on; a failure fails the run.
   macos:
     runs-on: macos-latest
     timeout-minutes: 120
-    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v7

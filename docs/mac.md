@@ -87,7 +87,9 @@ Steps 1 and 2 need no decisions beyond 3 and 4; steps 3 to 5 need Decisions 1, 2
   - *Steinberg's validator* was never built: its steps were skipped after the test failure, and pluginval failed for want of it. Both steps now run unless the job is cancelled.
   - *FancyBench:* `expandPath` turned `/` into `\`, so on Mac no path resolved. It now uses each platform's separator.
   - *Mac CPU timings* had 127 of 1000 blocks preempted: a Mach time-constraint thread that spins is demoted by the kernel. The benchmarks now use the highest QoS class instead.
-- **Run 43770725166:** Windows green. Mac: Steinberg's validator, pluginval, the host harness and FancyBench's smoke checks all passed on every plugin. Two tests still failed: a FancyBench test expected the Windows install folder (now per platform), and under Rosetta `CLOCK_THREAD_CPUTIME_ID` counts 24 MHz ticks while claiming nanoseconds, so thread CPU read 2.4 % of the truth. Thread time on Mac now comes from the kernel's `thread_info`. CI pending.
+- **Run 43770725166:** Windows green. Mac: Steinberg's validator, pluginval, the host harness and FancyBench's smoke checks all passed on every plugin. Two tests still failed: a FancyBench test expected the Windows install folder (now per platform), and under Rosetta `CLOCK_THREAD_CPUTIME_ID` counts 24 MHz ticks while claiming nanoseconds, so thread CPU read 2.4 % of the truth. Thread time on Mac now comes from the kernel's `thread_info`.
+- **Run 43773992670: step 2 done, both jobs green.** Mac: 516 of 518 tests passed natively and 517 of 519 under Rosetta, with 2 skipped each time as on Windows; Steinberg's validator, pluginval (strictness 10), the host harness and FancyBench passed on all fourteen universal plugins. Mac CPU (Apple silicon runner, paced): Fancy Comp 0.54 %, FIR Resonance 0.50 % (0.94 x Comp), Verb zero latency 1.16 % with no block over budget. `continue-on-error` is removed, so a Mac failure now fails the run.
+- **Next: step 3**, Audio Units: `AU` in `fancy_add_plugin`'s formats on Mac, `auval` in CI, Gate's AU as a music effect (Decision 5), and `docs/host-compat.md` for Logic.
 
 ## 8. Risks
 
