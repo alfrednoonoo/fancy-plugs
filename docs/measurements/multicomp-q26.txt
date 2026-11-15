@@ -1,0 +1,9 @@
+# Phase 3 Q2.6, run 43680967298, commit 5533812 (section 0.4: median of 5 runs in one build).
+# 4 bands, LR 24, a stereo programme signal, each block a fresh copy of the input.
+# Target (docs/multicomp.md section 3): Fast under 1.5 %. NOT MET, and Fast is slower than Exact:
+# MSVC's log10 and pow cost less than the note assumed, so the fast maths saves nothing.
+# Waiting for the user's decision.
+MultiComp Q2.6 CPU, 48 kHz, 128 samples, stereo, median of 5 runs:
+  Exact                                                1.859 %
+  Fast                                                 2.114 %  (1.14 x Exact)
+  Fast with Upward, Mid and Side bands, 5 ms lookahead  1.750 %

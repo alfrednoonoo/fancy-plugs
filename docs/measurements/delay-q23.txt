@@ -1,0 +1,14 @@
+# Phase 3 Q2.3, run 43680967298, commit 5533812 (section 0.4: median of 5 runs in one build).
+# 4 taps, 120 to 390 ms, Feedback 50 %, white noise at +-0.5. Fast tanh in every row.
+# "Old options" is Saturate, Lowpass 6 kHz, Highpass 120 Hz, 12 bits and Ping-pong on two taps;
+# each later row adds one Q2.3 feature (Tape on two taps and BBD on two, Depth 15 cents,
+# Diffusion 50 %, Ducking 12 dB).
+# Target (docs/delay.md section 6): under 2 % with everything on. NOT MET: the old options alone
+# cost 1.6 %, so the target leaves 0.4 % for everything new. Waiting for the user's decision.
+Delay Q2.3 CPU, 48 kHz, 128 samples, stereo, median of 5 runs:
+  4 plain taps                   0.544 %
+  old options                    1.624 %
+  + Tape/BBD                     2.575 %  (+0.951)
+  + modulation                   3.063 %  (+0.488)
+  + diffusion                    3.327 %  (+0.264)
+  + ducking (everything on)      3.358 %  (+0.031)

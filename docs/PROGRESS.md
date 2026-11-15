@@ -12,8 +12,9 @@ Short status for starting a session. The full history to 13 November 2026 (run n
   - Next: the user's REAPER check (`docs/verb-checklist.md`, the Q2.8 section), then the release (v1.5.0).
 - **Plan agreed with the user (15 November 2026), to run while they're away:** build Verb's Add module (mockup `25`, approved), then MultiComp Q2.6, then Delay Q2.3, each in as few pushes as it takes, with tests, screenshots checked against its mockup, manual, checklist and CPU. If one needs a decision that isn't in its approved note, record it here, leave that item, and go on to the next. The user then checks Verb, MultiComp and Delay in REAPER together, and v1.5.0 follows.
 - **MultiComp (Q2.6) and Delay (Q2.3):** design notes and mockups approved by the user on 15 November 2026, every recommended option (`docs/multicomp.md`, `docs/delay.md`; mockups `26` and `27`). Order confirmed: MultiComp, then Delay; FIR (Q2.7) and Kicker (Q2.2) after.
-  - MultiComp Q2.6 built: lookahead, channel chip (moved from EQ into `fancy-core`), Precision with `FancyProcessor::valueForMissingParameter`, two presets, tests, manual, checklist; CI pending.
-  - Delay Q2.3 built in one push: character (Tape, BBD), modulation, diffusion, ducking, swing, fast tanh (`satCurve`), Tone | Motion page, tab letters, four presets, tests, manual, checklist; deviations in `docs/delay.md` §11; CI pending.
+  - MultiComp Q2.6 built: lookahead, channel chip (moved from EQ into `fancy-core`), Precision with `FancyProcessor::valueForMissingParameter`, two presets, tests, manual, checklist.
+  - MultiComp Q2.6 and Delay Q2.3: green, run 43680967298 (`5533812`); screenshots match mockups 26 and 27. Delay deviations in `docs/delay.md` §11.
+  - **Blocked on the user: both CPU targets missed** (`docs/measurements/multicomp-q26.txt`, `delay-q23.txt`). MultiComp Fast 2.11 % vs Exact 1.86 % (target Fast < 1.5 %): the fast maths saves nothing. Delay everything on 3.36 % (target < 2 %), but the old options alone are 1.62 %; Tape/BBD adds 0.95 %, modulation 0.49 %, diffusion 0.26 %, ducking 0.03 %.
 - **Latest release:** [v1.4.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.4.0), 14 November 2026.
 
 ## Releases
