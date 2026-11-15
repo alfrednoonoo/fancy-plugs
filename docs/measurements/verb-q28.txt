@@ -1,0 +1,9 @@
+# Phase 3 Q2.8, run 43655069240, commit 7a1b820 (section 0.4: median of 5 runs in one build).
+# A 3 s noise IR at 48 kHz, 128 samples, stereo. Ratios are to the same IR without the feature.
+# Targets: true stereo < 1.6 x; Modulate < 2.2 x (restated by the user on 14 November 2026 from 1.8 x).
+# Silent convolver stages are skipped since 7a1b820; before it, Modulate cost 3.37 x (Zero latency) and 2.08 x (Low CPU).
+# Library: 32 IRs, 12.3 MB of 24-bit FLAC, built into Fancy Verb.
+verb q28 cpu, 3 s IR, Low CPU (median of 5): direct 0.391 %, modulated 0.795 % (2.04 x, target < 2.2 x)
+verb q28 cpu, 3 s IR, Low CPU (median of 5, 48 kHz, 128 samples, process time incl. waits): direct 0.409 %, true stereo 0.467 % (1.14 x, target < 1.6 x)
+verb q28 cpu, 3 s IR, Zero latency (median of 5): direct 0.592 %, modulated 1.094 % (1.85 x, target < 2.2 x)
+verb q28 cpu, 3 s IR, Zero latency (median of 5, 48 kHz, 128 samples, process time incl. waits): direct 0.644 %, true stereo 0.742 % (1.15 x, target < 1.6 x)

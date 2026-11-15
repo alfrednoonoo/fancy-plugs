@@ -7,8 +7,8 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 - **Current item: Verb (Q2.8)**: IR library, true stereo, modulation. Design (every recommended option) and mockup (`reference/phase3/24__verb_q28_mockup.png`) approved by the user on 14 November 2026; `docs/verb.md`, "Phase 3 Q2.8".
   - Push 1, true stereo: green, run 43648226467 (`91a7204`), 482 test cases. Bit-identical to the legacy convolver and builder for direct IRs. CPU, 3 s IR: Zero latency 1.26 x direct, Low CPU 1.09 x (target < 1.6 x). The IR display keeps one lane (the mockup drew two).
   - Push 2 (generator settings, library tool and 32 IRs as a Windows resource, Library menu): run 43650494608 (`b833304`) built, and 486 of 487 test cases passed; the one failure was an old generator test that set the raw value array, fixed in push 3.
-  - Push 3 (Modulate, five presets, screenshots, docs): green in run 43652883285 (`9b931eb`), 493 test cases, after a test-only fix. Modulate cost 3.37 x direct (Zero latency) and 2.08 x (Low CPU), over 1.8 x; the user restated the target as 2.2 x. Follow-up push: silent convolver stages skipped, and the Reverb card's Early and True stereo placed as in the mockup.
-  - Next: CPU into `docs/measurements/verb-q28.txt`, screenshots against the mockup, then the user's REAPER check (`docs/verb-checklist.md`, the Q2.8 section).
+  - Push 3 (Modulate, five presets, screenshots, docs): green. Follow-up `7a1b820` (silent stages skipped, Reverb card layout fixed): green, run 43655069240, 493 test cases. CPU in `docs/measurements/verb-q28.txt`: Modulate 1.85 x (Zero latency) and 2.04 x (Low CPU), inside 2.2 x; true stereo 1.15 x and 1.14 x. Screenshots `verb-library`, `verb-generators` and `verb-add` checked against the mockup.
+  - Next: the user's REAPER check (`docs/verb-checklist.md`, the Q2.8 section), then the release (v1.5.0).
 - **Latest release:** [v1.4.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.4.0), 14 November 2026.
 
 ## Releases
@@ -39,7 +39,7 @@ Every item below is built, green in CI and passed by the user in REAPER. Each ha
 - **Phase 3 new plugins:** Fancy Limit (`docs/limit.md`), Fancy DS (`docs/ds.md`), Fancy DS-Mini (`docs/ds-mini.md`), Fancy Sature (`docs/sature.md`), Kicker's Sub mode (`docs/kicker-sub.md`), Fancy Room (`docs/room.md`). REAPER checks passed on 10 November (Limit) and 13 November 2026 (the rest).
 - **§0.3 Listen rule:** Listen and preview switches are temporary, never parameters (`FancyProcessor::setListening`, `ListenCheckbox`), retrofitted to Comp's and Gate's Preview filter and FIR's Listen. Limit's "Listen to removed" stays a parameter, by the user's choice.
 
-Latest green run: 43639193810 (commit `5b71497`, Comp Q2.5), 476 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
+Latest green run: 43655069240 (commit `7a1b820`, Verb Q2.8), 493 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
 
 ## Still to do in Phase 3
 
