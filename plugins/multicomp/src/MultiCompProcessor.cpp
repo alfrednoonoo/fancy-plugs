@@ -17,7 +17,7 @@ const char* const linkedSuffixes[] { "thr", "ratio", "att", "rel", "gain", "uthr
 
 // Every parameter of a band except its top frequency, which belongs to the crossover.
 const char* const bandSuffixes[] { "on", "solo", "thr", "ratio", "knee", "att", "rel", "rms", "gain", "mk", "ar", "fb", "sc",
-                                   "up", "uthr", "uratio", "lift", "floor" };
+                                   "up", "uthr", "uratio", "lift", "floor", "chan" };
 
 juce::NormalisableRange<float> skewedRange (float high, float interval, float centre)
 {
@@ -185,6 +185,23 @@ fancy::FancyProcessor::Layout createLayout (const fancy::SwitchableFrequencyPara
             .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
+    // Phase 3 Q2.6, appended so nothing moves (docs/multicomp.md).
+    for (int band = 0; band < maxBands; ++band)
+        layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MultiCompProcessor::id (band, "chan"), 1 },
+                                                                  "Band " + juce::String (band + 1) + " Channel",
+                                                                  juce::StringArray { "Stereo", "Left", "Right", "Mid", "Side" }, 0));
+
+    layout.add (fancy::floatParameter (
+        "lookahead", "Lookahead", juce::NormalisableRange<float> (0.0f, (float) MultiCompDsp::maxLookaheadMs, 0.1f), 0.0f,
+        FloatAttributes {}
+            .withLabel ("ms")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
+
+    // New instances and presets are Fast; a state saved without it loads as Exact.
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "precision", 1 }, "Precision",
+                                                              juce::StringArray { "Exact", "Fast" }, 1));
+
     return layout;
 }
 
@@ -226,6 +243,13 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Big squash", with (everyBand ({ { "thr", -18.0f }, { "ratio", 4.0f }, { "att", 3.0f }, { "rel", 200.0f }, { "ar", 0.0f },
                                            { "up", 1.0f }, { "uthr", -40.0f }, { "uratio", 4.0f }, { "lift", 18.0f }, { "floor", -70.0f } }),
                               { { "bands", 3.0f }, { "b1top", 88.0f }, { "b2top", 2500.0f }, { "depth", 100.0f } }) },
+
+        // Phase 3 Q2.6.
+        { "Lookahead Glue", with (everyBand ({ { "thr", -20.0f }, { "ratio", 2.0f }, { "knee", 9.0f }, { "att", 5.0f }, { "rel", 150.0f }, { "mk", 1.0f } }),
+                                  { { "lookahead", 2.0f } }) },
+        { "Mid/Side Master", with (everyBand ({ { "thr", -18.0f }, { "ratio", 1.5f }, { "knee", 12.0f }, { "att", 30.0f }, { "rel", 250.0f } }),
+                                   { { "b1chan", 3.0f }, { "b1thr", -20.0f }, { "b1ratio", 2.0f },
+                                     { "b4chan", 4.0f }, { "b4thr", -26.0f }, { "b4ratio", 2.0f } }) },
     };
 
     // Phase 3 Q2.1: the preset browser's categories.
@@ -236,6 +260,8 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Master Linear", "Mastering" },
         { "Multiband Limiter", "Mastering" },
         { "Big squash", "Character" },
+        { "Lookahead Glue", "Bus" },
+        { "Mid/Side Master", "Mastering" },
     });
 
     return presets;
@@ -267,6 +293,7 @@ MultiCompProcessor::MultiCompProcessor (SharedFlag logScaleFlag)
                                       value ("rel"), value ("rms"), value ("gain"), value ("mk"), value ("ar"), value ("fb"), value ("sc") };
 
         upwardValues[(size_t) band] = { value ("up"), value ("uthr"), value ("uratio"), value ("lift"), value ("floor") };
+        channelValues[(size_t) band] = value ("chan");
 
         for (const auto* suffix : linkedSuffixes)
             apvts.getParameter (id (band, suffix))->addListener (this);
@@ -399,6 +426,8 @@ MultiCompDsp::BandSpec MultiCompProcessor::readBand (int band) const
     spec.maxLiftDb = (double) load (upward.maxLift);
     spec.floorDb = (double) load (upward.floor);
 
+    spec.channel = juce::jlimit (0, 4, juce::roundToInt (load (channelValues[(size_t) band])));
+
     return spec;
 }
 
@@ -420,6 +449,8 @@ MultiCompDsp::Targets MultiCompProcessor::readTargets() const
     targets.bypass = isOn ("bypass");
     targets.depth = (double) read ("depth") / 100.0;
     targets.time = (double) read ("time") / 100.0;
+    targets.lookaheadMs = (double) read ("lookahead");
+    targets.fast = read ("precision") >= 0.5f;
 
     return targets;
 }

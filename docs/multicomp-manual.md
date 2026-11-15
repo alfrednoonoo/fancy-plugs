@@ -112,7 +112,14 @@ Crossovers are drawn on the graph, so they're dragged rather than typed. The hea
 
 ## EDIT
 
-The `EDIT` link at the bottom right holds Attack = 90 % rise, Log-scale automated freq. and Output.
+The `EDIT` link at the bottom right holds Attack = 90 % rise, Log-scale automated freq., Output, Lookahead and Precision.
+
+- **Lookahead** (0 to 10 ms): the bands' audio waits this long while their detectors don't, so each band's gain starts moving before a transient arrives. Fast attacks then catch peaks without clipping their start. It adds its time to the latency, shown under the knob, and REAPER compensates it.
+- **Precision:** Exact or Fast. Fast does the level and gain maths with faster approximations, within 0.05 dB of Exact, for less CPU. New instances and presets use Fast; a project saved before 1.5 opens on Exact, so it sounds exactly as it did.
+
+## Channel
+
+The chip on the band row, left of **S**, picks what the band compresses: **ST** (both channels, as before), **L**, **R**, **M** (mid, the sum) or **S** (side, the difference). A one-channel band leaves the other channel of its frequency range as it is: a Mid band on the lows tightens the centre without touching the width, and a Side band on the highs tames harsh stereo edges. The band's detector reads the same channel, from the sidechain too. The band's handle on the graph shows the letter. On a mono track the chip is greyed.
 
 ## Latency
 
@@ -120,6 +127,8 @@ The `EDIT` link at the bottom right holds Attack = 90 % rise, Log-scale automate
 |---|---|---|
 | LR 24, LR 48 | 0 | 104 samples at 48 kHz |
 | Linear phase | 2559 samples at 48 kHz | 2663 samples at 48 kHz |
+
+Lookahead adds its own time on top: 5 ms is 240 samples at 48 kHz.
 
 The plugin reports this to REAPER, and changing the crossover or Limit output fades the sound briefly.
 

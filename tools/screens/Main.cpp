@@ -598,6 +598,18 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_MULTICOMP
     ok = renderPlugin<MultiCompProcessor, MultiCompEditor> ("multicomp", outputDir) && ok;
+
+    {
+        // Phase 3 Q2.6: a Mid band.
+        MultiCompProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<MultiCompEditor*> (base.get()))
+        {
+            editor->showChannelPreview();
+            ok = writeBothScales (*editor, "multicomp-channel", outputDir) && ok;
+        }
+    }
    #endif
 
    #if FANCY_HAS_FIR

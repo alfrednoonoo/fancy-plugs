@@ -20,6 +20,9 @@ public:
     // For rendered screenshots: mockup values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
 
+    // Phase 3 Q2.6: band 2 on Mid, for the channel chip and the graph's letter.
+    void showChannelPreview();
+
 private:
     class Panels final : public juce::Component
     {
@@ -71,6 +74,7 @@ private:
         fancy::ui::Knob ratioKnob, kneeKnob, attackKnob, releaseKnob, rmsKnob, gainKnob;
         fancy::ui::ParamCheckbox makeupCheckbox, autoReleaseCheckbox, feedbackCheckbox, sidechainCheckbox;
 
+        fancy::ui::ChannelChip channelChip; // Phase 3 Q2.6
         fancy::ui::ParamTextToggle soloButton;
         fancy::ui::ParamPowerIcon powerIcon;
         fancy::ui::IconButton closeButton;
@@ -117,6 +121,11 @@ private:
     fancy::ui::EditDrawer drawer;
     fancy::ui::ParamCheckbox attack90Checkbox, logCheckbox;
     fancy::ui::Knob drawerOutputKnob;
+
+    // Phase 3 Q2.6.
+    fancy::ui::Knob lookaheadKnob;
+    juce::Label latencyLabel, precisionLabel, precisionNote;
+    fancy::ui::ParamDropdown precisionDropdown;
 
     int selectedBand = 0;
     std::array<float, multicomp::maxBands> displayed {};

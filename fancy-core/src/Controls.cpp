@@ -619,6 +619,54 @@ void ParamSegments::paintSegment (juce::Graphics& g, int index, juce::Rectangle<
     g.drawText (param.getAllValueStrings()[index], area, juce::Justification::centred, false);
 }
 
+// ChannelChip -----------------------------------------------------------------
+
+ChannelChip::ChannelChip (juce::RangedAudioParameter& channel, juce::Colour accentColour)
+    : ParamClickControl (channel), accent (accentColour)
+{
+}
+
+void ChannelChip::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    const auto index = juce::jlimit (0, 4, juce::roundToInt (param.convertFrom0to1 (param.getValue())));
+
+    g.setColour (isMenuOpen() ? colours::menuHover : juce::Colour (0xff282828));
+    g.fillRoundedRectangle (bounds, 4.0f);
+
+    static const char* const names[] { "ST", "L", "R", "M", "S" };
+
+    g.setColour (index == 0 ? juce::Colour (0xffededed) : accent);
+    g.setFont (font (Weight::semiBold, 12.0f));
+    g.drawText (names[index], bounds.withTrimmedLeft (4.0f).withTrimmedRight (14.0f), juce::Justification::centred, false);
+
+    g.setColour (juce::Colours::white.withAlpha (0.4f));
+    g.strokePath (icons::chevrons (juce::Rectangle<float> (5.0f, 8.0f).withCentre ({ bounds.getRight() - 9.0f, bounds.getCentreY() })),
+                  juce::PathStrokeType (1.0f));
+}
+
+void ChannelChip::clicked()
+{
+    const auto names = param.getAllValueStrings();
+    const auto current = juce::roundToInt (param.convertFrom0to1 (param.getValue()));
+
+    Menu menu;
+
+    for (int i = 0; i < names.size(); ++i)
+        menu.addItem (1 + i, names[i], true, i == current);
+
+    menu.show (*this, [safeThis = juce::Component::SafePointer<ChannelChip> (this)] (int result)
+    {
+        if (safeThis == nullptr || result <= 0)
+            return;
+
+        auto& parameter = safeThis->param;
+        parameter.beginChangeGesture();
+        parameter.setValueNotifyingHost (parameter.convertTo0to1 ((float) (result - 1)));
+        parameter.endChangeGesture();
+    });
+}
+
 // ParamTextToggle -------------------------------------------------------------
 
 ParamTextToggle::ParamTextToggle (juce::RangedAudioParameter& parameter, const juce::String& text, juce::Colour accent)

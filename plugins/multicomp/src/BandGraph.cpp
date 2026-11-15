@@ -337,6 +337,19 @@ void BandGraph::paint (juce::Graphics& g)
         g.setColour (band == selectedBand ? colours::textPrimary : colours::bgSection);
         g.setFont (font (Weight::semiBold, 11.0f));
         g.drawText (juce::String (band + 1), circle, juce::Justification::centred, false);
+
+        // Phase 3 Q2.6: a band on one channel carries its letter, as Fancy EQ's handles do.
+        if (const auto channel = processor.readBand (band).channel; channel != MultiCompDsp::stereo)
+        {
+            static const char* const letters[] { "", "L", "R", "M", "S" };
+            const auto tag = juce::Rectangle<float> (16.0f, 13.0f).withPosition (circle.getRight() + 3.0f, circle.getY() + 1.5f);
+
+            g.setColour (colours::bgWell);
+            g.fillRoundedRectangle (tag, 3.0f);
+            g.setColour (colours::textPrimary);
+            g.setFont (font (Weight::semiBold, 10.0f));
+            g.drawText (letters[juce::jlimit (0, 4, channel)], tag, juce::Justification::centred, false);
+        }
     }
 
     for (int crossover = 0; crossover < numBands - 1; ++crossover)

@@ -17,6 +17,9 @@ class MultiCompDsp
 {
 public:
     enum Detector { mainLR, mainL, mainR, sideLR, sideL, sideR };
+    enum Channel { stereo, left, right, mid, side };
+
+    static constexpr double maxLookaheadMs = 10.0;
 
     static constexpr double infiniteRatio = 100.0;
     static constexpr double maxExpansionDb = 24.0;
@@ -31,6 +34,9 @@ public:
         // Phase 2.1 U: upward compression, off by default.
         bool upward = false;
         double upThresholdDb = -40.0, upRatio = 2.0, maxLiftDb = 12.0, floorDb = -70.0;
+
+        // Phase 3 Q2.6: the channel the band compresses (Channel); the other one passes.
+        int channel = stereo;
     };
 
     struct Targets
@@ -44,6 +50,10 @@ public:
 
         // Phase 2.1 U: scale every band's gain change, and its attack and release.
         double depth = 1.0, time = 1.0;
+
+        // Phase 3 Q2.6. Fast uses approximations within 0.005 dB of the exact maths.
+        double lookaheadMs = 0.0;
+        bool fast = false;
     };
 
     // The upward part of a band's static curve, in dB, before ballistics and Depth: the lift
@@ -94,6 +104,7 @@ private:
         int bands = 4;
         multicomp::CrossoverType crossover = multicomp::CrossoverType::lr24;
         bool limiter = false;
+        int lookahead = 0; // samples
 
         bool operator== (const Config&) const = default;
     };
@@ -153,4 +164,8 @@ private:
     bool synchronousDesign = false;
 
     fancy::dsp::Smoother wet, dry, output, bypass, limiterAmount, switchGain;
+
+    // Phase 3 Q2.6: the bands' audio waits Lookahead behind their detectors.
+    std::array<std::array<std::vector<double>, 2>, multicomp::maxBands> lookaheadRings;
+    int lookaheadLength = 1, lookaheadPosition = 0;
 };

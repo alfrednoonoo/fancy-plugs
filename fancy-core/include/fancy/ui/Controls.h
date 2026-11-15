@@ -192,6 +192,22 @@ private:
     bool fitToText = false;
 };
 
+// Which channel a band works on: ST, L, R, M or S, with the shared menu. Moved from Fancy EQ
+// (Phase 3 Q2.4) for Fancy MultiComp (Phase 3 Q2.6); the parameter's choices are Stereo, Left,
+// Right, Mid and Side.
+class ChannelChip final : public ParamClickControl, public MenuTarget
+{
+public:
+    ChannelChip (juce::RangedAudioParameter& channel, juce::Colour accentColour);
+
+    void paint (juce::Graphics&) override;
+
+private:
+    void clicked() override;
+
+    juce::Colour accent;
+};
+
 // A small pill with text on it, filled in the accent colour while the parameter is on.
 class ParamTextToggle final : public ParamClickControl
 {

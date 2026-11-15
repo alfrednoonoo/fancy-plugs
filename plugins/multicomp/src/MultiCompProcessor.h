@@ -28,6 +28,12 @@ public:
 
     static juce::String id (int band, const char* suffix) { return "b" + juce::String (band + 1) + suffix; }
 
+    // Phase 3 Q2.6: a state saved before Precision existed keeps the exact maths.
+    float valueForMissingParameter (const juce::String& parameterId, float defaultValue) const override
+    {
+        return parameterId == "precision" ? 0.0f : defaultValue;
+    }
+
     MultiCompDsp::BandSpec readBand (int band) const;
     MultiCompDsp::Targets readTargets() const;
     int getNumBands() const;
@@ -92,6 +98,7 @@ private:
 
     std::array<BandValues, multicomp::maxBands> bandValues {};
     std::array<UpwardValues, multicomp::maxBands> upwardValues {};
+    std::array<std::atomic<float>*, multicomp::maxBands> channelValues {}; // Phase 3 Q2.6
     MultiCompDsp dsp;
     DesignThread designThread;
 

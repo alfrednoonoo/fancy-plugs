@@ -3,7 +3,9 @@
 #include <fancy/dsp/Upward.h>
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
+#include <cstdint>
 
 using multicomp::CrossoverType;
 using multicomp::maxBands;
@@ -20,6 +22,38 @@ constexpr double maxAutoMakeupDb = 24.0;
 double sanitise (float sample) noexcept
 {
     return std::isfinite (sample) ? (double) sample : 0.0;
+}
+
+// Phase 3 Q2.6, Precision Fast: log2 and 2^x from the exponent bits and short polynomials,
+// within about 1e-4 dB where the gain computer uses them (docs/multicomp.md).
+double fastLog2 (double x) noexcept
+{
+    const auto bits = std::bit_cast<std::uint64_t> (x);
+    const auto exponent = (int) ((bits >> 52) & 0x7ff) - 1023;
+    const auto mantissa = std::bit_cast<double> ((bits & 0x000fffffffffffffull) | 0x3ff0000000000000ull); // 1 to 2
+
+    const auto t = (mantissa - 1.0) / (mantissa + 1.0);
+    const auto t2 = t * t;
+    return (double) exponent + 2.8853900817779268 * t * (1.0 + t2 * (1.0 / 3.0 + t2 * (0.2 + t2 * (1.0 / 7.0 + t2 / 9.0))));
+}
+
+double fastExp2 (double y) noexcept
+{
+    y = std::clamp (y, -1000.0, 1000.0);
+    const auto whole = std::floor (y);
+    const auto x = (y - whole - 0.5) * 0.69314718055994531; // within ±0.35
+    const auto e = 1.0 + x * (1.0 + x * (0.5 + x * (1.0 / 6.0 + x * (1.0 / 24.0 + x * (1.0 / 120.0 + x / 720.0)))));
+    return std::ldexp (1.4142135623730951 * e, (int) whole);
+}
+
+double levelDbOf (double meanSquare, bool fast) noexcept
+{
+    return fast ? 3.0102999566398120 * fastLog2 (meanSquare) : 10.0 * std::log10 (meanSquare);
+}
+
+double gainOf (double db, bool fast) noexcept
+{
+    return fast ? fastExp2 (db * 0.16609640474436813) : std::pow (10.0, db / 20.0);
 }
 } // namespace
 
@@ -51,7 +85,14 @@ void MultiCompDsp::prepare (double newSampleRate)
     for (auto& buffer : inputs)
         buffer.assign ((size_t) maxChunk, 0.0f);
 
-    bypassLength = linearCrossover.getLatencySamples() + maxChunk + 1;
+    // Phase 3 Q2.6: room for the lookahead too.
+    lookaheadLength = (int) std::ceil (maxLookaheadMs * 0.001 * sampleRate) + 1;
+
+    for (auto& rings : lookaheadRings)
+        for (auto& ring : rings)
+            ring.assign ((size_t) lookaheadLength, 0.0);
+
+    bypassLength = linearCrossover.getLatencySamples() + lookaheadLength + maxChunk + 1;
 
     for (int ch = 0; ch < 2; ++ch)
     {
@@ -94,7 +135,12 @@ void MultiCompDsp::resetCore() noexcept
     for (auto& line : bypassDelay)
         std::fill (line.begin(), line.end(), 0.0f);
 
+    for (auto& rings : lookaheadRings)
+        for (auto& ring : rings)
+            std::fill (ring.begin(), ring.end(), 0.0);
+
     bypassPosition = 0;
+    lookaheadPosition = 0;
 }
 
 void MultiCompDsp::reset()
@@ -108,12 +154,14 @@ MultiCompDsp::Config MultiCompDsp::configFor (const Targets& targets) const noex
     config.bands = std::clamp (targets.numBands, 1, maxBands);
     config.crossover = targets.crossover;
     config.limiter = targets.limitOutput;
+    config.lookahead = std::clamp ((int) std::lround (targets.lookaheadMs * 0.001 * sampleRate), 0, lookaheadLength - 1);
     return config;
 }
 
 int MultiCompDsp::latencyOf (const Config& config) const noexcept
 {
     return (config.crossover == CrossoverType::linear ? linearCrossover.getLatencySamples() : 0)
+         + config.lookahead
          + (config.limiter ? limiter.getLatencySamples() : 0);
 }
 
@@ -357,6 +405,11 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
 
     const auto listensToKey = current.detector >= sideLR || spec.sidechain;
     const auto channelMode = current.detector % 3; // both, left or right
+    const auto lookahead = activeConfig.lookahead;
+    const auto fast = current.fast;
+    const auto channel = spec.channel;
+    auto& ringLeft = lookaheadRings[(size_t) b][0];
+    auto& ringRight = lookaheadRings[(size_t) b][1];
 
     auto inputPeak = 0.0;
     auto peakReduction = 0.0;
@@ -387,6 +440,20 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
 
         inputPeak = std::max ({ inputPeak, std::abs (inLeft), std::abs (inRight) });
 
+        // Phase 3 Q2.6: the detectors read the band now; its audio comes Lookahead later.
+        auto audioLeft = inLeft, audioRight = inRight;
+
+        if (lookahead > 0)
+        {
+            const auto write = (lookaheadPosition + i) % lookaheadLength;
+            const auto read = (write + lookaheadLength - lookahead) % lookaheadLength;
+
+            ringLeft[(size_t) write] = inLeft;
+            ringRight[(size_t) write] = inRight;
+            audioLeft = ringLeft[(size_t) read];
+            audioRight = ringRight[(size_t) read];
+        }
+
         double sourceLeft, sourceRight;
 
         if (listensToKey)
@@ -408,11 +475,27 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
         const auto detectorLeft = channelMode == 2 ? sourceRight : sourceLeft;
         const auto detectorRight = channelMode == 1 ? sourceLeft : sourceRight;
 
-        state.meanSquare[0] += state.rmsCoefficient * (detectorLeft * detectorLeft - state.meanSquare[0]);
-        state.meanSquare[1] += state.rmsCoefficient * (detectorRight * detectorRight - state.meanSquare[1]);
+        double level;
 
-        // The louder channel sets the gain, so the band's stereo image holds.
-        const auto level = 10.0 * std::log10 (std::max ({ state.meanSquare[0], state.meanSquare[1], silenceFloor }));
+        if (channel == stereo)
+        {
+            state.meanSquare[0] += state.rmsCoefficient * (detectorLeft * detectorLeft - state.meanSquare[0]);
+            state.meanSquare[1] += state.rmsCoefficient * (detectorRight * detectorRight - state.meanSquare[1]);
+
+            // The louder channel sets the gain, so the band's stereo image holds.
+            level = levelDbOf (std::max ({ state.meanSquare[0], state.meanSquare[1], silenceFloor }), fast);
+        }
+        else
+        {
+            // Phase 3 Q2.6: one channel of the band, and the detector reads that channel.
+            const auto detector = channel == left  ? detectorLeft
+                                : channel == right ? detectorRight
+                                : channel == mid   ? 0.5 * (detectorLeft + detectorRight)
+                                                   : 0.5 * (detectorLeft - detectorRight);
+
+            state.meanSquare[0] += state.rmsCoefficient * (detector * detector - state.meanSquare[0]);
+            level = levelDbOf (std::max (state.meanSquare[0], silenceFloor), fast);
+        }
 
         // Below 1:1 the slope is negative. The follower works on the size of the change, so
         // that attack still means the change starting.
@@ -445,21 +528,40 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
         }
 
         const auto totalDb = depth == 1.0 && lift == 0.0 ? gainDb - reduction : gainDb + depth * (lift - reduction);
-        const auto gain = totalDb == 0.0 ? 1.0 : std::pow (10.0, totalDb / 20.0);
+        const auto gain = totalDb == 0.0 ? 1.0 : gainOf (totalDb, fast);
 
-        const auto compressedLeft = inLeft * gain;
-        const auto compressedRight = inRight * gain;
+        double compressedLeft, compressedRight;
+
+        switch (channel)
+        {
+            case left:  compressedLeft = audioLeft * gain; compressedRight = audioRight; break;
+            case right: compressedLeft = audioLeft; compressedRight = audioRight * gain; break;
+
+            case mid:
+            case side:
+            {
+                auto m = 0.5 * (audioLeft + audioRight);
+                auto s = 0.5 * (audioLeft - audioRight);
+                (channel == mid ? m : s) *= gain;
+                compressedLeft = m + s;
+                compressedRight = m - s;
+                break;
+            }
+
+            case stereo:
+            default:    compressedLeft = audioLeft * gain; compressedRight = audioRight * gain; break;
+        }
 
         state.previousOutput[0] = compressedLeft;
         state.previousOutput[1] = compressedRight;
 
         peakReduction = std::max (peakReduction, reduction * activeMix);
 
-        wetLeft[i] += (inLeft + (compressedLeft - inLeft) * activeMix) * soloGain;
-        wetRight[i] += (inRight + (compressedRight - inRight) * activeMix) * soloGain;
+        wetLeft[i] += (audioLeft + (compressedLeft - audioLeft) * activeMix) * soloGain;
+        wetRight[i] += (audioRight + (compressedRight - audioRight) * activeMix) * soloGain;
 
-        dryLeft[i] += inLeft;
-        dryRight[i] += inRight;
+        dryLeft[i] += audioLeft;
+        dryRight[i] += audioRight;
     }
 
     state.input.report (0, (float) inputPeak);
@@ -530,7 +632,11 @@ void MultiCompDsp::processChunk (float* const* main, int numMain, const float* c
     for (int b = 0; b < activeConfig.bands; ++b)
         compressBand (b, numSamples, keyAvailable);
 
-    const auto crossoverLatency = activeConfig.crossover == CrossoverType::linear ? linearCrossover.getLatencySamples() : 0;
+    lookaheadPosition = (lookaheadPosition + numSamples) % lookaheadLength;
+
+    // The bypass path waits as long as the bands: the crossover and the lookahead.
+    const auto crossoverLatency = (activeConfig.crossover == CrossoverType::linear ? linearCrossover.getLatencySamples() : 0)
+                                + activeConfig.lookahead;
 
     for (int i = 0; i < numSamples; ++i)
     {

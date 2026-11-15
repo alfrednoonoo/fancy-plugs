@@ -224,3 +224,11 @@ Appended after Phase 2.1 U's, so nothing moves:
 ### 7. Build order
 
 One push: lookahead, channel, Fast/Exact with the legacy copy, the chip, the drawer, presets, tests; then the screenshots against the mockup, the manual, the checklist and CPU.
+
+### 8. As built
+
+- **Shared chip:** Fancy EQ's channel chip moved into `fancy-core` as `fancy::ui::ChannelChip`; EQ uses it unchanged. On the band row it sits at x 494, left of S, and the band title stops at x 490.
+- **Precision migration:** `FancyProcessor::valueForMissingParameter` gives a parameter a saved state lacks a value other than its default; MultiComp returns Exact for `precision`. Factory presets set every parameter, so they're Fast.
+- **Fast maths:** `log2` and `2^x` from the exponent bits, a 9th-order odd series in `(m-1)/(m+1)` and a 6th-order series around 0.5; within about 1e-5 dB, far inside the 0.05 dB test.
+- **Lookahead:** a ring per band of up to 10 ms at the session rate, used only when Lookahead is above 0; the bypass path waits the crossover's latency plus the lookahead.
+- **Legacy copy:** `tests/LegacyMultiCompDsp.*` is the DSP before Q2.6.

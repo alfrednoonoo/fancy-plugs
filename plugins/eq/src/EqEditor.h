@@ -86,19 +86,9 @@ private:
             juce::RangedAudioParameter& slopeParameter;
         };
 
-        // Phase 3 Q2.4: which channel the band filters. Reads ST, L, R, M or S.
-        class ChannelChip final : public fancy::ui::ParamClickControl, public fancy::ui::MenuTarget
-        {
-        public:
-            ChannelChip (juce::RangedAudioParameter& channel, juce::Colour accentColour);
-
-            void paint (juce::Graphics&) override;
-
-        private:
-            void clicked() override;
-
-            juce::Colour accent;
-        };
+        // Phase 3 Q2.4: which channel the band filters. Reads ST, L, R, M or S (in fancy-core
+        // since Q2.6, shared with Fancy MultiComp).
+        using ChannelChip = fancy::ui::ChannelChip;
 
         ChannelChip& getChannelChip() noexcept { return channelChip; }
         TypeDropdown& getTypeDropdown() noexcept { return typeDropdown; }

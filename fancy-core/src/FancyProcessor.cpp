@@ -144,7 +144,7 @@ bool FancyProcessor::applyState (const juce::ValueTree& tree)
 
         juce::ValueTree child ("PARAM");
         child.setProperty ("id", id, nullptr);
-        child.setProperty ("value", ranged->convertFrom0to1 (ranged->getDefaultValue()), nullptr);
+        child.setProperty ("value", valueForMissingParameter (id, ranged->convertFrom0to1 (ranged->getDefaultValue())), nullptr);
         clean.appendChild (child, nullptr);
     }
 

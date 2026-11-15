@@ -66,6 +66,15 @@ public:
     // parameters checks it here.
     virtual void stateApplied() {}
 
+    // The value a parameter takes when a saved state or user preset doesn't mention it. By
+    // default its default, so an older state sounds as it was saved; a plugin whose default
+    // changed the sound (MultiComp's Precision, Phase 3 Q2.6) gives the old behaviour here.
+    virtual float valueForMissingParameter (const juce::String& id, float defaultValue) const
+    {
+        juce::ignoreUnused (id);
+        return defaultValue;
+    }
+
     // Adds state that isn't kept in the value tree, such as data the audio thread writes, to
     // a copy that's about to be saved.
     virtual void addToState (juce::ValueTree& state) { juce::ignoreUnused (state); }

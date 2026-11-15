@@ -188,6 +188,7 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
       autoReleaseCheckbox (bandParameter (processor, bandIndex, "ar"), "Auto release"),
       feedbackCheckbox (bandParameter (processor, bandIndex, "fb"), "Feedback detect"),
       sidechainCheckbox (bandParameter (processor, bandIndex, "sc"), "Sidechain"),
+      channelChip (bandParameter (processor, bandIndex, "chan"), multiBandColour (bandIndex)),
       soloButton (bandParameter (processor, bandIndex, "solo"), "S", multiBandColour (bandIndex)),
       powerIcon (bandParameter (processor, bandIndex, "on"), multiBandColour (bandIndex)),
       closeButton (IconButton::Glyph::cross),
@@ -263,6 +264,9 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
     for (auto* checkbox : { &makeupCheckbox, &autoReleaseCheckbox, &feedbackCheckbox, &sidechainCheckbox })
         checkbox->setLabelHeight (labelHeight);
 
+    // Phase 3 Q2.6 (reference/phase3/26__multicomp_q26_mockup.png): left of S.
+    channelChip.setBounds (494, tabRowY, 40, tabRowHeight);
+    channelChip.setTooltip ("Channel: Stereo, Left, Right, Mid or Side. A one-channel band leaves the other channel as it is.");
     soloButton.setBounds (540, tabRowY, 23, tabRowHeight);
     powerIcon.setBounds (574, tabRowY + 5, 12, 13);
     closeButton.setBounds (607, tabRowY + 7, 8, 8);
@@ -271,7 +275,7 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
              &inputMeter, &thresholdLabel, &thresholdFader, &reductionMeter,
              &ratioKnob, &kneeKnob, &attackKnob, &releaseKnob, &rmsKnob, &gainKnob,
              &makeupCheckbox, &autoReleaseCheckbox, &feedbackCheckbox, &sidechainCheckbox,
-             &soloButton, &powerIcon, &closeButton })
+             &channelChip, &soloButton, &powerIcon, &closeButton })
         addAndMakeVisible (item);
 
     closeButton.onClick = [&owner] { owner.removeSelectedBand(); };
@@ -296,6 +300,17 @@ void MultiCompEditor::BandEditor::update (int titleX, float reductionDb, float s
 
     transferCurve.update();
 
+    // A mono bus has only one channel to work on.
+    const auto stereoBus = multiProcessor.getMainBusNumInputChannels() >= 2;
+
+    if (channelChip.isEnabled() != stereoBus)
+    {
+        channelChip.setEnabled (stereoBus);
+        channelChip.setAlpha (stereoBus ? 1.0f : 0.4f);
+        channelChip.setTooltip (stereoBus ? "Channel: Stereo, Left, Right, Mid or Side. A one-channel band leaves the other channel as it is."
+                                          : "Channel needs a stereo bus");
+    }
+
     const auto upwardAlpha = spec.upward ? 1.0f : 0.5f;
 
     for (auto* knob : { &upThresholdKnob, &upRatioKnob, &maxLiftKnob, &floorKnob })
@@ -310,7 +325,7 @@ void MultiCompEditor::BandEditor::showLevels (float left, float right, float red
 
 void MultiCompEditor::BandEditor::paint (juce::Graphics& g)
 {
-    const juce::Rectangle<int> row (titleLeft, tabRowY, 534 - titleLeft, tabRowHeight);
+    const juce::Rectangle<int> row (titleLeft, tabRowY, 490 - titleLeft, tabRowHeight);
 
     g.setFont (font (Weight::semiBold, 14.0f).withExtraKerningFactor (0.04f));
     g.setColour (multiBandColour (band));
@@ -347,7 +362,9 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
       editLink (colours::uiTeal),
       attack90Checkbox (parameter ("attack90"), "Attack = 90 % rise"),
       logCheckbox (parameter ("logFreq"), "Log-scale automated freq."),
-      drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle)
+      drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
+      lookaheadKnob (parameter ("lookahead"), "Lookahead", colours::uiTeal, Knob::smallStyle),
+      precisionDropdown (parameter ("precision"))
 {
     // The title strip keeps one colour while the accent follows the selection.
     setTitleColour (multiBandColour (0));
@@ -433,7 +450,20 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
     logCheckbox.setBounds (24, 92, 220, 20);
     drawerOutputKnob.setBounds (300, 56, 90, 99);
 
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &attack90Checkbox, &logCheckbox, &drawerOutputKnob })
+    // Phase 3 Q2.6 (reference/phase3/26__multicomp_q26_mockup.png).
+    lookaheadKnob.setBounds (406, 56, 90, 99);
+    styleLabel (latencyLabel, {}, colours::textSecondary, juce::Justification::centred, 11.0f);
+    latencyLabel.setBounds (396, 160, 110, 16);
+    styleLabel (precisionLabel, "Precision", colours::textPrimary, juce::Justification::centredLeft);
+    precisionLabel.setBounds (24, 140, 80, 24);
+    precisionDropdown.setBounds (110, 140, 96, 24);
+    styleLabel (precisionNote, "Fast is within 0.05 dB of Exact at less CPU. Projects saved before 1.5 open on Exact.",
+                colours::textSecondary, juce::Justification::topLeft, 11.0f);
+    precisionNote.setBounds (24, 172, 250, 40);
+    lookaheadKnob.setTooltip ("The bands' audio waits this long, so each band's gain moves before a transient arrives. It adds latency.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &attack90Checkbox, &logCheckbox, &drawerOutputKnob,
+                                                                           &lookaheadKnob, &latencyLabel, &precisionLabel, &precisionDropdown, &precisionNote })
         drawer.addAndMakeVisible (item);
 
     body.addChildComponent (drawer);
@@ -555,6 +585,9 @@ void MultiCompEditor::onTick (float seconds)
 
     graph.update (displayed);
     outMeter.update (processor.outputMeter, seconds);
+
+    if (drawer.isVisible())
+        latencyLabel.setText ("latency " + juce::String (processor.getLatencySamples()) + " samples", juce::dontSendNotification);
 }
 
 void MultiCompEditor::showPreview (bool drawerOpen)
@@ -592,7 +625,22 @@ void MultiCompEditor::showPreview (bool drawerOpen)
     bandEditors[1]->showLevels (-18.0f, -17.0f, 4.1f);
     outMeter.show (-6.0f, -4.2f);
 
+    // Phase 3 Q2.6: the drawer with a lookahead set.
+    if (drawerOpen)
+    {
+        setValue (parameter ("lookahead"), 2.0f);
+        latencyLabel.setText ("latency 96 samples", juce::dontSendNotification);
+    }
+
     drawer.setVisible (drawerOpen);
+}
+
+void MultiCompEditor::showChannelPreview()
+{
+    showPreview (false);
+    setValue (parameter (MultiCompProcessor::id (1, "chan")), 3.0f); // Mid, as in the mockup
+    graph.update (displayed);
+    bandEditors[1]->update (tabs.getEndX() + 10, 4.1f, 0.0f);
 }
 
 juce::Colour MultiCompEditor::getAccentColour()

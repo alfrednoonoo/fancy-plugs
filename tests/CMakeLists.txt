@@ -37,7 +37,7 @@ if("FANCY_HAS_DELAY=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_MULTICOMP=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE MultiCompTests.cpp UpwardTests.cpp)
+    target_sources(fancy-tests PRIVATE MultiCompTests.cpp UpwardTests.cpp MultiCompQ26Tests.cpp LegacyMultiCompDsp.cpp)
 endif()
 
 if("FANCY_HAS_FIR=1" IN_LIST fancy_screen_defs)
