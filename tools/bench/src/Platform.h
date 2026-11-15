@@ -53,6 +53,9 @@ struct ScopedTimerResolution
 void prepareConsole();
 void suppressCrashDialogs();
 
+// Sets an environment variable for this process and the ones it starts.
+void setEnvironment (const juce::String& name, const juce::String& value);
+
 // The command-line arguments after the program name, with paths outside the ANSI code page intact
 // on Windows.
 juce::StringArray arguments (int argc, char* argv[]);

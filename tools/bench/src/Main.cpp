@@ -365,7 +365,7 @@ int smoke (const juce::StringArray& args)
     out.createDirectory();
 
     // The examples' %FANCY_VST3% paths, and the CPU reference, point at the built bundles.
-    SetEnvironmentVariableW (L"FANCY_VST3", dist.getFullPathName().toWideCharPointer());
+    bench::platform::setEnvironment ("FANCY_VST3", dist.getFullPathName());
 
     Smoke checks;
     const auto bundle = [&dist] (const char* name) { return dist.getChildFile (juce::String (name) + ".vst3"); };

@@ -67,4 +67,10 @@ private:
     std::vector<Entry> entries;
 };
 
+#if ! defined (_WIN32)
+// The packed library, embedded by the assembler in a file the build writes (VerbLibraryEmbed.cpp,
+// docs/mac.md). Windows reads the same file from a resource instead.
+juce::MemoryBlock embeddedLibraryData();
+#endif
+
 } // namespace verb

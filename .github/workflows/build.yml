@@ -251,3 +251,198 @@ jobs:
           path: measurements
           if-no-files-found: error
           retention-days: 14
+
+  # macOS (docs/mac.md, step 2): the same sources as one universal build for Intel and Apple
+  # silicon, tested natively and, for the Intel half, under Rosetta. Its own job, so a Mac failure
+  # can't hide a Windows one. While it's being brought up it may fail without failing the run.
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 120
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Record build identifiers
+        run: |
+          echo "SHORT_SHA=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_ENV"
+          echo "IMAGE_VERSION=$ImageVersion" >> "$GITHUB_ENV"
+          sw_vers
+          uname -m
+          xcodebuild -version
+
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v6
+        with:
+          path: .deps
+          key: deps-${{ runner.os }}-${{ env.IMAGE_VERSION }}-${{ hashFiles('cmake/Dependencies.cmake') }}
+
+      # ccache rather than sccache: it handles a universal compile (two -arch flags) in one call.
+      - name: Set up compiler cache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+          max-size: 2G
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DFANCY_PLUGINS="$PLUGIN"
+          -DFETCHCONTENT_BASE_DIR="$GITHUB_WORKSPACE/.deps"
+          -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
+
+      - name: Build
+        id: build
+        run: cmake --build build -- -k 0
+
+      - name: Check the binaries are universal
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          status=0
+          while IFS= read -r binary; do
+            archs=$(lipo -archs "$binary")
+            echo "$binary: $archs"
+            case "$archs" in
+              *arm64*x86_64*|*x86_64*arm64*) ;;
+              *) echo "::error::$binary is not universal"; status=1 ;;
+            esac
+          done < <(find build/plugins -path '*.vst3/Contents/MacOS/*' -type f)
+          exit $status
+
+      - name: Run DSP tests (Apple silicon)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: ctest --test-dir build --output-on-failure --verbose
+
+      - name: Run DSP tests (Intel code, under Rosetta)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          if ! arch -x86_64 /usr/bin/true 2>/dev/null; then
+            sudo softwareupdate --install-rosetta --agree-to-license
+          fi
+          tests=$(find build/tests -type f -name fancy-tests -perm -u+x | head -1)
+          arch -x86_64 "$tests"
+
+      - name: Record measurements
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          mkdir -p measurements
+          tests=$(find build/tests -type f -name fancy-tests -perm -u+x | head -1)
+          "$tests" '[measure]' | tee measurements/measurements.txt
+          exit ${PIPESTATUS[0]}
+
+      - name: Stage VST3 bundles
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          mkdir -p dist
+          find build/plugins -type d -name '*.vst3' -prune -exec cp -R {} dist/ \;
+          ls dist
+          ls -d dist/*.vst3
+
+      - name: Cache Steinberg VST3 validator
+        id: validator-cache
+        uses: actions/cache@v6
+        with:
+          path: validator-bin
+          key: vst3-validator-v3.8.0_build_66-${{ runner.os }}-${{ env.IMAGE_VERSION }}
+
+      - name: Build Steinberg VST3 validator
+        if: steps.validator-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 20
+        run: |
+          git clone --depth 1 --branch v3.8.0_build_66 https://github.com/steinbergmedia/vst3sdk.git vst3sdk
+          git -C vst3sdk submodule update --init --depth 1 base cmake pluginterfaces public.sdk
+          cmake -S vst3sdk -B vst3sdk-build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DSMTG_ENABLE_VST3_PLUGIN_EXAMPLES=OFF -DSMTG_ENABLE_VST3_HOSTING_EXAMPLES=ON \
+            -DSMTG_ENABLE_VSTGUI_SUPPORT=OFF -DSMTG_CREATE_PLUGIN_LINK=OFF -DSMTG_RUN_VST_VALIDATOR=OFF
+          cmake --build vst3sdk-build --target validator
+          mkdir -p validator-bin
+          find vst3sdk-build -name validator -type f -perm -u+x -exec cp {} validator-bin/ \;
+          ls -la validator-bin
+
+      - name: Run Steinberg VST3 validator
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 10
+        run: |
+          status=0
+          for bundle in dist/*.vst3; do
+            echo "::group::validator $bundle"
+            if ! ./validator-bin/validator "$bundle"; then
+              echo "::error::Steinberg validator failed for $bundle"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: Run pluginval
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 20
+        run: |
+          curl -fsSLO https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_macOS.zip
+          unzip -q -o pluginval_macOS.zip -d pluginval
+          status=0
+          for bundle in dist/*.vst3; do
+            echo "::group::pluginval $bundle"
+            if ! ./pluginval/pluginval.app/Contents/MacOS/pluginval --strictness-level 10 --vst3validator "$(pwd)/validator-bin/validator" --validate "$bundle"; then
+              echo "::error::pluginval failed for $bundle"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: Run host-behaviour harness
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 20
+        run: |
+          mkdir -p measurements
+          host=$(find build/tools/hosttest -type f -name fancy-hosttest -perm -u+x | head -1)
+          "$host" dist | tee measurements/hosttest.txt
+          exit ${PIPESTATUS[0]}
+
+      - name: Run FancyBench smoke checks
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && env.PLUGIN == 'all' }}
+        timeout-minutes: 25
+        run: |
+          bench=$(find build/tools/bench -type f -name FancyBench -perm -u+x | head -1)
+          "$bench" smoke dist measurements/measurements.txt measurements/bench tools/bench/examples | tee measurements/bench.txt
+          exit ${PIPESTATUS[0]}
+
+      - name: Render UI screenshots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 5
+        run: |
+          screens=$(find build/tools/screens -type f -name fancy-screens -perm -u+x | head -1)
+          "$screens" screens screens-popups screens-hostscale
+
+      - name: Upload VST3 artifact
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: FancyPlugs-VST3-macos-${{ env.SHORT_SHA }}
+          path: dist
+          retention-days: 14
+
+      - name: Upload screenshots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-macos-${{ env.SHORT_SHA }}
+          path: |
+            screens
+            screens-popups
+            screens-hostscale
+          retention-days: 14
+
+      - name: Upload measurements
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: measurements-macos-${{ env.SHORT_SHA }}
+          path: measurements
+          retention-days: 14

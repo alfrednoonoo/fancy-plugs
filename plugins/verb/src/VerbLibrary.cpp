@@ -78,9 +78,11 @@ juce::MemoryBlock resourceData()
         if (const auto handle = LoadResource (module, resource))
             if (const auto* data = LockResource (handle))
                 return juce::MemoryBlock (data, (size_t) SizeofResource (module, resource));
-   #endif
 
     return {};
+   #else
+    return embeddedLibraryData();
+   #endif
 }
 } // namespace
 

@@ -5,6 +5,11 @@
 
 #include <cstdio>
 
+#if ! defined (_WIN32)
+// The tool makes the library, so it has none embedded (docs/mac.md).
+juce::MemoryBlock verb::embeddedLibraryData() { return {}; }
+#endif
+
 int main (int argc, char* argv[])
 {
     if (argc != 3)

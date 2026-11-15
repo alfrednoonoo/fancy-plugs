@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.25)
 
+# macOS (docs/mac.md): one universal build for Intel and Apple silicon, macOS 11 and later. Set
+# before project() so the toolchain sees them; Windows ignores them.
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Oldest macOS the plugins run on")
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Mac architectures")
+
 project(FancyPlugs VERSION 1.6.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -8,6 +13,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Static CRT, so the plugins load on a machine without the VC++ redistributable.
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+# clang fuses multiplies and adds unless told not to, and MSVC doesn't, so Mac builds don't either:
+# that keeps their output within -100 dB of Windows (docs/mac.md, section 4).
+if(NOT MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    add_compile_options(-ffp-contract=off)
+endif()
 
 # "all", or one of the names in FANCY_ALL_PLUGINS. Set by the workflow_dispatch input.
 set(FANCY_PLUGINS "all" CACHE STRING "Plugin to build: all, kicker, exciter, comp, eq, verb, delay, multicomp, fir, gate, limit, ds, dsmini, sature or room")

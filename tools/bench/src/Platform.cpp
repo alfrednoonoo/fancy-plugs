@@ -81,6 +81,11 @@ ScopedTimerResolution::ScopedTimerResolution() { timeBeginPeriod (1); }
 ScopedTimerResolution::~ScopedTimerResolution() { timeEndPeriod (1); }
 
 void prepareConsole() { SetConsoleOutputCP (CP_UTF8); }
+
+void setEnvironment (const juce::String& name, const juce::String& value)
+{
+    SetEnvironmentVariableW (name.toWideCharPointer(), value.toWideCharPointer());
+}
 void suppressCrashDialogs() { SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX); }
 
 juce::StringArray arguments (int, char*[])
@@ -168,6 +173,11 @@ ScopedTimerResolution::ScopedTimerResolution() {}
 ScopedTimerResolution::~ScopedTimerResolution() {}
 
 void prepareConsole() {}
+
+void setEnvironment (const juce::String& name, const juce::String& value)
+{
+    setenv (name.toRawUTF8(), value.toRawUTF8(), 1);
+}
 void suppressCrashDialogs() {}
 
 juce::StringArray arguments (int argc, char* argv[])
