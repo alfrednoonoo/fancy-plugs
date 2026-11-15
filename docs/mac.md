@@ -1,0 +1,85 @@
+# Fancy Plugs on Mac: plan
+
+**Draft, 15 November 2026, waiting for the user's decisions.** `docs/BUILD_PROMPT_PHASE3.md` makes Mac its own phase, after Windows is finished. This note is the plan for it: what has to change, how it's built and tested without a Mac on this side, and the decisions only the user can make. No code until it's approved.
+
+Goal: all fourteen plugins on macOS, on Intel and Apple silicon (M1 and later), sounding and looking as they do on Windows, from the same source and the same CI.
+
+## 1. Where the code stands
+
+JUCE is cross-platform, and almost everything is already portable. A search of the source for Windows-only code finds five places:
+
+| Where | What's Windows-only | Change |
+|---|---|---|
+| `plugins/verb/src/VerbLibrary.cpp`, `plugins/verb/CMakeLists.txt` | The IR library is a Windows resource (`.rc`, `FindResourceW`) | Embed it with JUCE's `juce_add_binary_data` on every platform, so there's one path. Windows output stays bit-identical (same bytes, read another way) |
+| `plugins/verb/src/Convolver.cpp` | SSE intrinsics (`_mm_*`) in the convolver's inner loops | Keep SSE on x86 (Intel Macs too); add a NEON path for Apple silicon, or a plain loop the compiler vectorises. The Verb's bit-identity tests run on both |
+| `tools/bench/src/Host.cpp`, `Main.cpp` (FancyBench) | Thread priority and timing via Win32 | A small platform layer: Win32 on Windows, Mach thread policy and `mach_absolute_time` on Mac |
+| `tests/VerbTests.cpp`, `tests/FirQ27Tests.cpp` | CPU benchmarks use Win32 priority and cycle counters | The same platform layer; the correctness tests are already portable |
+| `scripts/install.ps1`, `get-latest.ps1` | PowerShell, `%USERPROFILE%\VST3-Dev` | `install.sh` and `get-latest.sh`, into `~/Library/Audio/Plug-Ins/VST3` (and `Components` for AU) |
+
+Already fine: fonts (Inter is embedded), Retina scaling (JUCE, and the screenshots already render at 2x), the user preset folder (`userApplicationDataDirectory` is `~/Library` on Mac), and denormal handling (`ScopedNoDenormals` sets flush-to-zero on ARM too).
+
+## 2. Decisions
+
+- **Decision 1: formats.**
+  - **A (R).** VST3 and Audio Unit (AU). Logic Pro and GarageBand load only AU; REAPER, Live, Cubase, Bitwig and Studio One load VST3. JUCE builds both from the same code, with `auval` (Apple's AU validator) added to CI.
+  - **B.** VST3 only. Less to test, but no Logic or GarageBand.
+- **Decision 2: signing.** macOS blocks plugins downloaded from the internet unless they're signed with an Apple Developer ID and notarised by Apple. The brief says no signing.
+  - **A (R).** No Developer ID: the builds are ad-hoc signed (Apple silicon needs at least that, and the linker does it), and the install script removes the quarantine flag (`xattr -dr com.apple.quarantine`), which is what lets them load. Free, and fine for you and people you hand the zip to, who run one script. A plugin dragged in by hand without the script gets "can't be opened" until the flag is removed.
+  - **B.** Developer ID and notarisation: Apple Developer Program, 99 USD a year, with the certificate and an app-specific password stored as GitHub secrets, and CI notarises each release. Plugins then install like any commercial one. It changes the brief's no-signing rule, so it's yours to decide, and it can be added later without other changes.
+- **Decision 3: one universal build.** **(R)** Each bundle holds both Intel (`x86_64`) and Apple silicon (`arm64`) code, so there's one download and it works on any Mac. The alternative, two downloads, saves nothing that matters (the bundles are a few MB).
+- **Decision 4: oldest macOS.** **(R)** macOS 11 Big Sur, the first with Apple silicon: it's what Apple's current tools support well, and it covers Intel Macs from 2013 on. 10.15 is possible if you know someone still on it.
+- **Decision 5: Fancy Gate's MIDI output in AU.** An AU effect can't send MIDI unless it's registered as a "music effect", which Logic lists in a different place. **(R)** Gate's AU is a music effect, so the trigger output works; its VST3 is unchanged. The alternative is a normal AU effect without the MIDI output.
+- **Decision 6: who listens.** On Windows the last check is you, in REAPER. On Mac, CI can build, validate and test, but not listen.
+  - **A (R).** You, or someone you choose, on a Mac in REAPER (and Logic, for AU), with a Mac section added to each checklist. Ideally one Intel and one Apple silicon Mac; Apple silicon alone is acceptable, because CI runs the Intel code under Rosetta as well as natively (section 3).
+  - **B.** No listening check on Mac: CI only. Faster, but nobody hears it before release.
+
+## 3. Build and test, still CI only
+
+There's still no local compiler, Windows or Mac. A second job in the same workflow builds and tests on GitHub's macOS runners, which are free for a public repo, in parallel with the Windows job:
+
+1. Configure with `CMAKE_OSX_ARCHITECTURES="arm64;x86_64"` and the deployment target from Decision 4; build every plugin (VST3, AU), FancyBench and the tests with Xcode's clang.
+2. Run the whole test suite natively on Apple silicon, then again as Intel code under Rosetta 2, so both halves of the universal binary are tested. If GitHub still offers an Intel macOS runner, the Intel half also runs natively there.
+3. pluginval and Steinberg's validator on every VST3; `auval` on every AU.
+4. Screenshots, compared with the Windows ones: the layouts must match to the pixel, with text rendering allowed to differ slightly.
+5. FancyBench's smoke check and the CPU measurements (section 5).
+6. Upload `FancyPlugs-VST3-AU-<sha>-macos` as an artifact next to the Windows one.
+
+The Windows job doesn't change, so a Mac failure can't hide a Windows one.
+
+## 4. Sound across platforms
+
+- **Within a platform** the rule stays as it is: saved projects load and render bit-identically after every change, on Windows and on Mac, each tested on its own.
+- **Between platforms** bit-identity isn't possible: the compilers and maths libraries differ (for example, ARM compilers fuse multiply and add by default). A project moved from Windows to Mac must sound the same; the test is that a render of every factory preset on Mac matches the Windows render to better than −100 dB of difference.
+- **To keep them close,** clang builds use `-ffp-contract=off`, so no multiply-adds are fused where MSVC doesn't fuse them.
+
+## 5. CPU
+
+Apple silicon runs these plugins at least as fast as the Windows runners, so the §4.11 targets hold. The Mac job measures each plugin with the §0.4 method (five runs, median, ratio to Fancy Comp in the same run) and writes `docs/measurements/mac.txt`. The ratios are the figures to compare with Windows, since absolute numbers differ between machines.
+
+## 6. Packaging and install
+
+The same rules as Windows: no installer, no licence, no updater.
+
+- **Release asset:** `FancyPlugs-<version>-macos.zip` beside the Windows zip: the `.vst3` and `.component` bundles, `install.sh`, and FancyBench in `tools/`.
+- **`install.sh`:** copies the bundles to `~/Library/Audio/Plug-Ins/VST3` and `~/Library/Audio/Plug-Ins/Components` (the user's own folders, so no administrator password), removes the quarantine flag (Decision 2 A), and asks Logic to rescan AUs the next time it starts.
+- **`get-latest.sh`:** as `get-latest.ps1`, for the newest green build.
+- **README:** a Mac install section, and the Windows section kept as it is.
+
+## 7. Build order
+
+Each step is one push or a few, green on both platforms before the next:
+
+1. **Portable code, Windows only:** the Verb library as binary data, the convolver's NEON path, the platform layer for FancyBench and the benchmarks. Windows must stay bit-identical and within its CPU figures. Nothing Mac-specific is built yet, so this can't break anything a user has.
+2. **Mac job, VST3:** the universal build, tests natively and under Rosetta, pluginval, Steinberg's validator, screenshots.
+3. **AU:** `auval`, Gate as a music effect, the AU sidechain in Logic's terms, `docs/host-compat.md` updated for Logic, Live and REAPER on Mac.
+4. **Packaging:** `install.sh`, `get-latest.sh`, the release zip, the README, a Mac section in each checklist.
+5. **Listening check** (Decision 6), then the release with both zips.
+
+Steps 1 and 2 need no decisions beyond 3 and 4; steps 3 to 5 need Decisions 1, 2, 5 and 6.
+
+## 8. Risks
+
+- **The IR library and the convolver** are the only DSP that changes, in step 1. Verb's bit-identity tests cover both, on Windows first.
+- **Text rendering** differs between Windows and Mac, so some labels may need a pixel more room; the screenshots will show it.
+- **GitHub's Intel macOS runners** are being retired. Rosetta on Apple silicon runners covers the Intel code if they go; native Intel hardware would then be tested only by a listener with an Intel Mac.
+- **Unsigned plugins** (Decision 2 A) depend on the install script; a future macOS could make that harder, which Decision 2 B would solve.
