@@ -1,0 +1,102 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy FIR Q2.7 mockup</title><link rel="stylesheet" href="common.css"><link rel="stylesheet" href="kit2.css"><script src="lib2.js"></script>
+<style>
+body{--a:#2DCC70}
+.sheet{display:flex;flex-direction:column;gap:18px;width:1000px}
+.h{font-size:13px;font-weight:700;color:#fff;margin:4px 0 2px}.n{font-size:11px;color:#8D8D8D;margin-bottom:8px;line-height:1.45;max-width:980px}
+.shot{position:relative;width:760px;height:465px}
+.shot img{width:760px;height:465px;display:block}
+.abs{position:absolute}
+.new{outline:1px dashed #FFCF07;outline-offset:3px}
+.cover{background:#262626}
+.seg{display:flex;align-items:center}
+.seg span{font-size:13px;padding:3px 6px}
+.seg span.m{background:#2DCC70;color:#141414;font-weight:600}
+.k .lbl{font-size:13px;text-align:center}.k .val{font-size:12px;text-align:center}
+.k{display:flex;flex-direction:column;align-items:center}
+.cbx{display:flex;align-items:center;gap:7px;font-size:13px;color:#fff;height:20px}
+.cbx i{width:14px;height:14px;border-radius:3px;background:#1E1E1E;border:1px solid #4C4C4C;display:inline-block;position:relative}
+.cbx i.x{background:#2DCC70;border-color:#2DCC70}
+.cbx i.x:after{content:"";position:absolute;left:4.2px;top:1.5px;width:3.5px;height:7px;border:solid #141414;border-width:0 1.6px 1.6px 0;transform:rotate(45deg)}
+.dim{opacity:.4}
+.tip{background:#1E1E1E;border:1px solid #424242;border-radius:4px;font-size:12px;color:#fff;padding:5px 8px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.legend{font-size:11px;color:#8D8D8D;display:flex;gap:12px;align-items:center}
+.legend b{display:inline-block;width:10px;height:3px;border-radius:1px;margin-right:5px;vertical-align:middle}
+.rtitle{font-size:12px;font-weight:600;letter-spacing:.06em;color:#8D8D8D}
+.hint{font-size:11px;color:#8D8D8D;line-height:1.35}
+</style></head><body>
+<div class="sheet">
+
+<div><div class="h">1 · Resonance mode at its defaults (Decisions 1, 2 A, 4, 5)</div><div class="n">Resonance is the sixth segment, in green. The left card holds RANGE (Low and High); the controls card holds Depth, Sharpness, Attack and Release in Subtract's four knob places, with FFT size and Reduce artifacts as today. The graph shows input, output and the reduction hanging from 0 dB in green: here two resonances, at 700 Hz and 3 kHz, are turned down. Sidechain detector is greyed in this mode. New items are ringed in yellow here only.</div>
+<div class="shot" id="shot1"><img src="img/fir@2x.png"></div></div>
+
+<div><div class="h">2 · The "Harsh Vocal" preset: Range 1.5 to 10 kHz, Listen on, and the Sidechain detector's tooltip</div><div class="n">Outside Range the graph is dimmed and nothing is reduced: the 700 Hz resonance is left alone. Listen to removed resonances (a temporary switch, never saved) plays only what's taken out. Hovering the greyed Sidechain detector shows why it's off.</div>
+<div class="shot" id="shot2"><img src="img/fir@2x.png"></div></div>
+
+</div>
+<script>
+const G='#2DCC70';
+const X=f=>179+188*Math.log10(f/100), Y=db=>160-1.458*db;
+function noiseDb(f,seed){const s=Math.sin(f*0.0123+seed)*1.6+Math.sin(f*0.0371+seed*2)*1.1+Math.sin(f*0.0917+seed*3)*0.8;return s}
+function bed(f){return -36-4.2*Math.log2(Math.max(f,30)/500)+(f<80?-6*Math.log2(80/f):0)+(f>12000?-10*Math.log2(f/12000):0)}
+function res(f){const p=(f0,g,q)=>{const x=Math.log2(f/f0)*q*1.6;return g/(1+x*x)};return p(3000,12,8)+p(700,9,9)}
+function cut(f,lo,hi,depth){const out=Math.max(Math.log2(lo/f),Math.log2(f/hi),0);const w=Math.max(0,1-2*out);return Math.min(depth,Math.max(0,res(f)-4))*w}
+function graph(id,lo,hi,depth){
+  const sh=document.getElementById(id);
+  const W=608,H=194,ox=14,oy=117;
+  let s=`<svg class="abs" style="left:${ox}px;top:${oy}px" width="${W}" height="${H}" viewBox="${ox} ${oy} ${W} ${H}">`;
+  s+=`<rect x="${ox}" y="${oy}" width="${W}" height="${H}" fill="#262626"/>`;
+  for(const f of [50,100,200,500,1000,2000,5000,10000,20000]) s+=`<rect x="${X(f)-.5}" y="${oy+3}" width="1" height="${290-oy-3}" fill="#303030"/>`;
+  for(const d of [24,-24,-48,-72,-90]) s+=`<rect x="48" y="${Y(d)-.5}" width="${X(20000)-48}" height="1" fill="#303030"/>`;
+  s+=`<rect x="48" y="${Y(0)-.5}" width="${X(20000)-48}" height="1" fill="#424242"/>`;
+  // input (filled) and output (line)
+  let inP=`M48,${Y(-90)}`,outP='';
+  for(let x=48;x<=X(20000);x+=1){const f=100*Math.pow(10,(x-179)/188);const n=noiseDb(f,1);const i=bed(f)+res(f)+n;const o=i-cut(f,lo,hi,depth);
+    inP+=` L${x},${Math.min(Y(-90),Y(i))}`;outP+=(outP?' L':'M')+`${x},${Math.min(Y(-90),Y(o))}`}
+  inP+=` L${X(20000)},${Y(-90)} Z`;
+  s+=`<path d="${inP}" fill="rgba(141,141,141,.22)"/>`;
+  // reduction hanging from 0 dB
+  for(let x=48;x<X(20000);x+=2){const f=100*Math.pow(10,(x-179)/188);const r=cut(f,lo,hi,depth);if(r>0.05)s+=`<rect x="${x}" y="${Y(0)}" width="2" height="${1.458*r}" fill="${G}" fill-opacity=".6"/>`}
+  s+=`<path d="${outP}" fill="none" stroke="#E77E23" stroke-width="1.3"/>`;
+  // range dimming
+  if(lo>21) s+=`<rect x="48" y="${oy+3}" width="${X(lo)-48}" height="${290-oy-3}" fill="#141414" fill-opacity=".55"/>`;
+  if(hi<19999) s+=`<rect x="${X(hi)}" y="${oy+3}" width="${X(20000)-X(hi)}" height="${290-oy-3}" fill="#141414" fill-opacity=".55"/>`;
+  for(const [d,t] of [[24,'+24'],[0,'0'],[-24,'-24'],[-48,'-48'],[-72,'-72'],[-90,'-90']]) s+=`<text x="42" y="${Y(d)+4}" fill="#8D8D8D" font-size="11" text-anchor="end" font-family="Inter">${t}</text>`;
+  for(const [f,t] of [[50,'50'],[100,'100'],[200,'200'],[500,'500'],[1000,'1k'],[2000,'2k'],[5000,'5k'],[10000,'10k'],[20000,'20k']]) s+=`<text x="${X(f)}" y="306" fill="#8D8D8D" font-size="11" text-anchor="middle" font-family="Inter">${t}</text>`;
+  s+=`</svg>`;
+  s+=`<div class="abs legend" style="right:${760-616}px;top:126px"><span><b style="background:#8D8D8D"></b>input</span><span><b style="background:#E77E23"></b>output</span><span><b style="background:${G}"></b>reduction</span></div>`;
+  sh.insertAdjacentHTML('beforeend',s);
+}
+function common(id,o){
+  const sh=document.getElementById(id);
+  sh.insertAdjacentHTML('beforeend',`
+  <div class="abs" style="left:46px;top:83px;width:440px;height:26px;background:#303030"></div>
+  <div class="abs seg" style="left:50px;top:83px;height:25px"><span>EQ</span><span>Gate</span><span>Compressor</span><span>Subtract</span><span>Convolve L/R</span><span class="m new">Resonance</span></div>
+  <div class="abs cover" style="left:14px;top:322px;width:180px;height:110px;border-radius:6px"></div>
+  <div class="abs rtitle new" style="left:25px;top:328px">RANGE</div>
+  <div class="abs" style="left:24px;top:347px;display:flex;gap:14px">
+    <div class="k" data-k data-v="${o.lov}" data-c="${G}" data-s="32" data-l="Low" data-t="${o.lot}" style="width:66px"></div>
+    <div class="k" data-k data-v="${o.hiv}" data-c="${G}" data-s="32" data-l="High" data-t="${o.hit}" style="width:66px"></div>
+  </div>
+  <div class="abs cover" style="left:205px;top:324px;width:256px;height:104px"></div>
+  <div class="abs new" style="left:207px;top:328px;display:flex">
+    <div class="k" data-k data-v="${o.dv}" data-c="${G}" data-s="42" data-l="Depth" data-t="${o.dt}" style="width:64px"></div>
+    <div class="k" data-k data-v="${o.sv}" data-c="${G}" data-s="42" data-l="Sharpness" data-t="${o.st}" style="width:64px"></div>
+    <div class="k" data-k data-v="${o.av}" data-c="${G}" data-s="42" data-l="Attack" data-t="${o.at}" style="width:64px"></div>
+    <div class="k" data-k data-v="${o.rv}" data-c="${G}" data-s="42" data-l="Release" data-t="${o.rt}" style="width:64px"></div>
+  </div>
+  <div class="abs" style="left:470px;top:385px;width:20px;height:20px;background:#262626"></div>
+  <div class="abs cbx" style="left:471px;top:385px"><i class="x"></i></div>
+  <div class="abs" style="left:12px;top:440px;width:574px;height:22px;background:#303030"></div>
+  <div class="abs cbx" style="left:15px;top:441px"><i class="x"></i>Show analysis</div>
+  <div class="abs cbx" style="left:127px;top:441px"><i></i>Low latency</div>
+  <div class="abs cbx dim" style="left:225px;top:441px"><i></i>Sidechain detector</div>
+  <div class="abs cbx new" style="left:372px;top:441px"><i class="${o.listen?'x':''}"></i>Listen to removed resonances</div>
+  `);
+}
+common('shot1',{lov:.37,lot:'100 Hz',hiv:1,hit:'20.0 kHz',dv:.25,dt:'6.0 dB',sv:.5,st:'50 %',av:.16,at:'5.0 ms',rv:.3,rt:'80.0 ms',listen:false});
+graph('shot1',100,20000,6);
+common('shot2',{lov:.79,lot:'1.50 kHz',hiv:.77,hit:'10.0 kHz',dv:.33,dt:'8.0 dB',sv:.6,st:'60 %',av:.11,at:'2.0 ms',rv:.27,rt:'60.0 ms',listen:true});
+graph('shot2',1500,10000,8);
+document.getElementById('shot2').insertAdjacentHTML('beforeend',`<div class="abs tip" style="left:214px;top:466px">Resonance listens to its own input</div>`);
+</script>
+</body></html>

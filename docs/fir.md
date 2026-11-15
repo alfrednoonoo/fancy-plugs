@@ -156,3 +156,103 @@ A state with no profile, or one of the wrong size, loads as having none.
 | The analysis is only approximate | Fancy EQ's calibrated analyzer | A -12 dBFS sine reads -12 dB ± 0.5 |
 | 0.x compatibility mode | Dropped | |
 | Changing size or mode while playing glitches | Engines built off the audio thread, warmed up and crossfaded | A size change mid-stream ends on the new latency with no discontinuity, and the new latency is reported |
+
+## Phase 3 Q2.7: Resonance mode and CPU stability
+
+Brief: Q2.7 of `docs/BUILD_PROMPT_PHASE3.md`. **Waiting for the user's approval.** Mockup: `design/phase3-mockup-src/fir-q27.html`, rendered as `reference/phase3/28__fir_q27_mockup.png`. Model: `docs/research/fir-resonance-model.py`, results in `fir-resonance-model.txt`. Every new setting is heard only in the new mode, so old projects render bit-identically.
+
+### 1. What Resonance does
+
+A sixth mode that finds narrow peaks standing above the spectrum around them and turns them down, by up to Depth, only while they're there. A whistling snare, a boxy vocal or a ringing room mode comes down; the rest of the spectrum doesn't move.
+
+Per frame, on the existing engine (same FFT size, Low latency, Reduce artifacts and latency as the other modes):
+
+1. **Detector:** each bin's power, averaged over ±1 bin and smoothed over a fixed 80 ms, separately from Attack and Release. Without that smoothing, the random bin-to-bin peaks of noise are found as resonances.
+2. **Envelope:** for each bin, the mean level in dB on each side of it, over a window set by Sharpness, leaving out ±2 bins round it (a sine's main lobe). The envelope is the **louder** side. A peak is below its envelope on both sides; a step, a shelf or a band edge has one side as loud as itself, so it's never taken for a peak. Two more passes clip each level at envelope + 4 dB and average again, so a peak doesn't lift its own envelope.
+3. **Reduction:** `min(Depth, level − envelope − 4 dB)`, so a bin is turned down only once it stands 4 dB above its envelope, and never below that line. Weighted by Range (Decision 2).
+4. **Ballistics:** Attack and Release act on the reduction in dB, per hop, as in Compressor mode.
+5. **Gain:** `10^(−reduction / 20)`, then Reduce artifacts' smoothing across bins, as in every mode.
+
+The 4 dB tolerance and the 80 ms detector are fixed. The model chose them: at 3 dB or 40 ms, noise lost up to 0.5 dB in some octaves; at 4 dB and 80 ms, 0.03 dB at most.
+
+**Sharpness** sets the envelope window: 2 octaves wide at 0 % (broad bumps count as peaks), 1/3 octave at 100 % (only very narrow ones), on a log scale, and never narrower than ±6 bins. At 4096 points a bin is 11.7 Hz, so below about 100 Hz the window is always more than an octave. Larger FFT sizes resolve low resonances better, and the manual will say so.
+
+### 2. What the model shows
+
+`docs/research/fir-resonance-model.py` runs the algorithm above on the engine's STFT (4096 points, 48 kHz). The gain is measured at the frequency, from the averaged cross-spectrum.
+
+| Test | Result |
+|---|---|
+| 3 kHz resonance, 12 dB above white or pink noise (peaking +12 dB, Q 8), Sharpness 50 %, Depth 3 dB | −3.0 dB at 3 kHz; 0.0 dB at 1.5 kHz |
+| The same, Depth 6 dB | −5.2 to −5.4 dB at 3 kHz; 0.0 dB at 1.5 kHz |
+| The same, Depth 12 dB | −5.5 to −5.9 dB: a peak 12 dB up is only brought down to 4 dB above its envelope, by design |
+| White and pink noise, 20 Hz to 20 kHz, no resonance, every Sharpness, Depth 6 and 24 dB | 0.03 dB or less in every octave from 31.5 Hz to 16 kHz |
+| Pink noise band-limited to 300 Hz to 8 kHz, by a brick wall or 24 dB/oct slopes, Depth 24 dB | 0.16 dB or less in every octave inside the band |
+| The 3 kHz resonance with High at 2 kHz; with Range 1 to 10 kHz | 0.0 dB; −5.2 dB |
+| Pink noise with Range's Low at 20 Hz instead of 100 Hz | −0.86 dB at 31.5 Hz and −0.54 dB at 63 Hz: pink's slope across a window wider than an octave looks like a peak. Hence Low's default of 100 Hz |
+
+### 3. Decisions
+
+- **Decision 1: how Resonance joins the Mode parameter.**
+  - **A (R).** Append "Resonance" to the end of `mode`'s choices, as Comp's 8x was. Saved states store the index, so projects load unchanged. Only a host automation lane drawn on Mode would shift, since its normalised values move; nobody automates the mode, because each change is a jump. The switch shows it last: EQ, Gate, Compressor, Subtract, Convolve L/R, Resonance.
+  - **B.** A new parameter `mode2` with six choices, the old one hidden. Safe for automation lanes, but the host lists two Mode parameters for good.
+- **Decision 2: Range, where Resonance works.**
+  - **A (R).** Two knobs, **Low** (20 Hz to 2 kHz, default 100 Hz) and **High** (1 to 20 kHz, default 20 kHz), in the left card, which Resonance doesn't otherwise use. Full depth between them, fading to nothing over half an octave outside. The graph dims the area outside the range. It keeps a vocal's low end out of it, and Low's default keeps pink noise's lowest octaves still (section 2).
+  - **B.** No range: it works everywhere above 100 Hz. Fewer controls, but you can't keep it to the harsh band.
+  - **C.** Use the curve, as Gate and Compressor do, for Depth per frequency. The most flexible, but a curve in % on a graph scaled in dB is confusing, and it's more to build.
+- **Decision 3: stereo.**
+  - **A (R).** Linked: the detector reads the two channels' power together, and both get the same gain, so the stereo image never moves. Resonances are almost always in both channels.
+  - **B.** Each channel on its own, as Gate and Compressor do. Catches a resonance in one channel only, but can shift the image while it acts.
+- **Decision 4: Sidechain detector in Resonance.** **(R)** Greyed, with the tooltip "Resonance listens to its own input". The other modes keep it. Say if you'd rather it found the peaks in the sidechain instead.
+- **Decision 5: Listen.** **(R)** "Listen to removed resonances", the same temporary switch as Gate's and Compressor's (§0.3), in the footer, so you hear only what's taken out.
+- **Decision 6 (R): two factory presets.** "Resonance Tamer" (Restoration: Depth 6 dB, Sharpness 50 %, Attack 5 ms, Release 80 ms, default range) and "Harsh Vocal" (Restoration: Depth 8 dB, Sharpness 60 %, Attack 2 ms, Release 60 ms, Range 1.5 to 10 kHz).
+
+### 4. Controls and display
+
+- **Mode switch:** "Resonance" as the sixth segment, in green `#2DCC70`, the one accent FIR doesn't use yet. The switch grows from 308 to about 390 px and still ends before Edit.
+- **Left card:** RANGE, with Low and High as compact knobs (Decision 2 A). The Edit dropdown stays as it does in Subtract.
+- **Controls card:** Depth, Sharpness, Attack and Release, in the four knob places Subtract uses, then FFT size and Reduce artifacts as today.
+- **Graph:** input and output as in every mode, the reduction hanging from 0 dB in green, as Compressor's does in yellow, and the area outside Range dimmed. Legend: input, output, reduction.
+- **Footer:** Show analysis, Low latency, Sidechain detector (greyed), Listen to removed resonances, EDIT.
+
+### 5. CPU stability
+
+The brief asks for the cause of the run-to-run variation, a high-priority benchmark like the Verb's, and the 99th percentile.
+
+- **What varies today:** `docs/measurements/fir.txt` has the same code at 0.5 to 1.4 % in one run and 0.9 to 3.8 % in the next, with blocks of up to 1878 % of their time.
+- **Likely cause:** FIR's benchmark runs flat out at normal priority and times each block by the clock. The FFT work lands in one block of every eight (one hop at 4096), so a preemption or page fault during that block counts in full, and the runner's other processes decide how often that happens. The Verb's benchmark avoids this: it runs at time-critical priority, paced at real time.
+- **The check:** time each block both by the clock and by the thread's own CPU cycles (`QueryThreadCycleTime`). If they differ only in a few blocks, preemption is the cause; if the cycles vary too, it's the CPU (clock speed, cache), and the ratio to Fancy Comp in the same run (§0.4) is the figure to trust.
+- **The benchmark after:** time-critical priority, paced at real time, five runs in one build, reporting the median of the mean, the 99th-percentile block and the worst block, for every mode including Resonance, with the ratio to Fancy Comp.
+- **Targets:** Resonance under 3 % at 4096 points, like the other modes, and under 1.3 x Compressor mode in the same run. Stability: two CI runs agree within 20 % on each mode's median.
+
+### 6. Parameters and state
+
+Appended after `adaptSpeed`, so nothing moves. `mode` gains "Resonance" at the end (Decision 1 A).
+
+| ID | Name | Range | Default | Unit | Skew |
+|---|---|---|---|---|---|
+| `resDepth` | Depth | 0 to 24 | 6 | dB | linear |
+| `resSharpness` | Sharpness | 0 to 100 | 50 | % | linear |
+| `resAttack` | Attack | 0 to 200 | 5 | ms | as `compAttack` |
+| `resRelease` | Release | 0 to 2000 | 80 | ms | as `compRelease` |
+| `resLow` | Low | 20 to 2000 | 100 | Hz | log |
+| `resHigh` | High | 1000 to 20000 | 20000 | Hz | log |
+
+`stateVersion` doesn't change: the new parameters act only in the new mode, and an old state lacks them and gets their defaults.
+
+### 7. Tests
+
+1. **Compatibility:** v1.4.0 states in each of the five old modes render bit-identically.
+2. **The brief's resonance test:** a 3 kHz resonance 12 dB above pink noise, Depth 3 and 6 dB: the gain at 3 kHz is Depth ± 1 dB, and at 1.5 kHz within 0.2 dB of 0.
+3. **The brief's broadband test:** white and pink noise, every Sharpness, Depth 24 dB: under 0.5 dB in every octave from 31.5 Hz to 16 kHz.
+4. **Edges:** noise high-passed at 300 Hz and low-passed at 8 kHz: under 0.5 dB in every octave inside the band.
+5. **Range:** the resonance at 3 kHz with High at 2 kHz: under 0.5 dB at 3 kHz.
+6. **Linked:** the resonance in the left channel only: both channels get the same gain.
+7. **Ballistics:** the reduction reaches 63 % in Attack and recovers 63 % in Release, within 10 %, at 1024 and 8192 points.
+8. **Listen:** the output plus the Listen output equals the input, within 0.01 dB.
+9. **The usual:** latency equals the measured delay, every rate and block size, random settings stay finite, automation with an unchanged value is bit-identical, presets load.
+10. **CPU:** as in section 5, in `docs/measurements/fir-q27.txt`.
+
+### 8. Build order
+
+Two pushes. First the DSP, the parameters, the tests and the CPU work. Then the UI (switch, Range card, knobs, graph), presets, screenshots, manual and checklist. Before the first, a pre-push check that the C++ test signals give the model's figures, as Room's did.

@@ -1,0 +1,28 @@
+1. 3 kHz resonance, 12 dB above the bed (peaking +12 dB, Q 8): gain at 3 kHz and 1.5 kHz
+   white Depth  3 dB, Sharpness  50 %: 3 kHz  -2.99 dB, 1.5 kHz -0.01 dB
+   white Depth  6 dB, Sharpness   0 %: 3 kHz  -5.94 dB, 1.5 kHz -0.00 dB
+   white Depth  6 dB, Sharpness  50 %: 3 kHz  -5.43 dB, 1.5 kHz -0.01 dB
+   white Depth  6 dB, Sharpness 100 %: 3 kHz  -2.35 dB, 1.5 kHz -0.00 dB
+   white Depth  8 dB, Sharpness  50 %: 3 kHz  -5.89 dB, 1.5 kHz -0.01 dB
+   white Depth 12 dB, Sharpness  50 %: 3 kHz  -5.91 dB, 1.5 kHz -0.01 dB
+   pink  Depth  3 dB, Sharpness  50 %: 3 kHz  -2.98 dB, 1.5 kHz -0.00 dB
+   pink  Depth  6 dB, Sharpness   0 %: 3 kHz  -3.60 dB, 1.5 kHz -0.00 dB
+   pink  Depth  6 dB, Sharpness  50 %: 3 kHz  -5.20 dB, 1.5 kHz -0.00 dB
+   pink  Depth  6 dB, Sharpness 100 %: 3 kHz  -2.37 dB, 1.5 kHz -0.00 dB
+   pink  Depth  8 dB, Sharpness  50 %: 3 kHz  -5.49 dB, 1.5 kHz -0.00 dB
+   pink  Depth 12 dB, Sharpness  50 %: 3 kHz  -5.50 dB, 1.5 kHz -0.00 dB
+2. Broadband, no resonance: change per octave, 31.5 Hz to 16 kHz (limit 0.5 dB)
+   white Low 20 Hz (not the default), Depth 24: -0.02 -0.05 -0.00 -0.02 -0.01 -0.01 -0.00 -0.00 -0.01 -0.01
+   white Sharpness   0 %, Depth  6.0: worst -0.03 dB (+0.00 +0.00 -0.00 -0.03 -0.01 -0.01 -0.00 -0.00 -0.01 -0.01)
+   white Sharpness   0 %, Depth 24.0: worst -0.03 dB (+0.00 +0.00 -0.00 -0.03 -0.01 -0.01 -0.00 -0.00 -0.01 -0.01)
+   white Sharpness  50 %, Depth  6.0: worst -0.02 dB (+0.00 -0.00 -0.00 -0.02 -0.01 -0.01 -0.00 -0.00 -0.01 -0.01)
+   white Sharpness  50 %, Depth 24.0: worst -0.02 dB (+0.00 -0.00 -0.00 -0.02 -0.01 -0.01 -0.00 -0.00 -0.01 -0.01)
+   white Sharpness 100 %, Depth  6.0: worst -0.02 dB (+0.00 -0.00 -0.00 -0.02 -0.02 -0.00 -0.00 -0.00 -0.01 -0.01)
+   white Sharpness 100 %, Depth 24.0: worst -0.02 dB (+0.00 -0.00 -0.00 -0.02 -0.02 -0.00 -0.00 -0.00 -0.01 -0.01)
+   pink  Low 20 Hz (not the default), Depth 24: -0.86 -0.54 -0.00 -0.01 -0.00 -0.00 -0.00 -0.00 -0.00 -0.00
+   pink  Sharpness   0 %, Depth  6.0: worst -0.00 dB (-0.00 -0.00 -0.00 +0.00 +0.00 -0.00 +0.00 +0.00 -0.00 -0.00)
+   pink  Sharpness   0 %, Depth 24.0: worst -0.00 dB (-0.00 -0.00 -0.00 +0.00 +0.00 -0.00 +0.00 +0.00 -0.00 -0.00)
+   pink  Sharpness  50 %, Depth  6.0: worst -0.01 dB (-0.00 +0.00 -0.00 -0.01 -0.00 -0.00 -0.00 -0.00 -0.00 -0.00)
+   pink  Sharpness  50 %, Depth 24.0: worst -0.01 dB (-0.00 +0.00 -0.00 -0.01 -0.00 -0.00 -0.00 -0.00 -0.00 -0.00)
+   pink  Sharpness 100 %, Depth  6.0: worst -0.01 dB (+0.00 +0.00 -0.00 -0.01 -0.01 -0.00 -0.00 -0.00 -0.01 -0.00)
+   pink  Sharpness 100 %, Depth 24.0: worst -0.01 dB (+0.00 +0.00 -0.00 -0.01 -0.01 -0.00 -0.00 -0.00 -0.01 -0.00)
