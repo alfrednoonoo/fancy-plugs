@@ -4,10 +4,10 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 ## Now
 
-- **FIR (Q2.7)**: Resonance mode and CPU stability, green in run 43742763641 (commit `ff534e3`, 516 test cases); as built in `docs/fir.md`. **Waiting for:** the v1.6.0 GitHub release (stopped once by low memory on the PC; rerun only when the user says so), the README's `fir-resonance.png` from `screens-ff534e3`, and the user's REAPER check (`docs/fir-checklist.md`, Resonance section). Fixes go out as 1.6.1. The paced FIR benchmark's second run must agree with 43742763641 within 20 %.
+- **FIR (Q2.7)**: Resonance mode and CPU stability, green in run 43742763641 (commit `ff534e3`, 516 test cases); as built in `docs/fir.md`. Released as v1.6.0 on 15 November 2026. **Waiting for:** the user's REAPER check (`docs/fir-checklist.md`, Resonance section). Fixes go out as 1.6.1. The paced FIR benchmark's second run must agree with 43742763641 within 20 %.
 - **Current item: Mac** (`docs/mac.md`), **approved by the user on 15 November 2026, every recommended option.** Step 1 (portable code) green on Windows in run 43765631996. Step 2 (the `macos` CI job, VST3): builds universal, 515 of 518 tests passed; fixes pushed, CI pending. As built in `docs/mac.md`, section 9.
 - **Then:** Phase 3's Q2 list is done with FIR. Phase 4 holds Kicker's Duck, a transient shaper and a chorus. Q3's saved-state fixtures for v1.1.0/v1.2.0 (`tests/data/`) are still open, and FancyBench head-to-heads for Verb, MultiComp and FIR are the user's.
-- **Latest release:** [v1.5.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.5.0), 15 November 2026: Verb Q2.8, MultiComp Q2.6, Delay Q2.3, all passed in REAPER by the user on 15 November 2026.
+- **Latest release:** [v1.6.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.6.0), 15 November 2026: FIR Q2.7 (Resonance mode), released before the REAPER check at the user's request.
 
 ## Releases
 
@@ -20,6 +20,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 | v1.3.0 | Limit, DS, DS-Mini, Sature, Room, Kicker Sub mode, preset browser, free resizing, title strip, temporary Listen switches | 43436706689, commit `e2ed62c` |
 | v1.4.0 | EQ: channel per band, 24 bands, Match. Comp: Character, Upward, Auto threshold, detector EQ, 8x | 43644278032, commit `82a4bbd` |
 | v1.5.0 | Verb: IR library, true stereo, Modulate, Add module. MultiComp: lookahead, channel per band. Delay: Character, Motion, Ducking, Swing | 43737725969, commit `947168b` |
+| v1.6.0 | FIR: Resonance mode (Depth, Sharpness, Attack, Release, Range, linked stereo, Listen) | 43742763641, commit `ff534e3` |
 
 Release recipe: bump `project(... VERSION)` in `CMakeLists.txt` (it has CRLF line endings, so edit it byte-exact), update `README.md` (plugin table, "What's new", screenshots from the latest `screens-<sha>` @2x into `docs/images/`), push, wait for green, then `gh release create v<x.y.z>` with that run's `FancyPlugs-VST3-<sha>` artifact zipped as it is, named `FancyPlugs-<x.y.z>-win64.zip`. Notes follow v1.2.0's: what's new, install, build (run, commit, test count).
 
@@ -39,13 +40,13 @@ Every item below is built, green in CI and passed by the user in REAPER. Each ha
 - **Phase 3 new plugins:** Fancy Limit (`docs/limit.md`), Fancy DS (`docs/ds.md`), Fancy DS-Mini (`docs/ds-mini.md`), Fancy Sature (`docs/sature.md`), Kicker's Sub mode (`docs/kicker-sub.md`), Fancy Room (`docs/room.md`). REAPER checks passed on 10 November (Limit) and 13 November 2026 (the rest).
 - **§0.3 Listen rule:** Listen and preview switches are temporary, never parameters (`FancyProcessor::setListening`, `ListenCheckbox`), retrofitted to Comp's and Gate's Preview filter and FIR's Listen. Limit's "Listen to removed" stays a parameter, by the user's choice.
 
-Latest green run: 43737725969 (commit `947168b`, release 1.5.0), 507 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
+Latest green release run: 43742763641 (commit `ff534e3`, release 1.6.0), 516 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
 
 ## Still to do in Phase 3
 
 In Q2's order (`docs/BUILD_PROMPT_PHASE3.md`), each with an approved design note first and signed off in REAPER before the next:
 
-1. FIR (Q2.7): green, waiting for release and the REAPER check.
+1. FIR (Q2.7): released as v1.6.0, waiting for the REAPER check.
 2. Kicker (Q2.2) is reduced to Sub mode, which is done.
 
 Mac (`docs/mac.md`) is approved and in progress. Phase 4 holds Kicker's sidechain Duck, a transient shaper and a chorus.
