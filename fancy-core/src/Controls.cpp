@@ -789,12 +789,14 @@ void ColourTabs::paint (juce::Graphics& g)
 
         if (tab.badge.isNotEmpty())
         {
-            const auto badge = juce::Rectangle<float> (9.0f, 9.0f).withPosition (area.getRight() - 6.0f, area.getY() - 3.0f);
+            // A small ringed letter in the tab's top-right corner (mockup 27), inside the bounds so it isn't clipped.
+            const auto badge = juce::Rectangle<float> (11.0f, 11.0f).withPosition (area.getRight() - 11.0f, area.getY());
 
             g.setColour (colours::bgWell);
-            g.fillRoundedRectangle (badge, 2.0f);
+            g.fillEllipse (badge);
             g.setColour (tab.colour);
-            g.setFont (font (Weight::semiBold, 7.5f));
+            g.drawEllipse (badge.reduced (0.5f), 1.0f);
+            g.setFont (font (Weight::semiBold, 9.0f));
             g.drawText (tab.badge, badge, juce::Justification::centred, false);
             g.setFont (font (Weight::regular, bodyFontSize));
         }

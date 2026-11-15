@@ -97,6 +97,11 @@ private:
         Smoother modDepth, tapeMix, bbdMix, diffusion;
         double modRate = 0.8, modRandom = 0.3, characterAmount = 0.5, bbdCutoffHz = 15000.0;
         double modPhase = 0.0, walk = 0.0, walkTarget = 0.0;
+
+        // The modulation sine as a rotating phasor (sin, cos), and the amplitude for the
+        // depth and rate it was last worked out for.
+        double modSin = 0.0, modCos = 1.0, modStepSin = 0.0, modStepCos = 1.0, modStepRate = -1.0;
+        double modAmplitude = 0.0, modAmplitudeDepth = -1.0, modAmplitudeRate = -1.0;
         int walkCountdown = 0;
         std::uint32_t noiseState = 1;
 
@@ -115,7 +120,7 @@ private:
 
         std::vector<float> diffusers[2][4];
         int diffuserLength[2][4] {};
-        int diffuserPosition = 0;
+        int diffuserIndex[2][4] {};
     };
 
     void updateCoefficients (Tap&) noexcept;
@@ -141,5 +146,10 @@ private:
     // Phase 3 Q2.3.
     Smoother duckAmount;
     double duckThresholdDb = -24.0, duckEnvelope = 0.0, duckAttack = 1.0, duckRelease = 1.0;
+
+    // The duck gain is worked out every duckInterval samples and ramped in between.
+    static constexpr int duckInterval = 8;
+    double duckGain = 1.0, duckStep = 0.0;
+    int duckCountdown = 0;
     bool useFastTanh = false;
 };

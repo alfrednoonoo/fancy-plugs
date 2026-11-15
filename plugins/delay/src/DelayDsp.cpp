@@ -188,13 +188,20 @@ void DelayDsp::reset()
             for (auto& line : channel)
                 std::fill (line.begin(), line.end(), 0.0f);
 
-        tap.diffuserPosition = 0;
+        for (auto& channel : tap.diffuserIndex)
+            std::fill (std::begin (channel), std::end (channel), 0);
+
         tap.modPhase = tap.walk = tap.walkTarget = 0.0;
+        tap.modSin = 0.0;
+        tap.modCos = 1.0;
         tap.walkCountdown = 0;
         tap.noiseState = 1;
     }
 
     duckEnvelope = 0.0;
+    duckGain = 1.0;
+    duckStep = 0.0;
+    duckCountdown = 0;
 }
 
 void DelayDsp::setTapTargets (Tap& tap, const TapSpec& spec, bool anySolo, double bpm, double swing, bool smoothTime, bool isMono) noexcept
@@ -425,7 +432,7 @@ double DelayDsp::diffuse (Tap& tap, int channel, double value, double coefficien
     for (int k = 0; k < 4; ++k)
     {
         auto& line = tap.diffusers[channel][k];
-        const auto index = (size_t) (tap.diffuserPosition % tap.diffuserLength[channel][k]);
+        const auto index = (size_t) tap.diffuserIndex[channel][k];
         const auto delayed = (double) line[index];
         const auto output = delayed - coefficient * value;
 
@@ -499,12 +506,30 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
             // Wow and flutter: a sine plus a smoothed random walk, scaled so the peak pitch
             // change is Depth. The right channel's sine runs a quarter cycle ahead.
             const auto twoPi = 2.0 * std::numbers::pi;
-            const auto amplitude = (std::exp2 (depthCents / 1200.0) - 1.0) / (twoPi * tap.modRate) * rate;
 
-            tap.modPhase += twoPi * tap.modRate / rate;
+            if (depthCents != tap.modAmplitudeDepth || tap.modRate != tap.modAmplitudeRate)
+            {
+                tap.modAmplitude = (std::exp2 (depthCents / 1200.0) - 1.0) / (twoPi * tap.modRate) * rate;
+                tap.modAmplitudeDepth = depthCents;
+                tap.modAmplitudeRate = tap.modRate;
+            }
 
-            if (tap.modPhase >= twoPi)
-                tap.modPhase -= twoPi;
+            if (tap.modRate != tap.modStepRate)
+            {
+                const auto step = twoPi * tap.modRate / rate;
+                tap.modStepSin = std::sin (step);
+                tap.modStepCos = std::cos (step);
+                tap.modStepRate = tap.modRate;
+            }
+
+            const auto amplitude = tap.modAmplitude;
+
+            // Rotate the phasor one step, and pull it back onto the unit circle.
+            const auto nextSin = tap.modSin * tap.modStepCos + tap.modCos * tap.modStepSin;
+            const auto nextCos = tap.modCos * tap.modStepCos - tap.modSin * tap.modStepSin;
+            const auto norm = 1.5 - 0.5 * (nextSin * nextSin + nextCos * nextCos);
+            tap.modSin = nextSin * norm;
+            tap.modCos = nextCos * norm;
 
             if (--tap.walkCountdown <= 0)
             {
@@ -517,7 +542,7 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
 
             for (int ch = 0; ch < 2; ++ch)
             {
-                const auto sine = std::sin (tap.modPhase + (ch == 1 ? 0.5 * std::numbers::pi : 0.0));
+                const auto sine = ch == 0 ? tap.modSin : tap.modCos; // the right channel a quarter cycle ahead
                 const auto motion = (1.0 - tap.modRandom) * sine + tap.modRandom * tap.walk;
                 offset[ch] = amplitude * (1.0 + motion);
             }
@@ -635,8 +660,10 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
         {
             tap.diffusionActive = true;
 
-            if (++tap.diffuserPosition >= (1 << 30))
-                tap.diffuserPosition = 0;
+            for (int ch = 0; ch < 2; ++ch)
+                for (int k = 0; k < 4; ++k)
+                    if (++tap.diffuserIndex[ch][k] >= tap.diffuserLength[ch][k])
+                        tap.diffuserIndex[ch][k] = 0;
         }
         else if (tap.diffusionActive)
         {
@@ -714,9 +741,22 @@ void DelayDsp::process (float* const* channels, int numChannels, int numSamples)
                 const auto level = std::max (std::abs ((double) left[i]), std::abs ((double) right[i]));
                 duckEnvelope += (level - duckEnvelope) * (level > duckEnvelope ? duckAttack : duckRelease);
 
-                const auto levelDb = 20.0 * std::log10 (std::max (duckEnvelope, 1.0e-9));
-                const auto over = std::clamp ((levelDb - duckThresholdDb) / duckRangeDb, 0.0, 1.0);
-                wet *= std::pow (10.0, -duck * over / 20.0);
+                if (--duckCountdown <= 0)
+                {
+                    const auto levelDb = 20.0 * std::log10 (std::max (duckEnvelope, 1.0e-9));
+                    const auto over = std::clamp ((levelDb - duckThresholdDb) / duckRangeDb, 0.0, 1.0);
+                    duckStep = (std::pow (10.0, -duck * over / 20.0) - duckGain) / (double) duckInterval;
+                    duckCountdown = duckInterval;
+                }
+
+                duckGain += duckStep;
+                wet *= duckGain;
+            }
+            else
+            {
+                duckGain = 1.0;
+                duckStep = 0.0;
+                duckCountdown = 0;
             }
             const auto dry = dryGain.next();
             const auto output = outputGain.next();

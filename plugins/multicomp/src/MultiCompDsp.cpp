@@ -39,11 +39,15 @@ double fastLog2 (double x) noexcept
 
 double fastExp2 (double y) noexcept
 {
+    // No floor or ldexp, which MSVC calls out of line: the whole part by truncation, and
+    // 2^whole built from its exponent bits.
     y = std::clamp (y, -1000.0, 1000.0);
-    const auto whole = std::floor (y);
-    const auto x = (y - whole - 0.5) * 0.69314718055994531; // within ±0.35
+    auto whole = (int) y;
+    whole -= y < (double) whole ? 1 : 0;
+    const auto x = (y - (double) whole - 0.5) * 0.69314718055994531; // within ±0.35
     const auto e = 1.0 + x * (1.0 + x * (0.5 + x * (1.0 / 6.0 + x * (1.0 / 24.0 + x * (1.0 / 120.0 + x / 720.0)))));
-    return std::ldexp (1.4142135623730951 * e, (int) whole);
+    const auto power = std::bit_cast<double> ((std::uint64_t) (whole + 1023) << 52);
+    return 1.4142135623730951 * e * power;
 }
 
 double levelDbOf (double meanSquare, bool fast) noexcept
