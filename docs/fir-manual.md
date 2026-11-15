@@ -11,6 +11,7 @@ A spectral processor. It splits the sound into thousands of narrow frequency ban
 | Compressor | Threshold | Compresses each frequency above its threshold by Ratio |
 | Subtract | | Removes a learned noise, such as hiss, hum or air conditioning |
 | Convolve L/R | | Convolves the left input with the right one |
+| Resonance | | New in 1.6.0: finds narrow peaks, such as a ringing snare or a boxy vocal, and turns them down only while they're there |
 
 EQ, Gate and Compressor each keep their own curve, so changing mode doesn't lose them.
 
@@ -86,16 +87,28 @@ The estimate looks for the quietest level at each frequency over the last Adapt 
 
 The tracked estimate isn't saved with the project. It starts from the learned profile if there is one, or from the first few seconds of audio otherwise, and it carries over when you change FFT size. Reduction, Offset, Smoothing and Release work the same in all three.
 
+## Resonance
+
+Resonance listens for narrow peaks that stand above the spectrum around them, such as a ringing drum, a whistling room mode or a harsh vocal formant, and turns each one down while it's there. The rest of the spectrum doesn't move: broadband material, including plain noise, changes by much less than 0.5 dB.
+
+- **Depth:** the most a peak is turned down, 0 to 24 dB. A peak is never pushed below 4 dB above the spectrum around it, so a peak 12 dB up comes down by at most about 8 dB, whatever Depth says.
+- **Sharpness:** how narrow a peak must be to count. High values find only narrow rings; low values also take broader bumps.
+- **Attack and Release:** how fast the cut arrives and lets go, in ms.
+- **Range (Low and High):** Resonance only works between these two, fading out over half an octave outside them. The graph dims what's outside. Low starts at 100 Hz: below that, a 4096-point FFT can't tell a resonance from the slope of the spectrum. For low resonances, raise the FFT size and lower Low.
+
+Both channels get the same cut, so the stereo image never moves. The graph shows the cut in green, hanging from the 0 dB line. **Listen to removed resonances** plays only what's taken out.
+
 ## Sidechain detector
 
-In Gate, Compressor and Subtract, the plugin's channels 3 and 4 are used to make the decisions:
+In Gate, Compressor and Subtract, the plugin's channels 3 and 4 are used to make the decisions. In Resonance it's greyed: Resonance listens to its own input.
+
 
 - **Gate and Compressor:** compare the sidechain with the thresholds at each frequency. For example, a vocal on the sidechain can carve space for itself in a pad, only at the vocal's frequencies.
 - **Subtract:** treats the sidechain as the noise, without a learned profile.
 
 ## Listen
 
-**Listen to removed noise** in Subtract, or **Listen to gain-reduced part** in Gate and Compressor, plays only what's being taken away. Use it to check you're not removing what you want to keep. It's temporary: it turns off when you close the window, it's never saved in a project or preset, and it isn't automatable. While it's on, the title strip shows **LISTENING**. A project saved with it on in v1.2.0 or earlier opens with it off.
+**Listen to removed noise** in Subtract, **Listen to gain-reduced part** in Gate and Compressor, or **Listen to removed resonances** in Resonance, plays only what's being taken away. Use it to check you're not removing what you want to keep. It's temporary: it turns off when you close the window, it's never saved in a project or preset, and it isn't automatable. While it's on, the title strip shows **LISTENING**. A project saved with it on in v1.2.0 or earlier opens with it off.
 
 ## Convolve L/R
 

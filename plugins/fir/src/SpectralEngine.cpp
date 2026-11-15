@@ -184,6 +184,14 @@ SpectralEngine::SpectralEngine (const Config& config, double sampleRate, Shared&
     trackHold.assign ((size_t) bins, 0);
     detectorLevels.assign ((size_t) bins, 0.0f);
     learnSum.assign ((size_t) bins, 0.0);
+
+    for (auto* state : { &resDetector, &resLevel, &resClipped, &resEnvelope, &resReduction, &resWeight })
+        state->assign ((size_t) bins, 0.0f);
+
+    resonanceGain.assign ((size_t) bins, 1.0f);
+    resPrefix.assign ((size_t) bins + 1, 0.0);
+    resLow.assign ((size_t) bins, 0);
+    resHigh.assign ((size_t) bins, 0);
 }
 
 void SpectralEngine::reset() noexcept
@@ -201,6 +209,8 @@ void SpectralEngine::reset() noexcept
         std::fill (priorSnr[ch].begin(), priorSnr[ch].end(), 0.0f);
         std::fill (smoothedKey[ch].begin(), smoothedKey[ch].end(), 0.0f);
     }
+
+    resStarted = false;
 
     time = 0;
     frameEnd = -1;
@@ -686,9 +696,15 @@ void SpectralEngine::computeMasks() noexcept
             shared.hasAdaptive.store (false, std::memory_order_release);
     }
 
-    const auto useKey = frameKey && settings.sidechain && settings.mode != eq;
+    const auto useKey = frameKey && settings.sidechain && settings.mode != eq && settings.mode != resonance;
 
     double reductionColumns[displayColumns] {};
+
+    // Resonance is linked: one gain for both channels, worked out once.
+    if (settings.mode == resonance)
+        computeResonance (reductionColumns);
+    else
+        resStarted = false;
 
     for (int ch = 0; ch < frameChannels; ++ch)
     {
@@ -750,6 +766,10 @@ void SpectralEngine::computeMasks() noexcept
                 if (column >= 0)
                     reductionColumns[column] = std::max (reductionColumns[column], changeDb);
             }
+        }
+        else if (settings.mode == resonance)
+        {
+            std::copy (resonanceGain.begin(), resonanceGain.end(), result.begin());
         }
         else if (settings.mode == subtract)
         {
@@ -836,7 +856,7 @@ void SpectralEngine::computeMasks() noexcept
                 result[(size_t) k] = 0.25f * scratch[(size_t) k - 1] + 0.5f * scratch[(size_t) k] + 0.25f * scratch[(size_t) k + 1];
         }
 
-        if (settings.listen && (settings.mode == gate || settings.mode == compressor || settings.mode == subtract))
+        if (settings.listen && (settings.mode == gate || settings.mode == compressor || settings.mode == subtract || settings.mode == resonance))
             for (auto& value : result)
                 value = 1.0f - value;
     }
@@ -844,6 +864,150 @@ void SpectralEngine::computeMasks() noexcept
     if (frameLearns)
         for (int column = 0; column < displayColumns; ++column)
             shared.reduction[(size_t) column].store ((float) reductionColumns[column], std::memory_order_relaxed);
+}
+
+// Phase 3 Q2.7: Resonance mode -----------------------------------------------------------------
+//
+// Modelled first in docs/research/fir-resonance-model.py; the constants are the model's.
+
+namespace
+{
+constexpr double resonanceToleranceDb = 4.0; // how far a bin must stand above its envelope
+constexpr double resonanceDetectorMs = 80.0; // the detector's own smoothing
+constexpr int resonanceCore = 2;             // bins either side left out of a bin's envelope
+constexpr int resonancePasses = 2;           // extra passes with levels clipped at envelope + tolerance
+constexpr double widestOctaves = 2.0, narrowestOctaves = 1.0 / 3.0;
+} // namespace
+
+void SpectralEngine::prepareResonanceWindows (double sharpness) noexcept
+{
+    resWindowSharpness = sharpness;
+
+    const auto octaves = widestOctaves * std::pow (narrowestOctaves / widestOctaves, std::clamp (sharpness, 0.0, 1.0));
+    const auto factor = std::pow (2.0, octaves / 2.0) - 1.0;
+    const auto binWidth = rate / (double) fftLength;
+
+    for (int k = 0; k < bins; ++k)
+    {
+        const auto half = std::max (resonanceCore + 4, (int) std::lround ((double) binHz[(size_t) k] * factor / binWidth));
+
+        resLow[(size_t) k] = std::max (0, k - half);
+        resHigh[(size_t) k] = std::min (bins - 1, k + half);
+    }
+}
+
+void SpectralEngine::prepareResonanceRange (double lowHz, double highHz) noexcept
+{
+    resRangeLow = lowHz;
+    resRangeHigh = highHz;
+
+    // Full inside Low to High, fading to nothing over half an octave outside.
+    for (int k = 0; k < bins; ++k)
+    {
+        const auto hz = std::max ((double) binHz[(size_t) k], 1.0);
+        const auto outside = std::max (std::log2 (lowHz / hz), std::log2 (hz / highHz));
+
+        resWeight[(size_t) k] = (float) std::clamp (1.0 - 2.0 * outside, 0.0, 1.0);
+    }
+}
+
+void SpectralEngine::computeResonance (double* reductionColumns) noexcept
+{
+    const auto& settings = frameSettings;
+
+    if (settings.resSharpness != resWindowSharpness)
+        prepareResonanceWindows (settings.resSharpness);
+
+    if (settings.resLowHz != resRangeLow || settings.resHighHz != resRangeHigh)
+        prepareResonanceRange (settings.resLowHz, settings.resHighHz);
+
+    // Detector: the channels' power together, averaged over ±1 bin, then smoothed.
+    const auto calibration = levelScale * levelScale / (double) frameChannels;
+
+    for (int k = 0; k < bins; ++k)
+    {
+        auto power = 0.0;
+
+        for (int ch = 0; ch < frameChannels; ++ch)
+            power += (double) binPower (spectra[ch], k);
+
+        scratch[(size_t) k] = (float) (power * calibration);
+    }
+
+    const auto detector = perHop (resonanceDetectorMs);
+
+    if (! resStarted)
+        std::fill (resReduction.begin(), resReduction.end(), 0.0f);
+
+    for (int k = 0; k < bins; ++k)
+    {
+        // At the ends the missing neighbour counts as zero, as in the model's "same" convolution.
+        const auto below = k > 0 ? (double) scratch[(size_t) k - 1] : 0.0;
+        const auto above = k < bins - 1 ? (double) scratch[(size_t) k + 1] : 0.0;
+        const auto reach = (below + (double) scratch[(size_t) k] + above) / 3.0;
+
+        auto& value = resDetector[(size_t) k];
+        value = resStarted ? (float) ((double) value + (reach - (double) value) * detector) : (float) reach;
+
+        resLevel[(size_t) k] = (float) (10.0 * std::log10 (std::max ((double) value, powerFloor)));
+    }
+
+    resStarted = true;
+
+    // Envelope: the louder side's mean level, without the core; then again with levels clipped
+    // at envelope + tolerance, so a peak doesn't lift its own envelope.
+    std::copy (resLevel.begin(), resLevel.end(), resClipped.begin());
+
+    for (int pass = 0; pass <= resonancePasses; ++pass)
+    {
+        resPrefix[0] = 0.0;
+
+        for (int k = 0; k < bins; ++k)
+            resPrefix[(size_t) k + 1] = resPrefix[(size_t) k] + (double) resClipped[(size_t) k];
+
+        for (int k = 0; k < bins; ++k)
+        {
+            const auto lo = resLow[(size_t) k], hi = resHigh[(size_t) k];
+            const auto leftEnd = k - resonanceCore - 1, rightStart = k + resonanceCore + 1;
+            const auto leftCount = leftEnd - lo + 1, rightCount = hi - rightStart + 1;
+
+            auto envelope = -std::numeric_limits<double>::infinity();
+
+            if (leftCount > 0)
+                envelope = (resPrefix[(size_t) leftEnd + 1] - resPrefix[(size_t) lo]) / (double) leftCount;
+
+            if (rightCount > 0)
+                envelope = std::max (envelope, (resPrefix[(size_t) hi + 1] - resPrefix[(size_t) rightStart]) / (double) rightCount);
+
+            if (! std::isfinite (envelope))
+                envelope = (double) resLevel[(size_t) k];
+
+            resEnvelope[(size_t) k] = (float) envelope;
+        }
+
+        for (int k = 0; k < bins; ++k)
+            resClipped[(size_t) k] = std::min (resLevel[(size_t) k], resEnvelope[(size_t) k] + (float) resonanceToleranceDb);
+    }
+
+    const auto attack = perHop (settings.resAttackMs), release = perHop (settings.resReleaseMs);
+    const auto depth = std::max (0.0, settings.resDepthDb);
+
+    for (int k = 0; k < bins; ++k)
+    {
+        const auto excess = (double) resLevel[(size_t) k] - (double) resEnvelope[(size_t) k] - resonanceToleranceDb;
+        const auto target = std::clamp (excess, 0.0, depth) * (double) resWeight[(size_t) k];
+
+        auto reduction = (double) resReduction[(size_t) k];
+        reduction += (target - reduction) * (target > reduction ? attack : release);
+        resReduction[(size_t) k] = (float) reduction;
+
+        resonanceGain[(size_t) k] = (float) std::pow (10.0, -reduction / 20.0);
+
+        const auto column = binColumn[(size_t) k];
+
+        if (column >= 0)
+            reductionColumns[column] = std::max (reductionColumns[column], reduction);
+    }
 }
 
 void SpectralEngine::synthesise (int channel) noexcept

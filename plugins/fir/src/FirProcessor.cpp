@@ -45,6 +45,16 @@ std::unique_ptr<juce::AudioParameterFloat> dbParameter (const juce::String& id, 
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
 }
 
+std::unique_ptr<juce::AudioParameterFloat> frequencyParameter (const juce::String& id, const juce::String& name, float low, float high, float defaultHz)
+{
+    return fancy::floatParameter (
+        id, name, fancy::logRange (low, high, 1.0f), defaultHz,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("Hz")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFilterHz (value); })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); }));
+}
+
 fancy::FancyProcessor::Layout createLayout()
 {
     using Bool = juce::AudioParameterBool;
@@ -70,7 +80,7 @@ fancy::FancyProcessor::Layout createLayout()
         sizeNames.add (juce::String (size));
 
     layout.add (std::make_unique<Choice> (juce::ParameterID { "mode", 1 }, "Mode",
-                                          juce::StringArray { "EQ", "Gate", "Compressor", "Subtract", "Convolve L/R" }, eq));
+                                          juce::StringArray { "EQ", "Gate", "Compressor", "Subtract", "Convolve L/R", "Resonance" }, eq));
     layout.add (std::make_unique<Choice> (juce::ParameterID { "edit", 1 }, "Edit",
                                           juce::StringArray { "Points (smooth)", "Points (flat)", "Freehand" }, smoothPoints,
                                           ChoiceAttributes {}.withAutomatable (false)));
@@ -129,6 +139,20 @@ fancy::FancyProcessor::Layout createLayout()
                                               return text.containsIgnoreCase ("ms") ? value / 1000.0f : value;
                                           })));
 
+    // Phase 3 Q2.7, appended after everything above: Resonance mode. "Resonance" is also the
+    // last of Mode's choices, so saved indices keep their meaning.
+    layout.add (fancy::floatParameter (
+        "resDepth", "Resonance depth", juce::NormalisableRange<float> (0.0f, 24.0f, 0.1f), 6.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("dB")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " dB"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return std::abs (fancy::parseNumber (text)); })));
+    layout.add (fancy::percentParameter ("resSharpness", "Resonance sharpness", 50.0f));
+    layout.add (timeParameter ("resAttack", "Resonance attack", 0.0f, 200.0f, 20.0f, 5.0f));
+    layout.add (timeParameter ("resRelease", "Resonance release", 0.0f, 2000.0f, 200.0f, 80.0f));
+    layout.add (frequencyParameter ("resLow", "Resonance low", 20.0f, 2000.0f, 100.0f));
+    layout.add (frequencyParameter ("resHigh", "Resonance high", 1000.0f, 20000.0f, 20000.0f));
+
     return layout;
 }
 
@@ -141,6 +165,11 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Noise Reduction", { { "mode", (float) subtract }, { "reduction", -18.0f }, { "fft", 5.0f } } },
         { "Spectral Gate", { { "mode", (float) gate }, { "gateFloor", -30.0f }, { "gateRelease", 120.0f } }, "gate" },
         { "Spectral Compressor", { { "mode", (float) compressor }, { "compRatio", 3.0f }, { "compAttack", 10.0f }, { "compRelease", 150.0f } }, "compressor" },
+
+        // Phase 3 Q2.7.
+        { "Resonance Tamer", { { "mode", (float) resonance }, { "resDepth", 6.0f }, { "resSharpness", 50.0f }, { "resAttack", 5.0f }, { "resRelease", 80.0f } } },
+        { "Harsh Vocal", { { "mode", (float) resonance }, { "resDepth", 8.0f }, { "resSharpness", 60.0f }, { "resAttack", 2.0f }, { "resRelease", 60.0f },
+                           { "resLow", 1500.0f }, { "resHigh", 10000.0f } } },
     };
 
     // Phase 3 Q2.1: the preset browser's categories.
@@ -150,6 +179,8 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Noise Reduction", "Restoration" },
         { "Spectral Gate", "Restoration" },
         { "Spectral Compressor", "Dynamics" },
+        { "Resonance Tamer", "Restoration" },
+        { "Harsh Vocal", "Restoration" },
     });
 
     return presets;
@@ -223,7 +254,7 @@ bool FirProcessor::isOn (const char* parameterId) const
 
 int FirProcessor::getMode() const
 {
-    return juce::jlimit (0, (int) convolve, juce::roundToInt (read ("mode")));
+    return juce::jlimit (0, numModes - 1, juce::roundToInt (read ("mode")));
 }
 
 int FirProcessor::getEditMode() const
@@ -261,6 +292,13 @@ FirDsp::Targets FirProcessor::readTargets() const
     frame.sidechain = isOn ("sidechain");
     frame.source = juce::jlimit (0, 2, juce::roundToInt (read ("source")));
     frame.adaptSeconds = (double) read ("adaptSpeed");
+
+    frame.resDepthDb = (double) read ("resDepth");
+    frame.resSharpness = (double) read ("resSharpness") * 0.01;
+    frame.resAttackMs = (double) read ("resAttack");
+    frame.resReleaseMs = (double) read ("resRelease");
+    frame.resLowHz = (double) read ("resLow");
+    frame.resHighHz = (double) read ("resHigh");
 
     targets.engine.fftSize = getFftSize();
     targets.engine.lowLatency = isOn ("lowLatency");

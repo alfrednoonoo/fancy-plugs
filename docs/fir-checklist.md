@@ -98,3 +98,16 @@
 - [ ] Play speech or a held note over the noise: "Speech/music held, not learned" appears while it plays, and the voice or note isn't eaten away over time.
 - [ ] Choose **Both** with a learned profile: the dashed line never sits below the solid one where it matters, and Learn is still there.
 - [ ] Change FFT size while Adaptive: the dashed line stays where it was.
+
+## Resonance (Phase 3 Q2.7)
+
+- [ ] Open a project saved with v1.5.0 that uses Fancy FIR: it loads in the same mode and sounds as before.
+- [ ] The Mode switch has a sixth segment, **Resonance**, in green. Choose it: the left card shows RANGE with Low (100 Hz) and High (20.0 kHz); the controls card shows Depth, Sharpness, Attack and Release; Sidechain detector is greyed, and its tooltip reads "Resonance listens to its own input".
+- [ ] On a snare or tom that rings, or a boxy vocal: the ring comes down and the green cut on the graph sits on it. The rest of the sound doesn't change. Depth 0 sounds like bypass.
+- [ ] On pink noise or a full mix with no obvious peaks, toggling bypass makes little or no difference.
+- [ ] Sharpness high: only the narrowest rings are touched; low: broader bumps go too.
+- [ ] Set Range to 1.5 to 10 kHz: the graph dims outside it, and nothing below 1.5 kHz is cut.
+- [ ] **Listen to removed resonances** plays only the rings. It's off again after you close and reopen the window.
+- [ ] Pan a ringing source hard left: the image doesn't move while it's cut.
+- [ ] The two new presets, **Resonance Tamer** and **Harsh Vocal** (Restoration), load from the preset browser.
+- [ ] Change FFT size and Low latency while Resonance plays: no clicks, and the latency follows.

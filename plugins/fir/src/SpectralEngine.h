@@ -22,6 +22,10 @@ struct FrameSettings
     // Phase 2.1 A: Learned, Adaptive or Both, and the minimum search's window in seconds.
     int source = learnedSource;
     double adaptSeconds = 2.0;
+
+    // Phase 3 Q2.7: Resonance mode. See docs/fir.md, "Phase 3 Q2.7".
+    double resDepthDb = 6.0, resSharpness = 0.5, resAttackMs = 5.0, resReleaseMs = 80.0;
+    double resLowHz = 100.0, resHighHz = 20000.0;
 };
 
 // One short-time Fourier transform engine. See docs/fir.md.
@@ -76,6 +80,11 @@ private:
     void publishTracking() noexcept;
     void publishReduction() noexcept;
 
+    // Phase 3 Q2.7: one linked gain for both channels, into resonanceGain.
+    void computeResonance (double* reductionColumns) noexcept;
+    void prepareResonanceWindows (double sharpness) noexcept;
+    void prepareResonanceRange (double lowHz, double highHz) noexcept;
+
     double perHop (double milliseconds) const noexcept;
     void measureLevels (const std::vector<float>& spectrum) noexcept;
     float binPower (const std::vector<float>& spectrum, int bin) const noexcept;
@@ -125,6 +134,13 @@ private:
     bool trackStarted = false;
 
     std::vector<int> binColumn;
+
+    // Resonance mode's state, per bin. The detector is shared by both channels (linked).
+    std::vector<float> resDetector, resLevel, resClipped, resEnvelope, resReduction, resWeight, resonanceGain;
+    std::vector<double> resPrefix;
+    std::vector<int> resLow, resHigh;
+    double resWindowSharpness = -1.0, resRangeLow = -1.0, resRangeHigh = -1.0;
+    bool resStarted = false;
 };
 
 } // namespace fir

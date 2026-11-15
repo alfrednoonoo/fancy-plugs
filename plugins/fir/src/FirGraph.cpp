@@ -36,8 +36,8 @@ double profileToLevelScale (int fftSize) noexcept
 
 juce::Colour modeColour (int mode)
 {
-    const juce::Colour colours[] { colours::accentPurple, colours::accentYellow, colours::uiTeal, colours::accentRed, colours::uiBlue };
-    return colours[juce::jlimit (0, 4, mode)];
+    const juce::Colour colours[] { colours::accentPurple, colours::accentYellow, colours::uiTeal, colours::accentRed, colours::uiBlue, colours::accentGreen };
+    return colours[juce::jlimit (0, fir::numModes - 1, mode)];
 }
 
 float FirGraph::xForHz (double hz, float width) noexcept
@@ -143,20 +143,70 @@ void FirGraph::update()
     topDb = value ("graphTop");
     floorDb = value ("graphFloor");
     showAnalysis = value ("showAnalysis") >= 0.5f;
+    resLowHz = value ("resLow");
+    resHighHz = value ("resHigh");
 
     repaint();
 }
 
-void FirGraph::showPreviewSpectra()
+void FirGraph::showPreviewSpectra (bool resonances)
 {
     const juce::SpinLock::ScopedLockType lock (spectrumLock);
 
     frozenSpectra = true;
+    previewReduction.clear();
 
     const auto width = juce::jmax (1, getWidth() - (int) (plotLeft + plotRight));
 
     inputSpectrum.assign ((size_t) width, -200.0f);
     outputSpectrum.assign ((size_t) width, -200.0f);
+
+    if (resonances)
+    {
+        // Mockup 28: a falling programme with resonances at 700 Hz and 3 kHz, cut as Resonance
+        // cuts them: down by up to Depth, never below 4 dB over the spectrum around them.
+        const auto depth = processor.getApvts().getRawParameterValue ("resDepth")->load();
+        const auto low = processor.getApvts().getRawParameterValue ("resLow")->load();
+        const auto high = processor.getApvts().getRawParameterValue ("resHigh")->load();
+
+        const auto peaks = [] (double hz)
+        {
+            const auto peak = [hz] (double centre, double gain, double q)
+            {
+                const auto x = std::log2 (hz / centre) * q * 1.6;
+                return gain / (1.0 + x * x);
+            };
+
+            return peak (3000.0, 12.0, 8.0) + peak (700.0, 9.0, 9.0);
+        };
+
+        const auto cut = [&] (double hz)
+        {
+            const auto outside = std::max ({ std::log2 (low / hz), std::log2 (hz / high), 0.0 });
+            return std::min ((double) depth, std::max (0.0, peaks (hz) - 4.0)) * std::max (0.0, 1.0 - 2.0 * outside);
+        };
+
+        for (int x = 0; x < width; ++x)
+        {
+            const auto hz = hzForX (plotLeft + (float) x, (float) getWidth());
+            const auto ripple = 1.6 * std::sin (hz * 0.0123 + 1.0) + 1.1 * std::sin (hz * 0.0371 + 2.0) + 0.8 * std::sin (hz * 0.0917 + 3.0);
+            const auto bed = -36.0 - 4.2 * std::log2 (std::max (hz, 30.0) / 500.0) - (hz < 80.0 ? 6.0 * std::log2 (80.0 / hz) : 0.0)
+                           - (hz > 12000.0 ? 10.0 * std::log2 (hz / 12000.0) : 0.0);
+            const auto in = bed + peaks (hz) + ripple;
+
+            inputSpectrum[(size_t) x] = (float) in;
+            outputSpectrum[(size_t) x] = (float) (in - cut (hz));
+        }
+
+        previewReduction.assign (displayColumns, 0.0f);
+
+        for (int column = 0; column < displayColumns; ++column)
+            for (int step = 0; step < 8; ++step)
+                previewReduction[(size_t) column] = std::max (previewReduction[(size_t) column],
+                                                              (float) cut (displayHz (column) * std::pow (1000.0, (double) step / (8.0 * displayColumns))));
+
+        return;
+    }
 
     // The mockup's made-up programme and noise, with the same random generator.
     auto seed = (juce::int64) 11;
@@ -319,6 +369,40 @@ void FirGraph::paintModeLayer (juce::Graphics& g)
     if (mode == convolve)
         return;
 
+    if (mode == resonance)
+    {
+        // Phase 3 Q2.7: outside Range dimmed, and the reduction hanging from 0 dB.
+        const auto top = plotTop, height = bottom - plotTop;
+        const auto left = xForHz (resLowHz, width), right = xForHz (resHighHz, width);
+
+        g.setColour (colours::bgWell.withAlpha (0.55f));
+
+        if (left > plotLeft)
+            g.fillRect (plotLeft, top, left - plotLeft, height);
+
+        if (right < width - plotRight)
+            g.fillRect (right, top, width - plotRight - right, height);
+
+        auto& shared = processor.getShared();
+        const auto zero = yFor (0.0f);
+
+        g.setColour (colour.withAlpha (0.6f));
+
+        for (int column = 0; column < displayColumns; ++column)
+        {
+            const auto reduction = previewReduction.empty() ? shared.reduction[(size_t) column].load (std::memory_order_relaxed)
+                                                            : previewReduction[(size_t) column];
+
+            if (reduction <= 0.05f)
+                continue;
+
+            const auto x0 = xForHz (displayHz (column), width), x1 = xForHz (displayHz (column + 1), width);
+            g.fillRect (x0, zero, x1 - x0, yFor (-reduction) - zero);
+        }
+
+        return;
+    }
+
     if (mode == compressor)
     {
         // Gain reduction hanging from the 0 dB line.
@@ -407,6 +491,8 @@ void FirGraph::paintLegend (juce::Graphics& g)
 
     if (mode == compressor)
         items.push_back ({ "reduction", colours::accentYellow });
+    else if (mode == resonance)
+        items.push_back ({ "reduction", modeColour (mode) });
 
     g.setFont (font (Weight::regular, 11.0f));
 

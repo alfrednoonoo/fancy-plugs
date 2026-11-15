@@ -159,7 +159,7 @@ A state with no profile, or one of the wrong size, loads as having none.
 
 ## Phase 3 Q2.7: Resonance mode and CPU stability
 
-Brief: Q2.7 of `docs/BUILD_PROMPT_PHASE3.md`. **Waiting for the user's approval.** Mockup: `design/phase3-mockup-src/fir-q27.html`, rendered as `reference/phase3/28__fir_q27_mockup.png`. Model: `docs/research/fir-resonance-model.py`, results in `fir-resonance-model.txt`. Every new setting is heard only in the new mode, so old projects render bit-identically.
+Brief: Q2.7 of `docs/BUILD_PROMPT_PHASE3.md`. **Approved by the user on 15 November 2026, with every recommended option (R)**, mockup included. Mockup: `design/phase3-mockup-src/fir-q27.html`, rendered as `reference/phase3/28__fir_q27_mockup.png`. Model: `docs/research/fir-resonance-model.py`, results in `fir-resonance-model.txt`. Every new setting is heard only in the new mode, so old projects render bit-identically.
 
 ### 1. What Resonance does
 

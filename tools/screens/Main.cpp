@@ -272,7 +272,14 @@ bool renderFir (const juce::File& outputDir)
 
     // Phase 2.1 A: Adaptive, as panel 5 of the mockup.
     editor->showPreview (FirEditor::Preview::subtractAdaptive);
-    return writeBothScales (*editor, "fir-adaptive", outputDir) && ok;
+    ok = writeBothScales (*editor, "fir-adaptive", outputDir) && ok;
+
+    // Phase 3 Q2.7: Resonance, as the two panels of mockup 28.
+    editor->showPreview (FirEditor::Preview::resonance);
+    ok = writeBothScales (*editor, "fir-resonance", outputDir) && ok;
+
+    editor->showPreview (FirEditor::Preview::resonanceRange);
+    return writeBothScales (*editor, "fir-resonance-range", outputDir) && ok;
 }
 #endif
 

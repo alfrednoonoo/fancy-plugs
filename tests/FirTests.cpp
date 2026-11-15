@@ -195,11 +195,12 @@ TEST_CASE ("reported latency is the measured impulse delay", "[fir]")
 {
     const auto size = GENERATE (128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768);
     const auto lowLatency = GENERATE (false, true);
-    const auto mode = GENERATE (fir::eq, fir::gate, fir::compressor, fir::subtract, fir::convolve);
+    const auto mode = GENERATE (fir::eq, fir::gate, fir::compressor, fir::subtract, fir::convolve, fir::resonance);
 
     fir::Shared shared;
 
-    // Thresholds where nothing changes: Gate open, Compressor idle.
+    // Thresholds where nothing changes: Gate open, Compressor idle.  An impulse's spectrum is
+    // flat, so Resonance finds no peak.
     setCurve (shared, fir::gate, -300.0f);
     setCurve (shared, fir::compressor, 100.0f);
 
@@ -769,7 +770,7 @@ TEST_CASE ("random settings stay finite", "[fir]")
 
         auto& frame = targets.frame;
 
-        frame.mode = (int) (unit (random) * 5.0);
+        frame.mode = (int) (unit (random) * (double) fir::numModes);
         frame.gateFloorGain = unit (random);
         frame.gateAttackMs = unit (random) * 200.0;
         frame.gateReleaseMs = unit (random) * 2000.0;
@@ -783,6 +784,12 @@ TEST_CASE ("random settings stay finite", "[fir]")
         frame.reduceArtifacts = unit (random) < 0.5;
         frame.listen = unit (random) < 0.3;
         frame.sidechain = unit (random) < 0.5;
+        frame.resDepthDb = unit (random) * 24.0;
+        frame.resSharpness = unit (random);
+        frame.resAttackMs = unit (random) * 200.0;
+        frame.resReleaseMs = unit (random) * 2000.0;
+        frame.resLowHz = 20.0 * std::pow (100.0, unit (random));
+        frame.resHighHz = 1000.0 * std::pow (20.0, unit (random));
 
         targets.engine.fftSize = fir::sizes[(int) (unit (random) * 6.0)];
         targets.engine.lowLatency = unit (random) < 0.5;
@@ -1041,7 +1048,7 @@ TEST_CASE ("fir CPU measurement", "[.measure]")
                      100.0 * worst.count() / blockSeconds);
     };
 
-    for (const auto mode : { fir::eq, fir::gate, fir::compressor, fir::subtract, fir::convolve })
+    for (const auto mode : { fir::eq, fir::gate, fir::compressor, fir::subtract, fir::convolve, fir::resonance })
         measure (mode, 4096, false);
 
     measure (fir::subtract, 4096, true);

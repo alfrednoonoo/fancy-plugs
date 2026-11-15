@@ -4,7 +4,8 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 ## Now
 
-- **Current item: FIR (Q2.7)**: Resonance mode and CPU stability. Design note (`docs/fir.md`, "Phase 3 Q2.7"), Python model (`docs/research/fir-resonance-model.py`, both brief tests pass) and mockup (`reference/phase3/28__fir_q27_mockup.png`) written 15 November 2026, **waiting for the user's approval** (six decisions, each with a recommendation).
+- **Current item: FIR (Q2.7)**: Resonance mode and CPU stability. Design note (`docs/fir.md`, "Phase 3 Q2.7"), model (`docs/research/fir-resonance-model.py`) and mockup (`reference/phase3/28__fir_q27_mockup.png`) **approved by the user on 15 November 2026, every recommended option.**
+  - Push 1 (everything: DSP, parameters, UI, presets, screenshots `fir-resonance` and `fir-resonance-range`, `tests/FirQ27Tests.cpp`, the paced CPU benchmark, manual, checklist): CI pending.
 - **Then:** Kicker (Q2.2) is already reduced to Sub mode, which is done, so Phase 3's Q2 list ends with FIR. Mac comes after Windows; Phase 4 holds Kicker's Duck, a transient shaper and a chorus.
 - **Latest release:** [v1.5.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.5.0), 15 November 2026: Verb Q2.8, MultiComp Q2.6, Delay Q2.3, all passed in REAPER by the user on 15 November 2026.
 

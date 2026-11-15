@@ -17,7 +17,7 @@ public:
     juce::Colour getAccentColour() override;
     std::vector<PopupOpener> getPopupOpeners() override;
 
-    enum class Preview { subtractLearning, eqCurve, drawer, subtractAdaptive };
+    enum class Preview { subtractLearning, eqCurve, drawer, subtractAdaptive, resonance, resonanceRange };
 
     // For rendered screenshots.
     void showPreview (bool drawerOpen);
@@ -87,12 +87,17 @@ private:
     fancy::ui::Knob floorKnob, gateAttackKnob, gateReleaseKnob;
     fancy::ui::Knob ratioKnob, compAttackKnob, compReleaseKnob;
     fancy::ui::Knob reductionKnob, offsetKnob, smoothingKnob, subReleaseKnob;
+
+    // Phase 3 Q2.7: Resonance mode's Range card and knobs.
+    juce::Label rangeCaption, rangeLowLabel, rangeHighLabel;
+    fancy::ui::Knob resLowKnob, resHighKnob;
+    fancy::ui::Knob resDepthKnob, resSharpnessKnob, resAttackKnob, resReleaseKnob;
     juce::Label fftLabel, eqHint;
     fancy::ui::ParamDropdown fftDropdown;
     fancy::ui::ParamCheckbox reduceCheckbox;
 
     fancy::ui::ParamCheckbox analysisCheckbox, lowLatencyCheckbox, sidechainCheckbox;
-    fancy::ui::ListenCheckbox listenNoiseCheckbox, listenReducedCheckbox;
+    fancy::ui::ListenCheckbox listenNoiseCheckbox, listenReducedCheckbox, listenResonanceCheckbox;
     fancy::ui::EditLink editLink;
 
     fancy::ui::OutMeter outMeter;

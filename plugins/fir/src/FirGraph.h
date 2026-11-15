@@ -24,7 +24,8 @@ public:
     void update();
 
     // For rendered screenshots: stops the analyzers and draws fixed spectra instead.
-    void showPreviewSpectra();
+    // resonances: Phase 3 Q2.7's mockup, two resonances and their reduction.
+    void showPreviewSpectra (bool resonances = false);
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -87,6 +88,10 @@ private:
     std::vector<float> inputSpectrum, outputSpectrum;
     std::atomic<int> columns { 0 };
     bool frozenSpectra = false;
+
+    // Phase 3 Q2.7: Resonance's range, and the preview's reduction per display column.
+    float resLowHz = 100.0f, resHighHz = 20000.0f;
+    std::vector<float> previewReduction;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FirGraph)
 };

@@ -267,6 +267,12 @@ FirEditor::FirEditor (FirProcessor& processor)
       offsetKnob (parameter ("offset"), "Offset", modeColour (subtract), Knob::tightStyle, true),
       smoothingKnob (parameter ("smoothing"), "Smoothing", modeColour (subtract), Knob::tightStyle),
       subReleaseKnob (parameter ("subRelease"), "Release", modeColour (subtract), Knob::tightStyle),
+      resLowKnob (parameter ("resLow"), {}, modeColour (resonance), Knob::compactStyle),
+      resHighKnob (parameter ("resHigh"), {}, modeColour (resonance), Knob::compactStyle),
+      resDepthKnob (parameter ("resDepth"), "Depth", modeColour (resonance), Knob::tightStyle),
+      resSharpnessKnob (parameter ("resSharpness"), "Sharpness", modeColour (resonance), Knob::tightStyle),
+      resAttackKnob (parameter ("resAttack"), "Attack", modeColour (resonance), Knob::tightStyle),
+      resReleaseKnob (parameter ("resRelease"), "Release", modeColour (resonance), Knob::tightStyle),
       fftDropdown (parameter ("fft")),
       reduceCheckbox (parameter ("reduce"), "Reduce artifacts"),
       analysisCheckbox (parameter ("showAnalysis"), "Show analysis"),
@@ -274,6 +280,7 @@ FirEditor::FirEditor (FirProcessor& processor)
       sidechainCheckbox (parameter ("sidechain"), "Sidechain detector"),
       listenNoiseCheckbox (getFancyProcessor(), "Listen to removed noise"),
       listenReducedCheckbox (getFancyProcessor(), "Listen to gain-reduced part"),
+      listenResonanceCheckbox (getFancyProcessor(), "Listen to removed resonances"),
       editLink (colours::uiTeal),
       outMeter (outGeometry),
       gainFader (parameter ("gain"), colours::uiTeal),
@@ -301,7 +308,7 @@ FirEditor::FirEditor (FirProcessor& processor)
     styleLabel (editLabel, "Edit", colours::textSecondary, juce::Justification::centredRight);
 
     modeLabel.setBounds (13, 10, 36, 25);
-    modeSwitch.setBounds (50, 10, 308, 25);
+    modeSwitch.setBounds (50, 10, 400, 25);
     modeSwitch.setTextHeight (labelHeight);
     modeSwitch.setFitToText (true);
     editLabel.setBounds (484, 10, 40, 25);
@@ -346,6 +353,27 @@ FirEditor::FirEditor (FirProcessor& processor)
     placeKnob (offsetKnob, 1);
     placeKnob (smoothingKnob, 2);
     placeKnob (subReleaseKnob, 3);
+    placeKnob (resDepthKnob, 0);
+    placeKnob (resSharpnessKnob, 1);
+    placeKnob (resAttackKnob, 2);
+    placeKnob (resReleaseKnob, 3);
+
+    // Phase 3 Q2.7: RANGE, with Low and High as compact knobs under their own labels.
+    styleLabel (rangeCaption, "RANGE", colours::textSecondary, juce::Justification::topLeft);
+    rangeCaption.setBounds (leftCardX + 12, cardY + 8, 80, 16);
+    styleLabel (rangeLowLabel, "Low", colours::textPrimary, juce::Justification::centred);
+    styleLabel (rangeHighLabel, "High", colours::textPrimary, juce::Justification::centred);
+
+    constexpr int rangeLowCentre = leftCardX + 45, rangeHighCentre = leftCardX + 125;
+
+    rangeLowLabel.setBounds (rangeLowCentre - 33, cardY + 24, 66, 16);
+    rangeHighLabel.setBounds (rangeHighCentre - 33, cardY + 24, 66, 16);
+    resLowKnob.setBounds (rangeLowCentre - 33, cardY + 36, 66, 74);
+    resHighKnob.setBounds (rangeHighCentre - 33, cardY + 36, 66, 74);
+    resLowKnob.setTooltip ("Resonance works between Low and High, fading out over half an octave outside.");
+    resHighKnob.setTooltip (resLowKnob.getTooltip());
+    resSharpnessKnob.setTooltip ("Higher finds only narrower peaks; lower also takes broader bumps.");
+    resDepthKnob.setTooltip ("The most a resonance is turned down. A peak never goes below 4 dB over the spectrum around it.");
 
     styleLabel (eqHint, "The curve is the EQ. Click it to add a point.", colours::textSecondary, juce::Justification::centredLeft);
     eqHint.setBounds (controlsCardX + 14, cardY + 40, 250, 20);
@@ -362,12 +390,13 @@ FirEditor::FirEditor (FirProcessor& processor)
     sidechainCheckbox.setBounds (225, footerY, 134, 20);
     listenNoiseCheckbox.setBounds (365, footerY, 180, 20);
     listenReducedCheckbox.setBounds (365, footerY, 200, 20);
+    listenResonanceCheckbox.setBounds (365, footerY, 210, 20);
     editLink.setBounds (586, footerY - 2, 64, 24);
 
     for (auto* checkbox : { &analysisCheckbox, &lowLatencyCheckbox, &sidechainCheckbox })
         checkbox->setLabelHeight (labelHeight);
 
-    for (auto* checkbox : { &listenNoiseCheckbox, &listenReducedCheckbox })
+    for (auto* checkbox : { &listenNoiseCheckbox, &listenReducedCheckbox, &listenResonanceCheckbox })
     {
         checkbox->setLabelHeight (labelHeight);
         checkbox->setTooltip ("Plays only what's being taken away. Turns off when you close this window, and is never saved.");
@@ -391,7 +420,9 @@ FirEditor::FirEditor (FirProcessor& processor)
              &learnCard, &curveCaption, &resetButton, &flatButton, &tiltButton, &demudButton, &convolveText,
              &floorKnob, &gateAttackKnob, &gateReleaseKnob, &ratioKnob, &compAttackKnob, &compReleaseKnob,
              &reductionKnob, &offsetKnob, &smoothingKnob, &subReleaseKnob, &eqHint,
-             &sidechainCheckbox, &listenNoiseCheckbox, &listenReducedCheckbox })
+             &rangeCaption, &rangeLowLabel, &rangeHighLabel, &resLowKnob, &resHighKnob,
+             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob,
+             &sidechainCheckbox, &listenNoiseCheckbox, &listenReducedCheckbox, &listenResonanceCheckbox })
         body.addChildComponent (item);
 
     drawer.setBounds (0, cardY - 8, rightColumnX, bodyHeight - cardY + 8);
@@ -446,9 +477,18 @@ void FirEditor::updateMode()
     for (auto* knob : { &reductionKnob, &offsetKnob, &smoothingKnob, &subReleaseKnob })
         knob->setVisible (mode == subtract);
 
+    for (juce::Component* item : std::initializer_list<juce::Component*> {
+             &rangeCaption, &rangeLowLabel, &rangeHighLabel, &resLowKnob, &resHighKnob,
+             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob, &listenResonanceCheckbox })
+        item->setVisible (mode == resonance);
+
     const auto dynamics = mode == gate || mode == compressor || mode == subtract;
 
-    sidechainCheckbox.setVisible (dynamics);
+    // Resonance listens to its own input, so the Sidechain detector is greyed there (Q2.7, Decision 4).
+    sidechainCheckbox.setVisible (dynamics || mode == resonance);
+    sidechainCheckbox.setEnabled (mode != resonance);
+    sidechainCheckbox.setAlpha (mode == resonance ? 0.4f : 1.0f);
+    sidechainCheckbox.setTooltip (mode == resonance ? "Resonance listens to its own input" : juce::String());
     listenNoiseCheckbox.setVisible (mode == subtract);
     listenReducedCheckbox.setVisible (mode == gate || mode == compressor);
     lowLatencyCheckbox.setAlpha (mode == convolve ? 0.4f : 1.0f);
@@ -486,6 +526,31 @@ void FirEditor::showPreview (Preview preview)
     {
         setValue (parameter ("mode"), (float) eq);
         firProcessor().setPoints (eq, { { 80.0, 3.0 }, { 250.0, -4.0 }, { 3000.0, 2.0 }, { 12000.0, 4.0 } });
+    }
+    else if (preview == Preview::resonance || preview == Preview::resonanceRange)
+    {
+        // Phase 3 Q2.7, mockup 28: panel 1 at the defaults, panel 2 the "Harsh Vocal" preset
+        // with Listen on.
+        setValue (parameter ("mode"), (float) resonance);
+
+        if (preview == Preview::resonanceRange)
+        {
+            setValue (parameter ("resDepth"), 8.0f);
+            setValue (parameter ("resSharpness"), 60.0f);
+            setValue (parameter ("resAttack"), 2.0f);
+            setValue (parameter ("resRelease"), 60.0f);
+            setValue (parameter ("resLow"), 1500.0f);
+            setValue (parameter ("resHigh"), 10000.0f);
+            firProcessor().setListening (true);
+        }
+
+        updateMode();
+        graph.update();
+        graph.showPreviewSpectra (true);
+        outMeter.show (-10.4f, -9.8f);
+        latencyLabel.setText ("Latency 42.7 ms", juce::dontSendNotification);
+        drawer.setVisible (false);
+        return;
     }
     else
     {
@@ -569,6 +634,12 @@ std::vector<ShellEditor::PopupOpener> FirEditor::getPopupOpeners()
     openers.push_back ({ "axis-prompt", [this] { graph.typeAxis (true); } });
     openers.push_back ({ "clear-profile", [this] { confirmThen ("Clear the noise profile?", "The learned profile will be removed. You can learn it again from a section with only noise.", "Clear", true, [] {}); } });
     openers.push_back ({ "tooltip-low-latency", [this] { showTip (lowLatencyCheckbox, lowLatencyCheckbox.getTooltip()); } });
+    openers.push_back ({ "tooltip-sidechain-resonance", [this]
+                         {
+                             setValue (parameter ("mode"), (float) resonance);
+                             updateMode();
+                             showTip (sidechainCheckbox, sidechainCheckbox.getTooltip());
+                         } });
     return openers;
 }
 

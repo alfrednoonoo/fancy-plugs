@@ -9,7 +9,9 @@
 namespace fir
 {
 
-enum Mode { eq, gate, compressor, subtract, convolve };
+// Resonance (Phase 3 Q2.7) is appended, so saved indices keep their meaning.
+enum Mode { eq, gate, compressor, subtract, convolve, resonance };
+constexpr int numModes = 6;
 
 // Subtract's noise profile (Phase 2.1 A).
 enum Source { learnedSource, adaptiveSource, bothSources };
