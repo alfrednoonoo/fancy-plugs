@@ -310,7 +310,7 @@ jobs:
               *arm64*x86_64*|*x86_64*arm64*) ;;
               *) echo "::error::$binary is not universal"; status=1 ;;
             esac
-          done < <(find build/plugins -path '*.vst3/Contents/MacOS/*' -type f)
+          done < <(find build/plugins \( -path '*.vst3/Contents/MacOS/*' -o -path '*.component/Contents/MacOS/*' \) -type f)
           exit $status
 
       - name: Run DSP tests (Apple silicon)
@@ -334,13 +334,13 @@ jobs:
           "$tests" '[measure]' | tee measurements/measurements.txt
           exit ${PIPESTATUS[0]}
 
-      - name: Stage VST3 bundles
+      - name: Stage VST3 and AU bundles
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           mkdir -p dist
-          find build/plugins -type d -name '*.vst3' -prune -exec cp -R {} dist/ \;
+          find build/plugins -type d \( -name '*.vst3' -o -name '*.component' \) -prune -exec cp -R {} dist/ \;
           ls dist
-          ls -d dist/*.vst3
+          ls -d dist/*.vst3 dist/*.component
 
       - name: Cache Steinberg VST3 validator
         if: ${{ !cancelled() }}
@@ -397,6 +397,31 @@ jobs:
           done
           exit $status
 
+      # Apple's own Audio Unit validator (docs/mac.md, step 3). AUs are found only where macOS
+      # looks for them, so they're installed in the runner's own Components folder first.
+      - name: Run auval
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 20
+        run: |
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          cp -R dist/*.component ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          auval -a | grep -i fncy || true
+          status=0
+          for component in dist/*.component; do
+            plist="$component/Contents/Info.plist"
+            type=$(/usr/libexec/PlistBuddy -c 'Print :AudioComponents:0:type' "$plist")
+            subtype=$(/usr/libexec/PlistBuddy -c 'Print :AudioComponents:0:subtype' "$plist")
+            manufacturer=$(/usr/libexec/PlistBuddy -c 'Print :AudioComponents:0:manufacturer' "$plist")
+            echo "::group::auval $component ($type $subtype $manufacturer)"
+            if ! auval -strict -v "$type" "$subtype" "$manufacturer"; then
+              echo "::error::auval failed for $component"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
+
       - name: Run host-behaviour harness
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         timeout-minutes: 20
@@ -425,7 +450,8 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
-          name: FancyPlugs-VST3-macos-${{ env.SHORT_SHA }}
+          # Not FancyPlugs-VST3-*: get-latest.ps1 downloads every artifact matching that.
+          name: FancyPlugs-macos-${{ env.SHORT_SHA }}
           path: dist
           retention-days: 14
 

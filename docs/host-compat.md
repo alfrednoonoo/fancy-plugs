@@ -142,3 +142,30 @@ It draws routing as wires, so it's the free way to check sidechain and MIDI out.
 - [ ] Export audio mixdown, real time and faster: both match playback.
 - [ ] Turn latency-changing settings on and off while stopped, then play: the track stays in time.
 - [ ] Save, close and reopen the project: every plugin comes back as it was.
+
+## macOS (docs/mac.md, steps 3 and 5)
+
+Every plugin is a universal VST3 and Audio Unit (AU) on macOS 11 and later. CI runs Steinberg's validator and pluginval on each VST3 and Apple's `auval -strict` on each AU; nothing on a Mac has been heard yet. These checks are for the listening check (Decision 6), on an Apple silicon Mac and, if one is available, an Intel one.
+
+AU notes:
+
+- **Types.** Every plugin is an effect (`aufx`), except Fancy Gate, which is a music effect (`aumf`) so it may send MIDI (Decision 5). Logic lists music effects under **Audio Units > Fancy Plugs** in an instrument track's MIDI FX-less insert slots and in audio tracks' inserts on recent versions; if Gate is missing from an audio track, look for it on a software-instrument track.
+- **Sidechain.** In Logic, the sidechain is the **Side Chain** menu at the top right of the plugin window; it feeds the same bus the VST3 calls its sidechain, so Detector input works the same way.
+- **Typed values.** On a Mac, Ctrl-click is a right-click, so typing a value is Cmd-click on a control (or a click on its value), not Ctrl-click.
+
+### Logic Pro (AU, about 45 minutes)
+
+- [ ] After installing with `install.sh`, Logic's Plug-in Manager lists all fourteen Fancy Plugs AUs as "successfully validated".
+- [ ] Load each plugin: window, pop-ups, Cmd-click to type a value, resizing.
+- [ ] Sidechain Comp, MultiComp, FIR and Gate from the Side Chain menu, with Detector input set to Sidechain L+R.
+- [ ] Gate: tick MIDI on open/close and route its output to an instrument; note whether Logic offers it as a MIDI source, and whether the gate keeps gating either way.
+- [ ] Automate a knob, then play back: the knob follows.
+- [ ] Turn Gate's Lookahead, EQ's linear phase or FIR's Low latency on and off while stopped, then play: the track stays in time.
+- [ ] Bounce in real time and offline: both match playback.
+- [ ] Save, close and reopen the project: every plugin comes back as it was.
+
+### REAPER on Mac (VST3 and AU)
+
+- [ ] Each plugin's REAPER checklist (`docs/<plugin>-checklist.md`), Mac section, with the VST3.
+- [ ] One project with the AU versions of Comp, Verb and Gate: they load, sound and save as the VST3s do.
+- [ ] Open a project saved on Windows: every plugin loads with its settings and sounds the same.

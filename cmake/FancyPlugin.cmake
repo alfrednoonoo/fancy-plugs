@@ -6,17 +6,32 @@
 #     SOURCES      src/KickerProcessor.cpp src/KickerEditor.cpp
 #     ENTRY        src/PluginEntry.cpp)
 #
+# On macOS each plugin is also an Audio Unit (docs/mac.md, Decision 1): an effect (aufx), or with
+# AU_MUSIC_EFFECT a music effect (aumf), which may send MIDI (Fancy Gate, Decision 5).
+#
 # SOURCES hold the processor and editor classes and are also compiled into
 # fancy-screens, which renders the editors without loading a plugin binary.
 # ENTRY holds createPluginFilter() and goes into the plugin only, because each
 # plugin defines that same symbol.
 function(fancy_add_plugin target)
-    cmake_parse_arguments(ARG "PRODUCES_MIDI" "PRODUCT_NAME;PLUGIN_CODE;BUNDLE_ID;SCREEN_MACRO;ENTRY" "SOURCES" ${ARGN})
+    cmake_parse_arguments(ARG "PRODUCES_MIDI;AU_MUSIC_EFFECT" "PRODUCT_NAME;PLUGIN_CODE;BUNDLE_ID;SCREEN_MACRO;ENTRY" "SOURCES" ${ARGN})
 
     if(ARG_PRODUCES_MIDI)
         set(needs_midi_output TRUE)
     else()
         set(needs_midi_output FALSE)
+    endif()
+
+    if(APPLE)
+        set(formats VST3 AU Standalone)
+    else()
+        set(formats VST3 Standalone)
+    endif()
+
+    if(ARG_AU_MUSIC_EFFECT)
+        set(au_main_type kAudioUnitType_MusicEffect)
+    else()
+        set(au_main_type kAudioUnitType_Effect)
     endif()
 
     juce_add_plugin(${target}
@@ -25,8 +40,10 @@ function(fancy_add_plugin target)
         BUNDLE_ID "${ARG_BUNDLE_ID}"
         PLUGIN_MANUFACTURER_CODE Fncy
         PLUGIN_CODE ${ARG_PLUGIN_CODE}
-        FORMATS VST3 Standalone
+        FORMATS ${formats}
         VST3_CATEGORIES Fx
+        AU_MAIN_TYPE ${au_main_type}
+        AU_SANDBOX_SAFE TRUE
         IS_SYNTH FALSE
         NEEDS_MIDI_INPUT FALSE
         NEEDS_MIDI_OUTPUT ${needs_midi_output}
