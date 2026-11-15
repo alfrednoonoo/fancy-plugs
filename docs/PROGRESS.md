@@ -4,20 +4,9 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 
 ## Now
 
-- **Current item: Verb (Q2.8)**: IR library, true stereo, modulation. Design (every recommended option) and mockup (`reference/phase3/24__verb_q28_mockup.png`) approved by the user on 14 November 2026; `docs/verb.md`, "Phase 3 Q2.8".
-  - Push 1, true stereo: green, run 43648226467 (`91a7204`), 482 test cases. Bit-identical to the legacy convolver and builder for direct IRs. CPU, 3 s IR: Zero latency 1.26 x direct, Low CPU 1.09 x (target < 1.6 x). The IR display keeps one lane (the mockup drew two).
-  - Push 2 (generator settings, library tool and 32 IRs as a Windows resource, Library menu): run 43650494608 (`b833304`) built, and 486 of 487 test cases passed; the one failure was an old generator test that set the raw value array, fixed in push 3.
-  - Push 3 (Modulate, five presets, screenshots, docs): green. Follow-up `7a1b820` (silent stages skipped, Reverb card layout fixed): green, run 43655069240, 493 test cases. CPU in `docs/measurements/verb-q28.txt`: Modulate 1.85 x (Zero latency) and 2.04 x (Low CPU), inside 2.2 x; true stereo 1.15 x and 1.14 x. Screenshots `verb-library`, `verb-generators` and `verb-add` checked against the mockup.
-  - Add module: green, run 43658154079 (`c83ed3c`); screenshots `verb-library` and `verb-add` match mockup `25`. Verb Q2.8 is complete and waits for the REAPER check.
-  - Next: the user's REAPER check (`docs/verb-checklist.md`, the Q2.8 section), then the release (v1.5.0).
-- **Plan agreed with the user (15 November 2026), to run while they're away:** build Verb's Add module (mockup `25`, approved), then MultiComp Q2.6, then Delay Q2.3, each in as few pushes as it takes, with tests, screenshots checked against its mockup, manual, checklist and CPU. If one needs a decision that isn't in its approved note, record it here, leave that item, and go on to the next. The user then checks Verb, MultiComp and Delay in REAPER together, and v1.5.0 follows.
-- **MultiComp (Q2.6) and Delay (Q2.3):** design notes and mockups approved by the user on 15 November 2026, every recommended option (`docs/multicomp.md`, `docs/delay.md`; mockups `26` and `27`). Order confirmed: MultiComp, then Delay; FIR (Q2.7) and Kicker (Q2.2) after.
-  - MultiComp Q2.6 built: lookahead, channel chip (moved from EQ into `fancy-core`), Precision with `FancyProcessor::valueForMissingParameter`, two presets, tests, manual, checklist.
-  - MultiComp Q2.6 and Delay Q2.3: green, run 43680967298 (`5533812`); screenshots match mockups 26 and 27. Delay deviations in `docs/delay.md` §11.
-  - CPU, the user's decisions (15 November 2026): MultiComp's Fast maths and Precision setting removed (Fast measured slower than Exact); Delay's target restated as the cost Q2.3 adds over the old options, under 2 % (1.73 % and 1.99 % in two runs). Measurements in `docs/measurements/`.
-  - Green, run 43683895341 (`16fa05b`); MultiComp drawer screenshot checked. MultiComp Q2.6 and Delay Q2.3 are complete and wait for the REAPER check.
-- **Next:** the user's REAPER check of Verb (Q2.8), MultiComp (Q2.6) and Delay (Q2.3), from each checklist's Phase 3 section, then the release (v1.5.0).
-- **Latest release:** [v1.4.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.4.0), 14 November 2026.
+- **Current item: FIR (Q2.7)**: Resonance mode and CPU stability. Design note (`docs/fir.md`, "Phase 3 Q2.7"), Python model (`docs/research/fir-resonance-model.py`, both brief tests pass) and mockup (`reference/phase3/28__fir_q27_mockup.png`) written 15 November 2026, **waiting for the user's approval** (six decisions, each with a recommendation).
+- **Then:** Kicker (Q2.2) is already reduced to Sub mode, which is done, so Phase 3's Q2 list ends with FIR. Mac comes after Windows; Phase 4 holds Kicker's Duck, a transient shaper and a chorus.
+- **Latest release:** [v1.5.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.5.0), 15 November 2026: Verb Q2.8, MultiComp Q2.6, Delay Q2.3, all passed in REAPER by the user on 15 November 2026.
 
 ## Releases
 
@@ -29,6 +18,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 | v1.2.0 | Gate; Phase 2.1 (S, H, W, D, U, A) | 42576245019, commit `a613f77` |
 | v1.3.0 | Limit, DS, DS-Mini, Sature, Room, Kicker Sub mode, preset browser, free resizing, title strip, temporary Listen switches | 43436706689, commit `e2ed62c` |
 | v1.4.0 | EQ: channel per band, 24 bands, Match. Comp: Character, Upward, Auto threshold, detector EQ, 8x | 43644278032, commit `82a4bbd` |
+| v1.5.0 | Verb: IR library, true stereo, Modulate, Add module. MultiComp: lookahead, channel per band. Delay: Character, Motion, Ducking, Swing | 43737725969, commit `947168b` |
 
 Release recipe: bump `project(... VERSION)` in `CMakeLists.txt` (it has CRLF line endings, so edit it byte-exact), update `README.md` (plugin table, "What's new", screenshots from the latest `screens-<sha>` @2x into `docs/images/`), push, wait for green, then `gh release create v<x.y.z>` with that run's `FancyPlugs-VST3-<sha>` artifact zipped as it is, named `FancyPlugs-<x.y.z>-win64.zip`. Notes follow v1.2.0's: what's new, install, build (run, commit, test count).
 
@@ -43,18 +33,19 @@ Every item below is built, green in CI and passed by the user in REAPER. Each ha
 - **Phase 3 Q1:** FancyBench benchmark host (`docs/phase3-Q1.md`, how-to `docs/bench.md`, results `docs/research/bench-2026-11-09.md`).
 - **Phase 3 Q2.1:** preset browser, free resizing, title strip (`docs/phase3-Q2.1.md`, `docs/presets-checklist.md`).
 - **Phase 3 Q2.4:** Fancy EQ, channel per band, 24 bands, Match (`docs/eq.md`, section 7). **Q2.5:** Fancy Comp, Character, Upward, Auto threshold, detector EQ, 8x (`docs/comp.md`, section 10). REAPER checks passed on 14 November 2026.
+- **Phase 3 Q2.8, Q2.6, Q2.3:** Verb (`docs/verb.md`), MultiComp (`docs/multicomp.md`), Delay (`docs/delay.md`). REAPER checks passed on 15 November 2026. Released as v1.5.0.
 - **Phase 3 Q5 step 1:** design rules, `docs/DESIGN_SYSTEM.md` (accents: Limit red, DS green, DS-Mini blue, Sature orange, Room purple).
 - **Phase 3 new plugins:** Fancy Limit (`docs/limit.md`), Fancy DS (`docs/ds.md`), Fancy DS-Mini (`docs/ds-mini.md`), Fancy Sature (`docs/sature.md`), Kicker's Sub mode (`docs/kicker-sub.md`), Fancy Room (`docs/room.md`). REAPER checks passed on 10 November (Limit) and 13 November 2026 (the rest).
 - **§0.3 Listen rule:** Listen and preview switches are temporary, never parameters (`FancyProcessor::setListening`, `ListenCheckbox`), retrofitted to Comp's and Gate's Preview filter and FIR's Listen. Limit's "Listen to removed" stays a parameter, by the user's choice.
 
-Latest green run: 43683895341 (commit `16fa05b`, Verb Q2.8, MultiComp Q2.6, Delay Q2.3), pluginval, Steinberg's validator, the host harness and FancyBench.
+Latest green run: 43737725969 (commit `947168b`, release 1.5.0), 507 test cases, pluginval, Steinberg's validator, the host harness and FancyBench.
 
 ## Still to do in Phase 3
 
 In Q2's order (`docs/BUILD_PROMPT_PHASE3.md`), each with an approved design note first and signed off in REAPER before the next:
 
-1. Verb (Q2.8), MultiComp (Q2.6) and Delay (Q2.3): built and green; waiting for the REAPER check, then v1.5.0.
-2. Then FIR (Q2.7) and Kicker (Q2.2, now reduced to Sub mode, which is done).
+1. FIR (Q2.7): design waiting for approval.
+2. Kicker (Q2.2) is reduced to Sub mode, which is done.
 
 Mac comes after Windows is finished. Phase 4 holds Kicker's sidechain Duck, a transient shaper and a chorus.
 
