@@ -477,7 +477,7 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
 
         double level;
 
-        if (channel == stereo)
+        if (channel == MultiCompDsp::stereo)
         {
             state.meanSquare[0] += state.rmsCoefficient * (detectorLeft * detectorLeft - state.meanSquare[0]);
             state.meanSquare[1] += state.rmsCoefficient * (detectorRight * detectorRight - state.meanSquare[1]);
@@ -488,9 +488,9 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
         else
         {
             // Phase 3 Q2.6: one channel of the band, and the detector reads that channel.
-            const auto detector = channel == left  ? detectorLeft
-                                : channel == right ? detectorRight
-                                : channel == mid   ? 0.5 * (detectorLeft + detectorRight)
+            const auto detector = channel == MultiCompDsp::left  ? detectorLeft
+                                : channel == MultiCompDsp::right ? detectorRight
+                                : channel == MultiCompDsp::mid   ? 0.5 * (detectorLeft + detectorRight)
                                                    : 0.5 * (detectorLeft - detectorRight);
 
             state.meanSquare[0] += state.rmsCoefficient * (detector * detector - state.meanSquare[0]);
@@ -534,21 +534,21 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
 
         switch (channel)
         {
-            case left:  compressedLeft = audioLeft * gain; compressedRight = audioRight; break;
-            case right: compressedLeft = audioLeft; compressedRight = audioRight * gain; break;
+            case MultiCompDsp::left:  compressedLeft = audioLeft * gain; compressedRight = audioRight; break;
+            case MultiCompDsp::right: compressedLeft = audioLeft; compressedRight = audioRight * gain; break;
 
-            case mid:
-            case side:
+            case MultiCompDsp::mid:
+            case MultiCompDsp::side:
             {
                 auto m = 0.5 * (audioLeft + audioRight);
                 auto s = 0.5 * (audioLeft - audioRight);
-                (channel == mid ? m : s) *= gain;
+                (channel == MultiCompDsp::mid ? m : s) *= gain;
                 compressedLeft = m + s;
                 compressedRight = m - s;
                 break;
             }
 
-            case stereo:
+            case MultiCompDsp::stereo:
             default:    compressedLeft = audioLeft * gain; compressedRight = audioRight * gain; break;
         }
 
