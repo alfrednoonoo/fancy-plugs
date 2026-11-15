@@ -227,9 +227,8 @@ One push: lookahead, channel, Fast/Exact with the legacy copy, the chip, the dra
 
 ### 8. As built
 
+- **Precision removed (the user's decision, 15 November 2026).** Measured with the same input for both, Fast cost 2.11 % against Exact's 1.86 % (run 43680967298): MSVC's `log10` and `pow` are cheaper than section 3 assumed, so the fast maths saved nothing. The Fast maths and the `precision` parameter, never released, are gone; MultiComp always uses the exact maths, so old projects stay bit-identical with no migration. The CPU target is restated as no more than before Q2.6. Sections 3, 6 (the Precision row), 7 (test 2) and the drawer's Precision describe the plan, not the build.
 - **Shared chip:** Fancy EQ's channel chip moved into `fancy-core` as `fancy::ui::ChannelChip`; EQ uses it unchanged. On the band row it sits at x 494, left of S, and the band title stops at x 490.
-- **Precision migration:** `FancyProcessor::valueForMissingParameter` gives a parameter a saved state lacks a value other than its default; MultiComp returns Exact for `precision`. Factory presets set every parameter, so they're Fast.
-- **Fast maths:** `log2` and `2^x` from the exponent bits, a 9th-order odd series in `(m-1)/(m+1)` and a 6th-order series around 0.5; within about 1e-5 dB, far inside the 0.05 dB test.
 - **Lookahead:** a ring per band of up to 10 ms at the session rate, used only when Lookahead is above 0; the bypass path waits the crossover's latency plus the lookahead.
 - **Legacy copy:** `tests/LegacyMultiCompDsp.*` is the DSP before Q2.6.
 - **Lookahead tests:** a ±0.9 square-wave step (1 kHz) through ∞:1 with a 2 ms attack: the first 10 ms are within 1 dB of the peaks 20 to 40 ms later with 10 ms of lookahead, and over 6 dB louder without. (A sine with RMS 0 makes the detector climb over tens of ms, as it reaches each peak only briefly.) Alignment compares the render with 5 ms of lookahead against the one without, 240 samples later, since an LR crossover's bands sum to an all-pass rather than the input.

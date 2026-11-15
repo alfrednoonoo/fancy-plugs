@@ -101,10 +101,9 @@
 - [ ] Turn **Depth** down to 0 %: the compression and lifting go away and you hear the plain band sum. Halfway is about half the effect.
 - [ ] Set **Time** to 200 %: attack and release are audibly slower; at 50 % faster.
 
-## Lookahead, channel and Precision (Phase 3 Q2.6)
+## Lookahead and channel (Phase 3 Q2.6)
 
-- [ ] Open a project saved with v1.4.0 that uses Fancy MultiComp: it loads and sounds as before, and EDIT shows Precision **Exact**. Render it and null it against a v1.4.0 render if you have one.
-- [ ] A new instance shows Precision **Fast**. Switching Exact and Fast while playing makes no audible difference.
+- [ ] Open a project saved with v1.4.0 that uses Fancy MultiComp: it loads and sounds as before. Render it and null it against a v1.4.0 render if you have one.
 - [ ] **Lookahead:** on a drum bus with fast attack, raise Lookahead to 3 ms: the start of each hit is caught more cleanly. The latency under the knob changes, REAPER stays in time, and the change makes one short fade.
 - [ ] **Channel:** set the low band to **M** on a wide mix: the low centre tightens and the width doesn't change. Set the top band to **S**: harsh stereo edges calm down, the centre (a vocal) doesn't. The handles show M and S.
 - [ ] On a mono track the chip is greyed, with its tooltip.

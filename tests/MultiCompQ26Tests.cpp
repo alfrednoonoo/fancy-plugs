@@ -1,4 +1,4 @@
-// Phase 3 Q2.6 for Fancy MultiComp: lookahead, channel per band and Precision (docs/multicomp.md,
+// Phase 3 Q2.6 for Fancy MultiComp: lookahead and channel per band (docs/multicomp.md,
 // "Phase 3 Q2.6", section 6).
 
 #include "LegacyMultiCompDsp.h"
@@ -123,7 +123,7 @@ double toneDb (const std::vector<double>& x, int from, double hz)
 
 // 1. Compatibility ------------------------------------------------------------------------
 
-TEST_CASE ("Precision Exact with no lookahead renders exactly as MultiComp did before Q2.6", "[multicomp][q26]")
+TEST_CASE ("with no lookahead and every band on Stereo, MultiComp renders exactly as before Q2.6", "[multicomp][q26]")
 {
     const auto crossover = GENERATE (0, 1, 2);
     const auto limit = GENERATE (false, true);
@@ -137,7 +137,6 @@ TEST_CASE ("Precision Exact with no lookahead renders exactly as MultiComp did b
     setBands (now);
     now.crossover = (multicomp::CrossoverType) crossover;
     now.limitOutput = limit;
-    now.fast = false;
 
     LegacyMultiCompDsp legacy;
     MultiCompDsp current;
@@ -156,13 +155,11 @@ TEST_CASE ("Precision Exact with no lookahead renders exactly as MultiComp did b
     REQUIRE (a.right == b.right);
 }
 
-TEST_CASE ("a MultiComp state saved before Q2.6 opens on Precision Exact; a new instance is Fast", "[multicomp][q26]")
+TEST_CASE ("a MultiComp state saved before Q2.6 opens with no lookahead and every band on Stereo", "[multicomp][q26]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInitialiser;
 
     MultiCompProcessor fresh;
-    CHECK (fresh.getApvts().getRawParameterValue ("precision")->load() == 1.0f);
-
     juce::MemoryBlock state;
     fresh.getStateInformation (state);
 
@@ -174,7 +171,7 @@ TEST_CASE ("a MultiComp state saved before Q2.6 opens on Precision Exact; a new 
         auto* next = child->getNextElement();
         const auto id = child->getStringAttribute ("id");
 
-        if (child->hasTagName ("PARAM") && (id == "precision" || id == "lookahead" || id.endsWith ("chan")))
+        if (child->hasTagName ("PARAM") && (id == "lookahead" || id.endsWith ("chan")))
             xml->removeChildElement (child, true);
 
         child = next;
@@ -186,51 +183,12 @@ TEST_CASE ("a MultiComp state saved before Q2.6 opens on Precision Exact; a new 
     MultiCompProcessor loaded;
     loaded.setStateInformation (oldState.getData(), (int) oldState.getSize());
 
-    CHECK (loaded.getApvts().getRawParameterValue ("precision")->load() == 0.0f);
     CHECK (loaded.getApvts().getRawParameterValue ("lookahead")->load() == 0.0f);
     CHECK (loaded.getApvts().getRawParameterValue ("b1chan")->load() == 0.0f);
 
-    // A factory preset sets every parameter, so it's Fast.
     auto& presets = loaded.getPresets();
     presets.load (presets.getNames().indexOf ("Lookahead Glue"));
-    CHECK (loaded.getApvts().getRawParameterValue ("precision")->load() == 1.0f);
     CHECK (loaded.getApvts().getRawParameterValue ("lookahead")->load() == Catch::Approx (2.0f));
-}
-
-// 2. Fast ---------------------------------------------------------------------------------
-
-TEST_CASE ("Precision Fast stays within 0.05 dB of Exact", "[multicomp][q26]")
-{
-    const auto crossover = GENERATE (0, 2);
-
-    MultiCompDsp::Targets targets;
-    setBands (targets);
-    targets.crossover = (multicomp::CrossoverType) crossover;
-
-    MultiCompDsp exact, fast;
-    targets.fast = false;
-    prepare (exact, targets);
-    targets.fast = true;
-    prepare (fast, targets);
-
-    auto a = programme (96000, 9);
-    auto b = a;
-    a.process (exact);
-    b.process (fast);
-
-    auto worst = 0.0;
-
-    for (int start = 4800; start + 480 <= a.size(); start += 480)
-    {
-        if (blockDb (a.left, start, 480) < -80.0)
-            continue;
-
-        worst = std::max (worst, std::abs (blockDb (a.left, start, 480) - blockDb (b.left, start, 480)));
-        worst = std::max (worst, std::abs (blockDb (a.right, start, 480) - blockDb (b.right, start, 480)));
-    }
-
-    INFO ("worst 10 ms block difference " << worst << " dB");
-    CHECK (worst < 0.05);
 }
 
 // 3. Lookahead ----------------------------------------------------------------------------
@@ -339,7 +297,6 @@ TEST_CASE ("a Mid band leaves the sides alone, and a Side band the middle", "[mu
     targets.bands[0].thresholdDb = -60.0;
     targets.bands[0].ratio = MultiCompDsp::infiniteRatio;
     targets.bands[0].channel = channel;
-    targets.fast = true;
 
     MultiCompDsp dsp;
     prepare (dsp, targets);
@@ -455,24 +412,19 @@ TEST_CASE ("multicomp Q2.6 CPU measurement", "[.measure]")
         return results[runs / 2];
     };
 
-    MultiCompDsp::Targets exact;
-    setBands (exact);
-    exact.bands[3].upward = false;
-    exact.fast = false;
+    MultiCompDsp::Targets plain;
+    setBands (plain);
+    plain.bands[3].upward = false;
 
-    auto fast = exact;
-    fast.fast = true;
-
-    auto everything = fast;
+    auto everything = plain;
     everything.bands[3].upward = true;
     everything.bands[0].channel = MultiCompDsp::mid;
     everything.bands[2].channel = MultiCompDsp::side;
     everything.lookaheadMs = 5.0;
 
-    const auto exactPercent = timeOf (exact);
-    const auto fastPercent = timeOf (fast);
+    const auto plainPercent = timeOf (plain);
     const auto everythingPercent = timeOf (everything);
 
-    std::printf ("multicomp q26 cpu, 4 bands LR 24, 48 kHz, 128 samples, median of %d: Exact %.3f %%, Fast %.3f %% (%.2f x Exact, target < 1.5 %%), Fast with upward, Mid/Side bands and 5 ms lookahead %.3f %%\n",
-                 runs, exactPercent, fastPercent, fastPercent / exactPercent, everythingPercent);
+    std::printf ("multicomp q26 cpu, 4 bands LR 24, 48 kHz, 128 samples, median of %d: plain %.3f %%, with upward, Mid/Side bands and 5 ms lookahead %.3f %%\n",
+                 runs, plainPercent, everythingPercent);
 }

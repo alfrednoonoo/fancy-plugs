@@ -14,7 +14,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 - **MultiComp (Q2.6) and Delay (Q2.3):** design notes and mockups approved by the user on 15 November 2026, every recommended option (`docs/multicomp.md`, `docs/delay.md`; mockups `26` and `27`). Order confirmed: MultiComp, then Delay; FIR (Q2.7) and Kicker (Q2.2) after.
   - MultiComp Q2.6 built: lookahead, channel chip (moved from EQ into `fancy-core`), Precision with `FancyProcessor::valueForMissingParameter`, two presets, tests, manual, checklist.
   - MultiComp Q2.6 and Delay Q2.3: green, run 43680967298 (`5533812`); screenshots match mockups 26 and 27. Delay deviations in `docs/delay.md` §11.
-  - **Blocked on the user: both CPU targets missed** (`docs/measurements/multicomp-q26.txt`, `delay-q23.txt`). MultiComp Fast 2.11 % vs Exact 1.86 % (target Fast < 1.5 %): the fast maths saves nothing. Delay everything on 3.36 % (target < 2 %), but the old options alone are 1.62 %; Tape/BBD adds 0.95 %, modulation 0.49 %, diffusion 0.26 %, ducking 0.03 %.
+  - CPU, the user's decisions (15 November 2026): MultiComp's Fast maths and Precision setting removed (Fast measured slower than Exact); Delay's target restated as the cost Q2.3 adds over the old options, under 2 % (1.73 %, met). Measurements in `docs/measurements/`. MultiComp's run without Fast pending.
 - **Latest release:** [v1.4.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.4.0), 14 November 2026.
 
 ## Releases

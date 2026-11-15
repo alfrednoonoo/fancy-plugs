@@ -112,10 +112,9 @@ Crossovers are drawn on the graph, so they're dragged rather than typed. The hea
 
 ## EDIT
 
-The `EDIT` link at the bottom right holds Attack = 90 % rise, Log-scale automated freq., Output, Lookahead and Precision.
+The `EDIT` link at the bottom right holds Attack = 90 % rise, Log-scale automated freq., Output and Lookahead.
 
 - **Lookahead** (0 to 10 ms): the bands' audio waits this long while their detectors don't, so each band's gain starts moving before a transient arrives. Fast attacks then catch peaks without clipping their start. It adds its time to the latency, shown under the knob, and REAPER compensates it.
-- **Precision:** Exact or Fast. Fast does the level and gain maths with faster approximations, within 0.05 dB of Exact, for less CPU. New instances and presets use Fast; a project saved before 1.5 opens on Exact, so it sounds exactly as it did.
 
 ## Channel
 

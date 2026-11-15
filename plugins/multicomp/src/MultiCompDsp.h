@@ -51,9 +51,8 @@ public:
         // Phase 2.1 U: scale every band's gain change, and its attack and release.
         double depth = 1.0, time = 1.0;
 
-        // Phase 3 Q2.6. Fast uses approximations within 0.005 dB of the exact maths.
+        // Phase 3 Q2.6.
         double lookaheadMs = 0.0;
-        bool fast = false;
     };
 
     // The upward part of a band's static curve, in dB, before ballistics and Depth: the lift

@@ -124,8 +124,7 @@ private:
 
     // Phase 3 Q2.6.
     fancy::ui::Knob lookaheadKnob;
-    juce::Label latencyLabel, precisionLabel, precisionNote;
-    fancy::ui::ParamDropdown precisionDropdown;
+    juce::Label latencyLabel;
 
     int selectedBand = 0;
     std::array<float, multicomp::maxBands> displayed {};

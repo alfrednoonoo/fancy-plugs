@@ -198,10 +198,6 @@ fancy::FancyProcessor::Layout createLayout (const fancy::SwitchableFrequencyPara
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
 
-    // New instances and presets are Fast; a state saved without it loads as Exact.
-    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "precision", 1 }, "Precision",
-                                                              juce::StringArray { "Exact", "Fast" }, 1));
-
     return layout;
 }
 
@@ -450,7 +446,6 @@ MultiCompDsp::Targets MultiCompProcessor::readTargets() const
     targets.depth = (double) read ("depth") / 100.0;
     targets.time = (double) read ("time") / 100.0;
     targets.lookaheadMs = (double) read ("lookahead");
-    targets.fast = read ("precision") >= 0.5f;
 
     return targets;
 }

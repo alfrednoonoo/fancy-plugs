@@ -3,7 +3,6 @@
 #include <fancy/dsp/Upward.h>
 
 #include <algorithm>
-#include <bit>
 #include <cmath>
 #include <cstdint>
 
@@ -24,40 +23,14 @@ double sanitise (float sample) noexcept
     return std::isfinite (sample) ? (double) sample : 0.0;
 }
 
-// Phase 3 Q2.6, Precision Fast: log2 and 2^x from the exponent bits and short polynomials,
-// within about 1e-4 dB where the gain computer uses them (docs/multicomp.md).
-double fastLog2 (double x) noexcept
+double levelDbOf (double meanSquare) noexcept
 {
-    const auto bits = std::bit_cast<std::uint64_t> (x);
-    const auto exponent = (int) ((bits >> 52) & 0x7ff) - 1023;
-    const auto mantissa = std::bit_cast<double> ((bits & 0x000fffffffffffffull) | 0x3ff0000000000000ull); // 1 to 2
-
-    const auto t = (mantissa - 1.0) / (mantissa + 1.0);
-    const auto t2 = t * t;
-    return (double) exponent + 2.8853900817779268 * t * (1.0 + t2 * (1.0 / 3.0 + t2 * (0.2 + t2 * (1.0 / 7.0 + t2 / 9.0))));
+    return 10.0 * std::log10 (meanSquare);
 }
 
-double fastExp2 (double y) noexcept
+double gainOf (double db) noexcept
 {
-    // No floor or ldexp, which MSVC calls out of line: the whole part by truncation, and
-    // 2^whole built from its exponent bits.
-    y = std::clamp (y, -1000.0, 1000.0);
-    auto whole = (int) y;
-    whole -= y < (double) whole ? 1 : 0;
-    const auto x = (y - (double) whole - 0.5) * 0.69314718055994531; // within ±0.35
-    const auto e = 1.0 + x * (1.0 + x * (0.5 + x * (1.0 / 6.0 + x * (1.0 / 24.0 + x * (1.0 / 120.0 + x / 720.0)))));
-    const auto power = std::bit_cast<double> ((std::uint64_t) (whole + 1023) << 52);
-    return 1.4142135623730951 * e * power;
-}
-
-double levelDbOf (double meanSquare, bool fast) noexcept
-{
-    return fast ? 3.0102999566398120 * fastLog2 (meanSquare) : 10.0 * std::log10 (meanSquare);
-}
-
-double gainOf (double db, bool fast) noexcept
-{
-    return fast ? fastExp2 (db * 0.16609640474436813) : std::pow (10.0, db / 20.0);
+    return std::pow (10.0, db / 20.0);
 }
 } // namespace
 
@@ -410,7 +383,6 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
     const auto listensToKey = current.detector >= sideLR || spec.sidechain;
     const auto channelMode = current.detector % 3; // both, left or right
     const auto lookahead = activeConfig.lookahead;
-    const auto fast = current.fast;
     const auto channel = spec.channel;
     auto& ringLeft = lookaheadRings[(size_t) b][0];
     auto& ringRight = lookaheadRings[(size_t) b][1];
@@ -487,7 +459,7 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
             state.meanSquare[1] += state.rmsCoefficient * (detectorRight * detectorRight - state.meanSquare[1]);
 
             // The louder channel sets the gain, so the band's stereo image holds.
-            level = levelDbOf (std::max ({ state.meanSquare[0], state.meanSquare[1], silenceFloor }), fast);
+            level = levelDbOf (std::max ({ state.meanSquare[0], state.meanSquare[1], silenceFloor }));
         }
         else
         {
@@ -498,7 +470,7 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
                                                    : 0.5 * (detectorLeft - detectorRight);
 
             state.meanSquare[0] += state.rmsCoefficient * (detector * detector - state.meanSquare[0]);
-            level = levelDbOf (std::max (state.meanSquare[0], silenceFloor), fast);
+            level = levelDbOf (std::max (state.meanSquare[0], silenceFloor));
         }
 
         // Below 1:1 the slope is negative. The follower works on the size of the change, so
@@ -532,7 +504,7 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
         }
 
         const auto totalDb = depth == 1.0 && lift == 0.0 ? gainDb - reduction : gainDb + depth * (lift - reduction);
-        const auto gain = totalDb == 0.0 ? 1.0 : gainOf (totalDb, fast);
+        const auto gain = totalDb == 0.0 ? 1.0 : gainOf (totalDb);
 
         double compressedLeft, compressedRight;
 

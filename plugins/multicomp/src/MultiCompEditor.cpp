@@ -363,8 +363,7 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
       attack90Checkbox (parameter ("attack90"), "Attack = 90 % rise"),
       logCheckbox (parameter ("logFreq"), "Log-scale automated freq."),
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
-      lookaheadKnob (parameter ("lookahead"), "Lookahead", colours::uiTeal, Knob::smallStyle),
-      precisionDropdown (parameter ("precision"))
+      lookaheadKnob (parameter ("lookahead"), "Lookahead", colours::uiTeal, Knob::smallStyle)
 {
     // The title strip keeps one colour while the accent follows the selection.
     setTitleColour (multiBandColour (0));
@@ -454,16 +453,10 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
     lookaheadKnob.setBounds (406, 56, 90, 99);
     styleLabel (latencyLabel, {}, colours::textSecondary, juce::Justification::centred, 11.0f);
     latencyLabel.setBounds (396, 160, 110, 16);
-    styleLabel (precisionLabel, "Precision", colours::textPrimary, juce::Justification::centredLeft);
-    precisionLabel.setBounds (24, 140, 80, 24);
-    precisionDropdown.setBounds (110, 140, 96, 24);
-    styleLabel (precisionNote, "Fast is within 0.05 dB of Exact at less CPU. Projects saved before 1.5 open on Exact.",
-                colours::textSecondary, juce::Justification::topLeft, 11.0f);
-    precisionNote.setBounds (24, 172, 250, 40);
     lookaheadKnob.setTooltip ("The bands' audio waits this long, so each band's gain moves before a transient arrives. It adds latency.");
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &attack90Checkbox, &logCheckbox, &drawerOutputKnob,
-                                                                           &lookaheadKnob, &latencyLabel, &precisionLabel, &precisionDropdown, &precisionNote })
+                                                                           &lookaheadKnob, &latencyLabel })
         drawer.addAndMakeVisible (item);
 
     body.addChildComponent (drawer);
