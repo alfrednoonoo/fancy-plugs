@@ -9,3 +9,8 @@ MultiComp Q2.6 CPU, 48 kHz, 128 samples, stereo, median of 5 runs:
   Exact                                                1.859 %
   Fast                                                 2.114 %  (1.14 x Exact)
   Fast with Upward, Mid and Side bands, 5 ms lookahead  1.750 %
+
+Without Fast, run 43683895341, commit 16fa05b (a slower runner: Delay's old options measured 1.984 %
+here against 1.624 % in run 43680967298):
+  4 bands, plain                                        2.127 %
+  with Upward, Mid and Side bands, 5 ms lookahead       1.946 %

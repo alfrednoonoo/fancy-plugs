@@ -13,3 +13,7 @@ Delay Q2.3 CPU, 48 kHz, 128 samples, stereo, median of 5 runs:
   + modulation                   3.063 %  (+0.488)
   + diffusion                    3.327 %  (+0.264)
   + ducking (everything on)      3.358 %  (+0.031)
+
+Run 43683895341, commit 16fa05b (a slower runner):
+  4 plain taps 0.678 %, old options 1.984 %, + Tape/BBD 3.043 %, + modulation 3.618 %,
+  + diffusion 3.959 %, + ducking 3.978 %. Added by Q2.3: 1.994 % (target < 2 %), just inside.
