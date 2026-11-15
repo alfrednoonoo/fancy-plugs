@@ -6,6 +6,7 @@
 #include <fancy/ui/Meter.h>
 #include <fancy/ui/ShellEditor.h>
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -19,6 +20,9 @@ public:
 
     // For rendered screenshots: mockup values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
+
+    // Phase 3 Q2.3: tap 1 on Tape, its Motion page showing.
+    void showMotionPreview();
 
 private:
     class Panels final : public juce::Component
@@ -72,7 +76,27 @@ private:
         fancy::ui::IconButton closeButton;
 
         fancy::ui::ParamCheckbox loopCheckbox, pingCheckbox, saturateCheckbox;
-    };
+
+        // Phase 3 Q2.3: the Tone | Motion view switch and the Motion page.
+        class PageSwitch final : public juce::Component
+        {
+        public:
+            void paint (juce::Graphics&) override;
+            void mouseDown (const juce::MouseEvent&) override;
+
+            std::function<void (bool)> onChange;
+            bool motion = false;
+        };
+
+        void showPage (bool motion);
+
+        PageSwitch pageSwitch;
+        juce::Label characterLabel;
+        fancy::ui::ParamSegments characterSegments;
+        fancy::ui::Knob amountKnob, modRateKnob, modDepthKnob, randomKnob, diffusionKnob;
+
+    public:
+        void showMotion (bool motion) { showPage (motion); }
 
     void onTick (float seconds) override;
     bool listsParameter (const juce::AudioProcessorParameter&) override;
@@ -101,6 +125,10 @@ private:
     juce::Label multiplierLabel;
     std::vector<std::unique_ptr<fancy::ui::ParamDropdown>> multiplierDropdowns;
     fancy::ui::Knob drawerOutputKnob;
+
+    // Phase 3 Q2.3.
+    juce::Label duckingLabel;
+    fancy::ui::Knob swingKnob, duckAmountKnob, duckThresholdKnob, duckReleaseKnob;
 
     int selectedTap = 0;
 

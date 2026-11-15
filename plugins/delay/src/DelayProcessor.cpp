@@ -143,6 +143,57 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
     layout.add (toggle ("bypass", "Bypass", false));
 
+    // Phase 3 Q2.3, appended so nothing moves (docs/delay.md). Defaults keep the old sound.
+    const auto percent = [] (const juce::String& id, const juce::String& name, float defaultValue)
+    {
+        return fancy::percentParameter (id, name, defaultValue);
+    };
+
+    for (int tap = 0; tap < delay::maxTaps; ++tap)
+    {
+        const auto prefix = "Tap " + juce::String (tap + 1) + " ";
+
+        layout.add (std::make_unique<Choice> (juce::ParameterID { DelayProcessor::id (tap, "char"), 1 }, prefix + "Character",
+                                              juce::StringArray { "Clean", "Tape", "BBD" }, 0));
+        layout.add (percent (DelayProcessor::id (tap, "charAmt"), prefix + "Amount", 50.0f));
+        layout.add (fancy::floatParameter (DelayProcessor::id (tap, "modRate"), prefix + "Mod rate", fancy::logRange (0.1f, 10.0f, 0.01f), 0.8f,
+                                           juce::AudioParameterFloatAttributes {}
+                                               .withLabel ("Hz")
+                                               .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2) + " Hz"; })
+                                               .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+        layout.add (fancy::floatParameter (DelayProcessor::id (tap, "modDepth"), prefix + "Mod depth", juce::NormalisableRange<float> (0.0f, 50.0f, 0.1f), 0.0f,
+                                           juce::AudioParameterFloatAttributes {}
+                                               .withLabel ("cents")
+                                               .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, value < 10.0f ? 1 : 0) + " cents"; })
+                                               .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+        layout.add (percent (DelayProcessor::id (tap, "modRand"), prefix + "Random", 30.0f));
+        layout.add (percent (DelayProcessor::id (tap, "diff"), prefix + "Diffusion", 0.0f));
+    }
+
+    layout.add (fancy::floatParameter ("duckAmt", "Duck amount", juce::NormalisableRange<float> (0.0f, 24.0f, 0.1f), 0.0f,
+                                       juce::AudioParameterFloatAttributes {}
+                                           .withLabel ("dB")
+                                           .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " dB"; })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    layout.add (fancy::levelParameter ("duckThr", "Duck threshold", -60.0f, 0.0f, -24.0f, -100.0f));
+
+    juce::NormalisableRange<float> releaseRange (20.0f, 2000.0f, 1.0f);
+    releaseRange.setSkewForCentre (250.0f);
+    layout.add (fancy::floatParameter ("duckRel", "Duck release", releaseRange, 250.0f,
+                                       juce::AudioParameterFloatAttributes {}
+                                           .withLabel ("ms")
+                                           .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " ms"; })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
+    layout.add (fancy::floatParameter ("swing", "Swing", juce::NormalisableRange<float> (50.0f, 75.0f, 1.0f), 50.0f,
+                                       juce::AudioParameterFloatAttributes {}
+                                           .withLabel ("%")
+                                           .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
+    // Exact for states saved before Q2.3 (valueForMissingParameter); new instances are Fast.
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "satCurve", 1 }, "Saturate curve", juce::StringArray { "Exact", "Fast" }, 1,
+                                          juce::AudioParameterChoiceAttributes {}.withAutomatable (false)));
+
     return layout;
 }
 
@@ -163,6 +214,17 @@ std::vector<fancy::FactoryPreset> createPresets()
                           { "t1sat", 1.0f }, { "smooth", 0.0f }, { "wet", -6.0f } } },
         { "Haas widener", { { "t1mode", msMode }, { "t1ms", 8.0f }, { "t1pan", -100.0f },
                             { "t2used", 1.0f }, { "t2mode", msMode }, { "t2ms", 13.0f }, { "t2pan", 100.0f }, { "wet", -6.0f } } },
+
+        // Phase 3 Q2.3.
+        { "Tape Echo", { { "t1note", note4 }, { "t1feel", dottedFeel }, { "t1fb", 45.0f }, { "t1char", 1.0f }, { "t1charAmt", 60.0f },
+                         { "t1modDepth", 12.0f }, { "t1modRate", 0.6f }, { "wet", -6.0f } } },
+        { "BBD Chorus Echo", { { "t1note", note8 }, { "t1feel", straightFeel }, { "t1fb", 35.0f }, { "t1char", 2.0f }, { "t1charAmt", 50.0f },
+                               { "t1modDepth", 20.0f }, { "t1modRate", 1.1f }, { "wet", -6.0f } } },
+        { "Diffused Wash", { { "t1note", note4 }, { "t1feel", straightFeel }, { "t1fb", 60.0f }, { "t1diff", 70.0f }, { "t1lp", 7000.0f },
+                             { "t2used", 1.0f }, { "t2note", note4 }, { "t2feel", dottedFeel }, { "t2fb", 60.0f }, { "t2diff", 70.0f }, { "t2pan", 60.0f },
+                             { "t1pan", -60.0f }, { "wet", -8.0f } } },
+        { "Ducked Vocal Echo", { { "t1note", note4 }, { "t1feel", straightFeel }, { "t1fb", 30.0f }, { "t1lp", 6000.0f },
+                                 { "duckAmt", 12.0f }, { "duckThr", -30.0f }, { "wet", -6.0f } } },
     };
 
     // Phase 3 Q2.1: the preset browser's categories.
@@ -173,6 +235,10 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "1/4 ping-pong", "Tempo" },
         { "Triplet echo", "Tempo" },
         { "Lo-fi tape", "Character" },
+        { "Tape Echo", "Character" },
+        { "BBD Chorus Echo", "Character" },
+        { "Diffused Wash", "Ambient" },
+        { "Ducked Vocal Echo", "Tempo" },
     });
 
     return presets;
@@ -194,7 +260,8 @@ DelayProcessor::DelayProcessor()
 
         tapValues[(size_t) tap] = { value ("used"), value ("on"), value ("solo"), value ("mode"), value ("ms"), value ("note"), value ("feel"),
                                     value ("mult"), value ("fb"), value ("lp"), value ("hp"), value ("bits"), value ("width"), value ("vol"),
-                                    value ("pan"), value ("ping"), value ("inloop"), value ("sat") };
+                                    value ("pan"), value ("ping"), value ("inloop"), value ("sat"),
+                                    value ("char"), value ("charAmt"), value ("modRate"), value ("modDepth"), value ("modRand"), value ("diff") };
     }
 }
 
@@ -244,6 +311,13 @@ DelayDsp::TapSpec DelayProcessor::readTap (int tap) const
     spec.volumeGain = fancy::levelToGain (load (values.volume), mixFloorDb);
     spec.pan = (double) load (values.pan) * 0.01;
 
+    spec.character = juce::jlimit (0, 2, juce::roundToInt (load (values.character)));
+    spec.characterAmount = (double) load (values.characterAmount) * 0.01;
+    spec.modRateHz = (double) load (values.modRate);
+    spec.modDepthCents = (double) load (values.modDepth);
+    spec.modRandom = (double) load (values.modRandom) * 0.01;
+    spec.diffusion = (double) load (values.diffusion) * 0.01;
+
     return spec;
 }
 
@@ -260,6 +334,12 @@ DelayDsp::Targets DelayProcessor::readTargets() const
     targets.outputGain = fancy::dbToGain ((double) read ("output"));
     targets.smoothTime = read ("smooth") >= 0.5f;
     targets.bypass = read ("bypass") >= 0.5f;
+
+    targets.duckAmountDb = (double) read ("duckAmt");
+    targets.duckThresholdDb = (double) read ("duckThr");
+    targets.duckReleaseMs = (double) read ("duckRel");
+    targets.swing = (double) read ("swing") * 0.01;
+    targets.fastTanh = read ("satCurve") >= 0.5f;
 
     return targets;
 }
@@ -334,7 +414,8 @@ void DelayProcessor::setParameter (const juce::String& parameterId, float value)
 
 void DelayProcessor::resetTap (int tap)
 {
-    static const char* const suffixes[] { "on", "solo", "mode", "ms", "note", "feel", "mult", "fb", "lp", "hp", "bits", "width", "vol", "pan", "ping", "inloop", "sat" };
+    static const char* const suffixes[] { "on", "solo", "mode", "ms", "note", "feel", "mult", "fb", "lp", "hp", "bits", "width", "vol", "pan", "ping", "inloop", "sat",
+                                          "char", "charAmt", "modRate", "modDepth", "modRand", "diff" };
 
     for (const auto* suffix : suffixes)
     {

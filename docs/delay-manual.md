@@ -67,9 +67,28 @@ To type a value, click it, or Ctrl-click anywhere on a knob or fader. Enter or c
 
 The header knob has no value text, so it opens with Ctrl-click. Output in EDIT is the same control.
 
+## Motion page
+
+The **Tone | Motion** switch at the right of the tab row swaps the selected tap's knob card. Tone has the controls above; Motion has these. A tab with Tape or BBD shows a small **T** or **B** in its corner.
+
+| Control | Range | What it does |
+|---|---|---|
+| Character | Clean, Tape, BBD | Clean is the plain delay. Tape adds a soft saturation, a low bump around 90 Hz and a top end that dulls with every pass through the loop. BBD is a dark, band-limited bucket-brigade sound whose top falls as the time gets longer, with a faint noise that follows the signal |
+| Amount | 0-100 % | How strong the character is. Unused on Clean |
+| Rate | 0.1-10 Hz | Speed of the wow and flutter |
+| Depth | 0-50 cents | The peak pitch change. 0 is no modulation |
+| Random | 0-100 % | How much of the motion is a slow random wander rather than a steady wobble |
+| Diffusion | 0-100 % | Smears each repeat into the next inside the loop, so repeats turn into a wash |
+
+Switching Character while playing is click-free.
+
 ## EDIT
 
-The `EDIT` link in the footer holds the note multiplier for the selected tap, and Output.
+The `EDIT` link in the footer holds the note multiplier for the selected tap, Output, Swing and Ducking.
+
+- **Swing (50-75 %):** moves Note-mode taps that land on an odd eighth note later. 50 % is straight; at 60 % and 120 BPM a 1/8 tap moves from 250 to 300 ms. Quarter notes and other even eighths don't move.
+- **Ducking:** turns all the repeats down while the input is above **Threshold** (-60 to 0 dB). **Amount** (0-24 dB, 0 is off) is how far they dip, and **Release** (20-2000 ms) how quickly they come back after you stop.
+- **Saturate curve** (Exact or Fast) isn't on screen and isn't automatable: new instances use a fast curve, and projects saved before v1.5.0 keep the exact one so they render as before.
 
 ## Latency
 

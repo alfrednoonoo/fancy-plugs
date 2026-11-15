@@ -24,6 +24,12 @@ public:
 
     static juce::String id (int tap, const char* suffix) { return "t" + juce::String (tap + 1) + suffix; }
 
+    // Phase 3 Q2.3: a state saved before the fast tanh keeps the exact one.
+    float valueForMissingParameter (const juce::String& parameterId, float defaultValue) const override
+    {
+        return parameterId == "satCurve" ? 0.0f : defaultValue;
+    }
+
     DelayDsp::TapSpec readTap (int tap) const;
     DelayDsp::Targets readTargets() const;
     bool isTapUsed (int tap) const;
@@ -46,6 +52,9 @@ private:
     {
         std::atomic<float>* used, *on, *solo, *mode, *ms, *note, *feel, *mult, *feedback;
         std::atomic<float>* lowpass, *highpass, *bits, *width, *volume, *pan, *ping, *inLoop, *saturate;
+
+        // Phase 3 Q2.3.
+        std::atomic<float>* character, *characterAmount, *modRate, *modDepth, *modRandom, *diffusion;
     };
 
     float read (const char* parameterId) const;

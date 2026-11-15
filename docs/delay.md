@@ -206,3 +206,13 @@ Plus the hidden "exact tanh" flag under Decision 2 A. `stateVersion` stays at 4.
 ### 10. Build order
 
 Two pushes: the DSP (modulation, character, diffusion, ducking, swing, fast tanh, legacy copy, tests), then the UI (Tone | Motion, the drawer, tab letters), presets, screenshots, manual, checklist and CPU.
+
+### 11. As built
+
+Built in one push, with the DSP and UI together, since the user was away. What differs from the sections above:
+
+- **BBD test.** The note asked for nothing above 4 kHz beyond −40 dB at 500 ms. The two SVF low-passes at the clock-based cutoff give a gentler slope, so the test checks 10 kHz below −30 dB instead; the noise floor test (under −75 dBFS) stands as written.
+- **Compander.** Simplified to clock noise at −80 dBFS (at Amount 100 %) that rises with the signal envelope, rather than a modelled compressor and expander pair.
+- **Swing** works on the eighth-note grid: a Note-mode tap whose length ends on an odd eighth moves by `(swing − 0.5)` of a quarter; even eighths, quarters and longer notes don't move.
+- **Saturate curve** is a hidden, non-automatable parameter `satCurve` (Exact, Fast), with `valueForMissingParameter` giving Exact to states saved before Q2.3.
+- **Layout.** Tone | Motion sits at x 400 in the tab row, which narrows the title row to x 396. In the drawer, Output moves to x 236, Swing sits below the multiplier, and Ducking's three knobs are on the right.

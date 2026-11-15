@@ -27,6 +27,9 @@ constexpr float labelHeight = 12.0f;
 constexpr Knob::Style lengthStyle { 60.0f, 52.0f, 4.0f, 14.0f, 14.0f, 17.0f, 6.0f, 3.0f, 23.0f, labelHeight, false, true };
 constexpr Knob::Style tapKnobStyle = Knob::tightStyle;
 
+// Phase 3 Q2.3: a smaller labelled knob, for Amount under the Character switch.
+constexpr Knob::Style amountStyle { 36.0f, 30.0f, 3.0f, 10.0f, 8.0f, 14.0f, 4.0f, 2.0f, 18.0f, 11.0f, false, true };
+
 constexpr OutMeter::Geometry meterGeometry { 14.5f, 15.0f, 306.0f, 25.0f, 4.75f, 314.0f, false, true };
 
 const juce::Identifier selectedTapProperty ("selectedTap");
@@ -141,7 +144,13 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
       closeButton (IconButton::Glyph::cross),
       loopCheckbox (tapParameter (processor, tapIndex, "inloop"), "Filters inside feedback loop"),
       pingCheckbox (tapParameter (processor, tapIndex, "ping"), "Ping-pong"),
-      saturateCheckbox (tapParameter (processor, tapIndex, "sat"), "Saturate feedback")
+      saturateCheckbox (tapParameter (processor, tapIndex, "sat"), "Saturate feedback"),
+      characterSegments (tapParameter (processor, tapIndex, "char"), tapColour (tapIndex), colours::bgWell),
+      amountKnob (tapParameter (processor, tapIndex, "charAmt"), "Amount", tapColour (tapIndex), amountStyle),
+      modRateKnob (tapParameter (processor, tapIndex, "modRate"), "Rate", tapColour (tapIndex), tapKnobStyle),
+      modDepthKnob (tapParameter (processor, tapIndex, "modDepth"), "Depth", tapColour (tapIndex), tapKnobStyle),
+      randomKnob (tapParameter (processor, tapIndex, "modRand"), "Random", tapColour (tapIndex), tapKnobStyle),
+      diffusionKnob (tapParameter (processor, tapIndex, "diff"), "Diffusion", tapColour (tapIndex), tapKnobStyle)
 {
     setInterceptsMouseClicks (false, true);
 
@@ -215,14 +224,92 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
         return true;
     };
 
+    // Phase 3 Q2.3 (reference/phase3/27__delay_q23_mockup.png): Tone | Motion in the tap row,
+    // and the Motion page in the knob card's place.
+    pageSwitch.setBounds (400, tabRowY, 130, tabRowHeight);
+    pageSwitch.onChange = [this] (bool motion) { showPage (motion); };
+
+    styleLabel (characterLabel, "Character", colours::textPrimary, juce::Justification::centredLeft);
+    characterLabel.setFont (font (Weight::regular, labelHeight));
+    characterLabel.setBounds (controlsCardX + 14, cardY + 8, 120, 16);
+    characterSegments.setBounds (controlsCardX + 12, cardY + 28, 124, 22);
+    characterSegments.setTextHeight (11.0f);
+    amountKnob.setBounds (controlsCardX + 10, cardY + 58, 70, 78);
+
+    {
+        constexpr int knobWidth = 66, knobHeight = 99, knobTop = cardY + 9, firstX = controlsCardX + 144;
+        int index = 0;
+
+        for (auto* knob : { &modRateKnob, &modDepthKnob, &randomKnob, &diffusionKnob })
+            knob->setBounds (firstX + (index++) * 58, knobTop, knobWidth, knobHeight);
+    }
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> {
+             &pageSwitch, &characterLabel, &characterSegments, &amountKnob, &modRateKnob, &modDepthKnob, &randomKnob, &diffusionKnob })
+        addChildComponent (item);
+
+    pageSwitch.setVisible (true);
+    showPage (false);
+
+    modDepthKnob.setTooltip ("The peak pitch change of the wow and flutter. 0 is none.");
+    randomKnob.setTooltip ("How much of the motion is a slow random wander rather than a steady wobble.");
+    diffusionKnob.setTooltip ("Smears each repeat into the next, inside the feedback loop.");
+
     feedbackKnob.setTooltip ("Up to 100 %, or 110 % with Saturate feedback on.");
     panKnob.setTooltip ("With Ping-pong on, Pan only picks the side the repeats start on.");
+}
+
+void DelayEditor::TapEditor::showPage (bool motion)
+{
+    pageSwitch.motion = motion;
+    pageSwitch.repaint();
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &feedbackKnob, &lowpassKnob, &highpassKnob, &resolutionKnob, &widthKnob, &panKnob })
+        item->setVisible (! motion);
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &characterLabel, &characterSegments, &amountKnob, &modRateKnob, &modDepthKnob,
+                                                                           &randomKnob, &diffusionKnob })
+        item->setVisible (motion);
+}
+
+void DelayEditor::TapEditor::PageSwitch::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (bounds, 5.0f);
+
+    const auto inner = bounds.reduced (2.0f);
+    const auto half = inner.getWidth() * 0.5f;
+
+    for (int i = 0; i < 2; ++i)
+    {
+        const auto area = inner.withX (inner.getX() + (float) i * half).withWidth (half);
+        const auto selected = (i == 1) == motion;
+
+        if (selected)
+        {
+            g.setColour (colours::grey5);
+            g.fillRoundedRectangle (area, 3.0f);
+        }
+
+        g.setColour (selected ? colours::textPrimary : colours::textSecondary);
+        g.setFont (font (Weight::regular, 12.0f));
+        g.drawText (i == 0 ? "Tone" : "Motion", area, juce::Justification::centred, false);
+    }
+}
+
+void DelayEditor::TapEditor::PageSwitch::mouseDown (const juce::MouseEvent& event)
+{
+    const auto wantMotion = event.position.x >= (float) getWidth() * 0.5f;
+
+    if (wantMotion != motion && onChange != nullptr)
+        onChange (wantMotion);
 }
 
 juce::String DelayEditor::TapEditor::detailText() const
 {
     const auto spec = delayProcessor.readTap (tap);
-    const auto ms = DelayDsp::tapMs (spec, delayProcessor.getBpm());
+    const auto ms = DelayDsp::tapMs (spec, delayProcessor.getBpm(), delayProcessor.getApvts().getRawParameterValue ("swing")->load() * 0.01);
 
     auto text = juce::String (juce::roundToInt (ms)) + " ms";
 
@@ -235,7 +322,7 @@ juce::String DelayEditor::TapEditor::detailText() const
 void DelayEditor::TapEditor::update (int titleX)
 {
     const auto spec = delayProcessor.readTap (tap);
-    const auto ms = DelayDsp::tapMs (spec, delayProcessor.getBpm());
+    const auto ms = DelayDsp::tapMs (spec, delayProcessor.getBpm(), delayProcessor.getApvts().getRawParameterValue ("swing")->load() * 0.01);
 
     msKnob.setVisible (! spec.noteMode);
     noteKnob.setVisible (spec.noteMode);
@@ -257,7 +344,7 @@ void DelayEditor::TapEditor::update (int titleX)
 
 void DelayEditor::TapEditor::paint (juce::Graphics& g)
 {
-    const juce::Rectangle<int> row (titleLeft, tabRowY, 556 - titleLeft, tabRowHeight);
+    const juce::Rectangle<int> row (titleLeft, tabRowY, 396 - titleLeft, tabRowHeight);
 
     const auto title = "TAP " + juce::String (tap + 1);
 
@@ -284,7 +371,11 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
       outMeter (meterGeometry),
       wetFader (parameter ("wet"), colours::uiTeal),
       dryFader (parameter ("dry"), colours::uiTeal),
-      drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle)
+      drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
+      swingKnob (parameter ("swing"), "Swing", colours::uiTeal, Knob::tightStyle),
+      duckAmountKnob (parameter ("duckAmt"), "Amount", colours::uiTeal, Knob::tightStyle),
+      duckThresholdKnob (parameter ("duckThr"), "Threshold", colours::uiTeal, Knob::tightStyle),
+      duckReleaseKnob (parameter ("duckRel"), "Release", colours::uiTeal, Knob::tightStyle)
 {
     auto& body = getBody();
 
@@ -348,7 +439,21 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
         drawer.addChildComponent (*dropdown);
     }
 
-    drawerOutputKnob.setBounds (300, 56, 90, 99);
+    drawerOutputKnob.setBounds (236, 56, 80, 99);
+
+    // Phase 3 Q2.3: Swing and Ducking.
+    swingKnob.setBounds (24, 100, 66, 99);
+    styleLabel (duckingLabel, "DUCKING", colours::textSecondary, juce::Justification::centredLeft);
+    duckingLabel.setFont (font (Weight::semiBold, 11.0f).withExtraKerningFactor (0.06f));
+    duckingLabel.setBounds (350, 40, 100, 14);
+    duckAmountKnob.setBounds (340, 56, 72, 99);
+    duckThresholdKnob.setBounds (412, 56, 72, 99);
+    duckReleaseKnob.setBounds (484, 56, 72, 99);
+    swingKnob.setTooltip ("For Note-mode taps on an odd eighth note: 50 % is straight, higher pushes them later.");
+    duckAmountKnob.setTooltip ("How far the repeats dip while you play above the threshold. 0 dB is off.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &swingKnob, &duckingLabel, &duckAmountKnob, &duckThresholdKnob, &duckReleaseKnob })
+        drawer.addAndMakeVisible (item);
     drawer.addAndMakeVisible (drawerOutputKnob);
 
     body.addChildComponent (drawer);
@@ -439,7 +544,11 @@ void DelayEditor::updateSelection()
 
     for (int tap = 0; tap < delay::maxTaps; ++tap)
         if (processor.isTapUsed (tap))
-            used.push_back ({ tap, tapColour (tap) });
+        {
+            // Phase 3 Q2.3: T or B on a tap with Tape or BBD character.
+            const auto character = processor.readTap (tap).character;
+            used.push_back ({ tap, tapColour (tap), character == DelayDsp::tape ? "T" : character == DelayDsp::bbd ? "B" : "" });
+        }
 
     if (! used.empty() && ! processor.isTapUsed (selectedTap))
     {
@@ -505,6 +614,22 @@ void DelayEditor::showPreview (bool drawerOpen)
     tempoLabel.setText ("120.0 BPM (host)", juce::dontSendNotification);
 
     drawer.setVisible (drawerOpen);
+}
+
+void DelayEditor::showMotionPreview()
+{
+    showPreview (false);
+
+    const auto tapValue = [this] (int tap, const char* suffix, float value) { setValue (parameter (DelayProcessor::id (tap, suffix)), value); };
+
+    // The values drawn in reference/phase3/27__delay_q23_mockup.png.
+    tapValue (0, "char", 1.0f);
+    tapValue (0, "charAmt", 60.0f);
+    tapValue (0, "modRate", 0.6f);
+    tapValue (0, "modDepth", 12.0f);
+
+    updateSelection();
+    tapEditors[0]->showMotion (true);
 }
 
 juce::Colour DelayEditor::getAccentColour()

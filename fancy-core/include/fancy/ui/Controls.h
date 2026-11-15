@@ -258,6 +258,7 @@ public:
     {
         int id;
         juce::Colour colour;
+        juce::String badge {}; // a letter in the tab's top-right corner, such as Fancy Delay's T or B
     };
 
     void setTabs (std::vector<Tab> newTabs, int selectedId);

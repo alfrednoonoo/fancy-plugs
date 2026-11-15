@@ -71,6 +71,19 @@
 - [ ] With the tap in Note mode, click the Length value and type `1/8.`: it becomes a dotted eighth. `1/4t` gives a quarter triplet.
 - [ ] Change a tap's Feedback, then delete the tap with ×: it asks first.
 
+## Character, motion, ducking and swing (Phase 3 Q2.3)
+
+- [ ] Open a project saved with v1.4.0 that uses Fancy Delay: it loads and sounds as before. Render it and null it against a v1.4.0 render if you have one.
+- [ ] Click **Motion** in the tab row: the knob card swaps to Character, Amount, Rate, Depth, Random and Diffusion. **Tone** brings the old knobs back.
+- [ ] **Tape:** set a tap to Tape with Feedback around 50 % and Filters inside the loop on: the repeats are warmer and get duller each time. The tab shows **T**.
+- [ ] **BBD:** set a tap to BBD and lengthen the time: the repeats get darker as the time grows. The tab shows **B**. With no input, any noise is very faint.
+- [ ] Switch Character while a loop plays: no clicks.
+- [ ] **Depth** around 15 cents with Rate 0.8 Hz: a gentle wobble; Random at 100 % makes it wander instead. Depth 0 is steady.
+- [ ] **Diffusion** at 70 % on a snare: the repeats blur into a wash.
+- [ ] **Ducking** (EDIT): Amount 12 dB on a vocal: the repeats dip while the singer sings and come back in the gaps.
+- [ ] **Swing** (EDIT) at 60 % with a 1/8 tap: the repeats get a shuffle; a 1/4 tap doesn't move.
+- [ ] The four new presets load: **Tape Echo**, **BBD Chorus Echo** (Character), **Diffused Wash** (Ambient), **Ducked Vocal Echo** (Tempo).
+
 ## Undo, A/B and Compare (Phase 2.1 W)
 
 - [ ] The header has **↶ ↷ | A B → | ≈ Compare** between the I/O pill and the output knob, with thin lines between the groups. Nothing overlaps at 100 % or 200 %.

@@ -786,6 +786,18 @@ void ColourTabs::paint (juce::Graphics& g)
 
         g.setColour (isSelected && tab.colour.getPerceivedBrightness() > 0.7f ? juce::Colours::black : colours::textPrimary);
         g.drawText (juce::String (tab.id + 1), area, juce::Justification::centred, false);
+
+        if (tab.badge.isNotEmpty())
+        {
+            const auto badge = juce::Rectangle<float> (9.0f, 9.0f).withPosition (area.getRight() - 6.0f, area.getY() - 3.0f);
+
+            g.setColour (colours::bgWell);
+            g.fillRoundedRectangle (badge, 2.0f);
+            g.setColour (tab.colour);
+            g.setFont (font (Weight::semiBold, 7.5f));
+            g.drawText (tab.badge, badge, juce::Justification::centred, false);
+            g.setFont (font (Weight::regular, bodyFontSize));
+        }
     }
 
     if (showAddButton)

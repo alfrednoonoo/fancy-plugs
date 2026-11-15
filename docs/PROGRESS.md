@@ -13,6 +13,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 - **Plan agreed with the user (15 November 2026), to run while they're away:** build Verb's Add module (mockup `25`, approved), then MultiComp Q2.6, then Delay Q2.3, each in as few pushes as it takes, with tests, screenshots checked against its mockup, manual, checklist and CPU. If one needs a decision that isn't in its approved note, record it here, leave that item, and go on to the next. The user then checks Verb, MultiComp and Delay in REAPER together, and v1.5.0 follows.
 - **MultiComp (Q2.6) and Delay (Q2.3):** design notes and mockups approved by the user on 15 November 2026, every recommended option (`docs/multicomp.md`, `docs/delay.md`; mockups `26` and `27`). Order confirmed: MultiComp, then Delay; FIR (Q2.7) and Kicker (Q2.2) after.
   - MultiComp Q2.6 built: lookahead, channel chip (moved from EQ into `fancy-core`), Precision with `FancyProcessor::valueForMissingParameter`, two presets, tests, manual, checklist; CI pending.
+  - Delay Q2.3 built in one push: character (Tape, BBD), modulation, diffusion, ducking, swing, fast tanh (`satCurve`), Tone | Motion page, tab letters, four presets, tests, manual, checklist; deviations in `docs/delay.md` §11; CI pending.
 - **Latest release:** [v1.4.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.4.0), 14 November 2026.
 
 ## Releases

@@ -599,6 +599,20 @@ int main (int argc, char** argv)
    #if FANCY_HAS_MULTICOMP
     ok = renderPlugin<MultiCompProcessor, MultiCompEditor> ("multicomp", outputDir) && ok;
 
+   #if FANCY_HAS_DELAY
+    {
+        // Phase 3 Q2.3: a Tape tap's Motion page.
+        DelayProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<DelayEditor*> (base.get()))
+        {
+            editor->showMotionPreview();
+            ok = writeBothScales (*editor, "delay-motion", outputDir) && ok;
+        }
+    }
+   #endif
+
     {
         // Phase 3 Q2.6: a Mid band.
         MultiCompProcessor processor;
