@@ -563,8 +563,7 @@ TEST_CASE ("delay Q2.3 CPU measurement", "[.measure]")
     const auto diffusionPercent = timeOf (withDiffusion);
     const auto everythingPercent = timeOf (everything);
 
-    std::printf ("delay q23 cpu breakdown: old options %.3f %%, + Tape/BBD %.3f %%, + modulation %.3f %%, + diffusion %.3f %%, + ducking %.3f %%
-",
+    std::printf ("delay q23 cpu breakdown: old options %.3f %%, + Tape/BBD %.3f %%, + modulation %.3f %%, + diffusion %.3f %%, + ducking %.3f %%\n",
                  oldPercent, characterPercent, modulationPercent, diffusionPercent, everythingPercent);
 
     std::printf ("delay q23 cpu, 4 taps, 48 kHz, 128 samples, median of %d: plain %.3f %%, everything on (saturate, filters, bits, ping-pong, Tape/BBD, modulation, diffusion, ducking) %.3f %% (target < 2 %%)\n",
