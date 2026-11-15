@@ -239,7 +239,8 @@ TEST_CASE ("lookahead is reported, keeps wet and dry aligned, and catches a step
 {
     const auto crossover = GENERATE (0, 2);
 
-    // Alignment: no compression, wet and dry at 0 dB sum to twice the delayed input.
+    // Alignment: with no compression, wet and dry together are the render without lookahead,
+    // 5 ms later. (An LR crossover's bands sum to an all-pass, not to the input itself.)
     {
         MultiCompDsp::Targets targets;
         targets.numBands = 3;
@@ -261,21 +262,24 @@ TEST_CASE ("lookahead is reported, keeps wet and dry aligned, and catches a step
         CHECK (latency == none.getLatencySamples() + 240); // 5 ms at 48 kHz
 
         auto signal = programme (24000, 4);
-        const auto input = signal.left;
+        auto reference = signal;
         signal.process (dsp);
+        reference.process (none);
 
         auto worst = 0.0;
 
         for (int i = 9600; i < signal.size(); ++i)
-            worst = std::max (worst, std::abs ((double) signal.left[(size_t) i] - 2.0 * input[(size_t) (i - latency)]));
+        {
+            worst = std::max (worst, std::abs ((double) signal.left[(size_t) i] - (double) reference.left[(size_t) (i - 240)]));
+            worst = std::max (worst, std::abs ((double) signal.right[(size_t) i] - (double) reference.right[(size_t) (i - 240)]));
+        }
 
-        // The crossovers rebuild the input to about 1e-3 (MultiCompTests); a sample out would be far more.
-        CHECK (worst < 2.0e-3);
+        INFO ("worst difference from the render without lookahead, 240 samples later: " << worst);
+        CHECK (worst < 1.0e-4);
     }
 
     // A step: with 10 ms of lookahead a 2 ms attack is done before the step arrives, so the
-    // onset is no louder than the steady state. (With RMS 0 the detector follows the sine's
-    // instantaneous level, so even the steady peaks sit a little over the threshold.)
+    // onset is no louder than the steady state.
     const auto overshootDb = [crossover] (double lookaheadMs)
     {
         MultiCompDsp::Targets targets;
@@ -294,8 +298,9 @@ TEST_CASE ("lookahead is reported, keeps wet and dry aligned, and catches a step
 
         Stereo signal (24000);
 
+        // A square wave, so the level is steady from the first sample and the attack can settle.
         for (int i = 9600; i < signal.size(); ++i)
-            signal.left[(size_t) i] = signal.right[(size_t) i] = 0.9f * (float) std::sin (2.0 * pi * 1000.0 * i / rate);
+            signal.left[(size_t) i] = signal.right[(size_t) i] = ((i / 24) % 2 == 0) ? 0.9f : -0.9f;
 
         signal.process (dsp);
 
