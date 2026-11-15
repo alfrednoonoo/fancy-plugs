@@ -432,13 +432,17 @@ TEST_CASE ("multicomp Q2.6 CPU measurement", "[.measure]")
             MultiCompDsp dsp;
             prepare (dsp, targets);
 
-            auto signal = programme (blockSize * 64, 77);
+            // Each block is a fresh copy of the programme, so every setting sees the same input.
+            const auto signal = programme (blockSize * 64, 77);
+            std::vector<float> left ((size_t) blockSize), right ((size_t) blockSize);
             const auto start = std::chrono::steady_clock::now();
 
             for (int i = 0; i < numBlocks; ++i)
             {
-                const auto offset = (i % 64) * blockSize;
-                float* channels[] { signal.left.data() + offset, signal.right.data() + offset };
+                const auto offset = (size_t) ((i % 64) * blockSize);
+                std::copy_n (signal.left.begin() + (std::ptrdiff_t) offset, blockSize, left.begin());
+                std::copy_n (signal.right.begin() + (std::ptrdiff_t) offset, blockSize, right.begin());
+                float* channels[] { left.data(), right.data() };
                 const float* key[2] {};
                 dsp.process (channels, 2, key, 0, blockSize);
             }

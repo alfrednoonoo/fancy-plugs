@@ -493,13 +493,14 @@ TEST_CASE ("delay Q2.3 CPU measurement", "[.measure]")
             for (size_t i = 0; i < left.size(); ++i)
                 left[i] = noise (random), right[i] = noise (random);
 
+            std::vector<float> l ((size_t) blockSize), r ((size_t) blockSize);
             const auto start = std::chrono::steady_clock::now();
 
             for (int i = 0; i < numBlocks; ++i)
             {
-                const auto offset = (size_t) ((i % 64) * blockSize);
-                std::vector<float> l (left.begin() + (std::ptrdiff_t) offset, left.begin() + (std::ptrdiff_t) offset + blockSize);
-                std::vector<float> r (right.begin() + (std::ptrdiff_t) offset, right.begin() + (std::ptrdiff_t) offset + blockSize);
+                const auto offset = (std::ptrdiff_t) ((i % 64) * blockSize);
+                std::copy_n (left.begin() + offset, blockSize, l.begin());
+                std::copy_n (right.begin() + offset, blockSize, r.begin());
                 float* channels[] { l.data(), r.data() };
                 dsp.process (channels, 2, blockSize);
             }
@@ -524,24 +525,47 @@ TEST_CASE ("delay Q2.3 CPU measurement", "[.measure]")
 
     plain.fastTanh = true;
 
-    auto everything = plain;
-    everything.duckAmountDb = 12.0;
+    // The options from before Q2.3, then each new one added in turn, to show what each costs.
+    auto oldOptions = plain;
 
     for (int t = 0; t < 4; ++t)
     {
-        auto& tap = everything.taps[(size_t) t];
+        auto& tap = oldOptions.taps[(size_t) t];
         tap.saturate = true;
         tap.lowpassHz = 6000.0;
         tap.highpassHz = 120.0;
         tap.bits = 12.0;
         tap.pingPong = t % 2 == 0;
-        tap.character = t % 2 == 0 ? DelayDsp::tape : DelayDsp::bbd;
-        tap.modDepthCents = 15.0;
-        tap.diffusion = 0.5;
     }
 
+    auto withCharacter = oldOptions;
+
+    for (int t = 0; t < 4; ++t)
+        withCharacter.taps[(size_t) t].character = t % 2 == 0 ? DelayDsp::tape : DelayDsp::bbd;
+
+    auto withModulation = withCharacter;
+
+    for (int t = 0; t < 4; ++t)
+        withModulation.taps[(size_t) t].modDepthCents = 15.0;
+
+    auto withDiffusion = withModulation;
+
+    for (int t = 0; t < 4; ++t)
+        withDiffusion.taps[(size_t) t].diffusion = 0.5;
+
+    auto everything = withDiffusion;
+    everything.duckAmountDb = 12.0;
+
     const auto plainPercent = timeOf (plain);
+    const auto oldPercent = timeOf (oldOptions);
+    const auto characterPercent = timeOf (withCharacter);
+    const auto modulationPercent = timeOf (withModulation);
+    const auto diffusionPercent = timeOf (withDiffusion);
     const auto everythingPercent = timeOf (everything);
+
+    std::printf ("delay q23 cpu breakdown: old options %.3f %%, + Tape/BBD %.3f %%, + modulation %.3f %%, + diffusion %.3f %%, + ducking %.3f %%
+",
+                 oldPercent, characterPercent, modulationPercent, diffusionPercent, everythingPercent);
 
     std::printf ("delay q23 cpu, 4 taps, 48 kHz, 128 samples, median of %d: plain %.3f %%, everything on (saturate, filters, bits, ping-pong, Tape/BBD, modulation, diffusion, ducking) %.3f %% (target < 2 %%)\n",
                  runs, plainPercent, everythingPercent);
