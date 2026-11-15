@@ -143,7 +143,7 @@ juce::Result parseTestFile (const juce::String& text, TestSpec& spec)
         if (entry.path.isEmpty())
             return fail ("a plugin has no \"path\"");
 
-        const auto fileName = expandPath (entry.path).fromLastOccurrenceOf ("\\", false, false);
+        const auto fileName = expandPath (entry.path).fromLastOccurrenceOf (juce::File::getSeparatorString(), false, false);
         entry.label = item.getProperty ("label", fileName.containsChar ('.') ? fileName.upToLastOccurrenceOf (".", false, false) : fileName).toString();
         entry.name = item["name"].toString();
         entry.preset = item["preset"].toString();
@@ -224,13 +224,23 @@ juce::String expandPath (const juce::String& path)
         auto value = juce::SystemStats::getEnvironmentVariable (name, {});
 
         if (value.isEmpty() && name.equalsIgnoreCase ("FANCY_VST3"))
+        {
+           #if JUCE_MAC
+            value = juce::File::getSpecialLocation (juce::File::userHomeDirectory).getChildFile ("Library/Audio/Plug-Ins/VST3").getFullPathName();
+           #else
             value = juce::SystemStats::getEnvironmentVariable ("USERPROFILE", {}) + "\\VST3-Dev";
+           #endif
+        }
 
         result << rest.substring (0, start) << (value.isNotEmpty() ? value : rest.substring (start, end + 1));
         rest = rest.substring (end + 1);
     }
 
+   #if JUCE_WINDOWS
     return result.replaceCharacter ('/', '\\');
+   #else
+    return result.replaceCharacter ('\\', '/');
+   #endif
 }
 
 bool parseDisplayNumber (const juce::String& text, double& value)

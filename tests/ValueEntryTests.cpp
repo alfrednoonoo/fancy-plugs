@@ -418,7 +418,7 @@ TEST_CASE ("Other gestures keep working beside the value box", "[entry]")
 
     SECTION ("Ctrl-click opens the box from the knob's face")
     {
-        rig.click (rig.knobFace, juce::ModifierKeys { juce::ModifierKeys::ctrlModifier });
+        rig.click (rig.knobFace, juce::ModifierKeys { juce::ModifierKeys::commandModifier });
         CHECK (rig.box() != nullptr);
     }
 
@@ -429,7 +429,7 @@ TEST_CASE ("Other gestures keep working beside the value box", "[entry]")
         rig.click (position);
         CHECK (rig.box() == nullptr);
 
-        rig.click (position, juce::ModifierKeys { juce::ModifierKeys::ctrlModifier });
+        rig.click (position, juce::ModifierKeys { juce::ModifierKeys::commandModifier });
         REQUIRE (rig.box() != nullptr);
         CHECK (rig.box()->getWidth() > rig.headerKnob.getWidth());
         CHECK (rig.box()->getHeight() >= 22);

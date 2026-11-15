@@ -344,14 +344,16 @@ jobs:
           ls -d dist/*.vst3
 
       - name: Cache Steinberg VST3 validator
+        if: ${{ !cancelled() }}
         id: validator-cache
         uses: actions/cache@v6
         with:
           path: validator-bin
           key: vst3-validator-v3.8.0_build_66-${{ runner.os }}-${{ env.IMAGE_VERSION }}
 
+      # Built even when the tests failed, so the validator and pluginval still run.
       - name: Build Steinberg VST3 validator
-        if: steps.validator-cache.outputs.cache-hit != 'true'
+        if: ${{ !cancelled() && steps.validator-cache.outputs.cache-hit != 'true' }}
         timeout-minutes: 20
         run: |
           git clone --depth 1 --branch v3.8.0_build_66 https://github.com/steinbergmedia/vst3sdk.git vst3sdk

@@ -334,7 +334,7 @@ TEST_CASE ("Bench: test files", "[bench]")
         CHECK (expandPath ("%FANCY_VST3%/Fancy Comp.vst3")
                == juce::SystemStats::getEnvironmentVariable ("USERPROFILE", {}) + "\\VST3-Dev\\Fancy Comp.vst3");
 
-    CHECK (expandPath ("%NO_SUCH_VARIABLE_FOR_BENCH%/x") == "%NO_SUCH_VARIABLE_FOR_BENCH%\\x");
+    CHECK (expandPath ("%NO_SUCH_VARIABLE_FOR_BENCH%/x") == "%NO_SUCH_VARIABLE_FOR_BENCH%" + juce::File::getSeparatorString() + "x");
 }
 
 TEST_CASE ("Bench: display numbers", "[bench]")

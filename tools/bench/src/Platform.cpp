@@ -20,6 +20,7 @@
   #include <mach/mach.h>
   #include <mach/mach_time.h>
   #include <mach/thread_policy.h>
+  #include <pthread/qos.h>
  #endif
 #endif
 
@@ -119,26 +120,17 @@ void setAudioPriority (bool on)
 
     if (on)
     {
-        // What Core Audio gives its I/O threads: a period of about one 128-sample block at
-        // 44.1 kHz, of which up to half is computation.
-        mach_timebase_info_data_t timebase {};
-        mach_timebase_info (&timebase);
-        const auto ticks = [&] (double seconds)
-        {
-            return (uint32_t) (seconds * 1.0e9 * (double) timebase.denom / (double) timebase.numer);
-        };
-
-        thread_time_constraint_policy_data_t policy {};
-        policy.period = ticks (0.0029);
-        policy.computation = ticks (0.0015);
-        policy.constraint = ticks (0.0029);
-        policy.preemptible = 1;
-        thread_policy_set (thread, THREAD_TIME_CONSTRAINT_POLICY, (thread_policy_t) &policy, THREAD_TIME_CONSTRAINT_POLICY_COUNT);
+        // The highest quality-of-service class. Not a Mach time-constraint thread, which is what
+        // Core Audio's I/O threads are: the benchmarks spin while they wait for the next block,
+        // and the kernel demotes a time-constraint thread that runs past its computation budget,
+        // which preempted 127 of 1000 blocks in the first Mac run (43765631996).
+        juce::ignoreUnused (thread);
+        pthread_set_qos_class_self_np (QOS_CLASS_USER_INTERACTIVE, 0);
     }
     else
     {
-        thread_standard_policy_data_t policy {};
-        thread_policy_set (thread, THREAD_STANDARD_POLICY, (thread_policy_t) &policy, THREAD_STANDARD_POLICY_COUNT);
+        juce::ignoreUnused (thread);
+        pthread_set_qos_class_self_np (QOS_CLASS_DEFAULT, 0);
     }
    #else
     juce::ignoreUnused (on);
@@ -197,8 +189,13 @@ double cyclesPerSecond()
     const auto start = std::chrono::steady_clock::now();
     const auto startCycles = threadCycles();
 
+    // Busy, without a pause instruction: under Rosetta `pause` gives the core away, and the
+    // thread then used 5 ms of CPU in 200 ms (run 43765631996).
+    volatile std::uint32_t spin = 0;
+
     while (std::chrono::steady_clock::now() - start < std::chrono::milliseconds (200))
-        fancy::dsp::cpuPause();
+        for (int i = 0; i < 64; ++i)
+            spin = spin + 1;
 
     const auto endCycles = threadCycles();
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;

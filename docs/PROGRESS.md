@@ -5,7 +5,7 @@ Short status for starting a session. The full history to 13 November 2026 (run n
 ## Now
 
 - **FIR (Q2.7)**: Resonance mode and CPU stability, green in run 43742763641 (commit `ff534e3`, 516 test cases); as built in `docs/fir.md`. **Waiting for:** the v1.6.0 GitHub release (stopped once by low memory on the PC; rerun only when the user says so), the README's `fir-resonance.png` from `screens-ff534e3`, and the user's REAPER check (`docs/fir-checklist.md`, Resonance section). Fixes go out as 1.6.1. The paced FIR benchmark's second run must agree with 43742763641 within 20 %.
-- **Current item: Mac** (`docs/mac.md`), **approved by the user on 15 November 2026, every recommended option.** Step 1 (portable code, Windows only, bit-identical): push 1 CI pending. Then step 2, the macOS job.
+- **Current item: Mac** (`docs/mac.md`), **approved by the user on 15 November 2026, every recommended option.** Step 1 (portable code) green on Windows in run 43765631996. Step 2 (the `macos` CI job, VST3): builds universal, 515 of 518 tests passed; fixes pushed, CI pending. As built in `docs/mac.md`, section 9.
 - **Then:** Phase 3's Q2 list is done with FIR. Phase 4 holds Kicker's Duck, a transient shaper and a chorus. Q3's saved-state fixtures for v1.1.0/v1.2.0 (`tests/data/`) are still open, and FancyBench head-to-heads for Verb, MultiComp and FIR are the user's.
 - **Latest release:** [v1.5.0](https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.5.0), 15 November 2026: Verb Q2.8, MultiComp Q2.6, Delay Q2.3, all passed in REAPER by the user on 15 November 2026.
 
