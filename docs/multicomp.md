@@ -232,3 +232,4 @@ One push: lookahead, channel, Fast/Exact with the legacy copy, the chip, the dra
 - **Fast maths:** `log2` and `2^x` from the exponent bits, a 9th-order odd series in `(m-1)/(m+1)` and a 6th-order series around 0.5; within about 1e-5 dB, far inside the 0.05 dB test.
 - **Lookahead:** a ring per band of up to 10 ms at the session rate, used only when Lookahead is above 0; the bypass path waits the crossover's latency plus the lookahead.
 - **Legacy copy:** `tests/LegacyMultiCompDsp.*` is the DSP before Q2.6.
+- **Lookahead test:** a 1 kHz sine step through ∞:1 with a 2 ms attack and RMS 0, which follows the sine's instantaneous level, so even its steady peaks sit about 2 dB over the threshold. The test therefore compares the first 10 ms with the peaks 20 to 40 ms later: under 1 dB with 10 ms of lookahead, over 6 dB without.

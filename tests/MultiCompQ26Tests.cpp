@@ -269,10 +269,13 @@ TEST_CASE ("lookahead is reported, keeps wet and dry aligned, and catches a step
         for (int i = 9600; i < signal.size(); ++i)
             worst = std::max (worst, std::abs ((double) signal.left[(size_t) i] - 2.0 * input[(size_t) (i - latency)]));
 
-        CHECK (worst < (crossover == 2 ? 2.0e-3 : 1.0e-3));
+        // The crossovers rebuild the input to about 1e-3 (MultiCompTests); a sample out would be far more.
+        CHECK (worst < 2.0e-3);
     }
 
-    // A step: with 10 ms of lookahead a 2 ms attack is done before the step arrives.
+    // A step: with 10 ms of lookahead a 2 ms attack is done before the step arrives, so the
+    // onset is no louder than the steady state. (With RMS 0 the detector follows the sine's
+    // instantaneous level, so even the steady peaks sit a little over the threshold.)
     const auto overshootDb = [crossover] (double lookaheadMs)
     {
         MultiCompDsp::Targets targets;
@@ -296,12 +299,20 @@ TEST_CASE ("lookahead is reported, keeps wet and dry aligned, and catches a step
 
         signal.process (dsp);
 
-        auto peak = 0.0;
+        const auto arrival = 9600 + dsp.getLatencySamples();
 
-        for (int i = 9600 + dsp.getLatencySamples(); i < 9600 + dsp.getLatencySamples() + 1440; ++i)
-            peak = std::max (peak, (double) std::abs (signal.left[(size_t) i]));
+        const auto peakOf = [&signal] (int start, int length)
+        {
+            auto peak = 0.0;
 
-        return 20.0 * std::log10 (peak) + 20.0; // dB over the -20 dB threshold
+            for (int i = start; i < start + length; ++i)
+                peak = std::max (peak, (double) std::abs (signal.left[(size_t) i]));
+
+            return peak;
+        };
+
+        // dB of the first 10 ms over the peaks 20 to 40 ms later.
+        return 20.0 * std::log10 (peakOf (arrival, 480) / peakOf (arrival + 960, 960));
     };
 
     const auto without = overshootDb (0.0);
