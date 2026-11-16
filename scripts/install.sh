@@ -37,6 +37,8 @@ install_bundle() {
     # Replace, never merge: a merged bundle can hold files from two builds.
     rm -rf "${target_dir:?}/$name"
     cp -R "$bundle" "$target_dir/"
+    # GitHub's build artifacts don't keep the executable bit; release zips do. Set it either way.
+    chmod +x "$target_dir/$name"/Contents/MacOS/* 2>/dev/null || true
     xattr -dr com.apple.quarantine "$target_dir/$name" 2>/dev/null || true
     echo "  $name -> $target_dir"
     installed=$((installed + 1))
@@ -66,6 +68,11 @@ if [ -n "$tools_source" ]; then
         if [ -e "$tool" ]; then
             rm -rf "${tools_dir:?}/$(basename "$tool")"
             cp -R "$tool" "$tools_dir/"
+            if [ -d "$tools_dir/$(basename "$tool")" ]; then
+                chmod +x "$tools_dir/$(basename "$tool")"/Contents/MacOS/* 2>/dev/null || true
+            else
+                chmod +x "$tools_dir/$(basename "$tool")"
+            fi
             xattr -dr com.apple.quarantine "$tools_dir/$(basename "$tool")" 2>/dev/null || true
         fi
     done

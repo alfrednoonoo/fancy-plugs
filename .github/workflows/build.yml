@@ -504,6 +504,33 @@ jobs:
           path: dist
           retention-days: 14
 
+      # The artifact above loses the executable bit (upload-artifact doesn't keep permissions), so
+      # releases use this zip, made with ditto, which keeps permissions and signatures intact.
+      - name: Make the Mac release zip
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          rm -rf release-mac && mkdir -p "release-mac/FancyPlugs-macos"
+          cp -R dist/. "release-mac/FancyPlugs-macos/"
+          ditto -c -k --sequesterRsrc --keepParent "release-mac/FancyPlugs-macos" FancyPlugs-macos.zip
+          rm -rf zipcheck && mkdir zipcheck && ditto -x -k FancyPlugs-macos.zip zipcheck
+          test -x zipcheck/FancyPlugs-macos/install.sh
+          for bin in zipcheck/FancyPlugs-macos/*/Contents/MacOS/* zipcheck/FancyPlugs-macos/tools/FancyBench; do
+            test -x "$bin" || { echo "not executable: $bin"; exit 1; }
+          done
+          for bundle in zipcheck/FancyPlugs-macos/*.vst3 zipcheck/FancyPlugs-macos/*.component; do
+            codesign --verify --deep --strict "$bundle"
+          done
+          ls -la FancyPlugs-macos.zip
+
+      - name: Upload the Mac release zip
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          # Not FancyPlugs-*: get-latest.sh downloads every artifact matching FancyPlugs-macos-*.
+          name: release-zip-macos-${{ env.SHORT_SHA }}
+          path: FancyPlugs-macos.zip
+          retention-days: 14
+
       - name: Upload screenshots
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
