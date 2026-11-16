@@ -1,6 +1,6 @@
 # Fancy Plugs website: design plan
 
-Status: **draft for approval, 16 November 2026.** A mockup of three pages exists (section 11); no site code yet. This note is the design; the build follows it once it's approved, and anything it doesn't cover is asked about, not improvised.
+Status: **approved by the user on 16 November 2026, with the lighter purple; built (section 12).** This note is the design; the build follows it once it's approved, and anything it doesn't cover is asked about, not improvised.
 
 Decided by the user on 16 November 2026: the site is a free download showcase; audio players are designed now and filled later; screenshots get hotspots; it's hosted on GitHub Pages from this repo; the plugins are described as "free to download and use", with no licence named; Mac is labelled beta; the logo's ring is a gradient of the seven accents.
 
@@ -417,7 +417,7 @@ Decided on 16 November 2026:
 
 Open:
 
-1. **Purple as small text.** The title strip sets the plugin's name in its accent at 11 px. Purple `#9A59B5` on the strip's `#141414` is about 3.9:1, under the 4.5:1 minimum, so Verb's, Room's and FIR's strips would fail. Proposed: a lighter purple, `#A970C2` (about 5:1), for small text only on those three pages; shapes keep `#9A59B5`. The other accents pass on the strip.
+1. **Purple as small text** (decided, 16 November 2026): `#A970C2` for text on Verb's, Room's and FIR's pages (the title strip, the selected tab, a lit hotspot); shapes keep `#9A59B5`.
 2. **Audio clips.** Whenever you record them: one dry and one processed file per plugin, same passage, level-matched, 10 to 20 seconds, music you have the right to publish.
 3. **A custom domain** later, or the `github.io` address only? (The plan works with either.)
 
@@ -431,3 +431,27 @@ What differs from the plan, as drawn:
 - **Roster:** the names are grey and white with a small ring in each plugin's accent. Names set in their accents at 11 px fail contrast for red and purple.
 - **One window:** five numbered points on the header, plus typed values and resizing as two unnumbered ones.
 - **Mockup stand-ins:** Manual and What's new link to the PDF and the releases page on GitHub, since the Guide and What's new pages aren't drawn. Tone and Space tiles aren't links yet. The "Hear it" player is shown disabled, with a note, so its design can be judged.
+
+## 12. As built
+
+Built on 16 November 2026. `python tools/site/build.py [out]` writes the 23 pages to `site/` (git-ignored); `.github/workflows/pages.yml` runs it on `ubuntu-latest` and publishes to GitHub Pages when the site's sources change. `build.yml` ignores `site-src/**`, `tools/site/**` and `pages.yml`, so site work never starts the plugin build.
+
+**Sources.** `site-src/data/plugins.json` (each plugin's text, views, hotspots, lead crop, details and pairs, every fact from its manual), `site-src/data/release.json` (downloads, dates, the test count and the releases before 1.3.0), `site-src/assets/site.css` and `site.js`. What's new from 1.3.0 on is read from `README.md`; the groups, their descriptions and the guide's text come from `tools/manual/content.py`; the newest `docs/manual/Fancy-Plugs-Manual-*.pdf` is copied to `manual.pdf`, and each plugin's "Manual chapter" link opens its page, read from the PDF's bookmarks. The logo is inlined from `design/website/make-brand.py`.
+
+**At each release:** update `release.json`, write the README's What's new as usual, and copy new screenshots to `docs/images/`. If a plugin's layout changed, move its hotspots (x and y are percentages of the image).
+
+**Checks run on the build:** every text colour pair at 4.5:1 or more (the build stops otherwise, 55 pairs); then, locally, all 2,038 links and assets resolve, every `#anchor` exists, each page has one `h1`, `lang`, a title, the four landmarks and `alt` on every image, no em dash, and no console errors on any page. A scripted click-through in headless Edge passed 30 of 30: the home roster (click and arrow keys), the Plugins menu (open, Esc, click outside), the phone sheet, explorer tabs (click and arrow keys), hotspot and list highlighting both ways, the manual link, single-view pages without tabs, the strip colours (blue, and the lighter purple), the Copy button's feedback, What's new opening and closing, and the guide's section list at mid-page and at the end. Renders at 1440 and 390 px wide were looked at for every page type.
+
+**Size.** 15.3 MB in all, 10 MB of it the manual. The home page's first load is 207 KB of files before compression (237 KB on a 2x screen): HTML 34 KB, CSS 31 KB, JS 10 KB, three fonts 104 KB (subset to Latin-1 and the symbols the pages use) and the hero at 28 KB (58 KB at 2x), under the 300 KB target. Lighthouse and Web Vitals are not measured.
+
+**Differences from the plan:**
+
+- Screenshots are WebP only (480 px, 1x and 2x), without the PNG fallback; every current browser reads WebP.
+- Only `docs/images/` is used, not the release's `screens-<sha>` extra views; each plugin has its one or two views from there.
+- EQ's, MultiComp's and FIR's title strips keep one colour, because their screenshots show a fixed title colour.
+- A plugin with one view has no tab row.
+- Social preview images are drawn with Pillow (`og/<page>.png`), so the build needs no browser.
+- The Mac quarantine command is a prefix you paste and then drag a plugin onto, because a wildcard fails in zsh when nothing matches.
+- The phone menu lists the three groups and their plugins as well as the pages.
+
+**Not yet tested:** the Before and After player (no clips exist, so no page shows it), the ring drawing and the view transitions by eye in a real browser, and the Copy button's "Copied" (a scripted click can't use the clipboard, so the test saw the fallback). The site is published on its first green `pages.yml` run.

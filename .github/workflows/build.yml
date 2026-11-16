@@ -8,6 +8,9 @@ on:
       - 'reference/**'
       - 'design/**'
       - '**.md'
+      - 'site-src/**'
+      - 'tools/site/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
     inputs:
       plugin:

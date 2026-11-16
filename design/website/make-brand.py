@@ -51,10 +51,16 @@ DEFS = ('<defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="
         '<stop offset="1" stop-color="#454545"/></linearGradient></defs>')
 
 
-def mark(prong="#FFFFFF", pointer=True):
+def mark(prong="#FFFFFF", pointer=True, draw_id=None):
+    """draw_id: wrap the ring in a mask whose path the site animates, so the ring draws itself."""
+    r = ring(32, 27, 21, 5)
+    if draw_id:
+        r = (f'<mask id="{draw_id}" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">'
+             '<path class="draw-path" d="M21.50 45.19A21 21 0 1 1 42.50 45.19" pathLength="1" fill="none" stroke="#fff" '
+             'stroke-width="9" stroke-linecap="round"/></mask>' f'<g mask="url(#{draw_id})">{r}</g>')
     s = (f'<rect x="25.75" y="38" width="3.75" height="22" rx="1.6" fill="{prong}"/>'
          f'<rect x="34.5" y="38" width="3.75" height="22" rx="1.6" fill="{prong}"/>'
-         + ring(32, 27, 21, 5)
+         + r
          + '<circle cx="32" cy="27" r="14.5" fill="url(#f)"/>'
            '<circle cx="32" cy="27" r="14" fill="none" stroke="#000" stroke-opacity=".2"/>')
     if pointer:
@@ -103,46 +109,51 @@ def text(s, x, baseline, size, fill):
     return f'<path d="{d}" fill="{fill}"/>', x
 
 
-def lockup(c1, c2, prong):
+def lockup(c1, c2, prong, draw_id=None):
     a, x = text("FANCY", 78, 40, 22, c1)
     b, x = text("PLUGS", x + 4.84, 40, 22, c2)
-    return svg(mark(prong) + a + b, math.ceil(x + 2.24), 64)
+    return svg(mark(prong, draw_id=draw_id) + a + b, math.ceil(x + 2.24), 64)
 
 
-FILES = {
-    "logo-mark.svg": svg(mark()),
-    "logo-mark-on-light.svg": svg(mark("#141414")),
-    "logo-mark-mono-white.svg": svg(mono("#FFFFFF"), defs=False),
-    "logo-mark-mono-black.svg": svg(mono("#141414"), defs=False),
-    "logo-lockup.svg": lockup("#8D8D8D", "#FFFFFF", "#FFFFFF"),
-    "logo-lockup-on-light.svg": lockup("#6B6B6B", "#141414", "#141414"),
-    "favicon.svg": svg(favicon(14)),
-    "favicon-square.svg": svg(favicon(0)),
-    "app-icon.svg": svg(app_icon()),
-}
-for name, s in FILES.items():
-    open(os.path.join(HERE, name), "w", encoding="utf-8", newline="\n").write(s)
+def main():
+    FILES = {
+        "logo-mark.svg": svg(mark()),
+        "logo-mark-on-light.svg": svg(mark("#141414")),
+        "logo-mark-mono-white.svg": svg(mono("#FFFFFF"), defs=False),
+        "logo-mark-mono-black.svg": svg(mono("#141414"), defs=False),
+        "logo-lockup.svg": lockup("#8D8D8D", "#FFFFFF", "#FFFFFF"),
+        "logo-lockup-on-light.svg": lockup("#6B6B6B", "#141414", "#141414"),
+        "favicon.svg": svg(favicon(14)),
+        "favicon-square.svg": svg(favicon(0)),
+        "app-icon.svg": svg(app_icon()),
+    }
+    for name, s in FILES.items():
+        open(os.path.join(HERE, name), "w", encoding="utf-8", newline="\n").write(s)
 
-if "--png" in sys.argv:
-    from PIL import Image
-    edge = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+    if "--png" in sys.argv:
+        from PIL import Image
+        edge = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 
-    def shot(name):
-        with tempfile.TemporaryDirectory() as t:
-            page, png = os.path.join(t, "p.html"), os.path.join(t, "p.png")
-            src = "file:///" + os.path.join(HERE, name).replace("\\", "/")
-            open(page, "w").write('<!doctype html><style>html,body{margin:0;background:transparent}img{display:block}</style>'
-                                  f'<img src="{src}" width="512" height="512">')
-            subprocess.run([edge, "--headless", "--disable-gpu", "--hide-scrollbars", "--default-background-color=00000000",
-                            "--force-device-scale-factor=1", "--window-size=512,512", f"--screenshot={png}",
-                            "file:///" + page.replace("\\", "/")], check=True, capture_output=True)
-            return Image.open(png).convert("RGBA")
+        def shot(name):
+            with tempfile.TemporaryDirectory() as t:
+                page, png = os.path.join(t, "p.html"), os.path.join(t, "p.png")
+                src = "file:///" + os.path.join(HERE, name).replace("\\", "/")
+                open(page, "w").write('<!doctype html><style>html,body{margin:0;background:transparent}img{display:block}</style>'
+                                      f'<img src="{src}" width="512" height="512">')
+                subprocess.run([edge, "--headless", "--disable-gpu", "--hide-scrollbars", "--default-background-color=00000000",
+                                "--force-device-scale-factor=1", "--window-size=512,512", f"--screenshot={png}",
+                                "file:///" + page.replace("\\", "/")], check=True, capture_output=True)
+                return Image.open(png).convert("RGBA")
 
-    a, q = shot("favicon.svg"), shot("favicon-square.svg").convert("RGB")
-    a.save(os.path.join(HERE, "favicon.ico"), sizes=[(16, 16), (32, 32), (48, 48)])
-    a.resize((32, 32), Image.LANCZOS).save(os.path.join(HERE, "favicon-32.png"))
-    a.resize((16, 16), Image.LANCZOS).save(os.path.join(HERE, "favicon-16.png"))
-    q.resize((180, 180), Image.LANCZOS).save(os.path.join(HERE, "apple-touch-icon.png"))
-    q.resize((192, 192), Image.LANCZOS).save(os.path.join(HERE, "icon-192.png"))
-    q.save(os.path.join(HERE, "icon-512.png"))
-print("wrote", len(FILES), "SVGs" + (" and the PNG/ICO files" if "--png" in sys.argv else ""))
+        a, q = shot("favicon.svg"), shot("favicon-square.svg").convert("RGB")
+        a.save(os.path.join(HERE, "favicon.ico"), sizes=[(16, 16), (32, 32), (48, 48)])
+        a.resize((32, 32), Image.LANCZOS).save(os.path.join(HERE, "favicon-32.png"))
+        a.resize((16, 16), Image.LANCZOS).save(os.path.join(HERE, "favicon-16.png"))
+        q.resize((180, 180), Image.LANCZOS).save(os.path.join(HERE, "apple-touch-icon.png"))
+        q.resize((192, 192), Image.LANCZOS).save(os.path.join(HERE, "icon-192.png"))
+        q.save(os.path.join(HERE, "icon-512.png"))
+    print("wrote", len(FILES), "SVGs" + (" and the PNG/ICO files" if "--png" in sys.argv else ""))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,32 @@
+{
+  "_note": "Update at each release (docs/PROGRESS.md, release recipe). Newer What's new entries are read from README.md; this file holds the downloads and the releases before 1.3.0.",
+  "version": "1.6.0",
+  "date": "2026-11-15",
+  "windows": {
+    "file": "FancyPlugs-1.6.0-win64.zip",
+    "url": "https://github.com/alfrednoonoo/fancy-plugs/releases/download/v1.6.0/FancyPlugs-1.6.0-win64.zip",
+    "page": "https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.6.0",
+    "size_mb": 57
+  },
+  "mac": {
+    "beta": true,
+    "version": "1.7.0-beta.1",
+    "date": "2026-11-16",
+    "file": "FancyPlugs-1.7.0-beta.1-macos.zip",
+    "url": "https://github.com/alfrednoonoo/fancy-plugs/releases/download/v1.7.0-beta.1/FancyPlugs-1.7.0-beta.1-macos.zip",
+    "page": "https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.7.0-beta.1",
+    "size_mb": 194
+  },
+  "tests": {"count": 516, "run": "43742763641", "commit": "ff534e3"},
+  "dates": {"1.6.0": "2026-11-15", "1.5.0": "2026-11-15", "1.4.0": "2026-11-14", "1.3.0": "2026-11-13"},
+  "older": [
+    {"version": "1.2.0", "date": "2026-11-09", "items": [
+      "**Fancy Gate**, a gate, ducker and trigger.",
+      "Menus, tooltips, typed values and dialogs in the suite's own style.",
+      "Undo, redo, A/B and Compare in every plugin.",
+      "Dynamic bands in Fancy EQ, upward compression in Fancy MultiComp and adaptive noise tracking in Fancy FIR."]},
+    {"version": "1.1.0", "date": "2026-11-07", "items": ["**Fancy Delay**, **Fancy MultiComp** and **Fancy FIR**."]},
+    {"version": "1.0.1", "date": "2026-11-07", "items": ["Typed values on every knob and fader: click a value, or Ctrl-click the control, and type one."]},
+    {"version": "1.0.0", "date": "2026-11-07", "items": ["The first five: **Fancy Kicker**, **Fancy Exciter**, **Fancy Comp**, **Fancy EQ** and **Fancy Verb**."]}
+  ]
+}

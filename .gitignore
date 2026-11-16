@@ -4,6 +4,7 @@
 /dist/
 /screens/
 /out/
+/site/
 
 # Python's caches, from the models in docs/research
 __pycache__/
