@@ -88,24 +88,32 @@ PLUGINS = {
 }
 
 # Screens: from the release build's screens-<sha> artifact, @2x. MORE goes under "More views".
+# Each view: (screen, caption, heading). The screenshot goes right under that heading of the
+# plugin's manual; a view without a heading goes under "More views".
 MORE = {
-    "Kicker": [("kicker-edit", "Boost mode's EDIT drawer"), ("kicker-sub-edit", "Sub mode's EDIT drawer")],
-    "Exciter": [("exciter-edit", "The EDIT drawer")],
-    "Comp": [("comp-detector", "EDIT drawer: Detector page (detector EQ)"), ("comp-character", "EDIT drawer: Character page"),
-             ("comp-options", "EDIT drawer: Options page"), ("comp-listening", "Preview filter on: the title strip says LISTENING")],
-    "EQ": [("eq", "Default bands"), ("eq-channel", "A band on one channel"), ("eq-edit", "The EDIT drawer"), ("eq-compact", "Compact mode")],
-    "Verb": [("verb-empty", "A new instance: an empty chain"), ("verb-add", "Add module"), ("verb-generators", "The generator modules"),
-             ("verb-edit", "SETUP")],
-    "Delay": [("delay-edit", "The EDIT drawer")],
-    "MultiComp": [("multicomp-edit", "The EDIT drawer")],
-    "FIR": [("fir-eq", "EQ mode"), ("fir-resonance-range", "Resonance with Range set, listening"), ("fir-edit", "The EDIT drawer")],
-    "Gate": [("gate-edit", "The EDIT drawer"), ("gate-listening", "Listening to the gain-reduced part")],
-    "Limit": [("limit-edit", "The EDIT drawer")],
-    "DS": [("ds-edit", "The EDIT drawer"), ("ds-listening", "Listening to what's removed")],
-    "DS-Mini": [("dsmini-edit", "The EDIT drawer"), ("dsmini-listening", "Listening to what's removed")],
-    "Sature": [("sature-edit", "The EDIT drawer"), ("sature-listening", "Listening to the added harmonics")],
-    "Room": [("room-edit", "The EDIT drawer")],
+    "Kicker": [("kicker-edit", "Boost mode's EDIT drawer", "EDIT drawer"), ("kicker-sub-edit", "Sub mode's EDIT drawer", "Sub mode")],
+    "Exciter": [("exciter-edit", "The EDIT drawer", "EDIT drawer")],
+    "Comp": [("comp-options", "EDIT drawer: Options page", "Options"), ("comp-detector", "EDIT drawer: Detector page (detector EQ)", "Detector"),
+             ("comp-character", "EDIT drawer: Character page", "Character"),
+             ("comp-listening", "Preview filter on: the title strip says LISTENING", "Checkboxes")],
+    "EQ": [("eq", "Default bands", "The graph"), ("eq-channel", "A band on one channel", "Channel"),
+           ("eq-compact", "Compact mode", "Checkboxes"), ("eq-edit", "The EDIT drawer", "EDIT drawer")],
+    "Verb": [("verb-empty", "A new instance: an empty chain", "Getting started"), ("verb-add", "Add module", "The rack"),
+             ("verb-generators", "The generator modules", "Modules"), ("verb-edit", "SETUP", "SETUP")],
+    "Delay": [("delay-edit", "The EDIT drawer", "EDIT")],
+    "MultiComp": [("multicomp-edit", "The EDIT drawer", "EDIT")],
+    "FIR": [("fir-eq", "EQ mode", "Modes"), ("fir-resonance-range", "Resonance with Range set, listening", "Resonance"),
+            ("fir-edit", "The EDIT drawer", "EDIT")],
+    "Gate": [("gate-edit", "The EDIT drawer", "Controls"), ("gate-listening", "Listening to the gain-reduced part", "Controls")],
+    "Limit": [("limit-edit", "The EDIT drawer", "EDIT drawer")],
+    "DS": [("ds-edit", "The EDIT drawer", "EDIT drawer"), ("ds-listening", "Listening to what's removed", "Controls")],
+    "DS-Mini": [("dsmini-edit", "The EDIT drawer", "EDIT drawer"), ("dsmini-listening", "Listening to what's removed", "Controls")],
+    "Sature": [("sature-edit", "The EDIT drawer", "EDIT"), ("sature-listening", "Listening to the added harmonics", "Controls")],
+    "Room": [("room-edit", "The EDIT drawer", "EDIT")],
 }
+
+# The cover knob's lit arc: the suite's band colours, as on EQ's bands.
+COVER_ARC = ["#E74D3D", "#E77E23", "#F1C315", "#2DCC70", "#00A985", "#3598DB", "#9A59B5"]
 
 GENERIC = {
     "Output": "The header's small teal knob: the level leaving the plugin, after everything else. The same control appears in the EDIT drawer where there is one.",

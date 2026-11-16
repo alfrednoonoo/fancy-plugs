@@ -119,12 +119,35 @@ def shot(name):
     return "file:///" + os.path.join(SCREENS, name + "@2x.png").replace(os.sep, "/")
 
 
-def more_views(plugin, narrow):
-    items = C.MORE.get(plugin, [])
-    if not items:
-        return ""
-    figs = "".join(f'<figure><img src="{shot(f)}"><figcaption>{html.escape(cap)}</figcaption></figure>' for f, cap in items)
+def figures_html(items, narrow):
+    figs = "".join(f'<figure><img src="{shot(f)}"><figcaption>{html.escape(cap)}</figcaption></figure>' for f, cap, *_ in items)
     return f'<div class="more {"narrow" if narrow else ""}">{figs}</div>'
+
+
+def place_views(plugin, body, narrow):
+    # Each extra screenshot goes right under the heading of the section that explains it. Any
+    # without a heading (or whose heading isn't found) are left for a "More views" section.
+    items = C.MORE.get(plugin, [])
+    by_heading, left = {}, []
+    for item in items:
+        if len(item) > 2:
+            by_heading.setdefault(slug(item[2]), []).append(item)
+        else:
+            left.append(item)
+
+    def put(match):
+        text = slug(re.sub(r"<[^>]+>", "", match.group(2)))
+        group = by_heading.pop(text, None)
+        return match.group(0) + (figures_html(group, narrow) if group else "")
+
+    body = re.sub(r"<(h3|h4)[^>]*>(.*?)</(?:h3|h4)>", put, body)
+    for group in by_heading.values():
+        left.extend(group)
+    return body, left
+
+
+def more_views(items, narrow):
+    return figures_html(items, narrow) if items else ""
 
 
 def palette_bar(meta):
@@ -135,6 +158,7 @@ def palette_bar(meta):
 
 
 def knob_svg(size, value, colour, track="#4F4F4F"):
+    # colour is one colour, or a list: the lit arc split into equal segments, one per colour.
     # The suite's knob: 300 degrees of travel from 7 o'clock, the arc lit from the start.
     import math
     cx = cy = size / 2
@@ -151,10 +175,26 @@ def knob_svg(size, value, colour, track="#4F4F4F"):
         large = 1 if abs(a1 - a0) > math.pi else 0
         return f"M{x0:.2f},{y0:.2f} A{r:.2f},{r:.2f} 0 {large} 1 {x1:.2f},{y1:.2f}"
 
+    def lit_arc(arc, a0, a1, colours, size):
+        if isinstance(colours, str):
+            return f'<path d="{arc(a0, a1)}" stroke="{colours}" stroke-width="{size*0.035:.2f}" fill="none" stroke-linecap="round"/>'
+        gap = math.radians(1.6)
+        step = (a0 - a1) / len(colours)
+        out = ""
+        for i, c in enumerate(colours):
+            s = a0 - i * step - (gap / 2 if i else 0)
+            e = a0 - (i + 1) * step + (gap / 2 if i < len(colours) - 1 else 0)
+            out += f'<path d="{arc(s, e)}" stroke="{c}" stroke-width="{size*0.035:.2f}" fill="none" stroke-linecap="butt"/>'
+        # Round the two outer ends, as the single-colour arc is.
+        for angle, c in ((a0, colours[0]), (a1, colours[-1])):
+            x, y = point(angle)
+            out += f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{size*0.0175:.2f}" fill="{c}"/>'
+        return out
+
     px, py = cx + r * 0.62 * math.cos(end), cy - r * 0.62 * math.sin(end)
     return (f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}">'
             f'<path d="{arc(start, start - math.radians(300))}" stroke="{track}" stroke-width="{size*0.035:.2f}" fill="none" stroke-linecap="round"/>'
-            f'<path d="{arc(start, end)}" stroke="{colour}" stroke-width="{size*0.035:.2f}" fill="none" stroke-linecap="round"/>'
+            + lit_arc(arc, start, end, colour, size) +
             f'<circle cx="{cx}" cy="{cy}" r="{r*0.74:.2f}" fill="url(#face)" stroke="rgba(0,0,0,.2)"/>'
             f'<line x1="{cx}" y1="{cy}" x2="{px:.2f}" y2="{py:.2f}" stroke="#FFFFFF" stroke-width="{size*0.02:.2f}" stroke-linecap="round"/>'
             '<defs><linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4F4F4F"/>'
@@ -218,11 +258,12 @@ def build_html(page_numbers):
             first = re.match(r"\s*(<p>.*?</p>)", body, re.S)
             if first:
                 intro, body = first.group(1), body[first.end():]
-            if C.MORE.get(name):
+            narrow = meta.get("narrow")
+            body, leftover = place_views(name, body, narrow)
+            if leftover:
                 sections.append(("More views", f"{key}-more-views"))
             sections.append(("Control reference", f"{key}-control-reference"))
             imgs = meta["images"]
-            narrow = meta.get("narrow")
             figures = "".join(
                 f'<figure class="{"half" if narrow else "full"}"><img src="{shot(f)}">'
                 f"<figcaption>{html.escape(cap)}</figcaption></figure>" for f, cap in imgs)
@@ -239,7 +280,7 @@ def build_html(page_numbers):
   <h3 id="{key}-quick-start">Quick start</h3>
   <ol class="quick">{steps}</ol>
   <div class="prose">{body}</div>
-  {f'<h3 id="{key}-more-views" class="morehead">More views</h3>' + more_views(name, narrow) if C.MORE.get(name) else ""}
+  {f'<h3 id="{key}-more-views" class="morehead">More views</h3>' + more_views(leftover, narrow) if leftover else ""}
   <h3 id="{key}-control-reference" class="refhead">Control reference</h3>
   <p class="note">Every control, by the name your host shows for automation. Defaults are those of a new instance.</p>
   {reference_table(name)}
@@ -282,7 +323,7 @@ def build_html(page_numbers):
     cover = f'''
 <section class="cover">
   {marker("cover")}
-  <div class="cover-knob">{knob_svg(260, 0.72, "#00A985")}</div>
+  <div class="cover-knob">{knob_svg(260, 0.72, C.COVER_ARC)}</div>
   <div class="cover-text">
     <div class="eyebrow">FANCY PLUGS · MANUAL</div>
     <h1>Fancy Plugs</h1>
