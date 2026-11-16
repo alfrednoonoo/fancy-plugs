@@ -158,7 +158,7 @@ def palette_bar(meta):
 
 
 def knob_svg(size, value, colour, track="#4F4F4F"):
-    # colour is one colour, or a list: the lit arc split into equal segments, one per colour.
+    # colour is one colour, or a list: the lit arc is a smooth gradient through the colours, in order.
     # The suite's knob: 300 degrees of travel from 7 o'clock, the arc lit from the start.
     import math
     cx = cy = size / 2
@@ -176,15 +176,28 @@ def knob_svg(size, value, colour, track="#4F4F4F"):
         return f"M{x0:.2f},{y0:.2f} A{r:.2f},{r:.2f} 0 {large} 1 {x1:.2f},{y1:.2f}"
 
     def lit_arc(arc, a0, a1, colours, size):
+        width = f"{size*0.035:.2f}"
         if isinstance(colours, str):
-            return f'<path d="{arc(a0, a1)}" stroke="{colours}" stroke-width="{size*0.035:.2f}" fill="none" stroke-linecap="round"/>'
-        gap = math.radians(1.6)
-        step = (a0 - a1) / len(colours)
+            return f'<path d="{arc(a0, a1)}" stroke="{colours}" stroke-width="{width}" fill="none" stroke-linecap="round"/>'
+        # A smooth gradient through the colours, in order, along the lit arc. SVG can't stroke along a
+        # curve with a gradient, so the arc is many short steps, each overlapping the next a little.
+        def rgb(h):
+            return [int(h[i:i + 2], 16) for i in (1, 3, 5)]
+
+        def colour_at(t):
+            x = t * (len(colours) - 1)
+            i = min(int(x), len(colours) - 2)
+            f = x - i
+            c0, c1 = rgb(colours[i]), rgb(colours[i + 1])
+            return "#%02X%02X%02X" % tuple(round(c0[k] + (c1[k] - c0[k]) * f) for k in range(3))
+        steps = max(24, int(math.degrees(a0 - a1) / 1.5))
+        step = (a0 - a1) / steps
+        overlap = math.radians(0.6)
         out = ""
-        for i, c in enumerate(colours):
-            s = a0 - i * step - (gap / 2 if i else 0)
-            e = a0 - (i + 1) * step + (gap / 2 if i < len(colours) - 1 else 0)
-            out += f'<path d="{arc(s, e)}" stroke="{c}" stroke-width="{size*0.035:.2f}" fill="none" stroke-linecap="butt"/>'
+        for i in range(steps):
+            s = a0 - i * step
+            e = a0 - (i + 1) * step - (overlap if i < steps - 1 else 0)
+            out += f'<path d="{arc(s, e)}" stroke="{colour_at((i + 0.5) / steps)}" stroke-width="{width}" fill="none" stroke-linecap="butt"/>'
         # Round the two outer ends, as the single-colour arc is.
         for angle, c in ((a0, colours[0]), (a1, colours[-1])):
             x, y = point(angle)
