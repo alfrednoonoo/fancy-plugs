@@ -145,7 +145,7 @@ It draws routing as wires, so it's the free way to check sidechain and MIDI out.
 
 ## macOS (docs/mac.md, steps 3 and 5)
 
-Every plugin is a universal VST3 and Audio Unit (AU) on macOS 11 and later. CI runs Steinberg's validator and pluginval on each VST3 and Apple's `auval -strict` on each AU; nothing on a Mac has been heard yet. These checks are for the listening check (Decision 6), on an Apple silicon Mac and, if one is available, an Intel one.
+Every plugin is a universal VST3 and Audio Unit (AU) on macOS 11 and later. CI runs Steinberg's validator and pluginval on each VST3 and Apple's `auval -strict` on each AU; nothing on a Mac has been heard yet. These checks are for the listening check (Decision 6), on an Apple silicon Mac and, if one is available, an Intel one. The Mac tester uses **Ableton Live**, so its checklist comes first; Logic and REAPER on Mac are optional.
 
 AU notes:
 
@@ -153,7 +153,23 @@ AU notes:
 - **Sidechain.** In Logic, the sidechain is the **Side Chain** menu at the top right of the plugin window; it feeds the same bus the VST3 calls its sidechain, so Detector input works the same way.
 - **Typed values.** On a Mac, Ctrl-click is a right-click, so typing a value is Cmd-click on a control (or a click on its value), not Ctrl-click.
 
-### Logic Pro (AU, about 45 minutes)
+### Ableton Live (VST3 and AU, about 45 minutes)
+
+Live 11.1 or later runs natively on Apple silicon; earlier versions run under Rosetta, which loads the Intel half of the same plugins.
+
+- [ ] Note the Live version and the Mac (Apple silicon or Intel).
+- [ ] In Live's Settings, Plug-Ins tab, turn on **Use Audio Units** and **Use VST3 Plug-in System Folders**, then **Rescan**. Both lists in the browser's Plug-Ins section show all fourteen Fancy Plugs, under Fancy Plugs.
+- [ ] Load each plugin as a VST3: window, pop-ups, Cmd-click to type a value, resizing, and the header's preset menu.
+- [ ] Sidechain Comp, MultiComp, FIR and Gate from the device's sidechain section in Live (expand the device to show it, then pick the source track under Audio From), with Detector input set to Sidechain L+R. Note whether Live offers the sidechain for the VST3, the AU or both.
+- [ ] Gate: note whether Live lists the AU (it's a music effect) and whether any MIDI from MIDI on open/close reaches another track; the gate must keep gating either way. Live may not route MIDI out of audio effects at all; that's a finding, not a failure.
+- [ ] Automate a knob (Arrangement view, the device's parameter in the track's automation lane), then play back: the knob follows.
+- [ ] Turn Gate's Lookahead, EQ's linear phase or FIR's Low latency on and off while stopped, then play against a dry copy of the track: they stay in time (Live's delay compensation).
+- [ ] Export Audio/Video: the file matches playback.
+- [ ] Save, close and reopen the Set: every plugin comes back as it was.
+- [ ] One Set with the AU versions of Comp, Verb and Gate: they load, sound and save as the VST3s do.
+- [ ] Open a project saved on Windows in Live (if the tester has one): every plugin loads with its settings and sounds the same.
+
+### Logic Pro (AU, optional, about 45 minutes)
 
 - [ ] After installing with `install.sh`, Logic's Plug-in Manager lists all fourteen Fancy Plugs AUs as "successfully validated".
 - [ ] Load each plugin: window, pop-ups, Cmd-click to type a value, resizing.
@@ -164,7 +180,7 @@ AU notes:
 - [ ] Bounce in real time and offline: both match playback.
 - [ ] Save, close and reopen the project: every plugin comes back as it was.
 
-### REAPER on Mac (VST3 and AU)
+### REAPER on Mac (VST3 and AU, optional)
 
 - [ ] Each plugin's REAPER checklist (`docs/<plugin>-checklist.md`), Mac section, with the VST3.
 - [ ] One project with the AU versions of Comp, Verb and Gate: they load, sound and save as the VST3s do.

@@ -75,7 +75,7 @@
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
 
-- [ ] The VST3 loads in REAPER, and the Audio Unit in Logic Pro: window, pop-ups and resizing work; Cmd-click (not Ctrl-click) on a control opens the typed-value box.
-- [ ] The checks above, once, with the VST3 in REAPER.
+- [ ] The VST3 and the Audio Unit load in Ableton Live: window, pop-ups and resizing work; Cmd-click (not Ctrl-click) on a control opens the typed-value box.
+- [ ] The checks above, once, with the VST3 in Ableton Live.
 - [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
-- [ ] The Audio Unit in Logic: automation follows, a bounce matches playback, and the project reopens as it was.
+- [ ] The Audio Unit in Live: automation follows, an export matches playback, and the Set reopens as it was. (Logic too, if someone has it.)
