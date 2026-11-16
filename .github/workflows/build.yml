@@ -334,11 +334,19 @@ jobs:
           "$tests" '[measure]' | tee measurements/measurements.txt
           exit ${PIPESTATUS[0]}
 
-      - name: Stage VST3 and AU bundles
+      # Ad-hoc signed (docs/mac.md, Decision 2 A): Apple silicon won't run unsigned code, and a
+      # Developer ID isn't used. install.sh removes the quarantine flag on the user's Mac.
+      - name: Stage, sign and package VST3 and AU bundles
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           mkdir -p dist
           find build/plugins -type d \( -name '*.vst3' -o -name '*.component' \) -prune -exec cp -R {} dist/ \;
+          for bundle in dist/*.vst3 dist/*.component; do
+            codesign --force --deep --sign - "$bundle"
+            codesign --verify --deep --strict "$bundle"
+          done
+          cp scripts/install.sh dist/
+          chmod +x dist/install.sh
           ls dist
           ls -d dist/*.vst3 dist/*.component
 
@@ -398,14 +406,13 @@ jobs:
           exit $status
 
       # Apple's own Audio Unit validator (docs/mac.md, step 3). AUs are found only where macOS
-      # looks for them, so they're installed in the runner's own Components folder first.
+      # looks for them, so they're installed first, with the same install.sh a user runs (step 4).
       - name: Run auval
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         timeout-minutes: 20
         run: |
-          mkdir -p ~/Library/Audio/Plug-Ins/Components
-          cp -R dist/*.component ~/Library/Audio/Plug-Ins/Components/
-          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          ./dist/install.sh dist
+          ls ~/Library/Audio/Plug-Ins/VST3 ~/Library/Audio/Plug-Ins/Components
           auval -a | grep -i fncy || true
           status=0
           for component in dist/*.component; do
@@ -438,6 +445,34 @@ jobs:
           bench=$(find build/tools/bench -type f -name FancyBench -perm -u+x | head -1)
           "$bench" smoke dist measurements/measurements.txt measurements/bench tools/bench/examples | tee measurements/bench.txt
           exit ${PIPESTATUS[0]}
+
+      - name: Cache AudioPluginHost
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        id: pluginhost-cache
+        uses: actions/cache@v6
+        with:
+          path: pluginhost-bin
+          key: audiopluginhost-${{ runner.os }}-${{ hashFiles('cmake/Dependencies.cmake') }}
+
+      - name: Build AudioPluginHost
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.pluginhost-cache.outputs.cache-hit != 'true' }}
+        timeout-minutes: 30
+        run: |
+          cmake --build build --target AudioPluginHost
+          mkdir -p pluginhost-bin
+          app=$(find build/AudioPluginHost -type d -name 'AudioPluginHost.app' -prune | head -1)
+          test -n "$app"
+          cp -R "$app" pluginhost-bin/
+
+      - name: Add AudioPluginHost and FancyBench to the artifact
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          mkdir -p dist/tools/examples
+          cp -R pluginhost-bin/AudioPluginHost.app dist/tools/
+          codesign --force --deep --sign - dist/tools/AudioPluginHost.app
+          bench=$(find build/tools/bench -type f -name FancyBench -perm -u+x | head -1)
+          cp "$bench" dist/tools/
+          cp tools/bench/examples/*.json dist/tools/examples/
 
       - name: Render UI screenshots
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

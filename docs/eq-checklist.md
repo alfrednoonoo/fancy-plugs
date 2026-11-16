@@ -157,3 +157,12 @@ Tell me "EQ OK", or list which items failed and what you saw. Once it's OK, I'll
 - [ ] Save the project with spectra learned, close and reopen: the card shows the same seconds, and Match works without learning again.
 - [ ] Match doesn't change the sound while it learns: toggle Learn during playback and listen.
 - [ ] Compact mode with the card open: the card takes the band card's place, and the band card returns when it closes.
+
+## Mac (docs/mac.md, step 5)
+
+On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
+
+- [ ] The VST3 loads in REAPER, and the Audio Unit in Logic Pro: window, pop-ups and resizing work; Cmd-click (not Ctrl-click) on a control opens the typed-value box.
+- [ ] The checks above, once, with the VST3 in REAPER.
+- [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
+- [ ] The Audio Unit in Logic: automation follows, a bounce matches playback, and the project reopens as it was.

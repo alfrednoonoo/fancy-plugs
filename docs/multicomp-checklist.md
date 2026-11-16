@@ -108,3 +108,12 @@
 - [ ] **Channel:** set the low band to **M** on a wide mix: the low centre tightens and the width doesn't change. Set the top band to **S**: harsh stereo edges calm down, the centre (a vocal) doesn't. The handles show M and S.
 - [ ] On a mono track the chip is greyed, with its tooltip.
 - [ ] The two new presets, **Lookahead Glue** (Bus) and **Mid/Side Master** (Mastering), load from the preset browser.
+
+## Mac (docs/mac.md, step 5)
+
+On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
+
+- [ ] The VST3 loads in REAPER, and the Audio Unit in Logic Pro: window, pop-ups and resizing work; Cmd-click (not Ctrl-click) on a control opens the typed-value box.
+- [ ] The checks above, once, with the VST3 in REAPER.
+- [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
+- [ ] The Audio Unit in Logic: automation follows, a bounce matches playback, and the project reopens as it was.

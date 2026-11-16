@@ -112,3 +112,12 @@
 - [ ] The five new presets (Library Hall, Library Plate, True Stereo Room, Modulated Hall, Endless) load from the preset browser.
 - [ ] Save a project with a library IR, a pair and Modulate, close and reopen: everything comes back, and the project file is small with the library IR.
 - [ ] Render offline twice with Modulate on: the renders are identical.
+
+## Mac (docs/mac.md, step 5)
+
+On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
+
+- [ ] The VST3 loads in REAPER, and the Audio Unit in Logic Pro: window, pop-ups and resizing work; Cmd-click (not Ctrl-click) on a control opens the typed-value box.
+- [ ] The checks above, once, with the VST3 in REAPER.
+- [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
+- [ ] The Audio Unit in Logic: automation follows, a bounce matches playback, and the project reopens as it was.

@@ -108,3 +108,12 @@ Tell me "Comp OK", or list which items failed and what you saw. Once it's OK, I'
 - [ ] Oversampling 8x: the latency changes once with a short dropout, and REAPER compensates it.
 - [ ] The three new presets (Warm Bus, Upward Vocal, Level Rider) load from the preset browser, in Bus and Vocals.
 - [ ] Save the project with every stage on, close and reopen: everything comes back, including the drawer's settings.
+
+## Mac (docs/mac.md, step 5)
+
+On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
+
+- [ ] The VST3 loads in REAPER, and the Audio Unit in Logic Pro: window, pop-ups and resizing work; Cmd-click (not Ctrl-click) on a control opens the typed-value box.
+- [ ] The checks above, once, with the VST3 in REAPER.
+- [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
+- [ ] The Audio Unit in Logic: automation follows, a bounce matches playback, and the project reopens as it was.

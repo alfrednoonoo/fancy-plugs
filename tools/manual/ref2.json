@@ -1,0 +1,2494 @@
+{
+ "Comp": [
+  {
+   "name": "Threshold",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-60–0",
+   "unit": "dB",
+   "desc": "Level where compression starts. The fader sits over the input meter"
+  },
+  {
+   "name": "Ratio",
+   "default": "4:1",
+   "repeat": false,
+   "range": "1:1–∞:1",
+   "unit": "",
+   "desc": "How strongly levels above Threshold are reduced"
+  },
+  {
+   "name": "Knee",
+   "default": "0.50 dB",
+   "repeat": false,
+   "range": "0–24",
+   "unit": "dB",
+   "desc": "How gradually compression starts"
+  },
+  {
+   "name": "Weird",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "An alternative knee that starts at Threshold, so compression arrives later and then catches up"
+  },
+  {
+   "name": "Attack",
+   "default": "3.0 ms",
+   "repeat": false,
+   "range": "0–500",
+   "unit": "ms",
+   "desc": "How quickly compression engages"
+  },
+  {
+   "name": "Classic",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Puts attack and release on the detector, as older compressors do. Short peaks then get less reduction with a long attack. With it off, attack doesn't change the maximum reduction"
+  },
+  {
+   "name": "Release",
+   "default": "200.0 ms",
+   "repeat": false,
+   "range": "0–5000",
+   "unit": "ms",
+   "desc": "How quickly it lets go"
+  },
+  {
+   "name": "Auto",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Program-dependent release: fast after transients, slower after sustained compression"
+  },
+  {
+   "name": "Pre-comp",
+   "default": "0.0 ms",
+   "repeat": false,
+   "range": "0–250",
+   "unit": "ms",
+   "desc": "Lookahead, so compression can start before a transient arrives"
+  },
+  {
+   "name": "RMS size",
+   "default": "5.0 ms",
+   "repeat": false,
+   "range": "0–250",
+   "unit": "ms",
+   "desc": "Averaging time of the detector. 0 ms is peak detection"
+  },
+  {
+   "name": "Lowpass",
+   "default": "24 kHz",
+   "repeat": false,
+   "range": "20–24000",
+   "unit": "Hz",
+   "desc": null
+  },
+  {
+   "name": "Highpass",
+   "default": "20 Hz",
+   "repeat": false,
+   "range": "20–24000",
+   "unit": "Hz",
+   "desc": null
+  },
+  {
+   "name": "Wet",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-60–+12, bottom = -inf",
+   "unit": "dB",
+   "desc": "Level of the compressed signal"
+  },
+  {
+   "name": "Dry",
+   "default": "-inf dB",
+   "repeat": false,
+   "range": "-60–+12, bottom = -inf",
+   "unit": "dB",
+   "desc": "Level of the uncompressed signal, for parallel compression"
+  },
+  {
+   "name": "Detector input",
+   "default": "Main input L+R",
+   "repeat": false,
+   "range": "8 choices",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Link channels",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Both channels share gain reduction, which keeps the stereo image steady"
+  },
+  {
+   "name": "Auto make-up",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Adds back half of the gain reduction a full-scale signal would get"
+  },
+  {
+   "name": "Limit output",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Turns on a brickwall limiter with a 0 dBFS ceiling. It adds 104 samples of latency"
+  },
+  {
+   "name": "Oversampling",
+   "default": "Off",
+   "repeat": false,
+   "range": "Off, 2x, 4x",
+   "unit": "",
+   "desc": "2x, 4x or 8x reduces aliasing at very fast settings and from Character, at the cost of CPU and latency. With it on, the detector always averages over at least 0.1 ms"
+  },
+  {
+   "name": "Oversampling filter",
+   "default": "Linear",
+   "repeat": false,
+   "range": "Linear, Minimum",
+   "unit": "",
+   "desc": "Linear keeps wet and dry phase-aligned. Minimum has less pre-ringing"
+  },
+  {
+   "name": "Feedback detection",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "The detector listens to the compressor's own output, for a gentler, more program-dependent response"
+  },
+  {
+   "name": "Link amount",
+   "default": "100 %",
+   "repeat": false,
+   "range": "0–100",
+   "unit": "%",
+   "desc": "How strongly linked channels follow the louder one"
+  },
+  {
+   "name": "Release curve",
+   "default": "Exponential",
+   "repeat": false,
+   "range": "Exponential, Linear",
+   "unit": "",
+   "desc": "Linear falls at a constant dB rate, like older compressors"
+  },
+  {
+   "name": "Attack = 90 % rise",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "See below"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24–+12",
+   "unit": "dB",
+   "desc": "The same control as the header knob"
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Character",
+   "default": "Off",
+   "repeat": false,
+   "range": "Off, Warm, Bright",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Character position",
+   "default": "Post",
+   "repeat": false,
+   "range": "Pre, Post",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Drive",
+   "default": "+6.0 dB",
+   "repeat": false,
+   "range": "0 to 24",
+   "unit": "dB",
+   "desc": "How hard the curve is driven. Quiet material passes untouched, so turning Drive up rounds the peaks rather than making everything louder: at Drive 12 dB, peaks above about -12 dBFS are rounded and held near that level. Lower Threshold or raise Wet if the result is quieter than you want"
+  },
+  {
+   "name": "Upward",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Up threshold",
+   "default": "-40.0 dB",
+   "repeat": false,
+   "range": "−80 to 0",
+   "unit": "dB",
+   "desc": "Level where compression starts. The fader sits over the input meter"
+  },
+  {
+   "name": "Up ratio",
+   "default": "1:2.0",
+   "repeat": false,
+   "range": "1:1 to 1:10",
+   "unit": "",
+   "desc": "How strongly levels above Threshold are reduced"
+  },
+  {
+   "name": "Max lift",
+   "default": "+12.0 dB",
+   "repeat": false,
+   "range": "0 to 30",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Floor",
+   "default": "-70.0 dB",
+   "repeat": false,
+   "range": "−100 to −40",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Auto threshold",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC low freq",
+   "default": "100 Hz",
+   "repeat": false,
+   "range": "20 to 1000",
+   "unit": "Hz",
+   "desc": null
+  },
+  {
+   "name": "SC low gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−18 to +18",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "SC mid freq",
+   "default": "1.0 kHz",
+   "repeat": false,
+   "range": "100 to 10000",
+   "unit": "Hz",
+   "desc": null
+  },
+  {
+   "name": "SC mid gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−18 to +18",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "SC mid Q",
+   "default": "1.00",
+   "repeat": false,
+   "range": "0.3 to 8",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC high freq",
+   "default": "8.0 kHz",
+   "repeat": false,
+   "range": "1000 to 20000",
+   "unit": "Hz",
+   "desc": null
+  },
+  {
+   "name": "SC high gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−18 to +18",
+   "unit": "dB",
+   "desc": null
+  }
+ ],
+ "DS-Mini": [
+  {
+   "name": "Profile",
+   "default": "Female voice",
+   "repeat": false,
+   "range": "6 choices",
+   "unit": "",
+   "desc": "What it listens for. The ‹ › arrows step through the profiles. The line under it shows the band"
+  },
+  {
+   "name": "Amount",
+   "default": "5.0",
+   "repeat": false,
+   "range": "0.0–10.0",
+   "unit": "",
+   "desc": "How much it de-esses. 0 does nothing at all; 5 is moderate; 10 is strong"
+  },
+  {
+   "name": "Mode",
+   "default": "Split",
+   "repeat": false,
+   "range": "Split, Wide",
+   "unit": "",
+   "desc": "Split turns down only the band. Wide turns down the whole signal, which can sound more natural on some voices"
+  },
+  {
+   "name": "Lookahead",
+   "default": "Off",
+   "repeat": false,
+   "range": "Off, 2 ms",
+   "unit": "",
+   "desc": "Starts turning down 2 ms before an \"s\" arrives. Adds 2 ms of latency (96 samples at 48 kHz), which REAPER compensates"
+  },
+  {
+   "name": "Link channels",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Both channels are turned down together, on the louder one"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−24 to +12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  }
+ ],
+ "DS": [
+  {
+   "name": "Threshold",
+   "default": "-28.0 dB",
+   "repeat": false,
+   "range": "−60–0",
+   "unit": "dB",
+   "desc": "How loud the band must get before it's turned down"
+  },
+  {
+   "name": "Freq",
+   "default": "6.20 kHz",
+   "repeat": false,
+   "range": "2000–16000",
+   "unit": "Hz",
+   "desc": "The centre of the band, or where the shelf starts. Typed values take `6200` or `6.2k`"
+  },
+  {
+   "name": "Width",
+   "default": "1.0 oct",
+   "repeat": false,
+   "range": "0.3–3",
+   "unit": "oct",
+   "desc": "How wide the band is. Locked in Shelf"
+  },
+  {
+   "name": "Detection",
+   "default": "Band",
+   "repeat": false,
+   "range": "Band, Shelf",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Range",
+   "default": "-12 dB",
+   "repeat": false,
+   "range": "−24–0",
+   "unit": "dB",
+   "desc": "The most it ever turns down"
+  },
+  {
+   "name": "Attack",
+   "default": "0.5 ms",
+   "repeat": false,
+   "range": "0.1–20",
+   "unit": "ms",
+   "desc": "How fast the cut comes in"
+  },
+  {
+   "name": "Release",
+   "default": "60 ms",
+   "repeat": false,
+   "range": "5–500",
+   "unit": "ms",
+   "desc": "How fast it lets go"
+  },
+  {
+   "name": "Detector",
+   "default": "Main input L+R",
+   "repeat": false,
+   "range": "8 choices",
+   "unit": "",
+   "desc": "What the detector listens to. Mid and Side catch sibilance in the centre or at the sides"
+  },
+  {
+   "name": "Mode",
+   "default": "Split",
+   "repeat": false,
+   "range": "Split, Wide",
+   "unit": "",
+   "desc": "See above"
+  },
+  {
+   "name": "Relative threshold",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "See above"
+  },
+  {
+   "name": "Link channels",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Both channels get the same cut. Off, each side is de-essed on its own (Main input L+R and Sidechain L+R only)"
+  },
+  {
+   "name": "Lookahead",
+   "default": "Off",
+   "repeat": false,
+   "range": "Off, 1, 2, 5 ms",
+   "unit": "",
+   "desc": "Delays the audio but not the detector, so the cut is already moving when an \"s\" arrives. Adds that much latency"
+  },
+  {
+   "name": "Split filter",
+   "default": "Minimum phase",
+   "repeat": false,
+   "range": "Minimum phase, Linear phase",
+   "unit": "",
+   "desc": "Linear phase splits the band with linear-phase filters, so nothing around the band shifts in phase. Its band edges are steeper, so it takes a little less off the edges of an \"s\". Adds about 53 ms of latency"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−24–+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  }
+ ],
+ "Delay": [
+  {
+   "name": "Used",
+   "default": "On",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "On",
+   "default": "On",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Solo",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Time mode",
+   "default": "Note",
+   "repeat": true,
+   "range": "ms, Note",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Length",
+   "default": "375 ms",
+   "repeat": true,
+   "range": "0-10000",
+   "unit": "ms",
+   "desc": null
+  },
+  {
+   "name": "Note value",
+   "default": "1/8",
+   "repeat": true,
+   "range": "1/1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Feel",
+   "default": "Dotted",
+   "repeat": true,
+   "range": "Straight, Dotted, Triplet",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Multiplier",
+   "default": "×1",
+   "repeat": true,
+   "range": "×1-×16",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Feedback",
+   "default": "0 %",
+   "repeat": true,
+   "range": "0-110",
+   "unit": "%",
+   "desc": "How much of each repeat comes back"
+  },
+  {
+   "name": "Lowpass",
+   "default": "Off",
+   "repeat": true,
+   "range": "200-22000, top is Off",
+   "unit": "Hz",
+   "desc": "Darkens the tap"
+  },
+  {
+   "name": "Highpass",
+   "default": "Off",
+   "repeat": true,
+   "range": "20-5000, bottom is Off",
+   "unit": "Hz",
+   "desc": "Thins the tap"
+  },
+  {
+   "name": "Resolution",
+   "default": "24 bit",
+   "repeat": true,
+   "range": "4-24",
+   "unit": "bit",
+   "desc": "Reduces bit depth for a lo-fi sound"
+  },
+  {
+   "name": "Width",
+   "default": "1.00",
+   "repeat": true,
+   "range": "0.00-2.00",
+   "unit": "",
+   "desc": "0 is mono, 1 is unchanged, above 1 is wider"
+  },
+  {
+   "name": "Volume",
+   "default": "0.0 dB",
+   "repeat": true,
+   "range": "-inf-+12",
+   "unit": "dB",
+   "desc": "The tap's level"
+  },
+  {
+   "name": "Pan",
+   "default": "C",
+   "repeat": true,
+   "range": "100 L-100 R",
+   "unit": "",
+   "desc": "Balance, so the centre is unchanged and a hard pan silences the other side"
+  },
+  {
+   "name": "Ping-pong",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Filters inside feedback loop",
+   "default": "On",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Saturate feedback",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Wet",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-inf-+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Dry",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-inf-+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Smooth time changes",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24-+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Character",
+   "default": "Clean",
+   "repeat": true,
+   "range": "Clean, Tape, BBD",
+   "unit": "",
+   "desc": "Clean is the plain delay. Tape adds a soft saturation, a low bump around 90 Hz and a top end that dulls with every pass through the loop. BBD is a dark, band-limited bucket-brigade sound whose top falls as the time gets longer, with a faint noise that follows the signal"
+  },
+  {
+   "name": "Amount",
+   "default": "50 %",
+   "repeat": true,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": "How strong the character is. Unused on Clean"
+  },
+  {
+   "name": "Mod rate",
+   "default": "0.80 Hz",
+   "repeat": true,
+   "range": "0.1 to 10",
+   "unit": "Hz",
+   "desc": "Speed of the wow and flutter"
+  },
+  {
+   "name": "Mod depth",
+   "default": "0.0 cents",
+   "repeat": true,
+   "range": "0 to 50",
+   "unit": "cents",
+   "desc": "The peak pitch change. 0 is no modulation"
+  },
+  {
+   "name": "Random",
+   "default": "30 %",
+   "repeat": true,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": "How much of the motion is a slow random wander rather than a steady wobble"
+  },
+  {
+   "name": "Diffusion",
+   "default": "0 %",
+   "repeat": true,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": "Smears each repeat into the next inside the loop, so repeats turn into a wash"
+  },
+  {
+   "name": "Duck amount",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "0 to 24",
+   "unit": "dB",
+   "desc": "How strong the character is. Unused on Clean"
+  },
+  {
+   "name": "Duck threshold",
+   "default": "-24.0 dB",
+   "repeat": false,
+   "range": "−60 to 0",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Duck release",
+   "default": "250 ms",
+   "repeat": false,
+   "range": "20 to 2000",
+   "unit": "ms",
+   "desc": null
+  },
+  {
+   "name": "Swing",
+   "default": "50 %",
+   "repeat": false,
+   "range": "50 to 75",
+   "unit": "%",
+   "desc": null
+  },
+  {
+   "name": "Saturate curve",
+   "default": "Fast",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  }
+ ],
+ "EQ": [
+  {
+   "name": "Used",
+   "default": "On",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "On",
+   "default": "On",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Type",
+   "default": "Low shelf",
+   "repeat": true,
+   "range": "Low shelf, High shelf, Band, Notch, Low pass, High pass, Band pass, All pass, Tilt",
+   "unit": "",
+   "desc": "The filter's shape"
+  },
+  {
+   "name": "Freq",
+   "default": "80.0 Hz",
+   "repeat": true,
+   "range": "20–24000",
+   "unit": "Hz",
+   "desc": "Centre or corner frequency"
+  },
+  {
+   "name": "Gain",
+   "default": "0.0 dB",
+   "repeat": true,
+   "range": "-24–+24",
+   "unit": "dB",
+   "desc": "Boost or cut. The note in brackets is the one nearest Freq"
+  },
+  {
+   "name": "Q",
+   "default": "0.71",
+   "repeat": true,
+   "range": "0.1–30",
+   "unit": "",
+   "desc": "Narrower as it rises. On pass filters and shelves, 0.707 is flat, and more adds a resonant peak"
+  },
+  {
+   "name": "Slope",
+   "default": "12 dB/oct",
+   "repeat": true,
+   "range": "6, 12, 18, 24, 36, 48 dB/oct",
+   "unit": "",
+   "desc": "For the selected band"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24–+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Phase",
+   "default": "Minimum",
+   "repeat": false,
+   "range": "Minimum, Linear",
+   "unit": "",
+   "desc": "Linear keeps every frequency time-aligned, at the cost of latency. Use it for multi-mic or parallel work"
+  },
+  {
+   "name": "FIR length",
+   "default": "8192",
+   "repeat": false,
+   "range": "2048, 4096, 8192, 16384",
+   "unit": "samples at 48 kHz",
+   "desc": "Linear mode only. Longer holds low-frequency detail better and adds latency"
+  },
+  {
+   "name": "Oversampling",
+   "default": "Off",
+   "repeat": false,
+   "range": "Off, 2x, 4x",
+   "unit": "",
+   "desc": "Minimum mode only. Rarely needed, because the filters already hold their shape"
+  },
+  {
+   "name": "Log-scale automated freq.",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "With it on, an automation envelope moves Freq evenly in octaves. With it off, it moves Freq evenly in Hz. Ticking it doesn't move any band, but existing Freq envelopes will then mean something different"
+  },
+  {
+   "name": "Show grid",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "The grid lines. The numbers always show"
+  },
+  {
+   "name": "Show phase",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "The total phase in yellow, with the graph's height being ±180°. It's flat in Linear mode"
+  },
+  {
+   "name": "Compact mode",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Hides the lower panel, so the graph gets the room"
+  },
+  {
+   "name": "Graph range",
+   "default": "Auto",
+   "repeat": false,
+   "range": "Auto, ±6, ±12, ±18, ±24 dB",
+   "unit": "",
+   "desc": "Auto is ±12 dB, or ±18 dB in Compact mode"
+  },
+  {
+   "name": "Analyzer",
+   "default": "Post",
+   "repeat": false,
+   "range": "Off, Pre, Post",
+   "unit": "",
+   "desc": "Before or after the EQ. The graph's corner shows which"
+  },
+  {
+   "name": "Analyzer size",
+   "default": "8192",
+   "repeat": false,
+   "range": "4096, 8192, 16384",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Analyzer window",
+   "default": "Blackman-Harris",
+   "repeat": false,
+   "range": "Hann, Blackman-Harris",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Analyzer overlap",
+   "default": "75 %",
+   "repeat": false,
+   "range": "50 %, 75 %",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Pink tilt",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Adds 4.5 dB per octave about 1 kHz, so pink noise reads flat"
+  },
+  {
+   "name": "Peak hold",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Adds a fainter line at the highest level. Turn it off to clear it"
+  },
+  {
+   "name": "Smoothing",
+   "default": "50 %",
+   "repeat": false,
+   "range": "0–100",
+   "unit": "%",
+   "desc": "How slowly the analyzer line moves"
+  },
+  {
+   "name": "Dynamic",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Threshold",
+   "default": "-24.0 dB",
+   "repeat": true,
+   "range": "-60 to 0",
+   "unit": "dB",
+   "desc": "The level where the band starts to act. A sine's level is its RMS: a full-scale sine is -3 dB"
+  },
+  {
+   "name": "Range",
+   "default": "-6.0 dB",
+   "repeat": true,
+   "range": "-30 to +30",
+   "unit": "dB",
+   "desc": "How far the gain can move. Negative cuts, positive boosts. It's all used 12 dB past Threshold, with a soft start over the 6 dB around it"
+  },
+  {
+   "name": "Attack",
+   "default": "5.0 ms",
+   "repeat": true,
+   "range": "0.1 to 200",
+   "unit": "ms",
+   "desc": "How fast the band moves when it starts to act"
+  },
+  {
+   "name": "Release",
+   "default": "80 ms",
+   "repeat": true,
+   "range": "5 to 2000",
+   "unit": "ms",
+   "desc": "How fast it goes back"
+  },
+  {
+   "name": "Dynamic mode",
+   "default": "Above",
+   "repeat": true,
+   "range": "Above, Below",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Sidechain",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": "The band listens to the sidechain input instead of the main input"
+  },
+  {
+   "name": "Channel",
+   "default": "Stereo",
+   "repeat": true,
+   "range": null,
+   "unit": "",
+   "desc": "What the analyzer shows. Mid is the two channels' sum, as before"
+  },
+  {
+   "name": "Analyzer channel",
+   "default": "Mid",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  }
+ ],
+ "Exciter": [
+  {
+   "name": "Freq",
+   "default": "2000 Hz",
+   "repeat": false,
+   "range": "500–16000",
+   "unit": "Hz",
+   "desc": "Only content above this is excited"
+  },
+  {
+   "name": "Clip Boost",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "0–24",
+   "unit": "dB",
+   "desc": "How hard the signal drives the clipper. More gives denser harmonics"
+  },
+  {
+   "name": "Harmonics",
+   "default": "0 %",
+   "repeat": false,
+   "range": "0–100",
+   "unit": "%",
+   "desc": "How much of the excited signal is added. At 0 % the plugin changes nothing"
+  },
+  {
+   "name": "Mix Back",
+   "default": "-6.0 dB",
+   "repeat": false,
+   "range": "-60–+6, bottom = -inf",
+   "unit": "dB",
+   "desc": "Overall level of the excited signal"
+  },
+  {
+   "name": "Oversampling",
+   "default": "4x",
+   "repeat": false,
+   "range": "Off, 2×, 4×, 8×",
+   "unit": "",
+   "desc": "Reduces harsh aliasing, at the cost of CPU and latency"
+  },
+  {
+   "name": "Character",
+   "default": "50 %",
+   "repeat": false,
+   "range": "0–100 (even to odd)",
+   "unit": "%",
+   "desc": "0 % favours even harmonics, which sound warmer. 100 % gives odd harmonics only, which sound edgier"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24–+12",
+   "unit": "dB",
+   "desc": "The same control as the header knob"
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  }
+ ],
+ "FIR": [
+  {
+   "name": "Mode",
+   "default": "EQ",
+   "repeat": false,
+   "range": "EQ, Gate, Compressor, Subtract, Convolve L/R",
+   "unit": "",
+   "desc": "What it does"
+  },
+  {
+   "name": "Edit",
+   "default": "Points (smooth)",
+   "repeat": false,
+   "range": "Points (smooth), Points (flat), Freehand",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "FFT size",
+   "default": "4096",
+   "repeat": false,
+   "range": "128-32768, in octaves",
+   "unit": "",
+   "desc": "Latency, Low latency"
+  },
+  {
+   "name": "Low latency",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Reduce artifacts",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24-+24",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Gate floor",
+   "default": "-40.0 dB",
+   "repeat": false,
+   "range": "-inf-0",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Gate attack",
+   "default": "1.0 ms",
+   "repeat": false,
+   "range": "0-200",
+   "unit": "ms",
+   "desc": "How fast it reacts"
+  },
+  {
+   "name": "Gate release",
+   "default": "80.0 ms",
+   "repeat": false,
+   "range": "0-2000",
+   "unit": "ms",
+   "desc": "How fast it recovers"
+  },
+  {
+   "name": "Compressor ratio",
+   "default": "2.0:1",
+   "repeat": false,
+   "range": "0.5:1-100:1",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Compressor attack",
+   "default": "5.0 ms",
+   "repeat": false,
+   "range": "0-200",
+   "unit": "ms",
+   "desc": "How fast it reacts"
+  },
+  {
+   "name": "Compressor release",
+   "default": "80.0 ms",
+   "repeat": false,
+   "range": "0-2000",
+   "unit": "ms",
+   "desc": "How fast it recovers"
+  },
+  {
+   "name": "Reduction",
+   "default": "-18 dB",
+   "repeat": false,
+   "range": "-60-0",
+   "unit": "dB",
+   "desc": "The most any frequency is turned down"
+  },
+  {
+   "name": "Offset",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-20-+20",
+   "unit": "dB",
+   "desc": "Moves the profile. Higher removes more, and can thin the sound"
+  },
+  {
+   "name": "Smoothing",
+   "default": "35 %",
+   "repeat": false,
+   "range": "0-100",
+   "unit": "%",
+   "desc": "Smooths the reduction across time and frequency. Higher avoids \"musical noise\", the warbling bleeps of hard noise reduction"
+  },
+  {
+   "name": "Subtract release",
+   "default": "80.0 ms",
+   "repeat": false,
+   "range": "10-500",
+   "unit": "ms",
+   "desc": "How fast it recovers"
+  },
+  {
+   "name": "Learn length",
+   "default": "2.0 s",
+   "repeat": false,
+   "range": "0.5-10",
+   "unit": "s",
+   "desc": null
+  },
+  {
+   "name": "Sidechain detector",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Show analysis",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Graph top",
+   "default": "+24 dB",
+   "repeat": false,
+   "range": "0-+48",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Analysis floor",
+   "default": "-90 dB",
+   "repeat": false,
+   "range": "-150 to -30",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24-+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Profile source",
+   "default": "Learned",
+   "repeat": false,
+   "range": "Learned, Adaptive, Both",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Adapt speed",
+   "default": "2.0 s",
+   "repeat": false,
+   "range": "0.5 to 10",
+   "unit": "s",
+   "desc": null
+  },
+  {
+   "name": "Resonance depth",
+   "default": "6.0 dB",
+   "repeat": false,
+   "range": "0 to 24",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Resonance sharpness",
+   "default": "50 %",
+   "repeat": false,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": null
+  },
+  {
+   "name": "Resonance attack",
+   "default": "5.0 ms",
+   "repeat": false,
+   "range": "0 to 200",
+   "unit": "ms",
+   "desc": "How fast it reacts"
+  },
+  {
+   "name": "Resonance release",
+   "default": "80.0 ms",
+   "repeat": false,
+   "range": "0 to 2000",
+   "unit": "ms",
+   "desc": "How fast it recovers"
+  },
+  {
+   "name": "Resonance low",
+   "default": "100 Hz",
+   "repeat": false,
+   "range": "20 to 2000",
+   "unit": "Hz",
+   "desc": null
+  },
+  {
+   "name": "Resonance high",
+   "default": "20 kHz",
+   "repeat": false,
+   "range": "1000 to 20000",
+   "unit": "Hz",
+   "desc": null
+  }
+ ],
+ "Gate": [
+  {
+   "name": "Threshold",
+   "default": "-40.0 dB",
+   "repeat": false,
+   "range": "-90-0",
+   "unit": "dB",
+   "desc": "Level where the gate opens"
+  },
+  {
+   "name": "Hysteresis",
+   "default": "-6.0 dB",
+   "repeat": false,
+   "range": "-24-+12",
+   "unit": "dB",
+   "desc": "Where it closes, relative to Threshold"
+  },
+  {
+   "name": "Lookahead",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Delays the audio by 50 ms, so the gate can open before the hit. Adds 50 ms latency, which REAPER compensates"
+  },
+  {
+   "name": "Pre-open",
+   "default": "5.0 ms",
+   "repeat": false,
+   "range": "0-50",
+   "unit": "ms",
+   "desc": "How early the gate starts to open, before the hit. Needs Lookahead"
+  },
+  {
+   "name": "Attack",
+   "default": "0.5 ms",
+   "repeat": false,
+   "range": "0-500",
+   "unit": "ms",
+   "desc": "How fast it opens"
+  },
+  {
+   "name": "Hold",
+   "default": "20 ms",
+   "repeat": false,
+   "range": "0-2000",
+   "unit": "ms",
+   "desc": "How long it stays open after the level falls"
+  },
+  {
+   "name": "Release",
+   "default": "100 ms",
+   "repeat": false,
+   "range": "1-5000",
+   "unit": "ms",
+   "desc": "How fast it closes"
+  },
+  {
+   "name": "Range",
+   "default": "-inf dB",
+   "repeat": false,
+   "range": "-inf-0",
+   "unit": "dB",
+   "desc": "How far the closed gate turns down. -inf is silence"
+  },
+  {
+   "name": "RMS size",
+   "default": "0.0 ms",
+   "repeat": false,
+   "range": "0-250",
+   "unit": "ms",
+   "desc": "How long the detector averages. 0 is peak detection"
+  },
+  {
+   "name": "Detector input",
+   "default": "Main input L+R",
+   "repeat": false,
+   "range": "6 choices",
+   "unit": "",
+   "desc": "What the gate listens to"
+  },
+  {
+   "name": "Lowpass",
+   "default": "Off",
+   "repeat": false,
+   "range": "20-22000, top is off",
+   "unit": "Hz",
+   "desc": null
+  },
+  {
+   "name": "Highpass",
+   "default": "Off",
+   "repeat": false,
+   "range": "20-5000, bottom is off",
+   "unit": "Hz",
+   "desc": null
+  },
+  {
+   "name": "Mode",
+   "default": "Gate",
+   "repeat": false,
+   "range": "Gate, Duck",
+   "unit": "",
+   "desc": "Duck turns the signal down by Range while the detector is over Threshold"
+  },
+  {
+   "name": "Link channels",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Both channels open together, on the louder one"
+  },
+  {
+   "name": "Wet",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-inf-+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Dry",
+   "default": "-inf dB",
+   "repeat": false,
+   "range": "-inf-+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Noise",
+   "default": "-inf dB",
+   "repeat": false,
+   "range": "-inf-0",
+   "unit": "dBFS",
+   "desc": "White noise, only while the gate is open. In Duck mode, while it ducks"
+  },
+  {
+   "name": "MIDI on open/close",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "MIDI note",
+   "default": "A4",
+   "repeat": false,
+   "range": "0-127",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "MIDI channel",
+   "default": "1",
+   "repeat": false,
+   "range": "1-16",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Velocity from level",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Velocity window",
+   "default": "2.0 ms",
+   "repeat": false,
+   "range": "1-5",
+   "unit": "ms",
+   "desc": null
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24-+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  }
+ ],
+ "Kicker": [
+  {
+   "name": "Freq",
+   "default": "50.0 Hz",
+   "repeat": false,
+   "range": "20–240",
+   "unit": "Hz",
+   "desc": "Centre of the boosted band"
+  },
+  {
+   "name": "Wet",
+   "default": "-12.0 dB",
+   "repeat": false,
+   "range": "-60–+12, bottom = -inf",
+   "unit": "dB",
+   "desc": "Level of the filtered band"
+  },
+  {
+   "name": "Dry",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-60–+12, bottom = -inf",
+   "unit": "dB",
+   "desc": "Level of the original signal"
+  },
+  {
+   "name": "Filter Q",
+   "default": "2.00",
+   "repeat": false,
+   "range": "0.5–10",
+   "unit": "",
+   "desc": "Width of the band. Higher is narrower and rings longer"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24–+12",
+   "unit": "dB",
+   "desc": "The same control as the header knob"
+  },
+  {
+   "name": "Mono below Freq",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Sums the input to the filter to mono, so the added low end is identical in both channels. The dry signal stays stereo"
+  },
+  {
+   "name": "Soft clip",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Rounds peaks at the output so they can't exceed 0 dBFS. It starts acting at about -3 dBFS"
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Mode",
+   "default": "Boost",
+   "repeat": false,
+   "range": "Boost, Sub",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Cutoff",
+   "default": "100 Hz",
+   "repeat": false,
+   "range": "40–200",
+   "unit": "Hz",
+   "desc": "The highest frequency Sub listens to. Set it just above the kick's body"
+  },
+  {
+   "name": "Octave",
+   "default": "−1 oct",
+   "repeat": false,
+   "range": "−1 oct, −2 oct",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Sub",
+   "default": "-9.0 dB",
+   "repeat": false,
+   "range": "−inf (−60) to +6",
+   "unit": "dB",
+   "desc": "The level of the sub it creates"
+  },
+  {
+   "name": "Sensitivity",
+   "default": "-40.0 dB",
+   "repeat": false,
+   "range": "−60 to 0",
+   "unit": "dB",
+   "desc": "Below this level Sub stays silent, so bleed and noise don't make sub"
+  },
+  {
+   "name": "Sub low-pass",
+   "default": "120 Hz",
+   "repeat": false,
+   "range": "60–250",
+   "unit": "Hz",
+   "desc": "Smooths the sub: nothing it adds goes much above this"
+  },
+  {
+   "name": "Mono sub",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "The same sub in both channels, from L+R. Off: each channel makes its own"
+  }
+ ],
+ "Limit": [
+  {
+   "name": "Threshold",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−30–0",
+   "unit": "dB",
+   "desc": "How much the input is pushed up into the limiter"
+  },
+  {
+   "name": "Ceiling",
+   "default": "-1.0 dB",
+   "repeat": false,
+   "range": "−12–0",
+   "unit": "dB",
+   "desc": "The highest level the output reaches"
+  },
+  {
+   "name": "Release",
+   "default": "80 ms",
+   "repeat": false,
+   "range": "1–1000",
+   "unit": "ms",
+   "desc": "How fast the gain recovers"
+  },
+  {
+   "name": "Lookahead",
+   "default": "2.0 ms",
+   "repeat": false,
+   "range": "0–5",
+   "unit": "ms",
+   "desc": "How early it starts to turn down before a peak. 0 ms is instant and can distort; the latency doesn't change"
+  },
+  {
+   "name": "Link",
+   "default": "100 %",
+   "repeat": false,
+   "range": "0–100",
+   "unit": "%",
+   "desc": "How much the two channels share their gain reduction. 100 % keeps the stereo image still; lower lets a peak on one side leave the other alone"
+  },
+  {
+   "name": "Style",
+   "default": "Clean",
+   "repeat": false,
+   "range": "Clean, Punchy, Dense",
+   "unit": "",
+   "desc": "See below"
+  },
+  {
+   "name": "Target",
+   "default": "Streaming · -14 LUFS",
+   "repeat": false,
+   "range": "Streaming −14, Podcast −16, Broadcast −23, Custom",
+   "unit": "",
+   "desc": "Moves the red line on the LUFS meter. It doesn't change the sound"
+  },
+  {
+   "name": "Custom target",
+   "default": "-14.0 LUFS",
+   "repeat": false,
+   "range": "−36 to −5",
+   "unit": "LUFS",
+   "desc": null
+  },
+  {
+   "name": "True peak",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Holds the points between samples under Ceiling too"
+  },
+  {
+   "name": "Auto release",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Program-dependent release"
+  },
+  {
+   "name": "Listen to removed",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Plays only what the limiter takes away"
+  },
+  {
+   "name": "Oversampling",
+   "default": "4x",
+   "repeat": false,
+   "range": "Off, 2×, 4×, 8×",
+   "unit": "",
+   "desc": "Runs the limiter at a higher rate, which reduces aliasing when it works hard. Changes the latency"
+  },
+  {
+   "name": "Oversampling filter",
+   "default": "Minimum phase",
+   "repeat": false,
+   "range": "Minimum, Linear",
+   "unit": "",
+   "desc": "Minimum phase has the least latency; linear phase keeps the phase of the highs. Changes the latency"
+  },
+  {
+   "name": "Dither",
+   "default": "Off",
+   "repeat": false,
+   "range": "Off, 16-bit, 16-bit shaped, 24-bit, 24-bit shaped",
+   "unit": "",
+   "desc": "Adds very quiet noise for a bounce to a lower bit depth. Shaped moves it up where it's harder to hear. Only use it on the last plugin before a 16- or 24-bit bounce, and keep Ceiling at -0.1 dB or lower"
+  },
+  {
+   "name": "Meter ballistics",
+   "default": "EBU",
+   "repeat": false,
+   "range": "EBU, RMS",
+   "unit": "",
+   "desc": "What the LUFS bar shows: short-term loudness, or plain RMS over 300 ms"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−24–+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  }
+ ],
+ "MultiComp": [
+  {
+   "name": "Active",
+   "default": "On",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Solo",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Top frequency",
+   "default": "120.0 Hz",
+   "repeat": true,
+   "range": "20-20000",
+   "unit": "Hz",
+   "desc": null
+  },
+  {
+   "name": "Threshold",
+   "default": "0.0 dB",
+   "repeat": true,
+   "range": "-60-0",
+   "unit": "dB",
+   "desc": "Level where the band starts to act"
+  },
+  {
+   "name": "Ratio",
+   "default": "2.0:1",
+   "repeat": true,
+   "range": "0.5:1-∞:1",
+   "unit": "",
+   "desc": "Above 1:1 compresses. Below 1:1 raises the level above the threshold, by up to +24 dB"
+  },
+  {
+   "name": "Knee",
+   "default": "6.0 dB",
+   "repeat": true,
+   "range": "0-24",
+   "unit": "dB",
+   "desc": "How gradually it starts"
+  },
+  {
+   "name": "Attack",
+   "default": "10.0 ms",
+   "repeat": true,
+   "range": "0-500",
+   "unit": "ms",
+   "desc": "How fast gain reduction arrives"
+  },
+  {
+   "name": "Release",
+   "default": "120 ms",
+   "repeat": true,
+   "range": "0-5000",
+   "unit": "ms",
+   "desc": "How fast it goes away"
+  },
+  {
+   "name": "RMS size",
+   "default": "5.0 ms",
+   "repeat": true,
+   "range": "0-250",
+   "unit": "ms",
+   "desc": "How long the detector averages. 0 is peak detection"
+  },
+  {
+   "name": "Gain",
+   "default": "0.0 dB",
+   "repeat": true,
+   "range": "-24-+24",
+   "unit": "dB",
+   "desc": "The band's make-up gain"
+  },
+  {
+   "name": "Auto make-up",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Adds half the gain reduction a 0 dBFS level would get. It comes from Threshold, Ratio and Knee, so it can't pump. The amount shows in brackets after Gain"
+  },
+  {
+   "name": "Auto release",
+   "default": "On",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Recovers fast from transients and slowly from sustained compression"
+  },
+  {
+   "name": "Feedback detect",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": "The detector listens to the band's output"
+  },
+  {
+   "name": "Sidechain",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": "This band listens to the sidechain, filtered to the same range"
+  },
+  {
+   "name": "Bands",
+   "default": "4",
+   "repeat": false,
+   "range": "1-8",
+   "unit": "P3.2, not automatable",
+   "desc": null
+  },
+  {
+   "name": "Detector",
+   "default": "Main input L+R",
+   "repeat": false,
+   "range": "6 choices",
+   "unit": "P3.1",
+   "desc": null
+  },
+  {
+   "name": "Crossover",
+   "default": "LR 24 dB · Min phase",
+   "repeat": false,
+   "range": "LR 24, LR 48, Linear",
+   "unit": "P3.2",
+   "desc": "Use"
+  },
+  {
+   "name": "Link bands",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "P3.2",
+   "desc": null
+  },
+  {
+   "name": "Limit output",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "P3.2",
+   "desc": null
+  },
+  {
+   "name": "Attack = 90 % rise",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "P3.2 reuse list",
+   "desc": null
+  },
+  {
+   "name": "Wet",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-inf-+12 dB",
+   "unit": "P3.2",
+   "desc": null
+  },
+  {
+   "name": "Dry",
+   "default": "-inf dB",
+   "repeat": false,
+   "range": "-inf-+12 dB",
+   "unit": "P3.2",
+   "desc": null
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24-+12 dB",
+   "unit": "Header knob",
+   "desc": null
+  },
+  {
+   "name": "Log-scale automated freq.",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "P3.2",
+   "desc": null
+  },
+  {
+   "name": "Show spectrum",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "P3.1, not automatable",
+   "desc": null
+  },
+  {
+   "name": "Show grid",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "P3.1, not automatable",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "§4.6",
+   "desc": null
+  },
+  {
+   "name": "Upward",
+   "default": "Off",
+   "repeat": true,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Up threshold",
+   "default": "-40.0 dB",
+   "repeat": true,
+   "range": "-80 to 0",
+   "unit": "dB",
+   "desc": "Level where the band starts to act"
+  },
+  {
+   "name": "Up ratio",
+   "default": "1:2.0",
+   "repeat": true,
+   "range": "1:1 to 1:10",
+   "unit": "",
+   "desc": "At 1:2, a signal 20 dB below Up thresh is lifted by 10 dB. Type `2` or `1:2`"
+  },
+  {
+   "name": "Max lift",
+   "default": "+12.0 dB",
+   "repeat": true,
+   "range": "0 to 30",
+   "unit": "dB",
+   "desc": "The most gain it ever adds"
+  },
+  {
+   "name": "Floor",
+   "default": "-70.0 dB",
+   "repeat": true,
+   "range": "-100 to -40",
+   "unit": "dB",
+   "desc": "No lift below it, fading in over the 8 dB above it"
+  },
+  {
+   "name": "Depth",
+   "default": "100 %",
+   "repeat": false,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": null
+  },
+  {
+   "name": "Time",
+   "default": "100 %",
+   "repeat": false,
+   "range": "10 to 1000",
+   "unit": "%",
+   "desc": null
+  },
+  {
+   "name": "Channel",
+   "default": "Stereo",
+   "repeat": true,
+   "range": "Stereo, Left, Right, Mid, Side",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Lookahead",
+   "default": "0.0 ms",
+   "repeat": false,
+   "range": "0 to 10",
+   "unit": "ms",
+   "desc": null
+  }
+ ],
+ "Room": [
+  {
+   "name": "Pre-delay",
+   "default": "12 ms",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "A gap before the reverb starts. With Sync pre-delay on, a note length instead"
+  },
+  {
+   "name": "Pre-delay note",
+   "default": "1/32",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Sync pre-delay",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Pre-delay as a note at the host's tempo"
+  },
+  {
+   "name": "Size",
+   "default": "55 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "How big the space is: the spacing of the early reflections and of the delays in the tail"
+  },
+  {
+   "name": "Decay",
+   "default": "1.80 s",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "How long the tail takes to fall by 60 dB (RT60), at any Size"
+  },
+  {
+   "name": "Diffusion",
+   "default": "70 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "How quickly the echoes blur into a smooth tail"
+  },
+  {
+   "name": "Mod",
+   "default": "25 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Slow movement of the delays in the tail, which keeps it from ringing"
+  },
+  {
+   "name": "Width",
+   "default": "1.00",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "0 is mono, 1 as it is, 2 wider; below 0 swaps the sides. The mono sum never changes"
+  },
+  {
+   "name": "Damping",
+   "default": "45 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "How much faster the highs die away: their decay is Decay × (1 − 0.7 × Damping)"
+  },
+  {
+   "name": "Low cut",
+   "default": "150 Hz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Takes the lows out of the reverb"
+  },
+  {
+   "name": "High cut",
+   "default": "9.0 kHz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Takes the highs out of the reverb"
+  },
+  {
+   "name": "Freeze",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Holds the tail"
+  },
+  {
+   "name": "Wet only (send)",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Only the reverb comes out"
+  },
+  {
+   "name": "Ducking",
+   "default": "0 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Turns the reverb down while the dry signal plays: at 100 %, by 24 dB once the input is above −20 dBFS, and not at all below −50 dBFS. It comes back over about 300 ms"
+  },
+  {
+   "name": "Quality",
+   "default": "Normal",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Eco runs 8 delay lines for the least CPU. Normal runs 16; High adds smoother (cubic) modulation. On a change, the old tail rings out for up to 2 s while the new one starts, so nothing cuts off"
+  },
+  {
+   "name": "Early reflections",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "The level of the first echoes"
+  },
+  {
+   "name": "Stereo input",
+   "default": "Stereo",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Mono-sum feeds the reverb the sum of both channels"
+  },
+  {
+   "name": "Wet",
+   "default": "-12.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "The reverb"
+  },
+  {
+   "name": "Dry",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "The untouched signal"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  }
+ ],
+ "Sature": [
+  {
+   "name": "Type",
+   "default": "Tape",
+   "repeat": false,
+   "range": "Tape, Tube, Transistor, Clip",
+   "unit": "",
+   "desc": "The curve. See below"
+  },
+  {
+   "name": "Drive",
+   "default": "+6.0 dB",
+   "repeat": false,
+   "range": "0–36",
+   "unit": "dB",
+   "desc": "How hard the signal is pushed into the curve"
+  },
+  {
+   "name": "Character",
+   "default": "even 30 %",
+   "repeat": false,
+   "range": "−100 to +100",
+   "unit": "%",
+   "desc": "Left: more even harmonics (2nd, 4th…), warm and full. Right: more odd ones (3rd, 5th…), edgier"
+  },
+  {
+   "name": "Tone",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−6 to +6",
+   "unit": "dB",
+   "desc": "Tilts the saturated sound around 1 kHz: +6 is 3 dB brighter at the top and 3 dB less at the bottom"
+  },
+  {
+   "name": "Low",
+   "default": "Off",
+   "repeat": false,
+   "range": "Off, 20 Hz–2 kHz",
+   "unit": "Hz",
+   "desc": "Below this, the signal passes clean"
+  },
+  {
+   "name": "High",
+   "default": "Off",
+   "repeat": false,
+   "range": "1 kHz–20 kHz, Off",
+   "unit": "Hz",
+   "desc": "Above this, the signal passes clean. Kept at least an octave above Low"
+  },
+  {
+   "name": "Auto gain",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Keeps the loudness about the same at any setting"
+  },
+  {
+   "name": "Wet",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−inf (−60) to +12",
+   "unit": "dB",
+   "desc": "The saturated signal"
+  },
+  {
+   "name": "Dry",
+   "default": "-inf dB",
+   "repeat": false,
+   "range": "−inf (−60) to +12",
+   "unit": "dB",
+   "desc": "The clean signal, for parallel saturation"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−24 to +12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Oversampling",
+   "default": "4x",
+   "repeat": false,
+   "range": "Off, 2×, 4×, 8×",
+   "unit": "",
+   "desc": "Higher is cleaner on bright, heavily driven sounds. Off has no latency but aliases more"
+  },
+  {
+   "name": "Oversampling filter",
+   "default": "Minimum phase",
+   "repeat": false,
+   "range": "Minimum phase, Linear phase",
+   "unit": "",
+   "desc": "Linear phase has more latency. The clean and saturated signals stay lined up either way"
+  },
+  {
+   "name": "Input trim",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−24 to +24",
+   "unit": "dB",
+   "desc": "The level going in"
+  },
+  {
+   "name": "DC filter",
+   "default": "On",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": "Removes the offset an uneven curve can add"
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  }
+ ],
+ "Verb": [
+  {
+   "name": "Pre-delay",
+   "default": "0.0 ms",
+   "repeat": false,
+   "range": "0–500",
+   "unit": "ms",
+   "desc": "Delays the wet signal"
+  },
+  {
+   "name": "Center",
+   "default": "Center",
+   "repeat": false,
+   "range": "-100–+100",
+   "unit": "L/R",
+   "desc": "Balance of the wet signal"
+  },
+  {
+   "name": "Width",
+   "default": "100W",
+   "repeat": false,
+   "range": "0–100",
+   "unit": "W",
+   "desc": "Stereo width of the wet signal"
+  },
+  {
+   "name": "Wet",
+   "default": "-12.0 dB",
+   "repeat": false,
+   "range": "-60–+12, -60 is -inf",
+   "unit": "dB",
+   "desc": "Reverb level"
+  },
+  {
+   "name": "Dry",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-60–+12, -60 is -inf",
+   "unit": "dB",
+   "desc": "Direct level"
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "-24–+12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Latency mode",
+   "default": "Zero latency",
+   "repeat": false,
+   "range": "Zero latency, Low CPU",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Max FFT",
+   "default": "65536",
+   "repeat": false,
+   "range": "16384, 65536",
+   "unit": "",
+   "desc": "The largest FFT used. 65536 is the lighter choice for long IRs"
+  },
+  {
+   "name": "IR storage",
+   "default": "Embed under 10 MB",
+   "repeat": false,
+   "range": "Embed under 10 MB, Always embed, Path only",
+   "unit": "",
+   "desc": "Whether a project keeps its own copy of the IR"
+  }
+ ]
+}

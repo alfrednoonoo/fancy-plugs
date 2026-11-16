@@ -1,0 +1,143 @@
+/* Fancy Plugs manual. Colours, type and shapes from docs/DESIGN_SYSTEM.md: Inter; body #303030,
+   cards #262626, wells #141414; text #FFFFFF and #8D8D8D; each plugin's accent; radius 6 for
+   cards and 3 for fields; the knob's 300-degree arc and the title strip as the two motifs. */
+
+@page { size: A4; margin: 17mm 18mm 21mm 18mm; }
+@page :first { margin: 0; }
+
+html, body { margin: 0; background: transparent; }
+body {
+  font-family: Inter; font-size: 9.3pt; line-height: 1.56; color: #E2E2E2;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  --accent: #00A985;
+}
+a { color: inherit; text-decoration: none; }
+strong { color: #FFFFFF; font-weight: 600; }
+em { font-style: normal; color: #B5B5B5; }
+p { margin: 0 0 2.4mm; orphans: 3; widows: 3; }
+
+section { position: relative; }
+.mk { position: absolute; left: 0; top: 0; font-size: 1px; line-height: 1px; color: #303030; }
+.cover .mk { color: #1E1E1E; }
+
+code {
+  font-family: Inter; font-size: 8.4pt; color: #FFFFFF; background: #141414;
+  border-radius: 3px; padding: 0.15mm 1.1mm; white-space: nowrap;
+}
+
+/* Cover -------------------------------------------------------------------------------------- */
+.cover { height: 297mm; width: 210mm; overflow: hidden; }
+.cover-knob { position: absolute; right: -34mm; top: 26mm; }
+.cover-knob svg { width: 150mm; height: 150mm; }
+.cover-text { position: absolute; left: 20mm; bottom: 58mm; width: 150mm; }
+.cover .eyebrow { margin-bottom: 7mm; }
+.cover h1 { font-size: 56pt; line-height: 1; font-weight: 600; color: #FFFFFF; margin: 0; letter-spacing: -0.02em; }
+.cover-sub { font-size: 15pt; color: #FFFFFF; margin: 6mm 0 2mm; font-weight: 500; }
+.cover-ver { font-size: 9pt; color: #8D8D8D; }
+.cover-roster {
+  position: absolute; left: 20mm; right: 20mm; bottom: 20mm; padding-top: 4mm; border-top: 1px solid #303030;
+  font-size: 6.6pt; font-weight: 600; letter-spacing: 0.14em; word-spacing: 2.4mm; line-height: 2;
+}
+
+/* Shared headings ------------------------------------------------------------------------------ */
+.eyebrow { font-size: 7.2pt; font-weight: 600; letter-spacing: 0.16em; color: #8D8D8D; }
+.eyebrow b { color: var(--accent); font-weight: 600; }
+
+.chapter, .part, .toc { break-before: page; }
+.chapter h2, .toc h2 {
+  font-size: 30pt; line-height: 1.05; font-weight: 600; color: #FFFFFF; letter-spacing: -0.015em; margin: 3mm 0 1.5mm;
+}
+.lede { font-size: 11pt; color: #8D8D8D; margin: 0; }
+.bar { display: flex; height: 3px; margin: 5mm 0 7mm; }
+.bar i { flex: 0 0 9mm; height: 3px; margin-right: 1.4mm; border-radius: 1.5px; }
+
+h3 {
+  font-size: 13pt; font-weight: 600; color: #FFFFFF; margin: 7.5mm 0 2.6mm; line-height: 1.25;
+  break-after: avoid; display: flex; align-items: center;
+}
+/* The ring of a knob face, in the plugin's accent. */
+h3::before {
+  content: ""; flex: 0 0 auto; width: 2.4mm; height: 2.4mm; border-radius: 50%;
+  border: 1.4px solid var(--accent); margin-right: 2.6mm;
+}
+h4 { font-size: 10pt; font-weight: 600; color: #FFFFFF; margin: 5mm 0 1.6mm; break-after: avoid; }
+h3 + p, h4 + p { break-before: avoid; }
+
+/* Figures -------------------------------------------------------------------------------------- */
+.figures { margin: 0 0 3mm; }
+.figures.pair { display: flex; gap: 6mm; }
+.figures.pair figure { flex: 1; }
+figure { margin: 0 0 4.5mm; break-inside: avoid; }
+figure.half { width: 92mm; }
+figure img { display: block; width: 100%; border-radius: 4px; }
+figcaption { font-size: 7.4pt; color: #8D8D8D; margin-top: 1.8mm; letter-spacing: 0.02em; }
+
+/* Quick start: a card, with steps numbered in rings ---------------------------------------------- */
+ol.quick {
+  list-style: none; margin: 0 0 3mm; padding: 4.5mm 5mm 2mm; background: #262626; border-radius: 6px; break-inside: avoid;
+}
+ol.quick li { display: flex; gap: 4mm; align-items: flex-start; margin-bottom: 2.6mm; }
+ol.quick span {
+  flex: 0 0 6mm; height: 6mm; border-radius: 50%; border: 1.4px solid var(--accent); color: #FFFFFF;
+  font-size: 8.4pt; font-weight: 600; display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+}
+ol.quick p { margin: 0.5mm 0 0; }
+
+/* Prose ---------------------------------------------------------------------------------------- */
+.prose ul, .prose ol { margin: 0 0 2.8mm; padding-left: 4.6mm; }
+.prose li { margin-bottom: 1.2mm; }
+.prose li::marker { color: #8D8D8D; }
+
+table { width: 100%; border-collapse: collapse; margin: 1mm 0 4mm; font-size: 8.3pt; line-height: 1.45; }
+thead { display: table-header-group; }
+th {
+  text-align: left; font-size: 6.7pt; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #8D8D8D; padding: 0 2.4mm 1.6mm 0; border-bottom: 1px solid #4C4C4C;
+}
+td { padding: 1.7mm 2.4mm 1.7mm 0; border-bottom: 1px solid #3A3A3A; vertical-align: top; }
+td:first-child { color: #FFFFFF; font-weight: 500; }
+tr { break-inside: avoid; }
+
+table.ref td:nth-child(1) { width: 27%; }
+table.ref td:nth-child(2) { width: 17%; color: #CFCFCF; }
+table.ref td:nth-child(3) { width: 12%; color: #CFCFCF; white-space: nowrap; }
+table.ref td:nth-child(4) { color: #D6D6D6; }
+.scope { display: block; font-size: 6.8pt; font-weight: 400; color: #8D8D8D; letter-spacing: 0.04em; }
+.refhead { break-before: page; }
+.note { font-size: 8pt; color: #8D8D8D; margin-bottom: 3mm; }
+
+/* Part openers --------------------------------------------------------------------------------- */
+.part { padding-top: 58mm; }
+.part h2 { font-size: 46pt; line-height: 1; font-weight: 600; color: #FFFFFF; margin: 4mm 0 4mm; letter-spacing: -0.02em; }
+.part .lede { font-size: 12pt; max-width: 120mm; margin-bottom: 14mm; }
+ul.roster { list-style: none; margin: 0; padding: 0; border-top: 1px solid #4C4C4C; }
+ul.roster li a {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 3.4mm 0; border-bottom: 1px solid #3A3A3A; font-size: 15pt; font-weight: 600;
+}
+ul.roster em { font-size: 9pt; color: #8D8D8D; font-weight: 400; }
+
+/* Contents ------------------------------------------------------------------------------------- */
+.toc-list { margin-top: 8mm; }
+.toc-part {
+  display: flex; justify-content: space-between; margin: 6mm 0 1.5mm; padding-bottom: 1.4mm;
+  border-bottom: 1px solid #4C4C4C; font-size: 7.2pt; font-weight: 600; letter-spacing: 0.16em; color: #8D8D8D; text-transform: uppercase;
+}
+.toc-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 2.6mm; break-inside: avoid; }
+.toc-row a.t { font-size: 11pt; font-weight: 600; color: #FFFFFF; display: flex; align-items: baseline; }
+.toc-row a.t i { display: inline-block; width: 3.2mm; height: 2px; border-radius: 1px; margin-right: 3mm; transform: translateY(-0.8mm); }
+.toc-row a.t em { font-size: 8.4pt; font-weight: 400; color: #8D8D8D; margin-left: 3mm; }
+.toc-row span { font-size: 9.5pt; color: #FFFFFF; font-variant-numeric: tabular-nums; }
+.toc-subs { font-size: 7.5pt; line-height: 1.7; color: #5E5E5E; padding-left: 6.2mm; margin-top: 0.6mm; break-inside: avoid; }
+.toc-subs a { color: #8D8D8D; }
+
+/* Glossary ------------------------------------------------------------------------------------- */
+dl.gloss { columns: 2; column-gap: 9mm; margin: 0; }
+dl.gloss dt { font-weight: 600; color: #FFFFFF; break-after: avoid; }
+dl.gloss dd { margin: 0.4mm 0 3mm; color: #CFCFCF; break-inside: avoid; }
+
+.intro p { font-size: 10.4pt; line-height: 1.55; color: #FFFFFF; margin: 1mm 0 0; }
+
+.morehead { break-before: page; }
+.more figure { margin-bottom: 6mm; }
+.more.narrow { display: grid; grid-template-columns: 1fr 1fr; gap: 0 6mm; }

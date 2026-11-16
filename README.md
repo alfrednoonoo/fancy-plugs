@@ -155,6 +155,8 @@ Resonance mode, turning down resonances at 700 Hz and 3 kHz:
 
 ## Installing
 
+### Windows
+
 Download the latest release's `FancyPlugs-<version>-win64.zip`. Close REAPER, unzip, and run `install.ps1`, which copies the plugins to `%USERPROFILE%\VST3-Dev`. You can also copy the `.vst3` folders to any VST3 path yourself. Then re-scan your plugins in REAPER.
 
 To install the newest CI build instead of a release, run this in the project folder:
@@ -167,6 +169,17 @@ It downloads the newest successful build of the current branch and installs it t
 
 Add `%USERPROFILE%\VST3-Dev` to REAPER's VST plug-in paths once (Options > Preferences > Plug-ins > VST), and click Re-scan after each install.
 
+### Mac (Intel and Apple silicon)
+
+Mac builds are being brought up (`docs/mac.md`). Every plugin is a universal VST3 and Audio Unit for macOS 11 or later, built and validated by CI on every push. No release has a Mac zip yet: until one does, use the newest CI build.
+
+1. Download `FancyPlugs-macos-<sha>` from the newest green run on the Actions page, or run `./scripts/get-latest.sh` in the project folder (it needs the GitHub CLI, `gh`, signed in).
+2. Close your DAW, unzip, and run `./install.sh` from the unzipped folder in Terminal.
+
+`install.sh` copies the VST3s to `~/Library/Audio/Plug-Ins/VST3` and the Audio Units to `~/Library/Audio/Plug-Ins/Components`, your own folders, so it needs no administrator password. The plugins aren't signed with an Apple Developer ID, so the script also removes the quarantine flag macOS puts on downloaded files; a plugin copied by hand without the script won't open until you run `xattr -dr com.apple.quarantine` on it.
+
+Use the VST3s in REAPER, Live, Cubase, Bitwig and Studio One, and the Audio Units in Logic Pro and GarageBand. On a Mac, **Cmd-click** a control to type a value (Ctrl-click is a right-click there). Fancy Gate's Audio Unit is a music effect, so it can send MIDI.
+
 ## Choosing presets
 
 Click the preset name in the header to open the preset browser. It works the same way in every plugin:
@@ -177,7 +190,7 @@ Click the preset name in the header to open the preset browser. It works the sam
 - The star marks a favourite without loading the preset.
 - The ‹ › arrows on the preset name step to the previous or next preset without opening the browser.
 
-Each plugin has a manual and a REAPER checklist in `docs/`. `docs/PROGRESS.md` has the full history, test results and measurements.
+**The full manual**, with every control of all fourteen plugins, quick starts and a glossary, is [`docs/manual/Fancy-Plugs-Manual-1.6.pdf`](docs/manual/Fancy-Plugs-Manual-1.6.pdf). Each plugin also has a manual and a REAPER checklist in `docs/`. `docs/PROGRESS.md` has the full history, test results and measurements.
 
 ## How builds work
 

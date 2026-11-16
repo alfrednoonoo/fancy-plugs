@@ -47,3 +47,12 @@
 - [ ] The ON pill switches cleanly, and with it off the sound is the untouched vocal, in time, with and without Lookahead.
 - [ ] Render the track (File > Render): it sounds the same as playback.
 - [ ] Drag the window's corner to make it bigger and smaller: everything scales together, nothing overlaps.
+
+## Mac (docs/mac.md, step 5)
+
+On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
+
+- [ ] The VST3 loads in REAPER, and the Audio Unit in Logic Pro: window, pop-ups and resizing work; Cmd-click (not Ctrl-click) on a control opens the typed-value box.
+- [ ] The checks above, once, with the VST3 in REAPER.
+- [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
+- [ ] The Audio Unit in Logic: automation follows, a bounce matches playback, and the project reopens as it was.

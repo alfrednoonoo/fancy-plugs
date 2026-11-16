@@ -18,3 +18,6 @@ __pycache__/
 # Secrets: FIGMA_TOKEN lives in the environment only, never in a file
 .env
 .env.*
+
+# The manual builder's intermediate files.
+tools/manual/work/
