@@ -341,6 +341,16 @@ jobs:
         run: |
           mkdir -p dist
           find build/plugins -type d \( -name '*.vst3' -o -name '*.component' \) -prune -exec cp -R {} dist/ \;
+          echo "Before stripping: $(du -sh dist | cut -f1)"
+          # Release builds keep their local symbol tables; strip -x removes them and leaves the
+          # exported entry points the hosts look up. It must run before signing.
+          for bundle in dist/*.vst3 dist/*.component; do
+            for bin in "$bundle"/Contents/MacOS/*; do
+              strip -x "$bin"
+            done
+          done
+          echo "After stripping: $(du -sh dist | cut -f1)"
+          du -sh dist/*.vst3 dist/*.component | sort -h
           for bundle in dist/*.vst3 dist/*.component; do
             codesign --force --deep --sign - "$bundle"
             codesign --verify --deep --strict "$bundle"
@@ -469,9 +479,13 @@ jobs:
         run: |
           mkdir -p dist/tools/examples
           cp -R pluginhost-bin/AudioPluginHost.app dist/tools/
+          strip -x dist/tools/AudioPluginHost.app/Contents/MacOS/*
           codesign --force --deep --sign - dist/tools/AudioPluginHost.app
           bench=$(find build/tools/bench -type f -name FancyBench -perm -u+x | head -1)
           cp "$bench" dist/tools/
+          strip -x dist/tools/FancyBench
+          codesign --force --sign - dist/tools/FancyBench
+          du -sh dist/tools/* dist
           cp tools/bench/examples/*.json dist/tools/examples/
 
       - name: Render UI screenshots
