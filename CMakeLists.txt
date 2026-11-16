@@ -20,6 +20,12 @@ if(NOT MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     add_compile_options(-ffp-contract=off)
 endif()
 
+# MSVC's Release link drops unreferenced functions (/OPT:REF); Apple's linker only does with
+# -dead_strip. Exported entry points stay.
+if(APPLE)
+    add_link_options(-Wl,-dead_strip)
+endif()
+
 # "all", or one of the names in FANCY_ALL_PLUGINS. Set by the workflow_dispatch input.
 set(FANCY_PLUGINS "all" CACHE STRING "Plugin to build: all, kicker, exciter, comp, eq, verb, delay, multicomp, fir, gate, limit, ds, dsmini, sature or room")
 set(FANCY_ALL_PLUGINS kicker exciter comp eq verb delay multicomp fir gate limit ds dsmini sature room)
