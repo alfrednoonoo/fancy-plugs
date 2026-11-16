@@ -325,15 +325,19 @@ dialog.sheet[open] { animation: sheet var(--t-move) var(--ease-out); }
 .plugmenu summary svg { transition: transform var(--t-quick); }
 .plugmenu[open] summary svg { transform: rotate(180deg); }
 .plugmenu[data-current] summary { box-shadow: inset 0 -2px 0 var(--accent); }
-.menu-panel { position: absolute; z-index: 20; top: calc(100% + 6px); left: -160px; width: 600px; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3);
-  background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--r-panel); padding: var(--s3); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
+.menu-panel { position: absolute; z-index: 20; top: calc(100% + 6px); left: -150px; width: 560px; display: grid; grid-template-columns: minmax(0, 1fr);
+  background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 6px var(--s3); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
+/* One group under another: its name, then its plugins in three columns. */
+.menu-panel > div { padding: var(--s2) 0; }
+.menu-panel > div + div { border-top: 1px solid var(--bg-control); }
+.top nav .menu-panel ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px var(--s2); }
 .plugmenu[open] .menu-panel { animation: menu-in var(--t-quick) var(--ease-out); }
 @keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } }
-.menu-panel h3 { font-size: 12px; font-weight: 600; padding: 6px 8px; }
+.menu-panel h3 { font-size: 12px; font-weight: 600; padding: 4px 8px 6px; }
 .menu-panel h3 a { text-decoration: none; color: var(--text-2); }
 .menu-panel h3 a:hover { color: var(--text); }
-.menu-panel ul a { display: flex; align-items: center; gap: 8px; padding: 6px 8px; min-height: 34px; border-radius: 4px; text-decoration: none; color: #EDEDED; font-size: 14px; }
-.menu-panel ul a:hover { background: #383838; box-shadow: inset 2px 0 0 var(--c); }
+.top nav .menu-panel ul a { display: flex; align-items: center; gap: 8px; padding: 6px 8px; min-height: 34px; border-radius: 4px; text-decoration: none; color: #EDEDED; font-size: 14px; }
+.top nav .menu-panel ul a:hover { background: #383838; box-shadow: inset 2px 0 0 var(--c); }
 .menu-panel ul a i, .sheet i { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--c); border-bottom-color: transparent; flex: none; }
 
 .sheet h3 { font-size: 12px; color: var(--text-2); margin: var(--s4) 0 2px; font-weight: 600; }
