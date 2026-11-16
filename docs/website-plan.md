@@ -440,16 +440,16 @@ Built on 16 November 2026. `python tools/site/build.py [out]` writes the 23 page
 
 **At each release:** update `release.json`, write the README's What's new as usual, and copy new screenshots to `docs/images/`. If a plugin's layout changed, move its hotspots (x and y are percentages of the image).
 
-**Checks run on the build:** every text colour pair at 4.5:1 or more (the build stops otherwise, 55 pairs); then, locally, all 2,038 links and assets resolve, every `#anchor` exists, each page has one `h1`, `lang`, a title, the four landmarks and `alt` on every image, no em dash, and no console errors on any page. A scripted click-through in headless Edge passed 30 of 30: the home roster (click and arrow keys), the Plugins menu (open, Esc, click outside), the phone sheet, explorer tabs (click and arrow keys), hotspot and list highlighting both ways, the manual link, single-view pages without tabs, the strip colours (blue, and the lighter purple), the Copy button's feedback, What's new opening and closing, and the guide's section list at mid-page and at the end. Renders at 1440 and 390 px wide were looked at for every page type.
+**Checks run on the build:** every text colour pair at 4.5:1 or more (the build stops otherwise, 55 pairs); then, locally, all 2,208 links and assets resolve, every `#anchor` exists, each page has one `h1`, `lang`, a title, the four landmarks and `alt` on every image, no em dash, and no console errors on any page. A scripted click-through in headless Edge passed 30 of 30: the home roster (click and arrow keys), the Plugins menu (open, Esc, click outside), the phone sheet, explorer tabs (click and arrow keys), hotspot and list highlighting both ways, the manual link, single-view pages without tabs, the strip colours (blue, and the lighter purple), the Copy button's feedback, What's new opening and closing, and the guide's section list at mid-page and at the end. Renders at 1440 and 390 px wide were looked at for every page type.
 
-**Size.** 15.3 MB in all, 10 MB of it the manual. The home page's first load is 207 KB of files before compression (237 KB on a 2x screen): HTML 34 KB, CSS 31 KB, JS 10 KB, three fonts 104 KB (subset to Latin-1 and the symbols the pages use) and the hero at 28 KB (58 KB at 2x), under the 300 KB target. Lighthouse and Web Vitals are not measured.
+**Size.** 18.2 MB in all, 10 MB of it the manual. The home page's first load is 207 KB of files before compression (237 KB on a 2x screen): HTML 34 KB, CSS 31 KB, JS 10 KB, three fonts 104 KB (subset to Latin-1 and the symbols the pages use) and the hero at 28 KB (58 KB at 2x), under the 300 KB target. Lighthouse and Web Vitals are not measured.
 
 **Differences from the plan:**
 
 - Screenshots are WebP only (480 px, 1x and 2x), without the PNG fallback; every current browser reads WebP.
-- Only `docs/images/` is used, not the release's `screens-<sha>` extra views; each plugin has its one or two views from there.
+- **Every view of every plugin** (user, 16 November 2026): all 55 plugin screenshots from the build's `screens-<sha>` artifact (run 43812185484, commit `a027396`; everything but the component gallery) are in `docs/images/`, 34 of them added for the site. Each is a tab on its plugin's page with its own hotspots: Comp, EQ and Verb 7, FIR 6, Kicker 4, MultiComp, Gate, DS, DS-Mini, Sature and Delay 3, Limit, Exciter and Room 2. Every hotspot was checked by drawing it on its screenshot. When a release changes a plugin's UI, copy the new `screens-<sha>` @2x files over these and check the hotspots of the views that changed.
 - EQ's, MultiComp's and FIR's title strips keep one colour, because their screenshots show a fixed title colour.
-- A plugin with one view has no tab row.
+- A plugin with one view would have no tab row; none has one now. On a phone the tab row wraps.
 - Social preview images are drawn with Pillow (`og/<page>.png`), so the build needs no browser.
 - The Mac quarantine command is a prefix you paste and then drag a plugin onto, because a wildcard fails in zsh when nothing matches.
 - The phone menu lists the three groups and their plugins as well as the pages.

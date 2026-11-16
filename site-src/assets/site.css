@@ -202,7 +202,7 @@ td.why { color: var(--text-2); }
 
 /* Plugin page: the screenshot explorer --------------------------------------------------------- */
 .explorer { margin-top: var(--s5); background: var(--bg-well); border-radius: var(--r-panel); padding: var(--s3) var(--s4) var(--s4); }
-.tabs { display: inline-flex; background: var(--bg-page); border-radius: var(--r-control); padding: 3px; gap: 3px; }
+.tabs { display: inline-flex; flex-wrap: wrap; background: var(--bg-page); border-radius: var(--r-control); padding: 3px; gap: 3px; }
 .tabs button { min-height: 38px; padding: 0 16px; border: 0; border-radius: var(--r-control); background: none; color: var(--text-2); font-size: 14px; font-weight: 500; transition: background var(--t-quick), color var(--t-quick); }
 .tabs button:hover { color: var(--text); }
 .tabs button[aria-selected="true"] { background: var(--accent-text); color: var(--ink); }
