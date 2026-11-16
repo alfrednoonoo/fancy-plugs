@@ -139,7 +139,10 @@ fancy::FancyProcessor::Layout createLayout (const fancy::SwitchableFrequencyPara
     layout.add (fancy::levelParameter ("dry", "Dry", mixFloorDb, 12.0f, mixFloorDb, mixFloorDb));
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
 
-    layout.add (option ("logFreq", "Log-scale automated freq.", true));
+    // A meta parameter: switching it moves every band's frequency to a new 0-1 position, which an
+    // Audio Unit host must be told (auval, docs/mac.md step 3). Mac only, so Windows is as released.
+    layout.add (std::make_unique<Bool> (juce::ParameterID { "logFreq", 1 }, "Log-scale automated freq.", true,
+                                        BoolAttributes {}.withAutomatable (false).withMeta (JUCE_MAC != 0)));
     layout.add (option ("showSpectrum", "Show spectrum", true));
     layout.add (option ("showGrid", "Show grid", true));
 

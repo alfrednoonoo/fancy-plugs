@@ -95,7 +95,10 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
     layout.add (std::make_unique<Choice> (juce::ParameterID { "firLength", 1 }, "FIR length", juce::StringArray { "2048", "4096", "8192", "16384" }, 2));
     layout.add (std::make_unique<Choice> (juce::ParameterID { "oversampling", 1 }, "Oversampling", juce::StringArray { "Off", "2x", "4x" }, 0));
 
-    layout.add (option ("logFreq", "Log-scale automated freq.", true));
+    // A meta parameter: switching it moves every band's frequency to a new 0-1 position, which an
+    // Audio Unit host must be told (auval, docs/mac.md step 3). Mac only, so Windows is as released.
+    layout.add (std::make_unique<Bool> (juce::ParameterID { "logFreq", 1 }, "Log-scale automated freq.", true,
+                                        BoolAttributes {}.withAutomatable (false).withMeta (JUCE_MAC != 0)));
     layout.add (option ("showGrid", "Show grid", true));
     layout.add (option ("showPhase", "Show phase", false));
     layout.add (option ("compact", "Compact mode", false));
