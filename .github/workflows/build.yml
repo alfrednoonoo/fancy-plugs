@@ -10,6 +10,7 @@ on:
       - '**.md'
       - 'site-src/**'
       - 'tools/site/**'
+      - 'content-src/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
     inputs:

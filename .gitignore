@@ -5,6 +5,7 @@
 /screens/
 /out/
 /site/
+/content/
 
 # Python's caches, from the models in docs/research
 __pycache__/
@@ -22,3 +23,10 @@ __pycache__/
 
 # The manual builder's intermediate files.
 tools/manual/work/
+
+# The intro film: build.py writes these from film.py, docs/images and assets/fonts.
+content-src/video/*/index.html
+content-src/video/*/compositions/
+content-src/video/*/assets/screens/
+content-src/video/*/assets/fonts/
+content-src/video/*/.hyperframes/
