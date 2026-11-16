@@ -1,6 +1,6 @@
 # Fancy Plugs website: design plan
 
-Status: **draft for approval, 16 November 2026.** No site code exists yet. This note is the design; the build follows it once it's approved, and anything it doesn't cover is asked about, not improvised.
+Status: **draft for approval, 16 November 2026.** A mockup of three pages exists (section 11); no site code yet. This note is the design; the build follows it once it's approved, and anything it doesn't cover is asked about, not improvised.
 
 Decided by the user on 16 November 2026: the site is a free download showcase; audio players are designed now and filled later; screenshots get hotspots; it's hosted on GitHub Pages from this repo; the plugins are described as "free to download and use", with no licence named; Mac is labelled beta; the logo's ring is a gradient of the seven accents.
 
@@ -143,11 +143,11 @@ Each page lists what it shows and **what a visitor can do on it**.
 ▓ FANCY PLUGS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  title strip
  (logo) FANCY PLUGS      Plugins ▾   Guide   What's new      [ Download ]
 ────────────────────────────────────────────────────────────────────────
- Learn one window.                     ┌───────────────────────────────┐
- Mix with fourteen plugins.            │                               │
+ Free effects for the whole mix:       ┌───────────────────────────────┐
+ dynamics, tone and space.             │                               │
                                        │   plugin window (screenshot)  │
- Free compressors, EQs, reverbs and    │                               │
- more, for Windows and Mac.            └───────────────────────────────┘
+ Fourteen plugins that all work the    │                               │
+ same way. Learn one window ...        └───────────────────────────────┘
  [ Download 1.6.0 ]  See all fourteen   Fancy Comp · Compressor
                                         See what it can do
  COMP MULTICOMP GATE LIMIT DS DS-MINI EQ FIR EXCITER SATURE KICKER DELAY VERB ROOM
@@ -164,7 +164,7 @@ Each page lists what it shows and **what a visitor can do on it**.
  footer
 ```
 
-- **Hero.** The headline ("Learn one window. Mix with fourteen plugins.", proposed; see section 10), one sentence ("Free compressors, EQs, reverbs and more, for Windows and Mac."), the Download button and a text link to the plugin list. On the right, one plugin window at real size. Under the hero, **the roster**: the fourteen names set like the title strip, each in its own accent (the manual's cover has the same row). Choosing a name swaps the hero window, its caption and its link to that plugin. This is the one place on the site where all seven accents appear together, and it's the focal point: the visitor browses the whole suite without leaving the first screen. The roster is a row of real buttons (arrow keys move, Enter selects); on a phone it scrolls sideways inside its own strip. It doesn't rotate by itself.
+- **Hero.** The headline ("Free effects for the whole mix: dynamics, tone and space.", chosen by the user), one sentence ("Fourteen plugins for Windows and Mac that all work the same way. Learn one window and you know them all."), the Download button and a text link to the plugin list. On the right, one plugin window at real size. Under the hero, **the roster**: the fourteen names set like the title strip, each in its own accent (the manual's cover has the same row). Choosing a name swaps the hero window, its caption and its link to that plugin. This is the one place on the site where all seven accents appear together, and it's the focal point: the visitor browses the whole suite without leaving the first screen. The roster is a row of real buttons (arrow keys move, Enter selects); on a phone it scrolls sideways inside its own strip. It doesn't rotate by itself.
 - **The three groups.** One section per group with its description from the manual and a tile for each plugin: a cropped screenshot, the name, its kind ("True-peak limiter") and one line. The sections are deliberately not the same shape, because the groups aren't the same size: six, five and three. Each heading links to the hub.
 - **One window, fourteen times.** What every plugin shares, shown on a real crop of the full header with six numbered points: the preset browser, A/B and Compare, undo and redo, typed values (click a value and type `2.5k`), resizing from 100 % to 200 %, and the temporary Listen switches. Text sits beside the image, not in cards.
 - **New in the latest release.** The first item of the What's new page with its screenshot, and a link to the rest.
@@ -413,11 +413,21 @@ Decided on 16 November 2026:
 - **Licence:** the site says "free to download and use" and names no licence.
 - **Mac** is labelled beta and links the pre-release until the first release with both zips.
 - **Logo:** the ring is the seven-accent gradient (section 4).
-- **Headline:** "Fourteen effects for mixing. Free." was turned down.
+- **Headline:** "Free effects for the whole mix: dynamics, tone and space."
 
 Open:
 
-1. **Headline.** Proposed: **"Learn one window. Mix with fourteen plugins."** It says the thing that sets the suite apart: every plugin has the same header, presets, A/B, typed values and resizing. Alternatives: "Fourteen free plugins that all work the same way." · "Free effects for the whole mix: dynamics, tone and space." · "Compress, shape and place every track, with fourteen free plugins."
+1. **Purple as small text.** The title strip sets the plugin's name in its accent at 11 px. Purple `#9A59B5` on the strip's `#141414` is about 3.9:1, under the 4.5:1 minimum, so Verb's, Room's and FIR's strips would fail. Proposed: a lighter purple, `#A970C2` (about 5:1), for small text only on those three pages; shapes keep `#9A59B5`. The other accents pass on the strip.
 2. **Audio clips.** Whenever you record them: one dry and one processed file per plugin, same passage, level-matched, 10 to 20 seconds, music you have the right to publish.
 3. **A custom domain** later, or the `github.io` address only? (The plan works with either.)
-4. **Mockups.** Following this repo's rule of a mockup before code, the next step after approval is an HTML mockup of the home page, one hub and the Comp page, rendered to PNG for you to check, before the remaining pages are built.
+
+## 11. Mockup
+
+`design/website/mockup/`: the home page (`index.html`), the Dynamics hub (`dynamics.html`) and Fancy Comp's page (`comp.html`), built by `build.py` from `site.css` and `site.js`, with renders at 1440 px and 390 px wide in `png/`. Open `index.html` in a browser to use it.
+
+What differs from the plan, as drawn:
+
+- **Explorer:** the list of points sits under the screenshot in columns, not beside it. Beside it, eight points ran well past the bottom of the image.
+- **Roster:** the names are grey and white with a small ring in each plugin's accent. Names set in their accents at 11 px fail contrast for red and purple.
+- **One window:** five numbered points on the header, plus typed values and resizing as two unnumbered ones.
+- **Mockup stand-ins:** Manual and What's new link to the PDF and the releases page on GitHub, since the Guide and What's new pages aren't drawn. Tone and Space tiles aren't links yet. The "Hear it" player is shown disabled, with a note, so its design can be judged.

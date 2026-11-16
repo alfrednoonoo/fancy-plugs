@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamics plugins: Fancy Plugs</title>
+<meta name="description" content="Six free dynamics plugins: a compressor, a multiband compressor, a gate, a limiter and two de-essers.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="stylesheet" href="site.css">
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+<div class="strip"><div class="wrap"><span><a href="index.html">Fancy</a><b>Dynamics</b></span><span>6 of 14 plugins</span></div></div>
+<header class="top"><div class="wrap">
+  <a class="logo" href="index.html"><img src="../logo-lockup.svg" width="233" height="64" alt="Fancy Plugs, home"></a>
+  <nav aria-label="Site"><ul>
+    <li><a href="index.html#plugins" aria-current="page">Plugins</a></li>
+    <li><a href="https://github.com/alfrednoonoo/fancy-plugs/blob/main/docs/manual/Fancy-Plugs-Manual-1.6.pdf">Manual</a></li>
+    <li><a href="https://github.com/alfrednoonoo/fancy-plugs/releases">What’s new</a></li>
+  </ul></nav>
+  <a class="btn btn-main" href="https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.6.0">Download</a>
+  <button class="menu-btn" type="button" aria-label="Open the menu" aria-haspopup="dialog">
+    <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M1 1h18M1 7h18M1 13h18" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+</div></header>
+<dialog class="sheet" aria-label="Menu">
+  <button class="btn btn-2 close" type="button">Close</button>
+  <a href="index.html#plugins">Plugins</a>
+  <a href="dynamics.html">Dynamics</a>
+  <a href="https://github.com/alfrednoonoo/fancy-plugs/blob/main/docs/manual/Fancy-Plugs-Manual-1.6.pdf">Manual</a>
+  <a href="https://github.com/alfrednoonoo/fancy-plugs/releases">What’s new</a>
+  <a href="https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.6.0">Download 1.6.0</a>
+</dialog>
+<main id="main" class="inner">
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Dynamics</h1>
+      <p class="lede">Plugins that react to level: they turn things down, or up, when the sound gets louder or quieter.</p>
+    </div>
+  </div>
+  <nav class="onpage" aria-label="On this page"><span>On this page</span>
+    <a href="#comp">Comp</a><a href="#multicomp">MultiComp</a><a href="#gate">Gate</a><a href="#limit">Limit</a><a href="#ds">DS</a><a href="#ds-mini">DS-Mini</a><a href="#which">Which one do I need?</a>
+  </nav>
+  <article class="row-plugin" id="comp" style="--c: #00A985">
+  <div class="stage"><img src="../../../docs/images/comp.png" width="934" height="547" alt="Fancy Comp, compressor" fetchpriority="high"></div>
+  <div>
+    <h2>Fancy Comp</h2>
+    <p class="kind">Compressor</p>
+    <p>For evening out a vocal, a bass or a drum bus, and for anything that needs a sidechain.</p>
+    <ul><li>Set the threshold right on the input meter</li><li>Compress from a sidechain or a filtered detector</li><li>Lift quiet passages with upward compression</li></ul>
+    <a class="link" href="comp.html">See Fancy Comp</a>
+  </div>
+</article>
+<article class="row-plugin" id="multicomp" style="--c: #E74D3D">
+  <div class="stage"><img src="../../../docs/images/multicomp.png" width="760" height="609" alt="Fancy MultiComp, multiband compressor" loading="lazy"></div>
+  <div>
+    <h2>Fancy MultiComp</h2>
+    <p class="kind">Multiband compressor</p>
+    <p>For a bus or a full mix where only part of the spectrum needs control.</p>
+    <ul><li>Split the signal into up to 8 bands that sum back flat</li><li>Drag crossovers and thresholds on the graph</li><li>Put a band on Mid or Side only</li></ul>
+    
+  </div>
+</article>
+<article class="row-plugin" id="gate" style="--c: #F1C315">
+  <div class="stage"><img src="../../../docs/images/gate.png" width="740" height="441" alt="Fancy Gate, gate, ducker and trigger" loading="lazy"></div>
+  <div>
+    <h2>Fancy Gate</h2>
+    <p class="kind">Gate, ducker and trigger</p>
+    <p>For drum mics and noisy tracks, and for ducking one track under another.</p>
+    <ul><li>Close a mic between hits</li><li>Look ahead 50 ms so no attack is cut</li><li>Send a MIDI note every time it opens</li></ul>
+    
+  </div>
+</article>
+<article class="row-plugin" id="limit" style="--c: #E74D3D">
+  <div class="stage"><img src="../../../docs/images/limit.png" width="760" height="465" alt="Fancy Limit, true-peak limiter" loading="lazy"></div>
+  <div>
+    <h2>Fancy Limit</h2>
+    <p class="kind">True-peak limiter</p>
+    <p>For the end of a mix or a master.</p>
+    <ul><li>Hold peaks under a true-peak ceiling</li><li>Work to a loudness target with the built-in meter</li><li>Hear only what the limiter removes</li></ul>
+    
+  </div>
+</article>
+<article class="row-plugin" id="ds" style="--c: #2DCC70">
+  <div class="stage"><img src="../../../docs/images/ds.png" width="760" height="465" alt="Fancy DS, de-esser" loading="lazy"></div>
+  <div>
+    <h2>Fancy DS</h2>
+    <p class="kind">De-esser</p>
+    <p>For harsh “s”, “sh” and “t” sounds in a voice, or harsh highs on cymbals.</p>
+    <ul><li>Follow the voice’s level with a relative threshold</li><li>Cut only the harsh band, or the whole signal</li><li>Watch each cut on the history display</li></ul>
+    
+  </div>
+</article>
+<article class="row-plugin" id="ds-mini" style="--c: #3598DB">
+  <div class="stage"><img src="../../../docs/images/dsmini.png" width="392" height="492" alt="Fancy DS-Mini, one-knob de-esser" loading="lazy"></div>
+  <div>
+    <h2>Fancy DS-Mini</h2>
+    <p class="kind">One-knob de-esser</p>
+    <p>For de-essing a vocal in a few seconds.</p>
+    <ul><li>De-ess with one knob</li><li>Pick a profile that matches the voice or instrument</li><li>Move the setting to Fancy DS when you need more control</li></ul>
+    
+  </div>
+</article>
+
+  <section id="which">
+    <h2>Which one do I need?</h2>
+    <table>
+      <thead><tr><th scope="col">I want to</th><th scope="col">Use</th><th scope="col">Because</th></tr></thead>
+      <tbody><tr><th scope="row">Even out a vocal, bass or drum bus</th><td><a href="comp.html">Fancy Comp</a></td><td class="why">One compressor over the whole signal, with every control on one page.</td></tr><tr><th scope="row">Control only the lows or highs of a bus</th><td><a href="#multicomp">Fancy MultiComp</a></td><td class="why">Each band has its own compressor, and untouched bands pass through flat.</td></tr><tr><th scope="row">Silence a drum mic between hits</th><td><a href="#gate">Fancy Gate</a></td><td class="why">It opens on the hit and closes after it, with a filter on what it listens to.</td></tr><tr><th scope="row">Stop peaks at the end of a master</th><td><a href="#limit">Fancy Limit</a></td><td class="why">A brickwall ceiling measured in true peak.</td></tr><tr><th scope="row">Soften “s” sounds, with full control</th><td><a href="#ds">Fancy DS</a></td><td class="why">Threshold, frequency, range and two ways of cutting.</td></tr><tr><th scope="row">Soften “s” sounds, quickly</th><td><a href="#ds-mini">Fancy DS-Mini</a></td><td class="why">One Amount knob on the same engine.</td></tr></tbody>
+    </table>
+  </section>
+</div>
+<div class="wrap"><div class="band">
+  <div>
+    <h2>Download Fancy Plugs 1.6.0</h2>
+    <p>All fourteen plugins in one zip, free to download and use. VST3 for Windows 10 and 11 (x64). On a Mac: VST3 and Audio Unit for macOS 11 or later, Intel and Apple silicon, as a beta. The installer copies them to your own folders and needs no administrator password.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-main" href="https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.6.0">Windows <small>1.6.0</small></a>
+    <a class="btn btn-2" href="https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.7.0-beta.1">Mac <span class="tag">Beta</span></a>
+  </div>
+</div></div>
+</main>
+<footer><div class="wrap">
+  <div class="row">
+    <img src="../logo-lockup.svg" width="233" height="64" alt="Fancy Plugs">
+    <a href="https://github.com/alfrednoonoo/fancy-plugs">GitHub</a><a href="https://github.com/alfrednoonoo/fancy-plugs/blob/main/docs/manual/Fancy-Plugs-Manual-1.6.pdf">Manual (PDF)</a><a href="https://github.com/alfrednoonoo/fancy-plugs/releases">Releases</a><span>Version 1.6.0</span>
+  </div>
+  <p>Free to download and use. UI design based on “ReaPlugs (vst GUI)” by Eugene Reznik, <a href="https://www.figma.com/community/file/967866927752067729">CC BY 4.0</a>, modified from the original. The Inter typeface is used under the SIL Open Font License.</p>
+</div></footer>
+</body>
+</html>

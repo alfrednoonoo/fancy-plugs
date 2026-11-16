@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fancy Comp, a free compressor: Fancy Plugs</title>
+<meta name="description" content="Fancy Comp is a free compressor with a sidechain, upward compression, Auto threshold and an output limiter.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="stylesheet" href="site.css">
+<script src="site.js" defer></script>
+</head>
+<body style="--accent: #00A985">
+<a class="skip" href="#main">Skip to the content</a>
+<div class="strip"><div class="wrap"><span><a href="index.html">Fancy</a><b>Comp</b></span><a href="dynamics.html">Dynamics</a></div></div>
+<header class="top"><div class="wrap">
+  <a class="logo" href="index.html"><img src="../logo-lockup.svg" width="233" height="64" alt="Fancy Plugs, home"></a>
+  <nav aria-label="Site"><ul>
+    <li><a href="index.html#plugins" aria-current="page">Plugins</a></li>
+    <li><a href="https://github.com/alfrednoonoo/fancy-plugs/blob/main/docs/manual/Fancy-Plugs-Manual-1.6.pdf">Manual</a></li>
+    <li><a href="https://github.com/alfrednoonoo/fancy-plugs/releases">What’s new</a></li>
+  </ul></nav>
+  <a class="btn btn-main" href="https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.6.0">Download</a>
+  <button class="menu-btn" type="button" aria-label="Open the menu" aria-haspopup="dialog">
+    <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M1 1h18M1 7h18M1 13h18" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+</div></header>
+<dialog class="sheet" aria-label="Menu">
+  <button class="btn btn-2 close" type="button">Close</button>
+  <a href="index.html#plugins">Plugins</a>
+  <a href="dynamics.html">Dynamics</a>
+  <a href="https://github.com/alfrednoonoo/fancy-plugs/blob/main/docs/manual/Fancy-Plugs-Manual-1.6.pdf">Manual</a>
+  <a href="https://github.com/alfrednoonoo/fancy-plugs/releases">What’s new</a>
+  <a href="https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.6.0">Download 1.6.0</a>
+</dialog>
+<main id="main" class="inner">
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Fancy Comp</h1>
+      <p class="kind">Compressor</p>
+      <p class="lede">A compressor with its threshold on the input meter, a sidechain, a filtered detector and an output limiter.</p>
+    </div>
+    <div class="actions"><a class="link" href="https://github.com/alfrednoonoo/fancy-plugs/blob/main/docs/manual/Fancy-Plugs-Manual-1.6.pdf">Manual chapter</a><a class="btn btn-main" href="https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.6.0">Download</a></div>
+  </div>
+
+  <div class="explorer">
+    <div class="tabs" role="tablist" aria-label="Views of Fancy Comp"><button type="button" role="tab" id="tab-main" aria-controls="view-main" aria-selected="true">Main view</button><button type="button" role="tab" id="tab-upward" aria-controls="view-upward" aria-selected="false" tabindex="-1">Upward page</button></div>
+    <div class="view" role="tabpanel" id="view-main" aria-labelledby="tab-main">
+  <div class="shot"><img src="../../../docs/images/comp.png" width="934" height="547" alt="Fancy Comp’s main view" fetchpriority="high"><button type="button" class="spot" data-n="1" style="left: 5.8%; top: 23.5%" aria-label="1: Threshold fader">1</button><button type="button" class="spot" data-n="2" style="left: 17.2%; top: 23.5%" aria-label="2: GR meter">2</button><button type="button" class="spot" data-n="3" style="left: 29.8%; top: 17.9%" aria-label="3: Detector input">3</button><button type="button" class="spot" data-n="4" style="left: 38.5%; top: 39%" aria-label="4: Ratio and Knee">4</button><button type="button" class="spot" data-n="5" style="left: 63%; top: 39%" aria-label="5: Attack and Release">5</button><button type="button" class="spot" data-n="6" style="left: 65%; top: 75%" aria-label="6: Lowpass and Highpass">6</button><button type="button" class="spot" data-n="7" style="left: 92.6%; top: 30%" aria-label="7: Wet and Dry">7</button><button type="button" class="spot" data-n="8" style="left: 39.6%; top: 95.6%" aria-label="8: Checkbox row">8</button></div>
+  <ol class="points"><li data-n="1"><span class="num">1</span><b>Threshold fader</b><span class="t">Set the level where compression starts, on top of the input meter, so you see what crosses it.</span></li><li data-n="2"><span class="num">2</span><b>GR meter</b><span class="t">See how much is being turned down, for each channel.</span></li><li data-n="3"><span class="num">3</span><b>Detector input</b><span class="t">Compress from the track itself or from a sidechain, such as a kick ducking a bass.</span></li><li data-n="4"><span class="num">4</span><b>Ratio and Knee</b><span class="t">Choose how firmly it compresses, and how gradually it starts.</span></li><li data-n="5"><span class="num">5</span><b>Attack and Release</b><span class="t">Let the punch through or catch it, and let Auto set the release for you.</span></li><li data-n="6"><span class="num">6</span><b>Lowpass and Highpass</b><span class="t">Filter what the detector hears, so a bass drum doesn’t pump the whole mix.</span></li><li data-n="7"><span class="num">7</span><b>Wet and Dry</b><span class="t">Blend compressed and uncompressed sound for parallel compression.</span></li><li data-n="8"><span class="num">8</span><b>Checkbox row</b><span class="t">Link the channels, make up the lost level automatically, and limit the output.</span></li></ol>
+</div>
+<div class="view" role="tabpanel" id="view-upward" aria-labelledby="tab-upward" hidden>
+  <div class="shot"><img src="../../../docs/images/comp-upward.png" width="934" height="547" alt="Fancy Comp’s EDIT drawer on the Upward page" loading="lazy"><button type="button" class="spot" data-n="1" style="left: 50%; top: 21%" aria-label="1: EDIT pages">1</button><button type="button" class="spot" data-n="2" style="left: 31.2%; top: 49%" aria-label="2: Up threshold and ratio">2</button><button type="button" class="spot" data-n="3" style="left: 31.2%; top: 68%" aria-label="3: Max lift and Floor">3</button><button type="button" class="spot" data-n="4" style="left: 54.3%; top: 58%" aria-label="4: Transfer curve">4</button><button type="button" class="spot" data-n="5" style="left: 5.8%; top: 52%" aria-label="5: Threshold meter">5</button></div>
+  <ol class="points"><li data-n="1"><span class="num">1</span><b>EDIT pages</b><span class="t">Open four pages of deeper settings without leaving the window: Detector, Character, Upward and Options.</span></li><li data-n="2"><span class="num">2</span><b>Up threshold and ratio</b><span class="t">Lift the quiet parts of a performance towards the loud ones.</span></li><li data-n="3"><span class="num">3</span><b>Max lift and Floor</b><span class="t">Limit how far it lifts, and keep it from raising the noise between phrases.</span></li><li data-n="4"><span class="num">4</span><b>Transfer curve</b><span class="t">See both directions of compression on one curve, with the lift being applied right now.</span></li><li data-n="5"><span class="num">5</span><b>Threshold meter</b><span class="t">The meter keeps showing the threshold in use while you work in the drawer.</span></li></ol>
+</div>
+
+  </div>
+
+  <section>
+    <h2>What you can do with it</h2>
+    <div class="lead">
+      <div>
+        <h3>Set the threshold where you can see the signal.</h3>
+        <p>The Threshold fader sits on top of the input meter. Pull it down until the peaks cross it, and the GR meter beside it shows what that costs.</p>
+      </div>
+      <div class="crop" style="aspect-ratio: 944 / 560"><img src="img/comp-threshold.png" width="944" height="560" loading="lazy" alt="The Threshold fader over the input meter, next to the GR meter and the Ratio and Knee knobs"></div>
+    </div>
+    <ul class="can"><li><b>Compress from somewhere else</b><span>Key it from a sidechain input, or from a filtered copy of the track.</span></li><li><b>Lift what’s too quiet</b><span>Upward compression raises soft passages, with a limit on the lift and a floor under it.</span></li><li><b>Keep it steady from verse to chorus</b><span>Auto threshold follows the input’s long-term level, so the amount of compression stays the same.</span></li><li><b>Add colour on the way</b><span>A Warm or Bright stage, before or after the compressor, with the curves from Fancy Sature.</span></li><li><b>Shape what the detector hears</b><span>A low shelf, a bell and a high shelf on a curve you can drag.</span></li><li><b>Catch the last peaks</b><span>Limit output puts a limiter after the compressor.</span></li><li><b>Compress in parallel</b><span>Separate Wet and Dry faders, kept in time with each other.</span></li><li><b>Avoid aliasing</b><span>Oversampling up to 8x.</span></li></ul>
+  </section>
+
+  <section>
+    <h2>Hear it</h2>
+    <p class="note">Mockup only: this section appears on a plugin’s page once its before and after clips are recorded. Until then the page has no player.</p>
+    <div class="player">
+      <button class="play" type="button" disabled aria-label="Play"><svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true"><path d="M1 1v16l14-8z" fill="#fff"/></svg></button>
+      <div class="seg" role="group" aria-label="Version"><button type="button" disabled aria-pressed="false">Before</button><button type="button" disabled aria-pressed="true">After</button></div>
+      <div class="bar"><i></i></div>
+      <span class="time">0:06 / 0:16</span>
+      <p class="cap">Clip name and the settings used go here.</p>
+    </div>
+  </section>
+
+  <div class="two">
+    <section>
+      <h2>Details</h2>
+      <table>
+        <tbody>
+          <tr><th scope="row">Formats</th><td>VST3 on Windows 10 and 11 (x64). VST3 and Audio Unit on macOS 11 or later (beta).</td></tr>
+          <tr><th scope="row">Inputs</th><td>Mono or stereo, plus a stereo sidechain.</td></tr>
+          <tr><th scope="row">Latency</th><td>None at the default settings. Pre-comp, oversampling and Limit output add some, and the host compensates for it.</td></tr>
+          <tr><th scope="row">Oversampling</th><td>Up to 8x.</td></tr>
+          <tr><th scope="row">Window</th><td>934 × 547 at 100 %, resizable to 200 %.</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Works well with</h2>
+      <div class="pairs">
+        <a href="dynamics.html#multicomp"><b><i style="--c: #E74D3D"></i>Fancy MultiComp</b><span>The same upward compression, on each band of its own.</span></a>
+        <a href="dynamics.html#limit"><b><i style="--c: #E74D3D"></i>Fancy Limit</b><span>After the compressor, at the end of the chain.</span></a>
+        <a href="index.html#tone"><b><i style="--c: #E77E23"></i>Fancy Sature</b><span>Comp’s Character stage uses its curves. Use Sature for the full set.</span></a>
+      </div>
+    </section>
+  </div>
+
+  <nav class="prevnext" aria-label="More Dynamics plugins">
+    <a href="dynamics.html#ds-mini">‹ Fancy DS-Mini</a><a class="mid" href="dynamics.html">Dynamics</a><a href="dynamics.html#multicomp">Fancy MultiComp ›</a>
+  </nav>
+</div>
+<div class="wrap"><div class="band">
+  <div>
+    <h2>Download Fancy Plugs 1.6.0</h2>
+    <p>All fourteen plugins in one zip, free to download and use. VST3 for Windows 10 and 11 (x64). On a Mac: VST3 and Audio Unit for macOS 11 or later, Intel and Apple silicon, as a beta. The installer copies them to your own folders and needs no administrator password.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-main" href="https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.6.0">Windows <small>1.6.0</small></a>
+    <a class="btn btn-2" href="https://github.com/alfrednoonoo/fancy-plugs/releases/tag/v1.7.0-beta.1">Mac <span class="tag">Beta</span></a>
+  </div>
+</div></div>
+</main>
+<footer><div class="wrap">
+  <div class="row">
+    <img src="../logo-lockup.svg" width="233" height="64" alt="Fancy Plugs">
+    <a href="https://github.com/alfrednoonoo/fancy-plugs">GitHub</a><a href="https://github.com/alfrednoonoo/fancy-plugs/blob/main/docs/manual/Fancy-Plugs-Manual-1.6.pdf">Manual (PDF)</a><a href="https://github.com/alfrednoonoo/fancy-plugs/releases">Releases</a><span>Version 1.6.0</span>
+  </div>
+  <p>Free to download and use. UI design based on “ReaPlugs (vst GUI)” by Eugene Reznik, <a href="https://www.figma.com/community/file/967866927752067729">CC BY 4.0</a>, modified from the original. The Inter typeface is used under the SIL Open Font License.</p>
+</div></footer>
+</body>
+</html>
