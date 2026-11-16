@@ -2,7 +2,7 @@
 
 Status: **draft for approval, 16 November 2026.** No site code exists yet. This note is the design; the build follows it once it's approved, and anything it doesn't cover is asked about, not improvised.
 
-Decided by the user on 16 November 2026: the site is a free download showcase; audio players are designed now and filled later; screenshots get hotspots; it's hosted on GitHub Pages from this repo.
+Decided by the user on 16 November 2026: the site is a free download showcase; audio players are designed now and filled later; screenshots get hotspots; it's hosted on GitHub Pages from this repo; the plugins are described as "free to download and use", with no licence named; Mac is labelled beta; the logo's ring is a gradient of the seven accents.
 
 ## 1. What the site is
 
@@ -75,7 +75,7 @@ Rules:
 - **One accent per page.** Shared pages use teal. A plugin page uses its plugin's accent for the title strip, the ring bullets, the hotspot markers, the active tab and the focus ring. The Download button stays teal on every page, so it's always the same button.
 - **Teal means "the suite", never one plugin**, as in the plugins. Comp's page is the one place where accent and suite colour coincide, as in Comp itself.
 - **Contrast (WCAG AA).** Text on the teal button is `#141414` (white on teal is about 3:1 and fails). Red `#E74D3D` and purple `#9A59B5` fail 4.5:1 as small text on `#1E1E1E`, so an accent is used for text only at 24 px or larger, and otherwise for shapes: rings, underlines, markers. Small text is white or grey. The build runs the contrast checker on every pair.
-- **Gradients:** only the meter gradient, and only where it shows a level (the audio player's progress, the hero meter). No background gradients, glows, blur or patterns.
+- **Gradients:** two, each with one job. The meter gradient, only where it shows a level (the audio player's progress). The seven-accent gradient, only on the logo's ring, where it stands for the whole suite (the user's choice, 16 November 2026). Neither is used as a background, on text or on buttons. No glows, blur or patterns.
 - **Shadow:** one, on the plugin screenshot, because it's a window sitting above the page. Nothing else floats.
 - **Radius:** 3 for controls, 6 for panels, 8 for the screenshot frame and dialogs. Pills only where the plugins have pills (the Download button echoes the `ON` pill).
 
@@ -117,22 +117,21 @@ Uppercase with tracking is used in exactly one place, the title strip, because t
 
 Made and in `design/website/`. The script that draws them is `design/website/make-brand.py` (it needs `fonttools`; the PNG and ICO files are rendered from the SVGs with headless Edge and Pillow).
 
-**The idea: a knob that is a plug.** The knob's ring is the plugins' own 300 degree arc, which leaves a 60 degree gap at the bottom. A plug's two prongs come out through that gap. "Fancy" is the knob, "Plugs" is the prongs, and the gap that every Fancy knob already has is what makes the two fit. The wordmark is the title strip itself: `FANCY` in `#8D8D8D`, `PLUGS` in white, Inter SemiBold, tracking 0.08em, outlined so it needs no font.
+**The idea: a knob that is a plug.** The knob's ring is the plugins' own 300 degree arc, which leaves a 60 degree gap at the bottom. A plug's two prongs come out through that gap. "Fancy" is the knob, "Plugs" is the prongs, and the gap that every Fancy knob already has is what makes the two fit. The ring runs through the suite's seven accents as one gradient, from red at 7 o'clock through orange, yellow, green, teal and blue to purple at 5 o'clock: every plugin's colour in one knob. The wordmark is the title strip itself: `FANCY` in `#8D8D8D`, `PLUGS` in white, Inter SemiBold, tracking 0.08em, outlined so it needs no font.
 
 | File | Use |
 |---|---|
 | `logo-lockup.svg` | Site header and footer: mark plus wordmark, for dark backgrounds |
 | `logo-lockup-on-light.svg` | Anywhere light (a README badge, a print) |
-| `logo-mark.svg`, `logo-mark-on-light.svg` | The mark alone, teal ring |
-| `logo-mark-suite.svg` | The ring in the seven accents, one segment each. Only for the home hero and the social preview image, where it stands for the whole suite |
+| `logo-mark.svg`, `logo-mark-on-light.svg` | The mark alone |
 | `logo-mark-mono-white.svg`, `-mono-black.svg` | One colour |
-| `favicon.svg`, `favicon.ico` (16, 32, 48), `favicon-32.png` | Browser tab: simplified, with a thicker ring and prongs and no pointer, on a `#1E1E1E` tile so it reads on light and dark tabs. Checked at 16 px |
+| `favicon.svg`, `favicon.ico` (16, 32, 48), `favicon-16.png`, `favicon-32.png` | Browser tab: simplified, with a thicker ring and prongs and no pointer, on a `#1E1E1E` tile so it reads on light and dark tabs. Checked at 16 px |
 | `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png` | Home-screen icons, square |
 | `app-icon.svg` | The full mark on the tile, for larger uses |
 
-Rules: the ring is teal, or the seven-accent suite ring; never one plugin's accent. Clear space around the mark is one prong's length. The mark is not smaller than 16 px; below 24 px use the favicon drawing. Don't rotate it, outline it, or put it on a busy image.
+Rules: the ring is always the seven-accent gradient in that order, or one flat colour in the mono versions; never a single plugin's accent, and never a different set of colours. SVG can't stroke with a conic gradient, so the ring is drawn as 100 short arcs; use the files as they are and don't rebuild it with a CSS gradient. Clear space around the mark is one prong's length. The mark is not smaller than 16 px; below 24 px use the favicon drawing. Don't rotate it, outline it, or put it on a busy image.
 
-Still to make at build time: the social preview image (1200 × 630, the suite mark, the wordmark and one screenshot) for each page's `og:image`.
+Still to make at build time: the social preview image (1200 × 630, the mark, the wordmark and one screenshot) for each page's `og:image`.
 
 ## 5. Page designs
 
@@ -144,11 +143,11 @@ Each page lists what it shows and **what a visitor can do on it**.
 ▓ FANCY PLUGS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  title strip
  (logo) FANCY PLUGS      Plugins ▾   Guide   What's new      [ Download ]
 ────────────────────────────────────────────────────────────────────────
- Fourteen effects for mixing.          ┌───────────────────────────────┐
- Free.                                 │                               │
+ Learn one window.                     ┌───────────────────────────────┐
+ Mix with fourteen plugins.            │                               │
                                        │   plugin window (screenshot)  │
- Compressors, EQs, reverbs and more,   │                               │
- for Windows and Mac. VST3 and AU.     └───────────────────────────────┘
+ Free compressors, EQs, reverbs and    │                               │
+ more, for Windows and Mac.            └───────────────────────────────┘
  [ Download 1.6.0 ]  See all fourteen   Fancy Comp · Compressor
                                         See what it can do
  COMP MULTICOMP GATE LIMIT DS DS-MINI EQ FIR EXCITER SATURE KICKER DELAY VERB ROOM
@@ -165,7 +164,7 @@ Each page lists what it shows and **what a visitor can do on it**.
  footer
 ```
 
-- **Hero.** The headline, one sentence, the Download button and a text link to the plugin list. On the right, one plugin window at real size. Under the hero, **the roster**: the fourteen names set like the title strip, each in its own accent (the manual's cover has the same row). Choosing a name swaps the hero window, its caption and its link to that plugin. This is the one place on the site where all seven accents appear together, and it's the focal point: the visitor browses the whole suite without leaving the first screen. The roster is a row of real buttons (arrow keys move, Enter selects); on a phone it scrolls sideways inside its own strip. It doesn't rotate by itself.
+- **Hero.** The headline ("Learn one window. Mix with fourteen plugins.", proposed; see section 10), one sentence ("Free compressors, EQs, reverbs and more, for Windows and Mac."), the Download button and a text link to the plugin list. On the right, one plugin window at real size. Under the hero, **the roster**: the fourteen names set like the title strip, each in its own accent (the manual's cover has the same row). Choosing a name swaps the hero window, its caption and its link to that plugin. This is the one place on the site where all seven accents appear together, and it's the focal point: the visitor browses the whole suite without leaving the first screen. The roster is a row of real buttons (arrow keys move, Enter selects); on a phone it scrolls sideways inside its own strip. It doesn't rotate by itself.
 - **The three groups.** One section per group with its description from the manual and a tile for each plugin: a cropped screenshot, the name, its kind ("True-peak limiter") and one line. The sections are deliberately not the same shape, because the groups aren't the same size: six, five and three. Each heading links to the hub.
 - **One window, fourteen times.** What every plugin shares, shown on a real crop of the full header with six numbered points: the preset browser, A/B and Compare, undo and redo, typed values (click a value and type `2.5k`), resizing from 100 % to 200 %, and the temporary Listen switches. Text sits beside the image, not in cards.
 - **New in the latest release.** The first item of the What's new page with its screenshot, and a link to the rest.
@@ -173,7 +172,7 @@ Each page lists what it shows and **what a visitor can do on it**.
 
 What a visitor can do: browse all fourteen plugins from the hero, jump to any plugin or group, see what's shared, read what's new, download.
 
-Facts shown on this page, all checkable in the repo and updated per release: fourteen plugins; VST3 on Windows 10 and 11 (x64); VST3 and Audio Unit on macOS 11 or later (beta); projects saved with any earlier version load and sound exactly as before. No user counts, ratings or quotes.
+Facts shown on this page, all checkable in the repo and updated per release: fourteen plugins, free to download and use; VST3 on Windows 10 and 11 (x64); VST3 and Audio Unit on macOS 11 or later (beta); projects saved with any earlier version load and sound exactly as before. No user counts, ratings or quotes.
 
 ### 5.2 Group hubs `/dynamics/`, `/tone/`, `/space/`
 
@@ -407,11 +406,18 @@ Anything not in this table doesn't animate. A new animation is added to the tabl
 - **Release recipe gains one step:** update `release.json` and the What's new entry, and copy the new screenshots.
 - **Build order:** tokens, title strip, header and footer; the plugin template with Comp as the first page, reviewed as a screenshot before the other thirteen; hubs; home; download, guide, what's new, about; then the checks in section 8.
 
-## 10. Open questions
+## 10. Decisions and open questions
 
-1. **Licence.** The repo has no `LICENSE` file. The site says "free"; should it name a licence, or just say free to download and use?
-2. **Mac wording.** Until the first release with both zips, the plan labels Mac "beta" and links the pre-release. Confirm, or hide Mac until then.
-3. **Headline.** Draft: "Fourteen effects for mixing. Free." Confirm or replace.
-4. **Audio clips.** Whenever you record them: one dry and one processed file per plugin, same passage, level-matched, 10 to 20 seconds, music you have the right to publish.
-5. **A custom domain** later, or the `github.io` address only? (The plan works with either.)
-6. **Mockups.** Following this repo's rule of a mockup before code, the next step after approval is an HTML mockup of the home page, one hub and the Comp page, rendered to PNG for you to check, before the remaining pages are built.
+Decided on 16 November 2026:
+
+- **Licence:** the site says "free to download and use" and names no licence.
+- **Mac** is labelled beta and links the pre-release until the first release with both zips.
+- **Logo:** the ring is the seven-accent gradient (section 4).
+- **Headline:** "Fourteen effects for mixing. Free." was turned down.
+
+Open:
+
+1. **Headline.** Proposed: **"Learn one window. Mix with fourteen plugins."** It says the thing that sets the suite apart: every plugin has the same header, presets, A/B, typed values and resizing. Alternatives: "Fourteen free plugins that all work the same way." · "Free effects for the whole mix: dynamics, tone and space." · "Compress, shape and place every track, with fourteen free plugins."
+2. **Audio clips.** Whenever you record them: one dry and one processed file per plugin, same passage, level-matched, 10 to 20 seconds, music you have the right to publish.
+3. **A custom domain** later, or the `github.io` address only? (The plan works with either.)
+4. **Mockups.** Following this repo's rule of a mockup before code, the next step after approval is an HTML mockup of the home page, one hub and the Comp page, rendered to PNG for you to check, before the remaining pages are built.
