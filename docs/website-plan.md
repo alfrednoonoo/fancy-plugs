@@ -1,0 +1,417 @@
+# Fancy Plugs website: design plan
+
+Status: **draft for approval, 16 November 2026.** No site code exists yet. This note is the design; the build follows it once it's approved, and anything it doesn't cover is asked about, not improvised.
+
+Decided by the user on 16 November 2026: the site is a free download showcase; audio players are designed now and filled later; screenshots get hotspots; it's hosted on GitHub Pages from this repo.
+
+## 1. What the site is
+
+A public site that shows what each of the fourteen plugins can do and sends visitors to the GitHub release to download them free.
+
+- **Audience:** people who mix music in a DAW (REAPER, Live, Logic, Cubase, Bitwig, Studio One) and are looking for effects.
+- **Main action on every page:** download the current release.
+- **Voice:** plain and specific. It says what a control or mode lets you do, with the plugin's real numbers. No superlatives, no invented statistics, no testimonials, no FAQ unless real questions arrive.
+- **What it is not:** a web copy of the manual. The manual explains how to do things, step by step. The site says what can be done, and links to the manual for the how.
+
+Design read: a product showcase for people who mix music, in the plugins' own visual language, at ENERGY 2 / RHYTHM 2 / MOTION 2 (confident but not loud; sections vary where the content does; motion on scroll and on interaction, nothing looping).
+
+## 2. Structure: one page per plugin, plus a page per group
+
+**Chosen: every plugin has its own page, and each of the manual's three groups has a hub page that links to its plugins.** The alternative, three long group pages with in-page links, was rejected:
+
+| | A page per plugin (chosen) | Three group pages with anchors |
+|---|---|---|
+| Accent colour | The whole page takes the plugin's accent, as the plugin's window does | Six accents on one Dynamics page; the "one accent" rule of the plugins breaks |
+| Length | One screenshot explorer, one player, one capability list | Dynamics would carry six explorers and about 60 hotspots on one page |
+| Sharing and search | "Fancy Limit" has its own address, title and preview image | A link lands mid-page, and a search result is titled "Dynamics" |
+| Phone | Short pages | Very long scrolls, heavy image weight |
+| Cost | 14 pages from one template and one data file | 3 pages, but each one unique and hard to keep in step |
+
+The groups still matter, because they answer "which one do I need?". So the hub pages keep the manual's grouping and its in-page links, and add a comparison the manual doesn't have.
+
+### Site map (23 pages)
+
+```
+/                         Home
+/dynamics/                Hub: Comp, MultiComp, Gate, Limit, DS, DS-Mini
+/tone/                    Hub: EQ, FIR, Exciter, Sature, Kicker
+/space/                   Hub: Delay, Verb, Room
+/plugins/<slug>/          14 pages: comp, multicomp, gate, limit, ds, ds-mini,
+                          eq, fir, exciter, sature, kicker, delay, verb, room
+/download/                Windows and Mac downloads, requirements, install
+/guide/                   Getting started and the shared window; links to the PDF manual
+/whats-new/               Release history
+/about/                   How it's built, credits, source
+/404.html
+```
+
+Groups and their one-line descriptions come from `PARTS` in `tools/manual/content.py`, so the site and the manual never disagree.
+
+**Navigation (every item has a real page):** logo (home) · Plugins (a menu listing the three groups and their fourteen plugins) · Guide · What's new · **Download** (button). On a phone the same items sit in a sheet opened by a menu button, closed by Esc or a tap outside, with focus returned to the button.
+
+**Footer:** one row of links (GitHub, manual PDF, releases, About), the version, and the attribution line that the CC BY 4.0 licence requires: UI design based on "ReaPlugs (vst GUI)" by Eugene Reznik, modified, with the link; Inter under the SIL Open Font License.
+
+## 3. Visual language
+
+Everything comes from `docs/DESIGN_SYSTEM.md`. The site adds nothing to the palette.
+
+### Colour
+
+| Role on the site | Value | Same as in the plugins |
+|---|---|---|
+| Page background | `#1E1E1E` | header |
+| Section panels, cards, the footer | `#262626`, radius 6 | cards |
+| Wells: the screenshot stage, code, the audio player's track | `#141414` | wells |
+| Buttons and menus (secondary) | `#303030`, radius 3; menus `#262626`, 1 px `#434343`, radius 6 | controls, pop-ups |
+| Text | `#FFFFFF`; body copy `#E2E2E2` | text |
+| Secondary text | `#8D8D8D` on `#1E1E1E`, `#262626` and `#141414` only; `#B5B5B5` on `#303030` | captions |
+| Suite colour: Download button, links, focus ring on shared pages | teal `#00A985` | header ON pill and output knob |
+| Page accent on a plugin page | that plugin's accent (section 6) | title strip, main knobs |
+| Level and "before/after" fills | gradient `#FFCF07` to `#00FF96` | meters |
+
+Rules:
+
+- **Dark only, no theme toggle.** The plugins have one dark theme and the screenshots are that theme; a light page around them would misrepresent the product. This is the brand, not a "tech" default.
+- **One accent per page.** Shared pages use teal. A plugin page uses its plugin's accent for the title strip, the ring bullets, the hotspot markers, the active tab and the focus ring. The Download button stays teal on every page, so it's always the same button.
+- **Teal means "the suite", never one plugin**, as in the plugins. Comp's page is the one place where accent and suite colour coincide, as in Comp itself.
+- **Contrast (WCAG AA).** Text on the teal button is `#141414` (white on teal is about 3:1 and fails). Red `#E74D3D` and purple `#9A59B5` fail 4.5:1 as small text on `#1E1E1E`, so an accent is used for text only at 24 px or larger, and otherwise for shapes: rings, underlines, markers. Small text is white or grey. The build runs the contrast checker on every pair.
+- **Gradients:** only the meter gradient, and only where it shows a level (the audio player's progress, the hero meter). No background gradients, glows, blur or patterns.
+- **Shadow:** one, on the plugin screenshot, because it's a window sitting above the page. Nothing else floats.
+- **Radius:** 3 for controls, 6 for panels, 8 for the screenshot frame and dialogs. Pills only where the plugins have pills (the Download button echoes the `ON` pill).
+
+### Type
+
+Inter, self-hosted from `assets/fonts/` (Regular, Medium, SemiBold) as WOFF2 with `font-display: swap`. Reason: it's the typeface in every plugin window and in the manual, so the site reads as the same product.
+
+| Use | Size / weight |
+|---|---|
+| Home headline | 56 px SemiBold, -0.02em, line height 1.05 (36 px on a phone) |
+| Page title (h1) | 44 px SemiBold (30 px on a phone) |
+| Section heading (h2) | 26 px SemiBold, with the ring bullet |
+| Sub-heading (h3) | 18 px SemiBold |
+| Lede | 18 px Regular, `#8D8D8D` or `#B5B5B5` |
+| Body | 16 px Regular, line height 1.6, measure 60 to 72 characters |
+| Captions, table text | 14 px |
+| Title strip | 11 px SemiBold, uppercase, tracking 0.08em |
+
+Uppercase with tracking is used in exactly one place, the title strip, because that is the plugin's own title strip. Section labels and buttons are sentence case.
+
+### Two motifs, both taken from the plugins
+
+1. **The title strip.** Every page opens with a `#141414` strip, 28 px tall, reading `FANCY` in grey and the page's name in its accent: `FANCY COMP`, `FANCY DYNAMICS`, `FANCY PLUGS` on the home page. It doubles as the breadcrumb (`FANCY` links home; on a plugin page the group follows at the right). It is the first thing in every plugin window, so it's the first thing on every page.
+2. **The knob ring.** A 300 degree arc from 7 o'clock. It appears in the logo, as the small ring bullet before each h2 (as in the manual), and as the hotspot marker. Nowhere else.
+
+### Layout
+
+- Content width 1120 px, 24 px gutters (16 px on a phone). Breakpoints at 720 and 1040 px.
+- Spacing scale 4, 8, 13, 24, 40, 64, 104 px. 8 and 13 are the plugins' card gap and margin. Sections are 104 px apart on the home page and 64 px on inner pages; related items sit 13 or 24 px apart, so whitespace shows what belongs together.
+- Screenshots are shown at their real size where the screen allows (Comp is 934 px wide at 100 %), never upscaled, with `width` and `height` set so nothing shifts. On a phone they scale to the width and can be opened full size.
+- Tap targets are at least 44 px. No horizontal scrolling at any width from 320 px.
+
+### Icons and images
+
+- Icons: only the ones the plugins already draw (power, gear, plus, cross, the preset arrows, A/B), redrawn as inline SVG from the Figma icon set in `design/`. No icon library, no emoji.
+- Images: only CI screenshots from `docs/images/` and the release's `screens-<sha>` artifact. **Never the Phase 1 reference images**, which stay outside the repo. No illustrations, no stock art.
+
+## 4. Brand: logo and favicon
+
+Made and in `design/website/`. The script that draws them is `design/website/make-brand.py` (it needs `fonttools`; the PNG and ICO files are rendered from the SVGs with headless Edge and Pillow).
+
+**The idea: a knob that is a plug.** The knob's ring is the plugins' own 300 degree arc, which leaves a 60 degree gap at the bottom. A plug's two prongs come out through that gap. "Fancy" is the knob, "Plugs" is the prongs, and the gap that every Fancy knob already has is what makes the two fit. The wordmark is the title strip itself: `FANCY` in `#8D8D8D`, `PLUGS` in white, Inter SemiBold, tracking 0.08em, outlined so it needs no font.
+
+| File | Use |
+|---|---|
+| `logo-lockup.svg` | Site header and footer: mark plus wordmark, for dark backgrounds |
+| `logo-lockup-on-light.svg` | Anywhere light (a README badge, a print) |
+| `logo-mark.svg`, `logo-mark-on-light.svg` | The mark alone, teal ring |
+| `logo-mark-suite.svg` | The ring in the seven accents, one segment each. Only for the home hero and the social preview image, where it stands for the whole suite |
+| `logo-mark-mono-white.svg`, `-mono-black.svg` | One colour |
+| `favicon.svg`, `favicon.ico` (16, 32, 48), `favicon-32.png` | Browser tab: simplified, with a thicker ring and prongs and no pointer, on a `#1E1E1E` tile so it reads on light and dark tabs. Checked at 16 px |
+| `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png` | Home-screen icons, square |
+| `app-icon.svg` | The full mark on the tile, for larger uses |
+
+Rules: the ring is teal, or the seven-accent suite ring; never one plugin's accent. Clear space around the mark is one prong's length. The mark is not smaller than 16 px; below 24 px use the favicon drawing. Don't rotate it, outline it, or put it on a busy image.
+
+Still to make at build time: the social preview image (1200 × 630, the suite mark, the wordmark and one screenshot) for each page's `og:image`.
+
+## 5. Page designs
+
+Each page lists what it shows and **what a visitor can do on it**.
+
+### 5.1 Home `/`
+
+```
+▓ FANCY PLUGS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  title strip
+ (logo) FANCY PLUGS      Plugins ▾   Guide   What's new      [ Download ]
+────────────────────────────────────────────────────────────────────────
+ Fourteen effects for mixing.          ┌───────────────────────────────┐
+ Free.                                 │                               │
+                                       │   plugin window (screenshot)  │
+ Compressors, EQs, reverbs and more,   │                               │
+ for Windows and Mac. VST3 and AU.     └───────────────────────────────┘
+ [ Download 1.6.0 ]  See all fourteen   Fancy Comp · Compressor
+                                        See what it can do
+ COMP MULTICOMP GATE LIMIT DS DS-MINI EQ FIR EXCITER SATURE KICKER DELAY VERB ROOM
+────────────────────────────────────────────────────────────────────────
+ ◔ Dynamics  ....  six tiles, two rows
+ ◔ Tone      ....  five tiles, one wide (EQ) and four
+ ◔ Space and time  three tiles, large
+────────────────────────────────────────────────────────────────────────
+ ◔ One window, fourteen times     annotated crop of the shared header
+────────────────────────────────────────────────────────────────────────
+ ◔ New in 1.6.0   (text left, FIR Resonance screenshot right)
+────────────────────────────────────────────────────────────────────────
+ Download band: Windows · Mac (beta) · what you need
+ footer
+```
+
+- **Hero.** The headline, one sentence, the Download button and a text link to the plugin list. On the right, one plugin window at real size. Under the hero, **the roster**: the fourteen names set like the title strip, each in its own accent (the manual's cover has the same row). Choosing a name swaps the hero window, its caption and its link to that plugin. This is the one place on the site where all seven accents appear together, and it's the focal point: the visitor browses the whole suite without leaving the first screen. The roster is a row of real buttons (arrow keys move, Enter selects); on a phone it scrolls sideways inside its own strip. It doesn't rotate by itself.
+- **The three groups.** One section per group with its description from the manual and a tile for each plugin: a cropped screenshot, the name, its kind ("True-peak limiter") and one line. The sections are deliberately not the same shape, because the groups aren't the same size: six, five and three. Each heading links to the hub.
+- **One window, fourteen times.** What every plugin shares, shown on a real crop of the full header with six numbered points: the preset browser, A/B and Compare, undo and redo, typed values (click a value and type `2.5k`), resizing from 100 % to 200 %, and the temporary Listen switches. Text sits beside the image, not in cards.
+- **New in the latest release.** The first item of the What's new page with its screenshot, and a link to the rest.
+- **Download band.** Windows and Mac buttons, requirements in one line, a link to the install steps.
+
+What a visitor can do: browse all fourteen plugins from the hero, jump to any plugin or group, see what's shared, read what's new, download.
+
+Facts shown on this page, all checkable in the repo and updated per release: fourteen plugins; VST3 on Windows 10 and 11 (x64); VST3 and Audio Unit on macOS 11 or later (beta); projects saved with any earlier version load and sound exactly as before. No user counts, ratings or quotes.
+
+### 5.2 Group hubs `/dynamics/`, `/tone/`, `/space/`
+
+```
+▓ FANCY DYNAMICS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ Dynamics
+ Plugins that react to level: they turn things down, or up, ...
+ On this page:  Comp · MultiComp · Gate · Limit · DS · DS-Mini · Which one?
+────────────────────────────────────────────────────────────────────────
+ ┌ screenshot ─────────────┐  ◔ Fancy Comp            Compressor
+ │                         │  What it's for, in two sentences.
+ └─────────────────────────┘  You can: · · ·  (three short points)
+                               See Fancy Comp
+ (next plugin, image on the other side) ...
+────────────────────────────────────────────────────────────────────────
+ ◔ Which one do I need?      table: I want to ... / use ... / because
+```
+
+- An in-page list at the top links to each plugin's row and to the comparison (these are the manual's in-page links).
+- One row per plugin, image and text alternating sides, each with its accent on the ring bullet only.
+- **Which one do I need?** A table from task to plugin. Dynamics: even out a vocal (Comp), control only the lows or highs of a bus (MultiComp), silence a drum mic between hits (Gate), stop peaks at the end of a master (Limit), soften "s" sounds with full control (DS) or with one knob (DS-Mini). Tone: shape frequencies (EQ), remove steady noise or ringing (FIR), add brightness (Exciter), add warmth or grit (Sature), add low end to a kick (Kicker). Space: echoes in time with the song (Delay), a real space from an impulse response (Verb), an adjustable room or hall (Room). On a phone the table becomes a list.
+
+What a visitor can do: compare the plugins in a group, find the right one for a task, go to its page.
+
+### 5.3 Plugin page `/plugins/<slug>/` (one template, fourteen pages)
+
+```
+▓ FANCY COMP ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ Dynamics ▓
+ Fancy Comp
+ Compressor
+ One sentence on what it does.                 [ Download ]  Manual chapter
+────────────────────────────────────────────────────────────────────────
+ [ Main view ] [ Upward page ]                        views (tabs)
+ ┌──────────────────────────────────────────────┐   1 Threshold fader
+ │   screenshot at real size        ②           │     Set the level where
+ │        ①                 ③                   │     compression starts, right
+ │                    ④                         │     on the input meter.
+ └──────────────────────────────────────────────┘   2 GR meter ...
+────────────────────────────────────────────────────────────────────────
+ ◔ What you can do with it
+   lead capability, large, with a crop          then four to six more as a
+                                                two-column list of statements
+────────────────────────────────────────────────────────────────────────
+ ◔ Hear it        [ Before | After ]  ▶ ▬▬▬▬▬▬▬▬▬▬   (only when a clip exists)
+────────────────────────────────────────────────────────────────────────
+ ◔ Details        table                 ◔ Works well with   two or three links
+────────────────────────────────────────────────────────────────────────
+ ‹ Fancy DS-Mini          Dynamics          Fancy MultiComp ›
+```
+
+1. **Top.** Title strip in the accent with the group at the right, the name, the kind, one sentence, the Download button and a link to the plugin's chapter in the manual.
+2. **Screenshot explorer.** The plugin's views as tabs (the images listed in section 6). On each view, five to eight numbered markers in the accent. Hovering, focusing or tapping a marker highlights its entry in the list beside the image, and choosing an entry highlights its marker. Each entry is the control's name and one sentence that starts from what it lets you do. Keyboard: Tab reaches the tabs and then each marker in number order; arrow keys move between tabs. Below 1040 px the list moves under the image; on a phone the image can be opened full size. Without JavaScript the first view and the full list still show.
+3. **What you can do with it.** Outcome statements, not steps: "Keep a vocal steady between quiet and loud passages with Auto threshold", not "Tick Auto threshold in the EDIT drawer". The lead capability gets a large treatment with a crop of the relevant view; the rest are a plain two-column list. No icons, no identical cards.
+4. **Hear it.** A before/after player: one clip pair, a Before | After switch that changes source without losing position, play and pause, and a progress bar in the meter gradient. The section is left out of the page entirely until that plugin has clips, so there is never an empty player. States when present: loading (the bar shows "Loading clip"), failed ("This clip didn't load. Try again", with a retry button). Clips: two files per plugin, the same passage dry and processed, level-matched, 10 to 20 seconds, in `site-src/audio/<slug>/`, named in the data file with the settings used.
+5. **Details.** A table: formats, sidechain or MIDI where the plugin has them, whether it adds latency and when, window size, number of factory presets. Every value is read from the plugin's design note and manual at build time; a value that can't be sourced is left out.
+6. **Works well with.** Two or three real relations (section 6), each a link with one line of why.
+7. **Previous and next** within the group, and the Download band.
+
+What a visitor can do: switch between the plugin's views, explore its controls on the real screenshot, read what it makes possible, hear a before and after (when clips exist), check the details, move to a related plugin, download.
+
+### 5.4 Download `/download/`
+
+- Two panels of different weight: **Windows** (the main one: `FancyPlugs-<version>-win64.zip`, three install steps, where the plugins go, no admin rights) and **Mac** (marked beta until the first release with both zips: the pre-release zip, `install.sh`, the note that the plugins aren't signed with an Apple Developer ID and what the script does about it).
+- Requirements and hosts in a short table: VST3 in REAPER, Live, Cubase, Bitwig and Studio One; Audio Units in Logic Pro and GarageBand.
+- The version, date and file names come from one data file updated at each release, so the page never calls the GitHub API and has nothing to load or fail.
+- A code block with a Copy button for the one command (`xattr`), which confirms with "Copied".
+
+What a visitor can do: download for their system, copy the command, follow the install steps, open the release on GitHub.
+
+### 5.5 Guide `/guide/`
+
+The manual's two shared chapters, shortened: finding the plugins in a host, the three parts of every window, presets, typed values, A/B and undo, resizing, latency. This is the one page that explains how, because it applies to all fourteen. It ends with the manual: a large link to the PDF with its page count and version. A side list of the page's sections follows the scroll position on wide screens.
+
+What a visitor can do: learn the shared window once, jump between sections, open or download the PDF manual.
+
+### 5.6 What's new `/whats-new/`
+
+Releases from newest to oldest, from the README's "What's new" sections and the releases table: version, date, the changes grouped by plugin with links to the plugin pages, and the line about old projects. The newest release is open; older ones are collapsed `details` elements, so the page works without JavaScript.
+
+What a visitor can do: see what each version added, open older releases, go to the plugin that changed.
+
+### 5.7 About `/about/`
+
+Three short sections with different shapes: how a build is checked (the CI steps named in the README: DSP tests, Steinberg's validator, pluginval, the host harness, rendered screenshots; a test count only with the run it comes from), the design credit and licences in full, and the source link. No team section, no photos.
+
+What a visitor can do: read how the plugins are tested, see the credits, go to the source.
+
+### 5.8 404
+
+The title strip reads `FANCY 404`, one sentence, and the roster of fourteen plugin links.
+
+## 6. The fourteen plugin pages
+
+Accent and views come from `tools/manual/content.py` and `docs/images/`. "Can do" lines are the page's capability statements in draft; the build checks each one against the plugin's manual and uses the manual's control names. Hotspots list the controls to mark on the main view.
+
+| Plugin (group) | Accent | Views | Works well with |
+|---|---|---|---|
+| Comp (Dynamics) | teal `#00A985` | Main; EDIT drawer's Upward page | Sature (Character uses its curves), MultiComp (the same upward compression, per band), Limit |
+| MultiComp (Dynamics) | follows the band; page uses red `#E74D3D` | Upward row; a Mid-only band | Comp, Limit, EQ |
+| Gate (Dynamics) | yellow `#F1C315` | Main | Comp, Kicker |
+| Limit (Dynamics) | red `#E74D3D` | Main | MultiComp, Sature |
+| DS (Dynamics) | green `#2DCC70` | Main | DS-Mini (same engine), EQ |
+| DS-Mini (Dynamics) | blue `#3598DB` | Main | DS (settings carry over), Comp |
+| EQ (Tone) | follows the band; page uses red `#E74D3D` | A dynamic band; the Match card | FIR, Comp |
+| FIR (Tone) | follows the mode; page uses purple `#9A59B5` | Subtract with Adaptive; Resonance | EQ, Gate |
+| Exciter (Tone) | red `#E74D3D` | Main | EQ, DS |
+| Sature (Tone) | orange `#E77E23` | Main | Comp, Exciter |
+| Kicker (Tone) | red `#E74D3D` | Boost; Sub | Comp, Gate |
+| Delay (Space) | yellow `#F1C315` | Main; Motion page | Verb, Room |
+| Verb (Space) | purple `#9A59B5` | Main; a true-stereo library hall | Room, Delay |
+| Room (Space) | purple `#9A59B5` | Main | Verb, Delay |
+
+For EQ, MultiComp and FIR, whose accent follows a selection, the page uses the first colour of the sequence and the title strip changes colour with the selected view, as the plugin's own title strip does.
+
+**Fancy Comp.** Compressor.
+- Can do: set the threshold directly on the input meter; compress from a sidechain or a filtered detector; lift quiet passages with upward compression; keep gain reduction steady with Auto threshold; add Warm or Bright character before or after; shape what the detector hears with a three-band EQ; catch peaks with the output limiter.
+- Hotspots: Threshold fader, GR meter, Ratio and Knee, Attack and Release, Detector input, Lowpass and Highpass, Wet and Dry, the checkbox row.
+
+**Fancy MultiComp.** Multiband compressor.
+- Can do: split a mix into up to 8 bands that sum back flat; drag crossovers and thresholds on the graph; compress upward as well as down, per band; put a band on Mid, Side, Left or Right only; look ahead up to 10 ms; solo a band.
+- Hotspots: band graph and handles, crossover lines, band tabs, the Upward row, the channel chip, Depth and Time, the meters.
+
+**Fancy Gate.** Gate, ducker and trigger.
+- Can do: close a drum mic between hits; duck one track under another from the sidechain; open on only part of the spectrum with the detector filters; look ahead 50 ms so no attack is clipped; send a MIDI note on every opening.
+- Hotspots: Threshold over the input meter, the Gate | Duck switch, the history display, Range, Attack, Hold and Release, detector Lowpass and Highpass, the footer row.
+
+**Fancy Limit.** True-peak limiter.
+- Can do: hold a master under a true-peak ceiling; work to a loudness target with the built-in meter; choose between three limiting styles; let release adapt with Auto; hear only what's removed; dither the output.
+- Hotspots: Ceiling, Threshold, the history display, the loudness meter and Target, Style, Release and Auto.
+
+**Fancy DS.** De-esser.
+- Can do: soften "s", "sh" and "t" only while they're too loud; follow the voice's level with a relative threshold; cut only the harsh band or the whole signal; choose minimum- or linear-phase split filters; watch the cuts on a history display; hear only what's removed.
+- Hotspots: Threshold, the Freq ruler, Range, the Split | Wide switch, the history display, the GR meter, Listen.
+
+**Fancy DS-Mini.** One-knob de-esser.
+- Can do: de-ess with one knob; match the source with voice and instrument profiles; get the same result as Fancy DS, on the same engine; move the setting to Fancy DS as a preset when more control is needed.
+- Hotspots: Amount, Profile, the meter, Listen, EDIT.
+
+**Fancy EQ.** Parametric equalizer.
+- Can do: shape a track with up to 24 bands by dragging on the graph; watch the live analyzer behind the curve; make a band dynamic so it cuts only when needed; put a band on Mid, Side, Left or Right; match a track to a reference with Match, as one undo step; switch to linear phase.
+- Hotspots: band handles, the analyzer, band tabs and `+`, the Type dropdown and channel chip, Freq, Gain and Q, the dynamic chip, the Gain fader, MATCH.
+
+**Fancy FIR.** Spectral processor.
+- Can do: draw an EQ curve freehand; remove steady noise by learning it, or track it as it changes; gate or compress each part of the spectrum on its own; turn down ringing resonances only while they ring; hear only what's removed; convolve with a file.
+- Hotspots: the Mode switch, the spectrum and curve, Learn, Reduction, Depth and Sharpness, Range, Listen, the Gain fader.
+
+**Fancy Exciter.** Harmonic exciter.
+- Can do: add brightness above a chosen frequency without raising the whole top end; make the new harmonics denser with Clip Boost; blend the effect in parallel with Mix Back.
+- Hotspots: Freq, Clip Boost, Harmonics, Mix Back, the In/Out meter, EDIT.
+
+**Fancy Sature.** Saturator.
+- Can do: add the colour of Tape, Tube, Transistor or Clip; lean the harmonics even or odd with Character; keep the level steady while driving harder, with auto gain; keep the lows or highs clean; saturate in parallel with Dry; oversample to avoid aliasing; hear only the added harmonics.
+- Hotspots: Type, Drive, Character, Tone, the curve display, Wet and Dry, Listen.
+
+**Fancy Kicker.** Low-end enhancer.
+- Can do: swell a kick's own note with one large Freq knob; add a clean sub an octave or two below that follows the kick's pitch; balance it with Wet and Dry.
+- Hotspots: the Boost | Sub switch, Freq, Wet, Dry, the In/Out meter, EDIT. Second view: Cutoff and the octave controls in Sub mode.
+
+**Fancy Delay.** Multi-tap delay.
+- Can do: build up to 16 taps, each with its own time, feedback, filters, pan and width; lock times to the project's tempo or set them in milliseconds; give a tap Tape or BBD character; move and diffuse the repeats on the Motion page; duck the echoes under the dry signal; swing the timing; bounce taps left and right with ping-pong.
+- Hotspots: the tap map, tap tabs and `+`, the ms | Note switch and time, Feedback, Lowpass and Highpass, the tap's Volume fader, Wet and Dry.
+
+**Fancy Verb.** Convolution reverb.
+- Can do: load one of 32 built-in impulse responses or a file of your own; keep each input side's own reflections in true stereo; build the sound as a chain of modules (file, filters, echo and reverb generators, normalize, Modulate); trim the impulse on its waveform; move a long tail gently without pitch wobble.
+- Hotspots: the chain strip, the File module and its Library dropdown, the waveform and trim handles, a module's power and drag handle, Pre-delay, Wet and Dry, Add module.
+
+**Fancy Room.** Algorithmic reverb.
+- Can do: go from a small room to a long hall with Size, and set the tail's length in seconds with Decay; freeze the tail; sync pre-delay to the tempo; use it as a send with Wet only; duck the reverb under the dry signal; darken it with Damping and High cut.
+- Hotspots: Decay, Size, Pre-delay, Damping and High cut, Freeze, the display, Wet and Dry, the footer row.
+
+## 7. Animation guidelines
+
+Motion on the site behaves like the plugins: it answers something the visitor did, it's short, and it ends. MOTION dial 2.
+
+### Principles
+
+1. **Every movement has a cause the visitor can name:** they pressed, hovered, focused or scrolled something into view. Nothing moves by itself, and nothing loops.
+2. **The plugins' own behaviour is the reference.** A knob turns; a value changes; a drawer slides over the body; a bypass is a short crossfade. The site uses those: crossfades, slides over, and the ring drawing along its arc. No bounce, no spring overshoot, no float, no parallax.
+3. **One thing moves at a time.** If the view changes, the markers don't also animate in one by one.
+4. **Only `transform` and `opacity`** are animated (plus `stroke-dashoffset` for the ring), so nothing reflows.
+5. **Reduced motion:** under `prefers-reduced-motion: reduce`, every transition becomes an instant change or a 100 ms opacity fade, and scroll reveals are off. Nothing is hidden behind an animation: content is in the page before it animates.
+
+### Timing
+
+| Token | Value | Use |
+|---|---|---|
+| `--t-press` | 90 ms | A button's pressed state |
+| `--t-quick` | 140 ms | Hover and focus changes, menu open, tooltip |
+| `--t-swap` | 200 ms | Crossfades: explorer views, the hero window, Before and After |
+| `--t-move` | 280 ms | Things that travel: the phone menu sheet, the scroll reveal |
+| `--t-draw` | 500 ms | The ring drawing, once |
+| `--ease-out` | `cubic-bezier(0.2, 0, 0, 1)` | Anything entering or responding |
+| `--ease-in` | `cubic-bezier(0.4, 0, 1, 1)` | Anything leaving, at 0.7 of the entering time |
+
+The hotspot tooltip appears after 150 ms of hover and at once on focus or tap. (The plugins wait 600 ms; on a page whose job is exploring, that's too slow.)
+
+### The catalogue: every animation on the site
+
+| Where | What happens | Why |
+|---|---|---|
+| Logo, on the first page of a visit | The ring draws from 7 o'clock round to 5 o'clock, once, `--t-draw` | It is the knob being turned up; it introduces the motif |
+| Home roster | The chosen name's underline slides to it; the hero window crossfades (`--t-swap`); the caption follows | Shows that the names control the window |
+| Screenshot explorer, changing view | The image crossfades; the markers of the new view appear with it, together | Keeps the frame still so the eye stays on the plugin |
+| Hotspot marker, on hover or focus | The ring closes from 300 to 360 degrees and the linked list entry gets its accent underline, `--t-quick` | Connects the marker to its text |
+| Before and After switch | The lit segment slides, as `ParamSegments` does; audio crossfades over 30 ms | Matches the plugin's own switch; avoids a click in the sound |
+| Audio progress | The bar fills with playback | It is a meter |
+| Buttons and tiles | Hover: background one step lighter and the tile's border to `#434343`. Press: 1 px down, `--t-press` | Shows it can be pressed and that it was |
+| Plugins menu, phone sheet | Menu: fade and 4 px drop, `--t-quick`. Sheet: slides over from the right like the EDIT drawer, `--t-move` | Same behaviour as the plugins' menus and drawer |
+| Scroll reveal | Screenshots only: opacity 0 to 1 and 12 px up, `--t-move`, once per image. Text never animates in | Draws the eye to the product; text stays readable at once |
+| Moving between a hub and a plugin page | The title strip's name and accent crossfade (View Transitions, where the browser supports it; otherwise a normal page load) | Makes the accent change read as moving between windows |
+| `details` on What's new | The chevron turns 90 degrees, `--t-quick` | Shows open and closed |
+
+Anything not in this table doesn't animate. A new animation is added to the table, with its reason, before it's built.
+
+## 8. Accessibility and performance
+
+- One `h1` per page, landmarks, `lang="en"`, a unique title and description per page, a skip link.
+- Everything works by keyboard, with a visible 2 px focus ring in the page accent (teal on shared pages), offset 2 px. Menus, the sheet and the full-size image close with Esc and return focus.
+- Screenshots have descriptive `alt` text; the hotspot list is real text beside the image, so a screen reader gets every point without the markers.
+- Controls are native elements (`a`, `button`, `details`, `audio`); tabs follow the ARIA tabs pattern.
+- Images: WebP with PNG fallback, 1x and 2x, `width` and `height` set; the hero image is in the HTML with `fetchpriority="high"`; everything below the fold is lazy. Fonts are preloaded. No third-party scripts, no analytics, no cookies, so no consent banner.
+- Target: each page under 300 KB before audio on first load. Lighthouse and Web Vitals figures are reported only once measured on the deployed site.
+- Checks before it ships: the contrast checker on every colour pair, a keyboard pass on every page, widths 320, 390, 768, 1040 and 1440, reduced motion on, JavaScript off, and a click-through of every control with the results recorded.
+
+## 9. How it's built
+
+- **Plain HTML, CSS and JavaScript.** No framework and no runtime dependency. One stylesheet with the tokens above as custom properties; one small script per interactive part (roster, explorer, player, menu).
+- **Source and output.** `site-src/` holds the templates, CSS, JS, the data files and audio; `tools/site/build.py` (Python standard library plus Pillow for images, like `tools/manual/`) writes the 23 pages to a build folder. One data file, `site-src/data/plugins.json`, holds each plugin's accent, kind, sentence, views, hotspots (as percentages of the image), capabilities, details and relations; `release.json` holds the version, date and file names. Group and accent data is read from `tools/manual/content.py` so there is one source.
+- **Screenshots** are copied from `docs/images/`, with extra views from the release's `screens-<sha>` artifact, at release time.
+- **Deploy.** A second workflow, `pages.yml`, runs the build on `ubuntu-latest` and publishes with GitHub's Pages actions when `site-src/`, `tools/site/`, `docs/images/` or the manual PDF change. `site-src/**` and `tools/site/**` are added to `build.yml`'s `paths-ignore`, so site work never starts the plugin build. Address: `https://alfrednoonoo.github.io/fancy-plugs/`, so every link and asset path is relative.
+- **Release recipe gains one step:** update `release.json` and the What's new entry, and copy the new screenshots.
+- **Build order:** tokens, title strip, header and footer; the plugin template with Comp as the first page, reviewed as a screenshot before the other thirteen; hubs; home; download, guide, what's new, about; then the checks in section 8.
+
+## 10. Open questions
+
+1. **Licence.** The repo has no `LICENSE` file. The site says "free"; should it name a licence, or just say free to download and use?
+2. **Mac wording.** Until the first release with both zips, the plan labels Mac "beta" and links the pre-release. Confirm, or hide Mac until then.
+3. **Headline.** Draft: "Fourteen effects for mixing. Free." Confirm or replace.
+4. **Audio clips.** Whenever you record them: one dry and one processed file per plugin, same passage, level-matched, 10 to 20 seconds, music you have the right to publish.
+5. **A custom domain** later, or the `github.io` address only? (The plan works with either.)
+6. **Mockups.** Following this repo's rule of a mockup before code, the next step after approval is an HTML mockup of the home page, one hub and the Comp page, rendered to PNG for you to check, before the remaining pages are built.
