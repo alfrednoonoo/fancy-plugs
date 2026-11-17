@@ -50,7 +50,7 @@ def marker(colour, x, y, size=132):
             f'pathLength="360" stroke-dasharray="300 60" transform="rotate(120 50 50)"/></svg>')
 
 
-def crop(image, box, scale, colour, point=None, at=None):
+def crop(image, box, scale, colour, point=None, at=None, size=132):
     """Part of a screenshot, with the ring on one control: box is (left, top, right, bottom) and point (x, y),
     both in pixels of the 2x image. With at=(x, y) it is placed on the canvas; without, it sits in the slide's column."""
     l, t, r, b = box
@@ -60,7 +60,7 @@ def crop(image, box, scale, colour, point=None, at=None):
            f'<img src="{(REPO / "docs/images" / f"{image}.png").as_uri()}" alt="" '
            f'style="width:{iw * scale:.1f}px;height:{ih * scale:.1f}px;left:{-l * scale:.1f}px;top:{-t * scale:.1f}px"></div>')
     if point:
-        out += marker(colour, (point[0] - l) * scale, (point[1] - t) * scale)
+        out += marker(colour, (point[0] - l) * scale, (point[1] - t) * scale, size)
     return out + "</div>"
 
 
@@ -155,9 +155,9 @@ def build(slug):
         elif k == "feature":
             l, t, r, b = s["crop"]
             cw, ch = (r - l) * s["scale"], (b - t) * s["scale"]
-            shot = crop(s["image"], s["crop"], s["scale"], accent, s.get("ring"))
+            shot = crop(s["image"], s["crop"], s["scale"], accent, s.get("ring"), size=s.get("ring_size", 132))
             if s["layout"] == "side":
-                body.append(crop(s["image"], s["crop"], s["scale"], accent, s.get("ring"), at=(x0 + PAD, 150)))
+                body.append(crop(s["image"], s["crop"], s["scale"], accent, s.get("ring"), at=(x0 + PAD, 150), size=s.get("ring_size", 132)))
                 tx = PAD + cw + 64
                 body.append(text_block(x0 + tx, 160, W - PAD - tx, s, title_px=56))
             else:
