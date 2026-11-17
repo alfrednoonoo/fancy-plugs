@@ -32,7 +32,7 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
    - Convergence Free, from cutthroughrecordings.itch.io/convergence (`multiband.json`, like for like), and KolinMB, from Analog Obsession (`multiband-kolin.json`, matched at 1 kHz only, see its notes);
    - MConvolutionEZ, from meldaproduction.com (`reverb.json`; it installs to `VST3\MeldaProduction\Reverb\`);
    - Bertom Denoiser Classic, from bertomaudio.com (`spectral.json`; its names are already checked).
-   - FabFilter Pro-C 3, Pro-Q 4 and Pro-MB, 30-day trials from fabfilter.com/download (`compressor.json`, `eq.json`, `multiband.json`). Their names are guesses with a `todo`: check them with step 2 before the first run. Pro-MB may need its four bands set up in its window and saved as a preset; its `todo` says how.
+   - FabFilter Pro-C 3, Pro-Q 4 and Pro-MB, 30-day trials from fabfilter.com/download (`compressor.json`, `eq.json`, `multiband.json`). Their names were checked on 17 November 2026. Pro-MB's attack and release are in percent, so they can't be matched to ours in ms.
 
    Their installers put them in `C:\Program Files\Common Files\VST3`, which the examples point at.
 2. **Find their parameter names.** Each plugin names its parameters its own way:
