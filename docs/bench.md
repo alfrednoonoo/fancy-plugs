@@ -32,6 +32,7 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
    - Convergence Free, from cutthroughrecordings.itch.io/convergence (`multiband.json`, like for like), and KolinMB, from Analog Obsession (`multiband-kolin.json`, matched at 1 kHz only, see its notes);
    - MConvolutionEZ, from meldaproduction.com (`reverb.json`; it installs to `VST3\MeldaProduction\Reverb\`);
    - Bertom Denoiser Classic, from bertomaudio.com (`spectral.json`; its names are already checked).
+   - FabFilter Pro-C 3, Pro-Q 4 and Pro-MB, 30-day trials from fabfilter.com/download (`compressor.json`, `eq.json`, `multiband.json`). Their names are guesses with a `todo`: check them with step 2 before the first run. Pro-MB may need its four bands set up in its window and saved as a preset; its `todo` says how.
 
    Their installers put them in `C:\Program Files\Common Files\VST3`, which the examples point at.
 2. **Find their parameter names.** Each plugin names its parameters its own way:
@@ -45,7 +46,7 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
    A plugin's `.vst3` path can be the bundle folder (`<Plugin>.vst3`, with the binary in `Contents\x86_64-win`) or a single file: give the outer `.vst3` either way.
 4. **Reverbs:** In `reverb.json`, Fancy Verb's IR isn't a host parameter, so it loads a preset saved from REAPER (FX window `+` menu > Export VST preset) into `examples\presets\`; MConvolutionEZ picks its IR by parameter. A relative `preset` path is read from the folder you run FancyBench in, so the file gives it with `%USERPROFILE%`.
 5. **Run it**, and read `report.md`.
-6. **Paid plugins:** the examples also list FabFilter, Soundtoys and Valhalla's paid plugins with `"disabled": true`. If you own or trial one, set it to `false`, check its path and names, and run again.
+6. **Other paid plugins:** `delay.json` also lists FabFilter Timeless 3, Soundtoys and Valhalla's paid plugins with `"disabled": true`. If you own or trial one, set it to `false`, check its path and names, and run again.
 
 A plugin that isn't installed is skipped and listed as such. A plugin that crashes or stops responding for 2 minutes is reported as failed, and the others still run. Each plugin runs in its own process.
 

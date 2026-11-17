@@ -1,6 +1,6 @@
 {
   "name": "Compressor, 4:1 at -20 dB",
-  "notes": "Fancy Comp against TDR Kotelnikov (free; parameter names checked on 9 November 2026). Paid entries are disabled: set \"disabled\" to false if you own or trial them, and check their names with FancyBench params.",
+  "notes": "Fancy Comp against TDR Kotelnikov (free; parameter names checked on 9 November 2026) and FabFilter Pro-C 3 (30-day trial from fabfilter.com/download; skipped if not installed).",
   "sampleRate": 48000,
   "blockSizes": [
     128
@@ -30,13 +30,15 @@
     {
       "label": "FabFilter Pro-C 3",
       "path": "%COMMONPROGRAMFILES%/VST3/FabFilter Pro-C 3.vst3",
-      "disabled": true,
-      "todo": "paid; check the path and parameter names",
+      "todo": "trial; names not checked yet: run FancyBench params on it, fix any name that differs, then delete this todo; keep its default style (Clean), lookahead 0 and oversampling off",
       "params": {
         "Threshold": "-20",
         "Ratio": "4",
+        "Knee": "6",
         "Attack": "10",
-        "Release": "100"
+        "Release": "100",
+        "Auto Release": "Off",
+        "Auto Gain": "Off"
       }
     }
   ],
