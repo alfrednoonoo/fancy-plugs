@@ -189,6 +189,10 @@ node ~/.claude/skills/hyperframes/scripts/plugin-cli.mjs render --quality looks 
 
 **Checks.** `hyperframes check` passes on both cuts with no errors: contrast 17 of 17 text pairs, no layout or audio findings, and no text outside the TikTok, Reels or Shorts safe areas on the 9:16 cut. The only warnings left say a file holds many timed elements. Every camera stop was looked at as a frame after the re-timing. The user watched and approved both cuts on 17 November 2026.
 
+**The review** (user, 17 November 2026): all fourteen approved.
+
+**The intro carousel** (user, 17 November 2026: "one carousel introducing the plugins"). `suite.py`, built by the same `build.py`, published before Comp's. Its spec gives `PLUGIN` (the strip reads `FANCY PLUGS` in teal, the suite's colour) instead of a plugin from `plugins.json`. Eight slides: cover (the Comp window crosses into slide 2, as in the series); the idea (fourteen effects that work the same way); one slide per group, Dynamics and Tone as a grid of window, name and kind, Space and time as three larger rows so neighbours differ in shape; the shared window (the header from Comp's screenshot, numbered as on the site's home page); the series (all fourteen in publishing order, handing to "First in the series: Fancy Comp"); Download. Group text is the manual's `PARTS`; names, kinds and one-liners are `plugins.json`. New slide kinds in `build.py`: `group`, `shared`, `series`.
+
 **Differences from the plan:**
 
 - The 16:9 cut is 76 s, not about 90, and the 9:16 cut 31 s, not about 45: the voice reads the approved script faster than estimated. The words are the plan's.

@@ -120,7 +120,9 @@ def build(slug):
     spec = importlib.import_module(slug)
     data = json.loads((REPO / "site-src/data/plugins.json").read_text(encoding="utf-8"))
     rel = json.loads((REPO / "site-src/data/release.json").read_text(encoding="utf-8"))
-    p = data["plugins"][slug]
+    # The suite's carousel isn't a plugin: its spec gives the strip's name and accent.
+    p = getattr(spec, "PLUGIN", None) or data["plugins"][slug]
+    order = [x for g in data["groups"] for x in g["plugins"]]
     accent = p["accent"]
     text_accent = TEXT_ACCENT.get(accent, accent)
     slides = spec.SLIDES
@@ -167,6 +169,45 @@ def build(slug):
                 parts = [words, f'<div class="mid">{shot}</div>']
                 body.append(f'<div class="col" style="left:{x0 + PAD}px">{"".join(parts if s["layout"] == "below" else parts[::-1])}</div>')
             body.append(next_line(x0, s))
+        elif k == "group":
+            g = next(g for g in data["groups"] if g["slug"] == s["group"])
+            tiles = []
+            for other in g["plugins"]:
+                q = data["plugins"][other]
+                shot = (REPO / "docs/images" / (q["views"][0]["image"] + ".png")).as_uri()
+                name = f'<div class="tn">{ring(q["accent"], 30, 5)}Fancy {esc(q["name"])}</div>'
+                if s["layout"] == "rows":
+                    tiles.append(f'<div class="trow"><div class="thumb" style="width:360px;height:210px"><img src="{shot}" alt=""></div>'
+                                 f'<div>{name}<div class="tk">{esc(q["kind"])}</div><div class="tl">{esc(q["line"])}</div></div></div>')
+                else:
+                    tiles.append(f'<div class="tile"><div class="thumb" style="height:205px"><img src="{shot}" alt=""></div>'
+                                 f'{name}<div class="tk">{esc(q["kind"])}</div></div>')
+            box = "trows" if s["layout"] == "rows" else "tiles"
+            body.append(f'<div class="tb" style="left:{x0 + PAD}px;top:150px;width:{W - 2 * PAD}px">'
+                        f'<h2 style="font-size:64px;color:{TEAL}">{esc(s["title"])}</h2><p>{esc(s["text"])}</p>'
+                        f'<div class="{box}">{"".join(tiles)}</div></div>')
+            body.append(next_line(x0, s))
+        elif k == "shared":
+            # The header every plugin shares, from Comp's 2x screenshot, numbered as the site's home page does.
+            head = Image.open(REPO / "docs/images/comp.png")
+            hw = W - 2 * PAD
+            hh = 146 * hw / head.width
+            spots = [(12.8, 14, 1), (14.9, 100, 2), (59.3, 100, 3), (71, 100, 4), (92.5, 100, 5)]
+            dots = "".join(f'<span class="spot" style="left:{x}%;top:{y}%">{n}</span>' for x, y, n in spots)
+            rows = "".join(f'<div class="srow"><span class="sn">{esc(n)}</span><div><b>{esc(a)}</b> <span>{esc(b)}</span></div></div>'
+                           for n, a, b in s["items"])
+            body.append(f'<div class="tb" style="left:{x0 + PAD}px;top:150px;width:{hw}px">'
+                        f'<h2 style="font-size:64px">{esc(s["title"])}</h2>'
+                        f'<div class="head" style="height:{hh:.1f}px"><div class="crop"><img src="{(REPO / "docs/images/comp.png").as_uri()}" alt="" '
+                        f'style="width:{hw}px;height:{head.height * hw / head.width:.1f}px;left:0;top:0"></div>{dots}</div>'
+                        f'<div class="srows">{rows}</div></div>')
+            body.append(next_line(x0, s))
+        elif k == "series":
+            names = "".join(f'<div class="sname">{ring(data["plugins"][o]["accent"], 34, 6)}Fancy {esc(data["plugins"][o]["name"])}</div>' for o in order)
+            body.append(f'<div class="tb" style="left:{x0 + PAD}px;top:150px;width:{W - 2 * PAD}px">'
+                        f'<h2 style="font-size:64px">{esc(s["title"])}</h2><p>{esc(s["text"])}</p><div class="names">{names}</div></div>')
+            body.append(f'<div class="next" style="left:{x0 + PAD}px;top:1196px;width:{W - 2 * PAD}px">'
+                        f'{arrowed("First in the series: Fancy " + data["plugins"][s["next_plugin"]]["name"])}</div>')
         elif k == "pairs":
             rows = []
             for other, why in p["pairs"]:
@@ -227,6 +268,31 @@ body>*{{position:absolute}}
 .pair svg{{flex:none;margin-top:4px}}
 .pn{{font-weight:600;font-size:48px;line-height:1.1}}
 .pw{{font-size:34px;line-height:1.35;color:#C8C8C8;margin-top:10px}}
+.tiles{{margin-top:56px;display:grid;grid-template-columns:repeat(3,1fr);gap:44px 30px}}
+.thumb{{background:{WELL};border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:center;outline:2px solid {PANEL}}}
+.thumb img{{max-width:100%;max-height:100%;border-radius:4px}}
+.tn{{display:flex;align-items:center;gap:10px;font-weight:600;font-size:27px;margin-top:16px;white-space:nowrap}}
+.tn svg{{flex:none}}
+.tk{{font-size:24px;color:{GREY};margin-top:4px;padding-left:40px}}
+.trows{{margin-top:56px;display:flex;flex-direction:column;gap:36px}}
+.trow{{display:flex;gap:36px;align-items:center}}
+.trow .thumb{{flex:none}}
+.trow .tn{{margin-top:0;font-size:40px}}
+.trow .tk{{font-size:28px;margin-top:6px}}
+.trow .tl{{font-size:28px;line-height:1.35;color:#C8C8C8;margin-top:12px;padding-left:42px}}
+.head{{position:relative;margin-top:56px}}
+.spot{{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:{TEAL};color:{WELL};
+ font-weight:600;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px rgba(20,20,20,.6)}}
+.srows{{margin-top:64px;display:flex;flex-direction:column;gap:26px}}
+.srow{{display:flex;gap:22px;align-items:baseline;font-size:32px;line-height:1.35}}
+.srow .sn{{flex:none;width:40px;height:40px;border-radius:50%;border:2px solid {TEAL};color:{TEAL};font-size:22px;font-weight:600;
+ display:flex;align-items:center;justify-content:center;transform:translateY(6px)}}
+.srow .sn:empty{{border-color:transparent}}
+.srow b{{font-weight:600}}
+.srow span{{color:#C8C8C8}}
+.names{{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;grid-template-rows:repeat(7,auto);gap:30px 40px}}
+.sname{{display:flex;align-items:center;gap:16px;font-weight:600;font-size:38px}}
+.sname svg{{flex:none}}
 .end{{top:0;width:{W}px;height:{METER_Y}px;display:flex;flex-direction:column;align-items:center;justify-content:center}}
 .end .free{{font-weight:600;font-size:60px;letter-spacing:-0.02em;margin-top:84px}}
 .end .btn{{margin-top:56px;background:{TEAL};color:{WELL};font-weight:600;font-size:48px;padding:28px 72px;border-radius:999px}}
