@@ -173,11 +173,12 @@ def build(slug):
                 q = data["plugins"][other]
                 rows.append(f'<div class="pair">{ring(q["accent"], 64, 9)}<div><div class="pn">Fancy {esc(q["name"])}</div>'
                             f'<div class="pw">{esc(why)}</div></div></div>')
-            nxt = data["plugins"][s["next_plugin"]]
+            # The last carousel of the series has no next one, so its hand-off line goes to the download.
+            hand = ("Next in the series: Fancy " + data["plugins"][s["next_plugin"]]["name"]) if s.get("next_plugin") else "All fourteen are free"
             body.append(f'<div class="tb" style="left:{x0 + PAD}px;top:150px;width:{W - 2 * PAD}px">'
                         f'<h2 style="font-size:64px">{esc(s["title"])}</h2><div class="pairs">{"".join(rows)}</div></div>')
             body.append(f'<div class="next" style="left:{x0 + PAD}px;top:1196px;width:{W - 2 * PAD}px">'
-                        f'{arrowed("Next in the series: Fancy " + nxt["name"])}</div>')
+                        f'{arrowed(hand)}</div>')
         elif k == "download":
             body.append(f'<div class="end" style="left:{x0}px">{logo(560)}'
                         f'<div class="free">Free to download and use.</div>'

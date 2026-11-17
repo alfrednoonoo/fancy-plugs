@@ -1,6 +1,6 @@
 # Fancy Plugs content: intro video and plugin carousels
 
-Status: **approved by the user on 16 November 2026. Part A (the video) is built and approved by the user on 17 November 2026, section 6.** The carousels in part B come next, one plugin at a time, Comp first as the template.
+Status: **approved by the user on 16 November 2026. Part A (the video) is built and approved by the user on 17 November 2026, section 6. Part B (the fourteen carousels) is built, section 7, and waits for the user's review.**
 
 Decided by the user on 16 November 2026: the video is made in two cuts (16:9 and 9:16), the script is read by a generated voice, antislop is applied during the work, and no skill is excluded.
 
@@ -168,7 +168,7 @@ The skills this work uses (user, 16 November 2026: the ones with no job here are
 
 ## 6. Part A as built
 
-Built on 16 November 2026 and revised on 17 November after the user's first viewing: the voice changed from George to Michael, the 9:16 cut was laid out again for the tall frame, and each cut gained a subtitle file. Both cuts are in `content/` (git-ignored, by the user's choice): `fancy-plugs-intro-16x9.mp4` (1920 x 1080, 75.9 s) and `fancy-plugs-intro-9x16.mp4` (1080 x 1920, 30.8 s), 30 fps, H.264 with AAC, each with a `.srt` of the same name.
+Built on 16 November 2026 and revised on 17 November after the user's first viewing: the voice changed from George to Michael, the 9:16 cut was laid out again for the tall frame, and each cut gained a subtitle file. The end cards say "Link in description" (16:9) and "Link in bio" (9:16) in place of the address. Both cuts are in `content/` (git-ignored, by the user's choice): `fancy-plugs-intro-16x9.mp4` (1920 x 1080, 75.9 s) and `fancy-plugs-intro-9x16.mp4` (1080 x 1920, 30.8 s), 30 fps, H.264 with AAC, each with a `.srt` of the same name.
 
 **Sources.** `content-src/video/film.py` holds the script, the shots, the camera stops and every timing for both cuts. `content-src/video/build.py wide|tall` turns it into a HyperFrames project in `wide/` or `tall/`: `index.html`, one scene file per beat, the title strip and the captions, and writes the cut's subtitle file to `content/`. The screenshots, the logo and the fonts are copied from `docs/images`, `design/website` and `assets/fonts` at build time, so those generated files are git-ignored. The voice lines (`assets/voice/*.wav`), their text (`voice.json`) and their word timings (`timing/*.json`) are committed.
 
@@ -201,9 +201,15 @@ node ~/.claude/skills/hyperframes/scripts/plugin-cli.mjs render --quality looks 
 
 **Not done:** not on the website or YouTube; the renders stay git-ignored (user, 17 November 2026). No music or sound effects, by the plan.
 
-## 7. Part B as built: Comp, the template
+## 7. Part B as built
 
-Built on 17 November 2026; waits for the user's approval before MultiComp. `content-src/carousels/build.py <slug>` reads the plugin's spec (`content-src/carousels/<slug>.py`: slides, crop boxes, ring points, copy, caption) and `site-src/data/plugins.json` (name, accent, pairs), writes the canvas as HTML, prints it with headless Edge and slices it. Output, git-ignored, in `content/carousels/<slug>/`: `<slug>-01.png` to `-08.png` (1080 x 1350), the whole canvas, a contact sheet and `<slug>-caption.txt`.
+All fourteen were built on 17 November 2026. The user asked for the other thirteen to be made after Comp without stopping for approval between them, so all fourteen wait for one review. `content-src/carousels/build.py <slug>` reads the plugin's spec (`content-src/carousels/<slug>.py`: slides, crop boxes, ring points, copy, caption) and `site-src/data/plugins.json` (name, accent, pairs), writes the canvas as HTML, prints it with headless Edge and slices it. Output, git-ignored, in `content/carousels/<slug>/`: `<slug>-01.png` to `-08.png` (1080 x 1350), the whole canvas, a contact sheet and `<slug>-caption.txt`.
+
+**Slide counts:** DS-Mini, Exciter and Kicker have seven slides (three capabilities each); the other eleven have eight. Room is the last in the series, so its hand-off line reads "All fourteen are free".
+
+**The link** (user, 17 November 2026): no piece spells the address. The carousels' last slide and caption say "Link in bio"; the film's end card says "Link in description" in the 16:9 cut (YouTube) and "Link in bio" in the 9:16 cut.
+
+**The specs:** a slide's crop box and ring point are pixels of the 2x screenshot. A ring is left off where the control fills its crop (DS-Mini's Amount, Kicker's Freq), and `ring_size` fits it to a large knob or a small checkbox. A crop sits centred in the space its text leaves, text first or crop first, alternating.
 
 Comp has eight slides: cover, the job, Threshold, Upward, Detector (the detector EQ and Auto threshold share a view, so they share a slide), Character, Works well with (the site's pairs, then "Next in the series: Fancy MultiComp"), Download.
 
