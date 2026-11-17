@@ -562,7 +562,7 @@ std::vector<Script> scripts()
     s.push_back ({ "ds", maker<DsProcessor>(), Mix { 0.5f, 0.5f, 1.4f, 1.6f, 0.4f, 0.6f }, { { "threshold", outAndBack (-14.0f, -42.0f), false } } });
    #endif
    #if FANCY_HAS_DSMINI
-    s.push_back ({ "dsmini", maker<DsMiniProcessor>(), Mix { 0.5f, 0.5f, 1.4f, 1.6f, 0.4f, 0.6f }, { { "amount", outAndBack (0.15f, 0.9f) } } });
+    s.push_back ({ "ds-mini", maker<DsMiniProcessor>(), Mix { 0.5f, 0.5f, 1.4f, 1.6f, 0.4f, 0.6f }, { { "amount", outAndBack (0.15f, 0.9f) } } });
    #endif
    #if FANCY_HAS_EQ
     {
