@@ -1,6 +1,6 @@
 # Fancy Plugs content: intro video and plugin carousels
 
-Status: **approved by the user on 16 November 2026. Part A (the video) is built and approved by the user on 17 November 2026, section 6. Part B (the fourteen carousels) is built, section 7, and waits for the user's review.**
+Status: **approved by the user on 16 November 2026. Part A (the video) is built and approved by the user on 17 November 2026, section 6. Part B (the fourteen carousels and the suite's intro carousel) is built, section 7, and approved by the user on 17 November 2026.**
 
 Decided by the user on 16 November 2026: the video is made in two cuts (16:9 and 9:16), the script is read by a generated voice, antislop is applied during the work, and no skill is excluded.
 
