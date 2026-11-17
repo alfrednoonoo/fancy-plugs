@@ -31,14 +31,18 @@ if (roster) {
     buttons.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
     img.classList.add("out");
     const next = new Image();
-    next.onload = () => {
+    const leave = new Promise((r) => setTimeout(r, reduced ? 0 : 250));
+    next.onload = () => leave.then(() => {
       img.srcset = b.dataset.srcset; img.src = b.dataset.src;
       img.width = b.dataset.w; img.height = b.dataset.h;
       img.alt = "Fancy " + b.dataset.name + ", " + b.dataset.kind.toLowerCase();
       name.textContent = "Fancy " + b.dataset.name; kind.textContent = b.dataset.kind;
       link.href = b.dataset.href; link.textContent = "See what Fancy " + b.dataset.name + " can do";
-      img.classList.remove("out");
-    };
+      // Jump to the far side without a transition, then slide in.
+      img.classList.remove("out"); img.classList.add("enter");
+      void img.offsetWidth;
+      img.classList.remove("enter");
+    });
     next.onerror = () => img.classList.remove("out");
     next.src = b.dataset.src;
   };
@@ -157,9 +161,12 @@ document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("clic
   setTimeout(() => once(false), 1500);
 }));
 
-// Scroll reveal: screenshots only, once each.
+// Scroll reveal, once each: screenshots rise and grow slightly, headings and text blocks rise.
+// The hero is left alone, so the first screen is there at once. Without JavaScript nothing is hidden.
 if (!reduced && "IntersectionObserver" in window) {
-  const items = document.querySelectorAll(".reveal");
+  document.querySelectorAll("main h2, .group-head p, .shared .lede, .shared-list li, .lead > div:first-child, .split > div:first-child, .can li, .pairs a, .tile h3, .tile p")
+    .forEach((el) => { if (!el.closest(".hero, .reveal")) el.classList.add("reveal-text"); });
+  const items = document.querySelectorAll(".reveal, .reveal-text");
   if (items.length) {
     document.documentElement.classList.add("js-reveal");
     const io = new IntersectionObserver((es) => es.forEach((e) => {

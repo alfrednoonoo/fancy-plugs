@@ -226,7 +226,7 @@ What a visitor can do: compare the plugins in a group, find the right one for a 
 1. **Top.** Title strip in the accent with the group at the right, the name, the kind, one sentence, the Download button and a link to the plugin's chapter in the manual.
 2. **Screenshot explorer.** The plugin's views as tabs (the images listed in section 6). On each view, five to eight numbered markers in the accent. Hovering, focusing or tapping a marker highlights its entry in the list beside the image, and choosing an entry highlights its marker. Each entry is the control's name and one sentence that starts from what it lets you do. Keyboard: Tab reaches the tabs and then each marker in number order; arrow keys move between tabs. Below 1040 px the list moves under the image; on a phone the image can be opened full size. Without JavaScript the first view and the full list still show.
 3. **What you can do with it.** Outcome statements, not steps: "Keep a vocal steady between quiet and loud passages with Auto threshold", not "Tick Auto threshold in the EDIT drawer". The lead capability gets a large treatment with a crop of the relevant view; the rest are a plain two-column list. No icons, no identical cards.
-4. **Hear it.** A before/after player: one clip pair, a Before | After switch that changes source without losing position, play and pause, and a progress bar in the meter gradient. The section is left out of the page entirely until that plugin has clips, so there is never an empty player. States when present: loading (the bar shows "Loading clip"), failed ("This clip didn't load. Try again", with a retry button). Clips: two files per plugin, the same passage dry and processed, level-matched, 10 to 20 seconds, in `site-src/audio/<slug>/`, named in the data file with the settings used.
+4. **Hear it.** Switched off for now (user, 17 November 2026): `SHOW_PLAYER = False` in `tools/site/build.py` keeps the code, CSS and script in place for later. A before/after player: one clip pair, a Before | After switch that changes source without losing position, play and pause, and a progress bar in the meter gradient. The section is left out of the page entirely until that plugin has clips, so there is never an empty player. States when present: loading (the bar shows "Loading clip"), failed ("This clip didn't load. Try again", with a retry button). Clips: two files per plugin, the same passage dry and processed, level-matched, 10 to 20 seconds, in `site-src/audio/<slug>/`, named in the data file with the settings used.
 5. **Details.** A table: formats, sidechain or MIDI where the plugin has them, whether it adds latency and when, window size, number of factory presets. Every value is read from the plugin's design note and manual at build time; a value that can't be sourced is left out.
 6. **Works well with.** Two or three real relations (section 6), each a link with one line of why.
 7. **Previous and next** within the group, and the Download band.
@@ -345,11 +345,11 @@ For EQ, MultiComp and FIR, whose accent follows a selection, the page uses the f
 
 ## 7. Animation guidelines
 
-Motion on the site behaves like the plugins: it answers something the visitor did, it's short, and it ends. MOTION dial 2.
+Motion on the site behaves like the plugins: it answers something the visitor did, it's short, and it ends. MOTION dial 2, raised to 3 on 17 November 2026: the user found the first build's motion too faint to notice, asked for clearly visible reveals and hovers, and for each plugin to be shown working (section 7.1). The demo clips are the one thing that moves by itself and loops.
 
 ### Principles
 
-1. **Every movement has a cause the visitor can name:** they pressed, hovered, focused or scrolled something into view. Nothing moves by itself, and nothing loops.
+1. **Every movement has a cause the visitor can name:** they pressed, hovered, focused or scrolled something into view. The only exception is the demo clips (section 7.1), which loop while they're on screen.
 2. **The plugins' own behaviour is the reference.** A knob turns; a value changes; a drawer slides over the body; a bypass is a short crossfade. The site uses those: crossfades, slides over, and the ring drawing along its arc. No bounce, no spring overshoot, no float, no parallax.
 3. **One thing moves at a time.** If the view changes, the markers don't also animate in one by one.
 4. **Only `transform` and `opacity`** are animated (plus `stroke-dashoffset` for the ring), so nothing reflows.
@@ -362,8 +362,10 @@ Motion on the site behaves like the plugins: it answers something the visitor di
 | `--t-press` | 90 ms | A button's pressed state |
 | `--t-quick` | 140 ms | Hover and focus changes, menu open, tooltip |
 | `--t-swap` | 200 ms | Crossfades: explorer views, the hero window, Before and After |
-| `--t-move` | 280 ms | Things that travel: the phone menu sheet, the scroll reveal |
+| `--t-move` | 280 ms | Things that travel: the phone menu sheet, a tile lifting |
 | `--t-draw` | 500 ms | The ring drawing, once |
+| `--t-hero` | 360 ms | The hero window sliding out and in |
+| `--t-reveal` | 600 ms | The scroll reveal |
 | `--ease-out` | `cubic-bezier(0.2, 0, 0, 1)` | Anything entering or responding |
 | `--ease-in` | `cubic-bezier(0.4, 0, 1, 1)` | Anything leaving, at 0.7 of the entering time |
 
@@ -374,18 +376,54 @@ The hotspot tooltip appears after 150 ms of hover and at once on focus or tap. (
 | Where | What happens | Why |
 |---|---|---|
 | Logo, on the first page of a visit | The ring draws from 7 o'clock round to 5 o'clock, once, `--t-draw` | It is the knob being turned up; it introduces the motif |
-| Home roster | The chosen name's underline slides to it; the hero window crossfades (`--t-swap`); the caption follows | Shows that the names control the window |
+| Home roster | The chosen name's underline slides to it; the hero window slides 28 px out to the left and fades, and the next slides in from the right (`--t-hero`); the caption follows | Shows that the names control the window |
 | Screenshot explorer, changing view | The image crossfades; the markers of the new view appear with it, together | Keeps the frame still so the eye stays on the plugin |
 | Hotspot marker, on hover or focus | The ring closes from 300 to 360 degrees and the linked list entry gets its accent underline, `--t-quick` | Connects the marker to its text |
 | Before and After switch | The lit segment slides, as `ParamSegments` does; audio crossfades over 30 ms | Matches the plugin's own switch; avoids a click in the sound |
 | Audio progress | The bar fills with playback | It is a meter |
-| Buttons and tiles | Hover: background one step lighter and the tile's border to `#434343`. Press: 1 px down, `--t-press` | Shows it can be pressed and that it was |
+| Buttons and tiles | Hover: background one step lighter; a tile's border to `#434343` and its picture lifts 4 px (`--t-move`). Press: 1 px down, `--t-press` | Shows it can be pressed and that it was |
 | Plugins menu, phone sheet | Menu: fade and 4 px drop, `--t-quick`. Sheet: slides over from the right like the EDIT drawer, `--t-move` | Same behaviour as the plugins' menus and drawer |
-| Scroll reveal | Screenshots only: opacity 0 to 1 and 12 px up, `--t-move`, once per image. Text never animates in | Draws the eye to the product; text stays readable at once |
+| Scroll reveal | Once per element, `--t-reveal`. Screenshots: opacity 0 to 1, 32 px up and scale 0.97 to 1. Headings, group intros, tile names and captions, list entries and the lead text: opacity 0 to 1 and 16 px up. The hero never animates in (user, 17 November 2026) | Makes the page visibly come together as it's read; the first screen is there at once |
+| Demo clips | Each plugin's clip loops, silent, while its tile is on screen, and pauses off screen (section 7.1) | Shows the plugin working, which a screenshot can't |
 | Moving between a hub and a plugin page | The title strip's name and accent crossfade (View Transitions, where the browser supports it; otherwise a normal page load) | Makes the accent change read as moving between windows |
 | `details` on What's new | The chevron turns 90 degrees, `--t-quick` | Shows open and closed |
 
 Anything not in this table doesn't animate. A new animation is added to the table, with its reason, before it's built.
+
+### 7.1 Demo clips (user, 17 November 2026; to be approved)
+
+Each plugin's tile on the home page, and the hero window, shows a short clip of the real plugin being used: a pointer moves one or two controls and the plugin's own displays (curve, analyzer, meters, gain reduction, waveform) react to music playing through it.
+
+**Real footage, not a lookalike.** A new CI tool, `fancy-demos` (`tools/demos/`, built beside `fancy-screens`), opens each plugin's real editor offscreen, plays a synthesized music loop through the real processor in 128-sample blocks at 48 kHz, moves the scripted parameters along their path, runs the editor's timers in real time between frames (`JUCE_MODAL_LOOPS_PERMITTED`, as `tools/hosttest` does), and saves 30 frames per second as PNG at 2x. The pointer is drawn onto each frame over the control being moved (an arrow, and a pressed ring while it drags). `fancy-screens` is not changed, so no existing screenshot moves.
+
+**The signal.** Synthesized in the tool so the clips need no audio file: a 120 BPM, two-bar loop of kick, snare, hats, a bass line and a sustained chord, deterministic, peaking at about -6 dBFS. Each plugin gets a loop that suits it (Gate, Kicker and the compressors the drums; DS and DS-Mini the hats pushed up; the reverbs and Delay with the snare and chord prominent).
+
+**Length and loop.** 6 seconds, starting and ending on the same setting so the loop has no jump. The first second is played before recording so meters and analyzers are already moving.
+
+**What each clip does:**
+
+| Plugin | Gesture |
+|---|---|
+| Comp | Threshold fader pulled down 18 dB and back; the GR meter follows |
+| MultiComp | The low band's threshold pulled down and back |
+| Gate | Threshold raised until the gate chops the hats out, then lowered |
+| Limit | Gain pushed up 8 dB and back; gain reduction grows |
+| DS | Threshold lowered on bright hats; the history display shows the cuts |
+| DS-Mini | Amount turned up and back |
+| EQ | Band 2's handle dragged across the graph, up and down; the curve and analyzer follow |
+| FIR | Resonance mode: Depth turned up; the peaks it finds are drawn turned down |
+| Exciter | Harmonics turned up and back |
+| Sature | Drive turned up and back |
+| Kicker | The large Freq knob swept |
+| Delay | Feedback turned up and back with the taps visible |
+| Verb | Length shortened and lengthened; the IR waveform redraws |
+| Room | Size and Decay turned up together and back |
+
+The exact parameter IDs and values are in `tools/demos/Scripts.h`.
+
+**Files.** CI uploads the frames as `demos-<sha>`. `tools/site/encode-demos.py` (run locally, it needs ffmpeg) turns each into `site-src/video/<slug>.webm` (VP9) and `<slug>.mp4` (H.264), 760 px wide (the window at 1x, 2x for the hero), silent, about 150 to 400 KB each, and both are committed, as screenshots are into `docs/images/`. They're remade when a plugin's look changes.
+
+**On the page.** A `<video muted loop playsinline preload="none">` with the screenshot as its poster, so the page looks as it does now until a clip loads. A clip starts loading only when its tile is about to scroll into view, plays while it's at least half on screen, and pauses when it isn't. The hero plays the chosen plugin's clip. The 300 KB first-load target stays: clips aren't counted, as audio wasn't. Under reduced motion, or with Save-Data on, only the screenshot shows. The video has no controls and is hidden from screen readers; the image's `alt` text stays.
 
 ## 8. Accessibility and performance
 

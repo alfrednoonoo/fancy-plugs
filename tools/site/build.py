@@ -485,7 +485,13 @@ def hub(g):
 {band()}'''
 
 
+# The before/after player is switched off for now (user, 17 November 2026). The code, its CSS and
+# its script stay in place: set SHOW_PLAYER to True and add clips in site-src/audio/<slug>/.
+SHOW_PLAYER = False
+
+
 def player(slug):
+    if not SHOW_PLAYER: return ""
     d = os.path.join(SRC, "audio", slug)
     if not os.path.isdir(d): return ""
     files = {v: next((f for f in sorted(os.listdir(d)) if f.startswith(v + ".")), None) for v in ("before", "after")}

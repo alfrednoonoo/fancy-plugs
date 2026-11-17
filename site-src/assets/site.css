@@ -22,7 +22,7 @@
   --r-control: 3px; --r-panel: 6px; --r-window: 8px;
   --s1: 4px; --s2: 8px; --s3: 13px; --s4: 24px; --s5: 40px; --s6: 64px; --s7: 104px;
 
-  --t-press: 90ms; --t-quick: 140ms; --t-swap: 200ms; --t-move: 280ms; --t-draw: 500ms;
+  --t-press: 90ms; --t-quick: 140ms; --t-swap: 200ms; --t-move: 280ms; --t-draw: 500ms; --t-reveal: 600ms; --t-hero: 360ms;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -100,8 +100,10 @@ section { padding-top: var(--s7); }
 .hero .lede { margin-top: var(--s4); }
 .hero .actions { margin-top: var(--s5); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4); }
 .hero figure { min-height: 420px; display: grid; align-content: center; justify-items: center; gap: var(--s3); }
-.hero figure img { max-height: 400px; width: auto; transition: opacity var(--t-swap) var(--ease-out); }
-.hero figure img.out { opacity: 0; }
+.hero figure img { max-height: 400px; width: auto; transition: opacity var(--t-hero) var(--ease-out), transform var(--t-hero) var(--ease-out); }
+/* The hero window slides out to one side and the next one comes in from the other (user, 17 November 2026). */
+.hero figure img.out { opacity: 0; transform: translateX(-28px); }
+.hero figure img.enter { opacity: 0; transform: translateX(28px); transition: none; }
 .hero figcaption { font-size: 14px; color: var(--text-2); }
 .hero figcaption strong { color: var(--text); font-weight: 600; }
 
@@ -123,11 +125,11 @@ section { padding-top: var(--s7); }
 .tiles.five .wide { grid-column: span 2; grid-row: span 2; }
 .tiles.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tile { display: block; text-decoration: none; }
-.tile .stage { height: 190px; padding: var(--s3); border: 1px solid transparent; transition: border-color var(--t-quick); }
+.tile .stage { height: 190px; padding: var(--s3); border: 1px solid transparent; transition: border-color var(--t-quick), transform var(--t-move) var(--ease-out); }
 .tile .stage img { max-height: 100%; width: auto; }
 .tiles.five .wide .stage { height: calc(380px + var(--s4) + 74px); }
 .tiles.three .stage { height: 250px; }
-a.tile:hover .stage { border-color: var(--line); }
+a.tile:hover .stage { border-color: var(--line); transform: translateY(-4px); }
 .tile h3 { margin-top: var(--s3); display: flex; align-items: center; gap: 8px; }
 .tile h3 i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--c); border-bottom-color: transparent; flex: none; }
 .tile p { font-size: 14px; color: var(--text-2); line-height: 1.45; margin-top: 2px; }
@@ -349,8 +351,10 @@ dialog.sheet[open] { animation: sheet var(--t-move) var(--ease-out); }
 @media (min-width: 721px) { .full { display: none; } }
 
 /* Scroll reveal: screenshots only, once, never text. Without JavaScript nothing is hidden. */
-.js-reveal .reveal { opacity: 0; transform: translateY(12px); transition: opacity var(--t-move) var(--ease-out), transform var(--t-move) var(--ease-out); }
-.js-reveal .reveal.in { opacity: 1; transform: none; }
+.js-reveal .reveal { opacity: 0; transform: translateY(32px) scale(0.97); transition: opacity var(--t-reveal) var(--ease-out), transform var(--t-reveal) var(--ease-out); }
+/* Headings and text blocks rise less than screenshots, and are never scaled. */
+.js-reveal .reveal-text { opacity: 0; transform: translateY(16px); transition: opacity var(--t-reveal) var(--ease-out), transform var(--t-reveal) var(--ease-out); }
+.js-reveal .reveal.in, .js-reveal .reveal-text.in { opacity: 1; transform: none; }
 
 /* Hear it: the before/after player. */
 .player .play:hover { background: #3B3B3B; }
@@ -443,6 +447,7 @@ code { font: 500 14px Inter, system-ui, sans-serif; background: var(--bg-well); 
 }
 @media (prefers-reduced-motion: reduce) {
   @view-transition { navigation: none; }
-  .js-reveal .reveal { opacity: 1; transform: none; }
+  .js-reveal .reveal, .js-reveal .reveal-text { opacity: 1; transform: none; }
+  a.tile:hover .stage { transform: none; }
   .logo.draw .draw-path { animation: none; }
 }
