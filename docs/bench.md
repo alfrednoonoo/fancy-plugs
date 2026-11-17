@@ -8,7 +8,8 @@ FancyBench measures our plugins and any other VST3 the same way, at the same set
 
 ```
 VST3-Dev-Tools\FancyBench.exe
-VST3-Dev-Tools\examples\compressor.json, eq.json, delay.json, delay-echo.json
+VST3-Dev-Tools\examples\compressor.json, eq.json, delay.json, delay-echo.json,
+                        multiband.json, reverb.json, spectral.json
 ```
 
 Install copies the example files only when they aren't already there, so your edits are kept. To get a fresh copy, delete the file and install again.
@@ -27,7 +28,10 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
 1. **Install the competitors.** The examples compare with the free leaders from the market report:
    - TDR Kotelnikov and TDR Nova, from tokyodawn.net;
    - TAL-Dub-X, from tal-software.com;
-   - Valhalla Freq Echo, from valhalladsp.com.
+   - Valhalla Freq Echo, from valhalladsp.com;
+   - Convergence Free, from cutthroughrecordings.itch.io/convergence (`multiband.json`);
+   - MConvolutionEZ, from meldaproduction.com (`reverb.json`);
+   - Bertom Denoiser Classic, from bertomaudio.com (`spectral.json`; its names are already checked).
 
    Their installers put them in `C:\Program Files\Common Files\VST3`, which the examples point at.
 2. **Find their parameter names.** Each plugin names its parameters its own way:
@@ -38,8 +42,10 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
 
    This lists every parameter with its index, its name in quotes and its current value as text.
 3. **Edit the example.** The competitors' `params` in the examples are guesses, marked with a `todo`. Put in the names from step 2, and values that match ours. Then delete the `todo` line. While a `todo` is there, a name that doesn't resolve skips that plugin with the note, instead of failing.
-4. **Run it**, and read `report.md`.
-5. **Paid plugins:** the examples also list FabFilter, Soundtoys and Valhalla's paid plugins with `"disabled": true`. If you own or trial one, set it to `false`, check its path and names, and run again.
+   A plugin's `.vst3` path can be the bundle folder (`<Plugin>.vst3`, with the binary in `Contents_64-win`) or a single file: give the outer `.vst3` either way.
+4. **Reverbs:** `reverb.json` loads a preset per plugin, because a convolution reverb's IR isn't a host parameter. Save each from REAPER (FX window `+` menu > Export VST preset) into `examples\presets\` under the names in the file. A `preset` path is relative to the test file.
+5. **Run it**, and read `report.md`.
+6. **Paid plugins:** the examples also list FabFilter, Soundtoys and Valhalla's paid plugins with `"disabled": true`. If you own or trial one, set it to `false`, check its path and names, and run again.
 
 A plugin that isn't installed is skipped and listed as such. A plugin that crashes or stops responding for 2 minutes is reported as failed, and the others still run. Each plugin runs in its own process.
 

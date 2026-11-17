@@ -1,0 +1,73 @@
+{
+  "name": "Spectral noise reduction, 18 dB",
+  "notes": "Fancy FIR in Subtract mode, tracking the noise itself (Adaptive), against Bertom Denoiser Classic (free, pay what you want). Denoiser Classic is not FFT-based, so it has no latency; expect FIR's latency and its artifacts to be the difference. Both reduce by 18 dB below their threshold.",
+  "sampleRate": 48000,
+  "blockSizes": [
+    128
+  ],
+  "plugins": [
+    {
+      "label": "Fancy FIR",
+      "path": "%FANCY_VST3%/Fancy FIR.vst3",
+      "params": {
+        "Mode": "Subtract",
+        "Profile source": "Adaptive",
+        "Reduction": "-18",
+        "Adapt speed": "2"
+      }
+    },
+    {
+      "label": "Bertom Denoiser Classic",
+      "path": "%COMMONPROGRAMFILES%/VST3/Bertom_DenoiserClassic.vst3",
+      "params": {
+        "Threshold": "-60",
+        "Range 1": "-18",
+        "Range 2": "-18",
+        "Range 3": "-18",
+        "Range 4": "-18",
+        "Range 5": "-18",
+        "Range 6": "-18"
+      },
+      "clicks": {
+        "param": "Range 1",
+        "from": "-6",
+        "to": "-24"
+      }
+    }
+  ],
+  "tests": {
+    "cpu": {
+      "seconds": 20,
+      "repeats": 5
+    },
+    "latency": {},
+    "response": {
+      "level": -20
+    },
+    "thd": {
+      "frequencies": [
+        100,
+        1000,
+        5000
+      ],
+      "levels": [
+        -30,
+        -20,
+        -6
+      ]
+    },
+    "aliasing": {
+      "frequencies": [
+        5000,
+        10000
+      ],
+      "level": -6
+    },
+    "clicks": {
+      "param": "Reduction",
+      "from": "-6",
+      "to": "-24",
+      "period": 0.05
+    }
+  }
+}
