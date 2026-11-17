@@ -80,6 +80,7 @@ constexpr float frameScale = 2.0f;
 struct Mix
 {
     float kick = 1.0f, snare = 1.0f, hats = 1.0f, ess = 0.0f, bass = 1.0f, pad = 1.0f;
+    float ring = 0.0f; // a snare that rings at 740 Hz and 2.9 kHz, for FIR's Resonance mode
 };
 
 class Noise
@@ -132,14 +133,15 @@ juce::AudioBuffer<float> makeBar (const Mix& mix)
     {
         float low = 0.0f;
 
-        for (int i = 0; i < (int) (sampleRate * 0.35); ++i)
+        for (int i = 0; i < (int) (sampleRate * (mix.ring > 0.0f ? 0.95 : 0.35)); ++i)
         {
             const auto n = (int) (start * beat * sampleRate) + i;
             if (n >= length) break;
             const auto t = i / sampleRate;
             const auto white = noise.next();
             low += 0.25f * (white - low);
-            const auto v = (float) ((white - low) * 0.55 * std::exp (-t / 0.11) + 0.4 * std::sin (twoPi * 185.0 * t) * std::exp (-t / 0.07)) * mix.snare;
+            const auto rings = mix.ring * (0.5 * std::sin (twoPi * 740.0 * t) + 0.35 * std::sin (twoPi * 2900.0 * t)) * std::exp (-t / 0.3);
+            const auto v = (float) (((white - low) * 0.55 * std::exp (-t / 0.11) + 0.4 * std::sin (twoPi * 185.0 * t) * std::exp (-t / 0.07)) * mix.snare + rings);
             add (n, v * 0.95f, v);
         }
     }
@@ -507,7 +509,7 @@ bool renderScript (const Script& script, const juce::File& outputDir)
 
             // A knob turns under a still hand, so the hand moves as a drag would: up to turn up.
             if (dynamic_cast<fancy::ui::Knob*> (firstControl) != nullptr)
-                p.y -= (bound.front().param->getValue() - startNormalised) * 140.0f;
+                p.y -= (bound.front().param->getValue() - startNormalised) * 70.0f;
 
             grip = p;
         }
@@ -568,6 +570,16 @@ std::vector<Script> scripts()
                     { { "b2freq", { { 0.7, 400.0f }, { 1.9, 900.0f }, { 3.0, 3500.0f }, { 4.0, 1800.0f }, { 5.1, 400.0f } }, false },
                       { "b2gain", { { 0.7, 0.0f }, { 1.9, 9.0f }, { 3.0, -7.0f }, { 4.0, 5.0f }, { 5.1, 0.0f } }, false } } };
 
+        // Band 2 selected, as clicking its handle does, so its knobs below turn with the drag.
+        eq.setup = [] (juce::AudioProcessor&, juce::AudioProcessorEditor& editor)
+        {
+            EqGraph* graph = nullptr;
+            forEachChild (editor, [&] (juce::Component& c) { if (graph == nullptr) graph = dynamic_cast<EqGraph*> (&c); });
+
+            if (graph != nullptr && graph->onBandSelected)
+                graph->onBandSelected (1);
+        };
+
         // On the graph's band 2 handle, as a hand dragging it.
         eq.grip = [] (juce::AudioProcessorEditor& editor) -> std::optional<juce::Point<float>>
         {
@@ -585,7 +597,9 @@ std::vector<Script> scripts()
    #endif
    #if FANCY_HAS_FIR
     {
-        Script fir { "fir", maker<FirProcessor>(), full, { { "resDepth", outAndBack (1.0f, 18.0f), false } } };
+        Mix ringing;
+        ringing.ring = 1.0f;
+        Script fir { "fir", maker<FirProcessor>(), ringing, { { "resDepth", outAndBack (1.0f, 18.0f), false } } };
         fir.setup = [] (juce::AudioProcessor& p, juce::AudioProcessorEditor&)
         {
             if (auto* mode = findParameter (p, "mode"))
