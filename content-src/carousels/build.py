@@ -122,7 +122,6 @@ def build(slug):
     rel = json.loads((REPO / "site-src/data/release.json").read_text(encoding="utf-8"))
     # The suite's carousel isn't a plugin: its spec gives the strip's name and accent.
     p = getattr(spec, "PLUGIN", None) or data["plugins"][slug]
-    order = [x for g in data["groups"] for x in g["plugins"]]
     accent = p["accent"]
     text_accent = TEXT_ACCENT.get(accent, accent)
     slides = spec.SLIDES
@@ -187,27 +186,6 @@ def build(slug):
                         f'<h2 style="font-size:64px;color:{TEAL}">{esc(s["title"])}</h2><p>{esc(s["text"])}</p>'
                         f'<div class="{box}">{"".join(tiles)}</div></div>')
             body.append(next_line(x0, s))
-        elif k == "shared":
-            # The header every plugin shares, from Comp's 2x screenshot, numbered as the site's home page does.
-            head = Image.open(REPO / "docs/images/comp.png")
-            hw = W - 2 * PAD
-            hh = 146 * hw / head.width
-            spots = [(12.8, 14, 1), (14.9, 100, 2), (59.3, 100, 3), (71, 100, 4), (92.5, 100, 5)]
-            dots = "".join(f'<span class="spot" style="left:{x}%;top:{y}%">{n}</span>' for x, y, n in spots)
-            rows = "".join(f'<div class="srow"><span class="sn">{esc(n)}</span><div><b>{esc(a)}</b> <span>{esc(b)}</span></div></div>'
-                           for n, a, b in s["items"])
-            body.append(f'<div class="tb" style="left:{x0 + PAD}px;top:150px;width:{hw}px">'
-                        f'<h2 style="font-size:64px">{esc(s["title"])}</h2>'
-                        f'<div class="head" style="height:{hh:.1f}px"><div class="crop"><img src="{(REPO / "docs/images/comp.png").as_uri()}" alt="" '
-                        f'style="width:{hw}px;height:{head.height * hw / head.width:.1f}px;left:0;top:0"></div>{dots}</div>'
-                        f'<div class="srows">{rows}</div></div>')
-            body.append(next_line(x0, s))
-        elif k == "series":
-            names = "".join(f'<div class="sname">{ring(data["plugins"][o]["accent"], 34, 6)}Fancy {esc(data["plugins"][o]["name"])}</div>' for o in order)
-            body.append(f'<div class="tb" style="left:{x0 + PAD}px;top:150px;width:{W - 2 * PAD}px">'
-                        f'<h2 style="font-size:64px">{esc(s["title"])}</h2><p>{esc(s["text"])}</p><div class="names">{names}</div></div>')
-            body.append(f'<div class="next" style="left:{x0 + PAD}px;top:1196px;width:{W - 2 * PAD}px">'
-                        f'{arrowed("First in the series: Fancy " + data["plugins"][s["next_plugin"]]["name"])}</div>')
         elif k == "pairs":
             rows = []
             for other, why in p["pairs"]:
@@ -280,19 +258,6 @@ body>*{{position:absolute}}
 .trow .tn{{margin-top:0;font-size:40px}}
 .trow .tk{{font-size:28px;margin-top:6px}}
 .trow .tl{{font-size:28px;line-height:1.35;color:#C8C8C8;margin-top:12px;padding-left:42px}}
-.head{{position:relative;margin-top:56px}}
-.spot{{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:{TEAL};color:{WELL};
- font-weight:600;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px rgba(20,20,20,.6)}}
-.srows{{margin-top:64px;display:flex;flex-direction:column;gap:26px}}
-.srow{{display:flex;gap:22px;align-items:baseline;font-size:32px;line-height:1.35}}
-.srow .sn{{flex:none;width:40px;height:40px;border-radius:50%;border:2px solid {TEAL};color:{TEAL};font-size:22px;font-weight:600;
- display:flex;align-items:center;justify-content:center;transform:translateY(6px)}}
-.srow .sn:empty{{border-color:transparent}}
-.srow b{{font-weight:600}}
-.srow span{{color:#C8C8C8}}
-.names{{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;grid-template-rows:repeat(7,auto);gap:30px 40px}}
-.sname{{display:flex;align-items:center;gap:16px;font-weight:600;font-size:38px}}
-.sname svg{{flex:none}}
 .end{{top:0;width:{W}px;height:{METER_Y}px;display:flex;flex-direction:column;align-items:center;justify-content:center}}
 .end .free{{font-weight:600;font-size:60px;letter-spacing:-0.02em;margin-top:84px}}
 .end .btn{{margin-top:56px;background:{TEAL};color:{WELL};font-weight:600;font-size:48px;padding:28px 72px;border-radius:999px}}

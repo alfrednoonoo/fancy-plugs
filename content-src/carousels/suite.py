@@ -30,22 +30,7 @@ SLIDES = [
     dict(kind="group", heading="Space and time", group="space", layout="rows",
          title="Space and time",
          text="Plugins that add echoes and rooms around a sound.",
-         next="All fourteen share one window."),
-    dict(kind="shared", heading="One window",
-         title="One window, fourteen times.",
-         items=[
-             ("1", "Title strip", "The plugin’s name in its own colour."),
-             ("2", "Preset browser", "Categories, favourites, search and your own folders."),
-             ("3", "Undo and redo", "Up to 100 steps, for every control."),
-             ("4", "A, B and Compare", "Two settings side by side, compared at the same loudness."),
-             ("5", "Output and ON", "A level knob and a bypass, always in the same corner."),
-             ("", "Typed values, any size", "Click a value to type it; drag an edge to scale the window to 200 %."),
-         ],
-         next="Each one gets its own carousel."),
-    dict(kind="series", heading="The series",
-         title="One carousel for each.",
-         text="What each plugin does, on its own window, in this order.",
-         next_plugin="comp"),
+         next="Next: a carousel for each, from Fancy Comp."),
     dict(kind="download", heading="Download"),
 ]
 
