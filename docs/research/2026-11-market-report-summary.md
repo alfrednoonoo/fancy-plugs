@@ -85,10 +85,11 @@ On 9 November 2026 the user ran FancyBench on their PC against the free leaders.
 | Compressor | TDR Kotelnikov | 0.79 % against 3.56 % | Fancy Comp distorts less while compressing in three of four cases; Kotelnikov's detector ignores bass by design |
 | EQ | TDR Nova | 0.49 % against 1.11 % | Identical bells; Nova clicks on sudden gain jumps (38 bursts), Fancy EQ doesn't; Nova has auto gain on by default |
 | Delay | Valhalla Freq Echo, Deelay | 0.49 % against 0.33 % and 0.65 % | Fancy Delay and Deelay are bit-clean; Valhalla adds slight analogue-style colour |
+| Multiband (17 November 2026, `bench-2026-11-17.md`) | Convergence Free | 2.25 % against 4.14 % | Convergence distorts about 20 times more on bass while compressing (0.7 %), aliases 50-60 dB louder, clicks on threshold jumps (38 bursts) and has a 6.4 dB notch at its 1.2 kHz crossover |
 
 - **CPU, which the report couldn't rank:** in these categories ours is as cheap as the free leader or cheaper.
 - **All report their latency exactly.** Ours add none; Kotelnikov and Nova add 3.8 ms each.
-- **Still open:** the paid leaders, and MultiComp, Verb and FIR.
+- **Still open:** the paid leaders, Verb and FIR, and MultiComp against KolinMB.
 
 ## What Phase 3.0 should do
 
