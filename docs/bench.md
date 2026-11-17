@@ -42,7 +42,7 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
 
    This lists every parameter with its index, its name in quotes and its current value as text.
 3. **Edit the example.** The competitors' `params` in the examples are guesses, marked with a `todo`. Put in the names from step 2, and values that match ours. Then delete the `todo` line. While a `todo` is there, a name that doesn't resolve skips that plugin with the note, instead of failing.
-   A plugin's `.vst3` path can be the bundle folder (`<Plugin>.vst3`, with the binary in `Contents_64-win`) or a single file: give the outer `.vst3` either way.
+   A plugin's `.vst3` path can be the bundle folder (`<Plugin>.vst3`, with the binary in `Contents\x86_64-win`) or a single file: give the outer `.vst3` either way.
 4. **Reverbs:** `reverb.json` loads a preset per plugin, because a convolution reverb's IR isn't a host parameter. Save each from REAPER (FX window `+` menu > Export VST preset) into `examples\presets\` under the names in the file. A `preset` path is relative to the test file.
 5. **Run it**, and read `report.md`.
 6. **Paid plugins:** the examples also list FabFilter, Soundtoys and Valhalla's paid plugins with `"disabled": true`. If you own or trial one, set it to `false`, check its path and names, and run again.
