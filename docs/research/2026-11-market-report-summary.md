@@ -86,10 +86,12 @@ On 9 November 2026 the user ran FancyBench on their PC against the free leaders.
 | EQ | TDR Nova | 0.49 % against 1.11 % | Identical bells; Nova clicks on sudden gain jumps (38 bursts), Fancy EQ doesn't; Nova has auto gain on by default |
 | Delay | Valhalla Freq Echo, Deelay | 0.49 % against 0.33 % and 0.65 % | Fancy Delay and Deelay are bit-clean; Valhalla adds slight analogue-style colour |
 | Multiband (17 November 2026, `bench-2026-11-17.md`) | Convergence Free | 2.25 % against 4.14 % | Convergence distorts about 20 times more on bass while compressing (0.7 %), aliases 50-60 dB louder, clicks on threshold jumps (38 bursts) and has a 6.4 dB notch at its 1.2 kHz crossover |
+| Multiband, 3 bands (17 November 2026) | KolinMB | 1.48 % against 1.72 % | KolinMB is coloured by design: 1-2 % THD on bass while compressing, aliases about 60 dB louder, clicks on Input jumps; matched to ours at 1 kHz only |
+| Noise reduction (17 November 2026) | Bertom Denoiser Classic | 1.98 % against 0.43 % | FIR is transparent on clean audio, Bertom turns quiet tones down and distorts bass (0.57 %); FIR adds 85 ms latency; one FIR block hit 98 % of its time, to re-run |
 
 - **CPU, which the report couldn't rank:** in these categories ours is as cheap as the free leader or cheaper.
 - **All report their latency exactly.** Ours add none; Kotelnikov and Nova add 3.8 ms each.
-- **Still open:** the paid leaders, Verb and FIR, and MultiComp against KolinMB.
+- **Still open:** the paid leaders, Verb (its presets need exporting), and FIR's noise removal on real noise.
 
 ## What Phase 3.0 should do
 
