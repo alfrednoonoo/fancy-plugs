@@ -1,6 +1,6 @@
 # Fancy Plugs content: intro video and plugin carousels
 
-Status: **approved by the user on 16 November 2026. Part A (the video) is built and was revised after the user's first viewing, section 6; the revision waits for the user's second viewing.** The carousels in part B come next, one plugin at a time, Comp first as the template.
+Status: **approved by the user on 16 November 2026. Part A (the video) is built and approved by the user on 17 November 2026, section 6.** The carousels in part B come next, one plugin at a time, Comp first as the template.
 
 Decided by the user on 16 November 2026: the video is made in two cuts (16:9 and 9:16), the script is read by a generated voice, antislop is applied during the work, and no skill is excluded.
 
@@ -187,7 +187,7 @@ node ~/.claude/skills/hyperframes/scripts/plugin-cli.mjs render --quality looks 
 
 **The 9:16 layout** (17 November 2026). One centred column: the group line (`FANCY DYNAMICS`, then the kind of plugin), the whole spoken sentence as the caption under it, then the picture. A wide window covers a 1000 x 1020 stage and the camera picks the part being named; Kicker and DS-Mini are shown whole. `hyperframes check` knows where TikTok, Reels and Shorts draw their own buttons: words are clear of all three from y 288 to 1248, in a centred column 696 px wide above y 840 and 480 px wide below it. So every word sits in the upper column, the roster is a narrow list, and the end card puts the address above the button. The picture runs down to y 1620, where only the apps' own caption covers it.
 
-**Checks.** `hyperframes check` passes on both cuts with no errors: contrast 17 of 17 text pairs, no layout or audio findings, and no text outside the TikTok, Reels or Shorts safe areas on the 9:16 cut. The only warnings left say a file holds many timed elements. Every camera stop was looked at as a frame after the re-timing. Nobody has listened to the Michael voice in the film yet.
+**Checks.** `hyperframes check` passes on both cuts with no errors: contrast 17 of 17 text pairs, no layout or audio findings, and no text outside the TikTok, Reels or Shorts safe areas on the 9:16 cut. The only warnings left say a file holds many timed elements. Every camera stop was looked at as a frame after the re-timing. The user watched and approved both cuts on 17 November 2026.
 
 **Differences from the plan:**
 
@@ -199,4 +199,4 @@ node ~/.claude/skills/hyperframes/scripts/plugin-cli.mjs render --quality looks 
 - Captions are burned in, and each cut also has a subtitle file (user, 17 November 2026).
 - The site's hotspot coordinates mark a point beside each control, so the film's ring positions are set by eye in `film.py`.
 
-**Not done:** nobody has listened to the Michael voice in the film. The transcriber heard "Sature" as "Satcher", so that word is the one most likely to be said wrongly. No music or sound effects, by the plan. Not on the website or YouTube.
+**Not done:** not on the website or YouTube; the renders stay git-ignored (user, 17 November 2026). No music or sound effects, by the plan.
