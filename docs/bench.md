@@ -30,7 +30,7 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
    - TAL-Dub-X, from tal-software.com;
    - Valhalla Freq Echo, from valhalladsp.com;
    - Convergence Free, from cutthroughrecordings.itch.io/convergence (`multiband.json`);
-   - MConvolutionEZ, from meldaproduction.com (`reverb.json`);
+   - MConvolutionEZ, from meldaproduction.com (`reverb.json`; it installs to `VST3\MeldaProduction\Reverb\`);
    - Bertom Denoiser Classic, from bertomaudio.com (`spectral.json`; its names are already checked).
 
    Their installers put them in `C:\Program Files\Common Files\VST3`, which the examples point at.
@@ -43,7 +43,7 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
    This lists every parameter with its index, its name in quotes and its current value as text.
 3. **Edit the example.** The competitors' `params` in the examples are guesses, marked with a `todo`. Put in the names from step 2, and values that match ours. Then delete the `todo` line. While a `todo` is there, a name that doesn't resolve skips that plugin with the note, instead of failing.
    A plugin's `.vst3` path can be the bundle folder (`<Plugin>.vst3`, with the binary in `Contents\x86_64-win`) or a single file: give the outer `.vst3` either way.
-4. **Reverbs:** `reverb.json` loads a preset per plugin, because a convolution reverb's IR isn't a host parameter. Save each from REAPER (FX window `+` menu > Export VST preset) into `examples\presets\` under the names in the file. A `preset` path is relative to the test file.
+4. **Reverbs:** `reverb.json` loads a preset per plugin, because a convolution reverb's IR isn't a host parameter. Fancy Verb's IR isn't a host parameter, so it loads a preset saved from REAPER (FX window `+` menu > Export VST preset) into `examples\presets\`; MConvolutionEZ picks its IR by parameter. A relative `preset` path is read from the folder you run FancyBench in, so the file gives it with `%USERPROFILE%`.
 5. **Run it**, and read `report.md`.
 6. **Paid plugins:** the examples also list FabFilter, Soundtoys and Valhalla's paid plugins with `"disabled": true`. If you own or trial one, set it to `false`, check its path and names, and run again.
 

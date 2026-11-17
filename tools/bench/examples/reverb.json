@@ -1,28 +1,50 @@
 {
   "name": "Convolution reverb, a 2 s hall, wet only",
-  "notes": "Fancy Verb against MConvolutionEZ (MeldaProduction, free). A convolution reverb's settings are mostly its impulse response, which isn't a host parameter, so each plugin loads a preset saved from REAPER: a hall of about 2 s, 100 % wet, no dry. In REAPER: load the plugin, choose the IR (Fancy Verb: File module, Library > Halls > Concert Hall), set Wet 0 dB and Dry off, then the FX window's + menu > Export VST preset, into examples/presets/ under the names below. Distortion and aliasing aren't measured: convolution is linear.",
+  "notes": "Fancy Verb against MConvolutionEZ (MeldaProduction, free), 100 % wet. A convolution reverb's cost follows its IR's length, so match the lengths: MConvolutionEZ plays its 'Large 01' IR (set by parameter); Fancy Verb's IR isn't a host parameter, so it loads a preset saved from REAPER: File module > Library > Halls, the IR closest in length, Wet 0 dB, Dry off, then the FX window's + menu > Export VST preset, as examples/presets/fancy-verb-hall.vstpreset. Distortion and aliasing aren't measured: convolution is linear.",
   "sampleRate": 48000,
-  "blockSizes": [128, 512],
+  "blockSizes": [
+    128,
+    512
+  ],
   "plugins": [
     {
       "label": "Fancy Verb",
       "path": "%FANCY_VST3%/Fancy Verb.vst3",
       "todo": "export examples/presets/fancy-verb-hall.vstpreset from REAPER first (see notes)",
-      "preset": "presets/fancy-verb-hall.vstpreset",
-      "params": { "Wet": "0", "Dry": "-inf" }
+      "preset": "%USERPROFILE%/VST3-Dev-Tools/examples/presets/fancy-verb-hall.vstpreset",
+      "params": {
+        "Wet": "0",
+        "Dry": "-inf"
+      }
     },
     {
       "label": "MConvolutionEZ",
-      "path": "%COMMONPROGRAMFILES%/VST3/MeldaProduction/MConvolutionEZ.vst3",
-      "todo": "free from meldaproduction.com/MConvolutionEZ; export examples/presets/mconvolutionez-hall.vstpreset from REAPER, and check the path and names with FancyBench params",
-      "preset": "presets/mconvolutionez-hall.vstpreset",
-      "params": { "Dry": "-inf", "Wet": "0" }
+      "path": "%COMMONPROGRAMFILES%/VST3/MeldaProduction/Reverb/MConvolutionEZ.vst3",
+      "params": {
+        "Dry/Wet": "100",
+        "File (Impulse response file)": "Large 01"
+      },
+      "clicks": {
+        "param": "Dry/Wet",
+        "from": "10",
+        "to": "100"
+      }
     }
   ],
   "tests": {
-    "cpu": { "seconds": 20, "repeats": 5 },
+    "cpu": {
+      "seconds": 20,
+      "repeats": 5
+    },
     "latency": {},
-    "response": { "level": -20 },
-    "clicks": { "param": "Wet", "from": "-24", "to": "0", "period": 0.05 }
+    "response": {
+      "level": -20
+    },
+    "clicks": {
+      "param": "Wet",
+      "from": "-24",
+      "to": "0",
+      "period": 0.05
+    }
   }
 }
