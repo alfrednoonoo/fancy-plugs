@@ -43,7 +43,7 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
    This lists every parameter with its index, its name in quotes and its current value as text.
 3. **Edit the example.** The competitors' `params` in the examples are guesses, marked with a `todo`. Put in the names from step 2, and values that match ours. Then delete the `todo` line. While a `todo` is there, a name that doesn't resolve skips that plugin with the note, instead of failing.
    A plugin's `.vst3` path can be the bundle folder (`<Plugin>.vst3`, with the binary in `Contents\x86_64-win`) or a single file: give the outer `.vst3` either way.
-4. **Reverbs:** `reverb.json` loads a preset per plugin, because a convolution reverb's IR isn't a host parameter. Fancy Verb's IR isn't a host parameter, so it loads a preset saved from REAPER (FX window `+` menu > Export VST preset) into `examples\presets\`; MConvolutionEZ picks its IR by parameter. A relative `preset` path is read from the folder you run FancyBench in, so the file gives it with `%USERPROFILE%`.
+4. **Reverbs:** In `reverb.json`, Fancy Verb's IR isn't a host parameter, so it loads a preset saved from REAPER (FX window `+` menu > Export VST preset) into `examples\presets\`; MConvolutionEZ picks its IR by parameter. A relative `preset` path is read from the folder you run FancyBench in, so the file gives it with `%USERPROFILE%`.
 5. **Run it**, and read `report.md`.
 6. **Paid plugins:** the examples also list FabFilter, Soundtoys and Valhalla's paid plugins with `"disabled": true`. If you own or trial one, set it to `false`, check its path and names, and run again.
 
