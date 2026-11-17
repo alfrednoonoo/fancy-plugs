@@ -9,8 +9,8 @@ SLUG = "comp"
 SLIDES = [
     dict(kind="cover", heading="Compressor",
          sentence="A compressor with its threshold on the input meter.",
-         # The window starts on slide 1 and finishes on slide 2: canvas x, y and width.
-         window=dict(image="comp", x=360, y=500, w=1340)),
+         # The window starts on slide 1 and finishes on slide 2.
+         window=dict(image="comp")),
     dict(kind="job", heading="The job",
          label="Use it to",
          title="Even out a vocal, a bass or a drum bus.",
@@ -50,4 +50,4 @@ SLIDES = [
 CAPTION = """Fancy Comp: a compressor with its threshold on the input meter.
 Lift quiet passages with upward compression, and shape what the detector hears.
 Keep it steady from verse to chorus with Auto threshold, and add Warm or Bright colour.
-Free to download and use: {address}"""
+Free to download and use: {link}."""

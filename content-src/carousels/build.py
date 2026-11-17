@@ -19,7 +19,8 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-ADDRESS = "alfrednoonoo.github.io/fancy-plugs"
+# Posts point to the link, they do not spell the address (user, 17 November 2026).
+LINK = "Link in bio"
 W, H = 1080, 1350
 PAD = 80                      # side margin of every slide
 STRIP_H = 88
@@ -49,16 +50,18 @@ def marker(colour, x, y, size=132):
             f'pathLength="360" stroke-dasharray="300 60" transform="rotate(120 50 50)"/></svg>')
 
 
-def crop(image, box, scale, x, y, colour, point=None):
-    """Part of a screenshot at canvas (x, y): box is (left, top, right, bottom) in the 2x image."""
+def crop(image, box, scale, colour, point=None, at=None):
+    """Part of a screenshot, with the ring on one control: box is (left, top, right, bottom) and point (x, y),
+    both in pixels of the 2x image. With at=(x, y) it is placed on the canvas; without, it sits in the slide's column."""
     l, t, r, b = box
     iw, ih = Image.open(REPO / "docs/images" / f"{image}.png").size
-    out = (f'<div class="crop" style="left:{x}px;top:{y}px;width:{(r - l) * scale:.1f}px;height:{(b - t) * scale:.1f}px">'
+    place = f"position:absolute;left:{at[0]}px;top:{at[1]}px;" if at else ""
+    out = (f'<div class="cropw" style="{place}width:{(r - l) * scale:.1f}px;height:{(b - t) * scale:.1f}px"><div class="crop">'
            f'<img src="{(REPO / "docs/images" / f"{image}.png").as_uri()}" alt="" '
            f'style="width:{iw * scale:.1f}px;height:{ih * scale:.1f}px;left:{-l * scale:.1f}px;top:{-t * scale:.1f}px"></div>')
     if point:
-        out += marker(colour, x + (point[0] - l) * scale, y + (point[1] - t) * scale)
-    return out
+        out += marker(colour, (point[0] - l) * scale, (point[1] - t) * scale)
+    return out + "</div>"
 
 
 def logo(width):
@@ -102,6 +105,17 @@ def next_line(x0, s, y=1196, w=W - 2 * PAD):
     return f'<div class="next" style="left:{x0 + PAD}px;top:{y}px;width:{w}px">{arrowed(s["next"])}</div>'
 
 
+def cover_window(s):
+    """Where the cover's window sits on the canvas: as large as fits under the cover text, and
+    placed so it leaves slide 1 and finishes on slide 2. A spec can set x, y or w itself."""
+    win = dict(s["window"])
+    iw, ih = Image.open(REPO / "docs/images" / f'{win["image"]}.png').size
+    win.setdefault("y", 500)
+    win.setdefault("w", round(min(1340, (METER_Y - 30 - win["y"]) * iw / ih)))
+    win.setdefault("x", round(max(360, W - 0.6 * win["w"])))
+    return win
+
+
 def build(slug):
     spec = importlib.import_module(slug)
     data = json.loads((REPO / "site-src/data/plugins.json").read_text(encoding="utf-8"))
@@ -122,40 +136,37 @@ def build(slug):
         body.append(meter(i, n))
         k = s["kind"]
         if k == "cover":
-            win = s["window"]
+            win = cover_window(s)
             iw, ih = Image.open(REPO / "docs/images" / f'{win["image"]}.png').size
             wh = win["w"] * ih / iw
             body.append(f'<img class="win" src="{(REPO / "docs/images" / (win["image"] + ".png")).as_uri()}" alt="" '
                         f'style="left:{win["x"]}px;top:{win["y"]}px;width:{win["w"]}px;height:{wh:.1f}px">')
             body.append(f'<div class="tb" style="left:{x0 + PAD}px;top:150px;width:{W - 2 * PAD}px">'
                         f'<div class="label">{esc(s["heading"])}</div>'
-                        f'<div class="name">Fancy <span style="color:{text_accent}">{esc(p["name"])}</span></div>'
+                        f'<div class="name" style="font-size:{128 if len(p["name"]) <= 6 else 104}px">Fancy <span style="color:{text_accent}">{esc(p["name"])}</span></div>'
                         f'<p class="lead">{esc(s["sentence"])}</p></div>')
         elif k == "job":
             body.append(text_block(x0 + PAD, 150, W - 2 * PAD, s))
             # The window from slide 1 ends near x 620 of this slide; the hand-off line sits beside it.
-            win = slides[0]["window"]
+            win = cover_window(slides[0])
             right = win["x"] + win["w"] - x0
             body.append(f'<div class="next side" style="left:{x0 + right + 56}px;top:{win["y"]}px;'
                         f'width:{W - PAD - right - 56}px;height:{METER_Y - 60 - win["y"]}px"><span>{arrowed(s["next"])}</span></div>')
         elif k == "feature":
             l, t, r, b = s["crop"]
             cw, ch = (r - l) * s["scale"], (b - t) * s["scale"]
+            shot = crop(s["image"], s["crop"], s["scale"], accent, s.get("ring"))
             if s["layout"] == "side":
-                body.append(crop(s["image"], s["crop"], s["scale"], x0 + PAD, 150, accent, s["ring"]))
+                body.append(crop(s["image"], s["crop"], s["scale"], accent, s.get("ring"), at=(x0 + PAD, 150)))
                 tx = PAD + cw + 64
                 body.append(text_block(x0 + tx, 160, W - PAD - tx, s, title_px=56))
-                body.append(next_line(x0, s))
-            elif s["layout"] == "below":
-                body.append(text_block(x0 + PAD, 150, W - 2 * PAD, s))
-                cx = x0 + (W - cw) / 2
-                body.append(crop(s["image"], s["crop"], s["scale"], cx, 480, accent, s["ring"]))
-                body.append(next_line(x0, s))
-            else:  # above
-                cx = x0 + (W - cw) / 2
-                body.append(crop(s["image"], s["crop"], s["scale"], cx, 150, accent, s["ring"]))
-                body.append(text_block(x0 + PAD, 150 + ch + 56, W - 2 * PAD, s, title_px=56))
-                body.append(next_line(x0, s))
+            else:
+                # One column: the text, and the crop centred in the space the text leaves. "below" puts the
+                # text first, "above" the crop first, so neighbouring slides differ in shape.
+                words = text_block(0, 0, W - 2 * PAD, s, title_px=64 if s["layout"] == "below" else 56)
+                parts = [words, f'<div class="mid">{shot}</div>']
+                body.append(f'<div class="col" style="left:{x0 + PAD}px">{"".join(parts if s["layout"] == "below" else parts[::-1])}</div>')
+            body.append(next_line(x0, s))
         elif k == "pairs":
             rows = []
             for other, why in p["pairs"]:
@@ -172,7 +183,7 @@ def build(slug):
                         f'<div class="free">Free to download and use.</div>'
                         f'<div class="btn">Download {esc(rel["version"])}</div>'
                         f'<div class="os">Windows · Mac (beta)</div>'
-                        f'<div class="url">{ADDRESS}</div></div>')
+                        f'<div class="url">{LINK}</div></div>')
 
     font = (REPO / "assets/fonts").as_uri()
     page = f"""<!doctype html>
@@ -202,7 +213,11 @@ body>*{{position:absolute}}
 .next .nw{{white-space:nowrap}}
 .next .ar{{color:{text_accent}}}
 .next.side{{display:flex;flex-direction:column;justify-content:flex-end}}
-.crop{{overflow:hidden;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.45);outline:2px solid {PANEL}}}
+.cropw{{position:relative;flex:none}}
+.crop{{position:absolute;inset:0;overflow:hidden;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.45);outline:2px solid {PANEL}}}
+.col{{top:150px;width:{W - 2 * PAD}px;height:1010px;display:flex;flex-direction:column}}
+.col .tb{{position:static;flex:none}}
+.col .mid{{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}}
 .crop img{{position:absolute;max-width:none}}
 .win{{border-radius:14px;box-shadow:0 22px 56px rgba(0,0,0,.5)}}
 .mk{{position:absolute;overflow:visible}}
@@ -237,10 +252,11 @@ body>*{{position:absolute}}
     # A contact sheet: the slides side by side at a third of their size, as they're swiped.
     sheet = im.resize((W * n // 3, H // 3), Image.LANCZOS)
     sheet.save(out / f"{slug}-sheet.png", optimize=True)
-    (out / f"{slug}-caption.txt").write_text(spec.CAPTION.format(address=ADDRESS) + "\n", encoding="utf-8", newline="\n")
+    (out / f"{slug}-caption.txt").write_text(spec.CAPTION.format(link=LINK.lower()) + "\n", encoding="utf-8", newline="\n")
     print(f"{slug}: {n} slides in {out}")
 
 
 if __name__ == "__main__":
     sys.path.insert(0, str(HERE))
-    build(sys.argv[1] if len(sys.argv) > 1 else "comp")
+    for name in sys.argv[1:] or ["comp"]:
+        build(name)

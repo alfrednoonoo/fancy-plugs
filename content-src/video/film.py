@@ -7,7 +7,9 @@ wide/timing/ (made from the generated voice). A camera step is
 come from the hotspots in site-src/data/plugins.json where one exists.
 """
 
-ADDRESS = "alfrednoonoo.github.io/fancy-plugs"
+# The end card points to where the link is, not the address itself (user, 17 November 2026):
+# the 16:9 cut goes to YouTube, the 9:16 cut to Reels, Shorts and TikTok.
+LINK = {"wide": "Link in description", "tall": "Link in bio"}
 TEAL = "#00A985"
 
 WIDE = dict(
@@ -35,7 +37,7 @@ TALL = dict(
     logo_w=480, logo_y=940, head_y=560, head_h=270, head_px=80,
     roster_x=300, roster_box=(600, 640), roster_gap=34, roster_lab_gap=10, roster_lab=28, roster_row_gap="8px 30px",
     roster_px=44, roster_ring=30, roster_ring_sw=5, roster_ring_gap=14,
-    end_logo_w=480, end_y=620, end_gap=64, end_gap2=40, end_gap3=44,
+    end_logo_w=480, end_y=620, end_gap=64, end_gap2=40, end_gap3=20,
     btn_px=46, btn_pad="26px 60px", os_px=34, url_px=34,
 )
 

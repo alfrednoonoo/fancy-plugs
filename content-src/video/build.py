@@ -267,9 +267,8 @@ def end_scene(F, sc, rel):
 """
     parts = dict(btn=f'<div id="{sid}-btn">Download {rel["version"]}</div>',
                  os=f'<div id="{sid}-os">Windows · Mac (beta)</div>',
-                 url=f'<div id="{sid}-url">{film.ADDRESS}</div>')
-    # The address is the widest line, so the 9:16 cut puts it above the button, where the apps leave more room.
-    order = ("url", "btn", "os") if F.f.get("centred") else ("btn", "os", "url")
+                 url=f'<div id="{sid}-url">{film.LINK[F.name]}</div>')
+    order = ("btn", "os", "url")
     body = (f'<div id="{sid}-card" class="clip" data-start="0" data-duration="{n(sc["dur"])}" data-track-index="1"><div id="{sid}-col">'
             f'<div id="{sid}-lock">{logo_svg(sid + "-")}</div>' + "".join(parts[k] for k in order) + '</div></div>')
     js = logo_js(sid + "-", 0.1, 0.8)
