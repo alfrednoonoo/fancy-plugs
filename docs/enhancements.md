@@ -1,4 +1,4 @@
-# Enhancement roadmap
+# Phase 4: plan and enhancement backlog
 
 Proposed additions for the fourteen plugins, benchmarked against the plugins that define each
 category in 2025–26 and **verified against the source** on 17 November 2026 (parameter lists read
@@ -6,10 +6,28 @@ from every `plugins/*/src/*Processor.cpp`, then each item checked in the DSP and
 the same day against the design notes and the standing decisions in `docs/PROGRESS.md`; see
 "Review" at the end for what was removed or rescoped and why.
 
-This file is the backlog. When an item's turn comes it gets its own design note, as every other
-item in `docs/` has, with the model, decisions and tests the briefs require. Nothing here is
-approved yet: the parameter list and the visible layout only change after you answer a design
-note, per `AGENTS.md`.
+**Phase 4 is this file** (user, 17 November 2026): the three items Phase 3 deferred (Kicker's
+sidechain Duck, a transient shaper and a chorus) plus every item below. It starts after the Mac
+release (`docs/mac.md`). The scope is agreed; each item still gets its own design note, approved
+before any code, with the model, decisions and tests the briefs require, and the parameter list and
+the visible layout only change through those notes, per `AGENTS.md`. A new plugin also goes through
+the design rules (`docs/DESIGN_SYSTEM.md`) and an HTML mockup first.
+
+## Phase 4 order
+
+Proposed; to be confirmed with the user before the first item, as Phase 3's order was.
+
+1. **Wave 1**, batched by plugin: one design note per plugin covering its S items, so each plugin
+   is opened, tested and checked in REAPER once. Order: Comp, EQ, Limit, Gate, DS, Verb, Room,
+   Delay, Exciter, Kicker, FIR, DS-Mini.
+2. **Tempo-synced trigger** in `fancy-core`, then **Kicker's sidechain Duck** with it (Kicker 7),
+   then Comp 9 and Gate 9.
+3. **Fancy Transient** (new plugin): design rules, mockup, design note.
+4. **Fancy Chorus** (new plugin, chorus or modulation): design rules, mockup, design note.
+5. **Wave 2**, one item at a time, in the order under "Suggested order".
+6. **Wave 3**, the same way; the ▲ items need layout approval first.
+
+The plugin names in 3 and 4 are placeholders until their design notes.
 
 ## How to read the tags
 
@@ -256,7 +274,7 @@ Unlimiter, stem EQ); MIDI learn (REAPER and Live map host parameters already); a
 8.0.17, as pinned, has no native CLAP, so it needs a new dependency, and nothing here uses CLAP-only
 features).
 
-## Suggested order
+## Suggested order (within the Phase 4 order above)
 
 1. **Wave 1** — every S item above with no new engine: EQ band solo, auto gain and analyzer freeze;
    Comp Hold, Range, delta, GR history and lookahead; Limit gain lock, auto gain and DC filter; Gate
