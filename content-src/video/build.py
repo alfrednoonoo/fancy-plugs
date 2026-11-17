@@ -5,7 +5,8 @@
 
 The film's facts live in film.py (script, shots, timings); this file turns them
 into index.html and one scene file per beat. Screenshots come from docs/images,
-the logo from design/website, the fonts from assets/fonts. Needs Pillow.
+the logo from design/website, the fonts from assets/fonts. It also writes the
+subtitle file, content/fancy-plugs-intro-<16x9|9x16>.srt. Needs Pillow.
 """
 import json
 import re
@@ -120,7 +121,7 @@ def shots_scene(F, sc):
     sid = sc["id"]
     sx, sy, sw, sh = F.stage
     css = f"""
-#{sid}-stage{{position:absolute;left:{sx}px;top:{sy}px;width:{sw}px;height:{sh}px;overflow:hidden}}
+#{sid}-stage{{position:absolute;left:{sx}px;top:{sy}px;width:{sw}px;height:{sh}px;overflow:hidden;border-radius:{F.f.get('stage_r', 0)}px}}
 .{sid}-shot{{position:absolute;inset:0}}
 .{sid}-in,.{sid}-cam{{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}}
 .{sid}-win{{position:relative;flex:none;border-radius:8px;box-shadow:0 22px 56px rgba(0,0,0,.5)}}
@@ -143,7 +144,9 @@ def shots_scene(F, sc):
         k = f"{sid}-{i}"
         iw, ih = Image.open(REPO / "docs/images" / f"{sh_['img']}.png").size
         fit = min(sw / iw, sh / ih, 1.0)
-        if sh_.get("crop"):
+        if sh_.get("crop") == "fill":
+            fit = max(sw / iw, sh / ih)      # the 9:16 cut: a wide window covers the tall stage and the camera picks the part
+        elif sh_.get("crop"):
             fit = sh_["crop"]
         ww, wh = iw * fit, ih * fit
         t0, t1 = sh_["t"]
@@ -177,8 +180,11 @@ def shots_scene(F, sc):
             js.append(f'tl.fromTo("#{k}-b",{{opacity:0}},{{opacity:1,duration:0.3,ease:"power1.inOut"}},{n(sh_["xfade"])});')
         def pos(fx, fy, z):
             # Move toward the point, but never so far that empty stage shows beside a window that could fill it.
+            # The 9:16 cut allows a margin of "slack" px there, so a control at a window's edge can sit nearer the middle.
             kx, ky = F.f["pull"]
             mx, my = max(0, (ww * z - sw) / 2), max(0, (wh * z - sh) / 2)
+            if mx:
+                mx += F.f.get("slack", 0)
             return (max(-mx, min(mx, (0.5 - fx / 100) * ww * z * kx)),
                     max(-my, min(my, (0.5 - fy / 100) * wh * z * ky)), z)
 
@@ -223,12 +229,15 @@ def intro_scene(F, sc):
 
 def roster_scene(F, sc, data):
     sid = sc["id"]
+    by, bh = F.f.get("roster_box", (F.stage[1], F.stage[3]))
+    mid = "center" if F.f.get("centred") else "normal"
+    rx = F.f.get("roster_x", F.f["safe_x"])
     css = f"""
-#{sid}-box{{position:absolute;left:{F.f['safe_x']}px;right:{F.f['safe_r']}px;top:{F.stage[1]}px;height:{F.stage[3]}px}}
+#{sid}-box{{position:absolute;left:{rx}px;right:{rx}px;top:{by}px;height:{bh}px}}
 #{sid}-in{{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:{F.f['roster_gap']}px}}
-.{sid}-g{{display:flex;flex-direction:column;gap:{F.f['roster_lab_gap']}px}}
+.{sid}-g{{display:flex;flex-direction:column;align-items:{mid};gap:{F.f['roster_lab_gap']}px}}
 .{sid}-lab{{font-size:{F.f['roster_lab']}px;color:{GREY};font-weight:500}}
-.{sid}-row{{display:flex;flex-wrap:wrap;gap:{F.f['roster_row_gap']}}}
+.{sid}-row{{display:flex;flex-wrap:wrap;justify-content:{mid};gap:{F.f['roster_row_gap']}}}
 .{sid}-n{{display:flex;align-items:center;gap:{F.f['roster_ring_gap']}px;font-size:{F.f['roster_px']}px;font-weight:600;white-space:nowrap}}
 """
     body = [f'<div id="{sid}-box" class="clip" data-start="0" data-duration="{n(sc["dur"])}" data-track-index="1"><div id="{sid}-in">']
@@ -256,11 +265,13 @@ def end_scene(F, sc, rel):
 #{sid}-os{{margin-top:{F.f['end_gap2']}px;font-size:{F.f['os_px']}px;color:{GREY};font-weight:500}}
 #{sid}-url{{margin-top:{F.f['end_gap3']}px;font-size:{F.f['url_px']}px;font-weight:500}}
 """
+    parts = dict(btn=f'<div id="{sid}-btn">Download {rel["version"]}</div>',
+                 os=f'<div id="{sid}-os">Windows · Mac (beta)</div>',
+                 url=f'<div id="{sid}-url">{film.ADDRESS}</div>')
+    # The address is the widest line, so the 9:16 cut puts it above the button, where the apps leave more room.
+    order = ("url", "btn", "os") if F.f.get("centred") else ("btn", "os", "url")
     body = (f'<div id="{sid}-card" class="clip" data-start="0" data-duration="{n(sc["dur"])}" data-track-index="1"><div id="{sid}-col">'
-            f'<div id="{sid}-lock">{logo_svg(sid + "-")}</div>'
-            f'<div id="{sid}-btn">Download {rel["version"]}</div>'
-            f'<div id="{sid}-os">Windows · Mac (beta)</div>'
-            f'<div id="{sid}-url">{film.ADDRESS}</div></div></div>')
+            f'<div id="{sid}-lock">{logo_svg(sid + "-")}</div>' + "".join(parts[k] for k in order) + '</div></div>')
     js = logo_js(sid + "-", 0.1, 0.8)
     js += (f'tl.fromTo("#{sid}-btn",{{opacity:0,scale:0.9}},{{opacity:1,scale:1,duration:0.4,ease:"expo.out"}},1.25);\n'
            f'tl.fromTo("#{sid}-os",{{opacity:0,filter:"blur(6px)"}},{{opacity:1,filter:"blur(0px)",duration:0.2,ease:"power2.out"}},1.6);\n'
@@ -271,6 +282,7 @@ def end_scene(F, sc, rel):
 def strip_scene(F, segs, t0, t1):
     """The plugins' title strip, along the top of the film: FANCY and a name, with a note at the right."""
     h = F.strip_h
+    centred = F.f.get("centred")
     css = f"""
 #strip-bar{{position:absolute;left:0;top:{F.f['strip_y']}px;width:100%;height:{h}px}}
 #strip-bg{{position:absolute;inset:0;background:{WELL};border-bottom:2px solid {PANEL}}}
@@ -283,6 +295,10 @@ def strip_scene(F, segs, t0, t1):
     body = [f'<div id="strip-bar" class="clip" data-start="{n(t0)}" data-duration="{n(t1 - t0)}" data-track-index="1"><div id="strip-bg"></div></div>']
     js = [f'tl.fromTo("#strip-bg",{{yPercent:-100}},{{yPercent:0,duration:0.35,ease:"power3.out"}},{n(t0)});',
           f'tl.to("#strip-bg",{{yPercent:-100,duration:0.25,ease:"power2.in"}},{n(t1 - 0.26)});']
+    if centred:
+        # The 9:16 cut has no bar: the group and the kind of plugin are one centred line above the caption.
+        css += ".strip-in{justify-content:center;gap:.9em}"
+        body, js = [], []
     for i, (a, b, name, colour, right) in enumerate(segs):
         body.append(f'<div id="strip-{i}" class="clip strip-seg" data-start="{n(a)}" data-duration="{n(b - a)}" data-track-index="2">'
                     f'<div id="strip-{i}-in" class="strip-in"><span><span class="f">Fancy</span>'
@@ -296,7 +312,7 @@ def captions_scene(F, caps):
     css = f"""
 .cap{{position:absolute;left:{F.f['cap_x']}px;right:{F.f['cap_r']}px;top:{F.f['cap_y']}px;height:{F.f['cap_h']}px}}
 .cap-in{{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;
- font-weight:500;font-size:{F.f['cap_px']}px;line-height:1.2}}
+ font-weight:{F.f.get('cap_w', 500)};font-size:{F.f['cap_px']}px;line-height:1.2;text-wrap:balance}}
 """
     body, js = [], []
     for i, (a, b, text) in enumerate(caps):
@@ -312,6 +328,11 @@ def wav_len(path):
         return w.getnframes() / w.getframerate()
 
 
+def stamp(t):
+    ms = round(t * 1000)
+    return f"{ms // 3600000:02}:{ms // 60000 % 60:02}:{ms // 1000 % 60:02},{ms % 1000:03}"
+
+
 def main():
     F = Fmt(sys.argv[1] if len(sys.argv) > 1 else "wide")
     data = json.loads((REPO / "site-src/data/plugins.json").read_text(encoding="utf-8"))
@@ -324,7 +345,7 @@ def main():
     for f in (REPO / "assets/fonts").glob("Inter-*.ttf"):
         shutil.copy(f, out / "assets/fonts" / f.name)
 
-    hosts, audio, caps, segs = [], [], [], []
+    hosts, audio, caps, segs, subs = [], [], [], [], []
     t = 0.0
     for sc in scenes:
         sc["at"] = t
@@ -347,9 +368,12 @@ def main():
                      f'data-width="{F.W}" data-height="{F.H}"></div>')
         if sc.get("voice"):
             audio.append(f'<audio id="vo-{sc["id"]}" class="clip" src="assets/voice/{sc["voice"]}.wav" data-start="{n(t + sc["vo"])}" data-duration="{n(wav_len(out / "assets/voice" / (sc["voice"] + ".wav")))}" '
-                         f'data-track-index="4" data-volume="1.3"></audio>')
+                         f'data-track-index="4" data-volume="1.65"></audio>')
         for a, b, text in sc.get("caps", []):
             caps.append((t + sc["vo"] + a, t + sc["vo"] + b, text))
+        # The subtitle file holds every spoken line: the captions, and a line shown another way (the 9:16 headline).
+        for a, b, text in sc.get("subs", sc.get("caps", [])):
+            subs.append((t + sc["vo"] + a, t + sc["vo"] + b, text))
         for a, b, name, colour, right in sc.get("strip", []):
             segs.append((t + a, t + b, name, colour, right))
         t += sc["dur"]
@@ -389,6 +413,10 @@ def main():
 </html>
 """
     (out / "index.html").write_text(index, encoding="utf-8", newline="\n")
+    (REPO / "content").mkdir(exist_ok=True)
+    srt = REPO / "content" / f"fancy-plugs-intro-{'9x16' if F.tall else '16x9'}.srt"
+    srt.write_text("".join(f"{i}\n{stamp(a)} --> {stamp(b)}\n{text}\n\n" for i, (a, b, text) in enumerate(subs, 1)),
+                   encoding="utf-8", newline="\n")
     at = {sc["id"]: sc["at"] for sc in scenes}
     print("camera stops:", ",".join(n(at[a] + c) for a, _, c in MARKS))
     print(f"{F.name}: {len(scenes)} scenes, {len(caps)} captions, {total:.2f} s")

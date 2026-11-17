@@ -1,6 +1,6 @@
 # Fancy Plugs content: intro video and plugin carousels
 
-Status: **approved by the user on 16 November 2026. Part A (the video) is built, section 6; it waits for the user's viewing.** The carousels in part B come next, one plugin at a time, Comp first as the template.
+Status: **approved by the user on 16 November 2026. Part A (the video) is built and was revised after the user's first viewing, section 6; the revision waits for the user's second viewing.** The carousels in part B come next, one plugin at a time, Comp first as the template.
 
 Decided by the user on 16 November 2026: the video is made in two cuts (16:9 and 9:16), the script is read by a generated voice, antislop is applied during the work, and no skill is excluded.
 
@@ -168,9 +168,9 @@ The skills this work uses (user, 16 November 2026: the ones with no job here are
 
 ## 6. Part A as built
 
-Built on 16 November 2026. Both cuts are in `content/` (git-ignored): `fancy-plugs-intro-16x9.mp4` (1920 x 1080, 75.0 s) and `fancy-plugs-intro-9x16.mp4` (1080 x 1920, 33.1 s), 30 fps, H.264 with AAC.
+Built on 16 November 2026 and revised on 17 November after the user's first viewing: the voice changed from George to Michael, the 9:16 cut was laid out again for the tall frame, and each cut gained a subtitle file. Both cuts are in `content/` (git-ignored, by the user's choice): `fancy-plugs-intro-16x9.mp4` (1920 x 1080, 75.9 s) and `fancy-plugs-intro-9x16.mp4` (1080 x 1920, 30.8 s), 30 fps, H.264 with AAC, each with a `.srt` of the same name.
 
-**Sources.** `content-src/video/film.py` holds the script, the shots, the camera stops and every timing for both cuts. `content-src/video/build.py wide|tall` turns it into a HyperFrames project in `wide/` or `tall/`: `index.html`, one scene file per beat, the title strip and the captions. The screenshots, the logo and the fonts are copied from `docs/images`, `design/website` and `assets/fonts` at build time, so those generated files are git-ignored. The voice lines (`assets/voice/*.wav`), their text (`voice.json`) and their word timings (`timing/*.json`) are committed.
+**Sources.** `content-src/video/film.py` holds the script, the shots, the camera stops and every timing for both cuts. `content-src/video/build.py wide|tall` turns it into a HyperFrames project in `wide/` or `tall/`: `index.html`, one scene file per beat, the title strip and the captions, and writes the cut's subtitle file to `content/`. The screenshots, the logo and the fonts are copied from `docs/images`, `design/website` and `assets/fonts` at build time, so those generated files are git-ignored. The voice lines (`assets/voice/*.wav`), their text (`voice.json`) and their word timings (`timing/*.json`) are committed.
 
 **To rebuild** (needs Node 22 or later, ffmpeg on the PATH and Pillow):
 
@@ -181,20 +181,22 @@ node ~/.claude/skills/hyperframes/scripts/plugin-cli.mjs check
 node ~/.claude/skills/hyperframes/scripts/plugin-cli.mjs render --quality looks -o ../../../content/fancy-plugs-intro-16x9.mp4
 ```
 
-**Voice.** HyperFrames' local text-to-speech (`hyperframes tts`, the Kokoro model), voice `bm_george`, one file per scene. It needs `kokoro-onnx` and `soundfile` in a Python the CLI can find (`HYPERFRAMES_PYTHON`; here a virtual environment in the git-ignored `.deps/tts-venv`). The spoken text spells out what the model would misread ("D S Mini", "E Q", "F I R"); the captions use the real names. Two other voices on scene 1 are in `content/voice-samples/` for comparison. HeyGen's voices need a sign-in (`hyperframes auth login`) and were not used.
+**Voice.** HyperFrames' local text-to-speech (`hyperframes tts`, the Kokoro model), voice `am_michael` (the user's choice on 17 November 2026; the first build used `bm_george`), one file per scene. It needs `kokoro-onnx` and `soundfile` in a Python the CLI can find (`HYPERFRAMES_PYTHON`; here a virtual environment in the git-ignored `.deps/tts-venv`). The spoken text spells out what the model would misread ("D S Mini", "E Q", "F I R"); the captions use the real names. Scene 1 in all three voices that were compared is in `content/voice-samples/`. HeyGen's voices need a sign-in (`hyperframes auth login`) and were not used.
 
-**Word timings** come from `faster-whisper` in the same environment, because the CLI's own `transcribe` crashed here (whisper-cli exit code 3221225785).
+**Word timings** come from `faster-whisper` in the same environment (`content-src/video/timings.py`, which writes `timing/*.json`), because the CLI's own `transcribe` crashed here (whisper-cli exit code 3221225785). The caption and shot times in `film.py` are set by hand from them, so a new voice means running it and re-timing `film.py`.
 
-**Checks.** `hyperframes check` passes on both cuts with no errors: contrast 17 of 17 text pairs, no layout or audio findings, and no text outside the TikTok, Reels or Shorts safe areas on the 9:16 cut. The only warnings left say the captions file holds many timed elements, which is what a captions file is. Every camera stop was looked at as a frame, and each ring was moved until it sat on the control being named. Loudness measured on the rendered files: -16.4 LUFS (16:9) and -16.1 LUFS (9:16). Measured, not heard: nobody has listened to either file yet.
+**The 9:16 layout** (17 November 2026). One centred column: the group line (`FANCY DYNAMICS`, then the kind of plugin), the whole spoken sentence as the caption under it, then the picture. A wide window covers a 1000 x 1020 stage and the camera picks the part being named; Kicker and DS-Mini are shown whole. `hyperframes check` knows where TikTok, Reels and Shorts draw their own buttons: words are clear of all three from y 288 to 1248, in a centred column 696 px wide above y 840 and 480 px wide below it. So every word sits in the upper column, the roster is a narrow list, and the end card puts the address above the button. The picture runs down to y 1620, where only the apps' own caption covers it.
+
+**Checks.** `hyperframes check` passes on both cuts with no errors: contrast 17 of 17 text pairs, no layout or audio findings, and no text outside the TikTok, Reels or Shorts safe areas on the 9:16 cut. The only warnings left say a file holds many timed elements. Every camera stop was looked at as a frame after the re-timing. Nobody has listened to the Michael voice in the film yet.
 
 **Differences from the plan:**
 
-- The 16:9 cut is 75 s, not about 90, and the 9:16 cut 33 s, not about 45: the voice reads the approved script faster than estimated. The words are the plan's.
+- The 16:9 cut is 76 s, not about 90, and the 9:16 cut 31 s, not about 45: the voice reads the approved script faster than estimated. The words are the plan's.
 - The film's own title strip names the group (`FANCY DYNAMICS`) with the kind of plugin at the right ("Compressor"), because each screenshot already carries its plugin's strip.
 - Each group opens on its name as a large word with the ring bullet, for under a second.
 - Delay stays on its main view; the planned crossfade to the Motion page didn't fit its four seconds.
-- In the 9:16 cut, text sits in a band from x 130 to 780 (left of centre) to stay clear of the apps' buttons at the right, and Comp's shot starts on the Threshold fader, not on the whole window.
-- Captions are burned in; no subtitle file is written yet.
+- The 9:16 cut has no title-strip bar and no group title cards; see its layout above. Comp's shot starts on the Threshold fader, not on the whole window.
+- Captions are burned in, and each cut also has a subtitle file (user, 17 November 2026).
 - The site's hotspot coordinates mark a point beside each control, so the film's ring positions are set by eye in `film.py`.
 
-**Not done:** nobody has listened to the voice; "Sature" and "esses" are the words most likely to be said wrongly. No music or sound effects, by the plan. Not on the website or YouTube.
+**Not done:** nobody has listened to the Michael voice in the film. The transcriber heard "Sature" as "Satcher", so that word is the one most likely to be said wrongly. No music or sound effects, by the plan. Not on the website or YouTube.
