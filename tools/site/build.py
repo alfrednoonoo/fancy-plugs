@@ -370,12 +370,34 @@ def link_plugins(h):
     return "".join(p if p.startswith("<a") else pat.sub(lambda m: f'<a href="{plugin_href(by[m.group(1)])}">{m.group(0)}</a>', p) for p in parts)
 
 
+# --- Demo clips (section 7.1) --------------------------------------------------------------------
+# site-src/video/<slug>.webm and .mp4, from CI's demos-<sha> artifact. A plugin without them shows
+# its screenshot alone.
+def demo_files(slug):
+    d = os.path.join(SRC, "video")
+    have = all(os.path.exists(os.path.join(d, f"{slug}.{x}")) for x in ("webm", "mp4"))
+    if have:
+        os.makedirs(os.path.join(OUT, "video"), exist_ok=True)
+        for x in ("webm", "mp4"):
+            if not os.path.exists(os.path.join(OUT, "video", f"{slug}.{x}")):
+                shutil.copy(os.path.join(d, f"{slug}.{x}"), os.path.join(OUT, "video"))
+    return {x: f"{R}video/{slug}.{x}" for x in ("webm", "mp4")} if have else None
+
+
+def demo(slug):
+    """A silent looping clip laid over the screenshot. site.js loads it only near the screen."""
+    f = demo_files(slug)
+    if not f: return ""
+    return (f'<video class="demo" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1" '
+            f'data-webm="{f["webm"]}" data-mp4="{f["mp4"]}"></video>')
+
+
 # --- Pages ---------------------------------------------------------------------------------------
 def tile(slug, wide=False, lazy=True):
     p = PLUG[slug]
     sizes = "(max-width: 720px) 100vw, (max-width: 1040px) 50vw, " + ("560px" if wide else "370px")
     return (f'<li class="{"wide" if wide else ""}"><a class="tile" href="{plugin_href(slug)}"><div class="stage">'
-            f'{img(p["views"][0]["image"], "Fancy " + p["name"] + ", " + p["kind"].lower(), sizes, cls="reveal", lazy=lazy)}</div>'
+            f'{img(p["views"][0]["image"], "Fancy " + p["name"] + ", " + p["kind"].lower(), sizes, cls="reveal", lazy=lazy)}{demo(slug)}</div>'
             f'<h3>{ring_icon(p["accent"])}Fancy {E(p["name"])}</h3><p>{E(p["kind"])}. {E(p["line"])}</p></a></li>')
 
 
@@ -386,9 +408,10 @@ def home():
         p = PLUG[s]; im = p["views"][0]["image"]; w, h, srcs = IMG_SIZES[im]
         srcset = ", ".join(f"{R}{x} {sw}w" for sw, x in srcs)
         src = next((x for sw, x in srcs if sw == w), srcs[-1][1])
+        clip = demo_files(s) or {"webm": "", "mp4": ""}
         roster += (f'<li><button type="button" aria-pressed="{"true" if s == "comp" else "false"}" style="--c: {p["accent"]}" '
                    f'data-name="{E(p["name"])}" data-kind="{E(p["kind"])}" data-src="{R}{src}" data-srcset="{srcset}" '
-                   f'data-w="{w}" data-h="{h}" data-href="{plugin_href(s)}"><i></i>{E(p["name"])}</button></li>')
+                   f'data-w="{w}" data-h="{h}" data-href="{plugin_href(s)}" data-webm="{clip["webm"]}" data-mp4="{clip["mp4"]}"><i></i>{E(p["name"])}</button></li>')
     groups = ""
     for g in GROUPS:
         tiles = "".join(tile(s, wide=(s == "eq")) for s in g["plugins"])
@@ -407,7 +430,7 @@ def home():
       <div class="actions"><a class="btn btn-main" href="{R}download/">Download {E(REL["version"])}</a><a class="link" href="#plugins">See all fourteen</a></div>
     </div>
     <figure>
-      {img("comp", "Fancy Comp, compressor", "(max-width: 1040px) 100vw, 620px", cls="window", lazy=False)}
+      <span class="hero-shot">{img("comp", "Fancy Comp, compressor", "(max-width: 1040px) 100vw, 620px", cls="window", lazy=False)}{demo("comp") or '<video class="demo" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>'}</span>
       <figcaption><strong>Fancy Comp</strong> · <span class="k">Compressor</span><br><a class="link" href="{plugin_href("comp")}">See what Fancy Comp can do</a></figcaption>
     </figure>
   </div>

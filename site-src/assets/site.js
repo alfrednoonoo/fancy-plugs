@@ -1,6 +1,36 @@
 // Fancy Plugs website. Every animation here is listed, with its reason, in docs/website-plan.md section 7.
 
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const saveData = !!(navigator.connection && navigator.connection.saveData);
+
+// Demo clips (section 7.1): each loads when it's about to scroll into view, plays while at least
+// half of it is on screen, and fades in over its screenshot once it's actually playing.
+const clips = (() => {
+  if (reduced || saveData || !("IntersectionObserver" in window)) return null;
+  const seen = new Map();
+  const load = (v) => {
+    if (v.dataset.loaded === v.dataset.mp4 || !v.dataset.mp4) return;
+    v.dataset.loaded = v.dataset.mp4;
+    v.classList.remove("on");
+    v.replaceChildren(...[["webm", "video/webm"], ["mp4", "video/mp4"]].map(([k, type]) => {
+      const s = document.createElement("source"); s.src = v.dataset[k]; s.type = type; return s;
+    }));
+    v.load();
+  };
+  const sync = (v) => {
+    const r = seen.get(v) || 0;
+    if (r > 0) load(v);
+    if (r >= 0.5 && v.dataset.loaded) v.play().catch(() => {}); else v.pause();
+  };
+  const io = new IntersectionObserver((es) => es.forEach((e) => { seen.set(e.target, e.intersectionRatio); sync(e.target); }),
+    { rootMargin: "200px 0px", threshold: [0, 0.5, 1] });
+  document.querySelectorAll("video.demo").forEach((v) => {
+    v.addEventListener("playing", () => v.classList.add("on"));
+    v.addEventListener("error", () => v.classList.remove("on"), true);
+    io.observe(v);
+  });
+  return { load, sync };
+})();
 
 // Phone menu: a <dialog>, so Esc closes it and focus returns to the button.
 const sheet = document.querySelector("dialog.sheet");
@@ -23,13 +53,16 @@ if (plugmenu) {
 const roster = document.querySelector(".hero-roster");
 if (roster) {
   const img = document.querySelector(".hero figure img");
+  const shot = document.querySelector(".hero-shot");
+  const video = shot && shot.querySelector("video.demo");
   const name = document.querySelector(".hero figcaption strong");
   const kind = document.querySelector(".hero figcaption .k");
   const link = document.querySelector(".hero figcaption a");
   const buttons = [...roster.querySelectorAll("button")];
   const choose = (b) => {
     buttons.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-    img.classList.add("out");
+    shot.classList.add("out");
+    if (video) { video.pause(); video.classList.remove("on"); }
     const next = new Image();
     const leave = new Promise((r) => setTimeout(r, reduced ? 0 : 250));
     next.onload = () => leave.then(() => {
@@ -39,11 +72,16 @@ if (roster) {
       name.textContent = "Fancy " + b.dataset.name; kind.textContent = b.dataset.kind;
       link.href = b.dataset.href; link.textContent = "See what Fancy " + b.dataset.name + " can do";
       // Jump to the far side without a transition, then slide in.
-      img.classList.remove("out"); img.classList.add("enter");
-      void img.offsetWidth;
-      img.classList.remove("enter");
+      shot.classList.remove("out"); shot.classList.add("enter");
+      void shot.offsetWidth;
+      shot.classList.remove("enter");
+      if (video) {
+        video.dataset.webm = b.dataset.webm; video.dataset.mp4 = b.dataset.mp4;
+        if (!b.dataset.mp4) { video.removeAttribute("data-loaded"); video.replaceChildren(); video.load(); video.classList.remove("on"); }
+        else if (clips) clips.sync(video);
+      }
     });
-    next.onerror = () => img.classList.remove("out");
+    next.onerror = () => shot.classList.remove("out");
     next.src = b.dataset.src;
   };
   buttons.forEach((b, i) => {

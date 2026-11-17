@@ -4,6 +4,9 @@
 // renders each editor, and its preset menu, at the host scales 1.25, 1.5 and 2.0 (item H.3), and
 // each window at its smallest and largest size (Phase 3 Q2.1).
 // Usage: fancy-screens <output-directory> [<popups-directory> [<host-scale-directory>]]
+//        fancy-screens --demos <output-directory> [<slug>]   the website's demo clips (Demos.cpp)
+
+#include "Demos.h"
 
 #include <fancy/ui/Controls.h>
 #include <fancy/ui/ShellEditor.h>
@@ -557,6 +560,13 @@ private:
 
 int main (int argc, char** argv)
 {
+    if (argc >= 3 && juce::String (argv[1]) == "--demos")
+    {
+        const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+        const juce::SharedResourcePointer<fancy::ui::Typefaces> typefaces;
+        return renderDemos (juce::File::getCurrentWorkingDirectory().getChildFile (argv[2]), argc >= 4 ? juce::String (argv[3]) : juce::String());
+    }
+
     if (argc < 2 || argc > 4)
     {
         std::cerr << "usage: fancy-screens <output-directory> [<popups-directory>]\n";

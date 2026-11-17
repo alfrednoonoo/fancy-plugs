@@ -140,6 +140,11 @@ public:
     void setCompare (bool shouldBeOn);
     bool isCompareOn() const noexcept { return fancyProcessor.compare.isOn(); }
 
+    // For the website's demo clips (tools/demos): stops the 30 Hz timer, then runs one update
+    // per call, so each rendered frame advances exactly one update.
+    void stopTimerForCapture() { stopTimer(); }
+    void tickForCapture() { timerCallback(); }
+
 protected:
     // Lets the layout reflow between these sizes, in 100 % units, as Fancy EQ's does. Call this
     // at the end of the subclass's constructor. The size is saved with the plugin's state.

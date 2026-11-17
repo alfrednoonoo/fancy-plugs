@@ -390,11 +390,11 @@ The hotspot tooltip appears after 150 ms of hover and at once on focus or tap. (
 
 Anything not in this table doesn't animate. A new animation is added to the table, with its reason, before it's built.
 
-### 7.1 Demo clips (user, 17 November 2026; to be approved)
+### 7.1 Demo clips (approved by the user on 17 November 2026)
 
 Each plugin's tile on the home page, and the hero window, shows a short clip of the real plugin being used: a pointer moves one or two controls and the plugin's own displays (curve, analyzer, meters, gain reduction, waveform) react to music playing through it.
 
-**Real footage, not a lookalike.** A new CI tool, `fancy-demos` (`tools/demos/`, built beside `fancy-screens`), opens each plugin's real editor offscreen, plays a synthesized music loop through the real processor in 128-sample blocks at 48 kHz, moves the scripted parameters along their path, runs the editor's timers in real time between frames (`JUCE_MODAL_LOOPS_PERMITTED`, as `tools/hosttest` does), and saves 30 frames per second as PNG at 2x. The pointer is drawn onto each frame over the control being moved (an arrow, and a pressed ring while it drags). `fancy-screens` is not changed, so no existing screenshot moves.
+**Real footage, not a lookalike.** `fancy-screens --demos <dir>` (`tools/screens/Demos.cpp`) opens each plugin's real editor offscreen, plays a synthesized music loop through the real processor in 128-sample blocks at 48 kHz, and moves the scripted parameters along their path. Every display in the plugins updates from the shared window's one 30 Hz tick, so each frame processes exactly 1/30 s of audio and runs exactly one tick (`ShellEditor::tickForCapture`): the clips are the same on every run, with no message loop. Frames are saved as PNG at 2x. The pointer is drawn onto each frame where a hand would hold the control (`ParamControl::getGripPoint`: a knob's centre, moving up as a drag would; a fader's handle; the EQ graph's band handle), with a faint ring while it drags. The screenshot path is unchanged, so no existing screenshot moves.
 
 **The signal.** Synthesized in the tool so the clips need no audio file: a 120 BPM, two-bar loop of kick, snare, hats, a bass line and a sustained chord, deterministic, peaking at about -6 dBFS. Each plugin gets a loop that suits it (Gate, Kicker and the compressors the drums; DS and DS-Mini the hats pushed up; the reverbs and Delay with the snare and chord prominent).
 
@@ -419,9 +419,9 @@ Each plugin's tile on the home page, and the hero window, shows a short clip of 
 | Verb | Length shortened and lengthened; the IR waveform redraws |
 | Room | Size and Decay turned up together and back |
 
-The exact parameter IDs and values are in `tools/demos/Scripts.h`.
+The exact parameter IDs and values are in `scripts()` in `tools/screens/Demos.cpp`.
 
-**Files.** CI uploads the frames as `demos-<sha>`. `tools/site/encode-demos.py` (run locally, it needs ffmpeg) turns each into `site-src/video/<slug>.webm` (VP9) and `<slug>.mp4` (H.264), 760 px wide (the window at 1x, 2x for the hero), silent, about 150 to 400 KB each, and both are committed, as screenshots are into `docs/images/`. They're remade when a plugin's look changes.
+**Files.** CI encodes the frames with ffmpeg, scaled to 1.5x (sharp in the hero on a 2x screen), into `<slug>.webm` (VP9) and `<slug>.mp4` (H.264), silent, and uploads them as `demos-<sha>`. They're copied into `site-src/video/` and committed, as screenshots are into `docs/images/`, and remade when a plugin's look changes. A plugin without a clip shows its screenshot alone.
 
 **On the page.** A `<video muted loop playsinline preload="none">` with the screenshot as its poster, so the page looks as it does now until a clip loads. A clip starts loading only when its tile is about to scroll into view, plays while it's at least half on screen, and pauses when it isn't. The hero plays the chosen plugin's clip. The 300 KB first-load target stays: clips aren't counted, as audio wasn't. Under reduced motion, or with Save-Data on, only the screenshot shows. The video has no controls and is hidden from screen readers; the image's `alt` text stays.
 

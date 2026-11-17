@@ -148,6 +148,7 @@ public:
 
     void paint (juce::Graphics&) override;
     juce::Colour getAccentColour() const override { return meterStyle.accent; }
+    juce::Point<float> getGripPoint() const override;
 
 private:
     float getDragPixels() const override { return meterStyle.wellHeight; }

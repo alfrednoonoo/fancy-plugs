@@ -100,10 +100,18 @@ section { padding-top: var(--s7); }
 .hero .lede { margin-top: var(--s4); }
 .hero .actions { margin-top: var(--s5); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4); }
 .hero figure { min-height: 420px; display: grid; align-content: center; justify-items: center; gap: var(--s3); }
-.hero figure img { max-height: 400px; width: auto; transition: opacity var(--t-hero) var(--ease-out), transform var(--t-hero) var(--ease-out); }
+.hero figure img { max-height: 400px; width: auto; }
 /* The hero window slides out to one side and the next one comes in from the other (user, 17 November 2026). */
-.hero figure img.out { opacity: 0; transform: translateX(-28px); }
-.hero figure img.enter { opacity: 0; transform: translateX(28px); transition: none; }
+.hero-shot { position: relative; display: inline-block; line-height: 0; transition: opacity var(--t-hero) var(--ease-out), transform var(--t-hero) var(--ease-out); }
+.hero-shot.out { opacity: 0; transform: translateX(-28px); }
+.hero-shot.enter { opacity: 0; transform: translateX(28px); transition: none; }
+
+/* Demo clips (section 7.1): laid exactly over the screenshot, shown once playing. */
+.demo { position: absolute; object-fit: contain; opacity: 0; pointer-events: none; transition: opacity var(--t-swap) var(--ease-out); }
+.demo.on { opacity: 1; }
+.hero-shot .demo { inset: 1px; width: calc(100% - 2px); height: calc(100% - 2px); border-radius: calc(var(--r-window) - 1px); }
+.tile .stage { position: relative; }
+.tile .stage .demo { inset: var(--s3); width: calc(100% - 2 * var(--s3)); height: calc(100% - 2 * var(--s3)); }
 .hero figcaption { font-size: 14px; color: var(--text-2); }
 .hero figcaption strong { color: var(--text); font-weight: 600; }
 
@@ -448,6 +456,7 @@ code { font: 500 14px Inter, system-ui, sans-serif; background: var(--bg-well); 
 @media (prefers-reduced-motion: reduce) {
   @view-transition { navigation: none; }
   .js-reveal .reveal, .js-reveal .reveal-text { opacity: 1; transform: none; }
+  .demo { display: none; }
   a.tile:hover .stage { transform: none; }
   .logo.draw .draw-path { animation: none; }
 }

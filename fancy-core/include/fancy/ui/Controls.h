@@ -49,6 +49,11 @@ public:
     // The colour of the typed-value field's border and caret. The plugin's accent by default.
     virtual juce::Colour getAccentColour() const;
 
+    // Where a hand would hold the control to drag it: a knob's centre, a fader's handle. Only the
+    // website's demo clips use it (tools/demos), to draw the pointer.
+    virtual juce::Point<float> getGripPoint() const { return getLocalBounds().toFloat().getCentre(); }
+    juce::RangedAudioParameter& getParameter() const noexcept { return param; }
+
 protected:
     float getNormalised() const { return param.convertTo0to1 (value); }
     bool isOn() const { return value >= 0.5f; }
@@ -135,6 +140,7 @@ public:
 
     void paint (juce::Graphics&) override;
     juce::Colour getAccentColour() const override { return accentColour; }
+    juce::Point<float> getGripPoint() const override;
 
 private:
     juce::Rectangle<int> getValueArea() const override;
@@ -155,6 +161,7 @@ public:
 
     void paint (juce::Graphics&) override;
     juce::Colour getAccentColour() const override { return accentColour; }
+    juce::Point<float> getGripPoint() const override;
 
 private:
     juce::Rectangle<int> getValueArea() const override;

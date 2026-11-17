@@ -280,6 +280,14 @@ ThresholdMeter::ThresholdMeter (juce::RangedAudioParameter& threshold, const Sty
 {
 }
 
+juce::Point<float> ThresholdMeter::getGripPoint() const
+{
+    // The threshold line, as paint() places it.
+    const auto db = param.convertFrom0to1 (getNormalised());
+    return { wellLeft() + wellWidth * 0.5f,
+             meterStyle.wellTop + juce::jlimit (0.0f, 1.0f, db / meterStyle.lowestDb) * meterStyle.wellHeight };
+}
+
 float ThresholdMeter::wellLeft() const noexcept
 {
     return meterStyle.wellX < 0.0f ? (float) getWidth() * 0.5f - wellWidth * 0.5f : meterStyle.wellX;

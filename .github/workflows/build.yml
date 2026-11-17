@@ -248,6 +248,39 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Render the website's demo clips
+        # docs/website-plan.md section 7.1: frames from fancy-screens --demos, encoded to WebM and MP4.
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        shell: pwsh
+        timeout-minutes: 30
+        run: |
+          $exe = Get-ChildItem -Path build/tools/screens -Recurse -File -Filter 'fancy-screens.exe' | Select-Object -First 1
+          & $exe.FullName --demos demo-frames
+          if ($LASTEXITCODE -ne 0) { throw "fancy-screens --demos exited with $LASTEXITCODE" }
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress | Out-Null }
+          New-Item -ItemType Directory -Force -Path demos | Out-Null
+          # 2x frames scaled to 1.5x: sharp in the hero on a 2x screen, small enough for a tile.
+          $scale = 'scale=trunc(iw*0.375)*2:-2:flags=lanczos'
+          foreach ($dir in Get-ChildItem -Path demo-frames -Directory) {
+            $in = Join-Path $dir.FullName 'f%04d.png'
+            $slug = $dir.Name
+            ffmpeg -hide_banner -loglevel error -y -framerate 30 -i $in -vf "$scale,format=yuv420p" -c:v libx264 -preset slow -crf 24 -movflags +faststart -an "demos/$slug.mp4"
+            if ($LASTEXITCODE -ne 0) { throw "mp4 failed for $slug" }
+            ffmpeg -hide_banner -loglevel error -y -framerate 30 -i $in -vf "$scale,format=yuv420p" -c:v libvpx-vp9 -crf 37 -b:v 0 -row-mt 1 -deadline good -cpu-used 3 -an "demos/$slug.webm"
+            if ($LASTEXITCODE -ne 0) { throw "webm failed for $slug" }
+            Copy-Item (Join-Path $dir.FullName 'f0000.png') "demos/$slug-poster.png"
+          }
+          Get-ChildItem -Path demos -File | ForEach-Object { "$($_.Name) $([math]::Round($_.Length / 1KB)) KB" }
+
+      - name: Upload demo clips
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: demos-${{ env.SHORT_SHA }}
+          path: demos
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload measurements
         uses: actions/upload-artifact@v7
         with:

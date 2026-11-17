@@ -362,6 +362,13 @@ void Knob::setStyle (const Style& style)
     repaint();
 }
 
+juce::Point<float> Knob::getGripPoint() const
+{
+    const auto& style = knobStyle;
+    const auto knobTop = style.showText ? style.labelHeight + style.labelGap : ((float) getHeight() - style.outerDiameter) * 0.5f;
+    return { (float) getWidth() * 0.5f, knobTop + style.outerDiameter * 0.5f };
+}
+
 void Knob::paint (juce::Graphics& g)
 {
     const auto bounds = getLocalBounds().toFloat();
@@ -467,6 +474,16 @@ Fader::Fader (juce::RangedAudioParameter& parameter, juce::Colour accent)
 juce::Rectangle<int> Fader::getValueArea() const
 {
     return getLocalBounds().removeFromBottom (23);
+}
+
+juce::Point<float> Fader::getGripPoint() const
+{
+    // As paint() places the handle.
+    constexpr float handleHeight = 12.0f, readoutHeight = 23.0f, readoutGap = 8.0f;
+    auto bounds = getLocalBounds().toFloat();
+    bounds.removeFromBottom (readoutHeight + readoutGap);
+    const auto travel = bounds.reduced (0.0f, handleHeight * 0.5f);
+    return { bounds.getCentreX(), travel.getBottom() - getNormalised() * travel.getHeight() };
 }
 
 void Fader::paint (juce::Graphics& g)
