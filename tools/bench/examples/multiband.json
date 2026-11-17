@@ -1,6 +1,6 @@
 {
-  "name": "Multiband, 3 bands at 425 Hz and 5.5 kHz",
-  "notes": "Fancy MultiComp against KolinMB (Analog Obsession, free) on KolinMB's three bands: crossovers at 425 Hz and 5.5 kHz, attack 10 ms, release 400 ms. KolinMB has no threshold or ratio: each band's Input drives it, and a level below threshold passes unchanged. Its drives (Low 14, Mid 30, High 12 dB) match Fancy's 4:1 at -20 dB at 1 kHz only (-3.6 against -4.9 dB at -10 dBFS, -11.6 against -11.7 at 0 dBFS, the same on two runs); its low and high bands then compress 10 to 20 dB harder. Keep the band Output entries: KolinMB's band Outputs only go from 0 dB up, so FancyBench lands them on 0 dB, but without them KolinMB doesn't compress at these drives (seen, not explained). So CPU, latency, aliasing and clicks compare like for like; response and THD show character, not the same settings. Convergence Free (four bands, threshold and ratio) is the like-for-like test, disabled until it's installed.",
+  "name": "Multiband, 4 bands, 4:1 at -20 dB",
+  "notes": "Fancy MultiComp against Convergence Free (Cut Through Recordings, free, four bands). The same four bands on each: crossovers at 120 Hz, 1.2 kHz and 6 kHz, every band 4:1 at -20 dB, attack 10 ms, release 100 ms. Convergence's per-band settings are set one by one: its global Threshold, Ratio, Attack and Release only reach the bands through its own window, not from the host. KolinMB, which has no threshold or ratio, is in multiband-kolin.json.",
   "sampleRate": 48000,
   "blockSizes": [
     128
@@ -10,60 +10,62 @@
       "label": "Fancy MultiComp",
       "path": "%FANCY_VST3%/Fancy MultiComp.vst3",
       "params": {
-        "Bands": "3",
-        "Band 1 Top frequency": "425",
-        "Band 2 Top frequency": "5500",
+        "Bands": "4",
+        "Band 1 Top frequency": "120",
+        "Band 2 Top frequency": "1200",
+        "Band 3 Top frequency": "6000",
         "Band 1 Threshold": "-20",
         "Band 1 Ratio": "4",
         "Band 1 Attack": "10",
-        "Band 1 Release": "400",
+        "Band 1 Release": "100",
         "Band 1 Auto release": "Off",
         "Band 2 Threshold": "-20",
         "Band 2 Ratio": "4",
         "Band 2 Attack": "10",
-        "Band 2 Release": "400",
+        "Band 2 Release": "100",
         "Band 2 Auto release": "Off",
         "Band 3 Threshold": "-20",
         "Band 3 Ratio": "4",
         "Band 3 Attack": "10",
-        "Band 3 Release": "400",
-        "Band 3 Auto release": "Off"
-      }
-    },
-    {
-      "label": "KolinMB",
-      "path": "%COMMONPROGRAMFILES%/VST3/KolinMB.vst3",
-      "params": {
-        "Low X-Over": "425",
-        "High X-Overx": "5500",
-        "Low Attack": "10",
-        "Low Release": "400",
-        "Low Input": "14",
-        "Low Output": "-14",
-        "Mid Attack": "10",
-        "Mid Release": "400",
-        "Mid Input": "30",
-        "Mid Output": "-30",
-        "High Attack": "10",
-        "High Release": "400",
-        "High Input": "12",
-        "High Output": "-12"
-      },
-      "clicks": {
-        "param": "Mid Input",
-        "from": "20",
-        "to": "30"
+        "Band 3 Release": "100",
+        "Band 3 Auto release": "Off",
+        "Band 4 Threshold": "-20",
+        "Band 4 Ratio": "4",
+        "Band 4 Attack": "10",
+        "Band 4 Release": "100",
+        "Band 4 Auto release": "Off"
       }
     },
     {
       "label": "Convergence Free",
-      "path": "%COMMONPROGRAMFILES%/VST3/Convergence Free.vst3",
-      "todo": "free from cutthroughrecordings.itch.io/convergence; check the path and the names with FancyBench params, then match the settings above",
+      "path": "%COMMONPROGRAMFILES%/VST3/Cut Through Recordings Convergence-64.vst3",
       "params": {
-        "Threshold 1": "-20",
-        "Ratio 1": "4"
+        "number of bands": "4",
+        "Crossover 1": "120",
+        "Crossover 2": "1200",
+        "Crossover 3": "6000",
+        "Threshold B1": "-20",
+        "Ratio B1": "4",
+        "Attack B1": "10",
+        "Release B1": "100",
+        "Threshold B2": "-20",
+        "Ratio B2": "4",
+        "Attack B2": "10",
+        "Release B2": "100",
+        "Threshold B3": "-20",
+        "Ratio B3": "4",
+        "Attack B3": "10",
+        "Release B3": "100",
+        "Threshold B4": "-20",
+        "Ratio B4": "4",
+        "Attack B4": "10",
+        "Release B4": "100"
       },
-      "disabled": true
+      "clicks": {
+        "param": "Threshold B2",
+        "from": "-40",
+        "to": "-10"
+      }
     }
   ],
   "tests": {

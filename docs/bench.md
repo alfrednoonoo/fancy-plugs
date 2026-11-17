@@ -9,7 +9,7 @@ FancyBench measures our plugins and any other VST3 the same way, at the same set
 ```
 VST3-Dev-Tools\FancyBench.exe
 VST3-Dev-Tools\examples\compressor.json, eq.json, delay.json, delay-echo.json,
-                        multiband.json, reverb.json, spectral.json
+                        multiband.json, multiband-kolin.json, reverb.json, spectral.json
 ```
 
 Install copies the example files only when they aren't already there, so your edits are kept. To get a fresh copy, delete the file and install again.
@@ -29,7 +29,7 @@ The report goes to `bench-results\<date>-<time>-<name>\report.md` in the folder 
    - TDR Kotelnikov and TDR Nova, from tokyodawn.net;
    - TAL-Dub-X, from tal-software.com;
    - Valhalla Freq Echo, from valhalladsp.com;
-   - KolinMB, from Analog Obsession (`multiband.json`; matched at 1 kHz only, see the file's notes), and Convergence Free, from cutthroughrecordings.itch.io/convergence, for a like-for-like run;
+   - Convergence Free, from cutthroughrecordings.itch.io/convergence (`multiband.json`, like for like), and KolinMB, from Analog Obsession (`multiband-kolin.json`, matched at 1 kHz only, see its notes);
    - MConvolutionEZ, from meldaproduction.com (`reverb.json`; it installs to `VST3\MeldaProduction\Reverb\`);
    - Bertom Denoiser Classic, from bertomaudio.com (`spectral.json`; its names are already checked).
 
