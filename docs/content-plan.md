@@ -200,3 +200,16 @@ node ~/.claude/skills/hyperframes/scripts/plugin-cli.mjs render --quality looks 
 - The site's hotspot coordinates mark a point beside each control, so the film's ring positions are set by eye in `film.py`.
 
 **Not done:** not on the website or YouTube; the renders stay git-ignored (user, 17 November 2026). No music or sound effects, by the plan.
+
+## 7. Part B as built: Comp, the template
+
+Built on 17 November 2026; waits for the user's approval before MultiComp. `content-src/carousels/build.py <slug>` reads the plugin's spec (`content-src/carousels/<slug>.py`: slides, crop boxes, ring points, copy, caption) and `site-src/data/plugins.json` (name, accent, pairs), writes the canvas as HTML, prints it with headless Edge and slices it. Output, git-ignored, in `content/carousels/<slug>/`: `<slug>-01.png` to `-08.png` (1080 x 1350), the whole canvas, a contact sheet and `<slug>-caption.txt`.
+
+Comp has eight slides: cover, the job, Threshold, Upward, Detector (the detector EQ and Auto threshold share a view, so they share a slide), Character, Works well with (the site's pairs, then "Next in the series: Fancy MultiComp"), Download.
+
+**Differences from the plan:**
+
+- The meter is a cell per slide in one well along the bottom, lit with the meter gradient up to the current slide. A single fill can't show progress in a still image, so the cells do.
+- The window crosses one seam, from the cover into the job slide. The capability slides use crops of different views, so they don't share a window.
+- The strip reads `FANCY COMP` on every slide, with the slide's heading beside it in grey and the number at the right.
+
