@@ -68,7 +68,7 @@ Pick **Fancy Plugs (Stage C preview)** under Options > Themes. Have three tracks
 - [x] Each track panel has two rows: record arm, name, M, S, FX and a small switch; then a volume knob, its dB value, a pan knob, envelope and polarity, and IO.
 - [x] A thin strip in the track's colour on the left edge; none on the uncoloured track.
 - [ ] The knobs are grey discs whose pointer is the track's colour (red, blue), white on the uncoloured track. Turning them works; double-click resets.
-- [ ] On the armed track, envelope and polarity give way to the input box, monitoring, record mode and input FX.
+- [x] On the armed track, envelope and polarity give way to the input box, monitoring, record mode and input FX.
 - [ ] A thin stereo meter on the right edge moves with playback.
 - [ ] Make a track short (drag its bottom edge up): only the first row shows. Make one tall: the rows stay at the top.
 - [ ] Make the track panel wider and narrower: the name and input box stretch, the buttons stay together on the right.
@@ -80,6 +80,7 @@ Re-select **Fancy Plugs (Stage C preview)**. Same three tracks, one armed, the m
 
 - [ ] Each strip: FX list at the top, a pan knob with its pointer in the track's colour, the fader and a thin stereo meter, a column of small buttons beside them, the dB value, then M, S and record arm.
 - [ ] The name sits on a bar in the track's colour with dark text; white on grey for the uncoloured track.
-- [ ] On the armed strip the dB value gives way to the input box, and input FX and record mode appear in the button column.
-- [ ] The master: wider meter, teal pan pointer, M, S and mono, the name on a teal bar.
+- [ ] On the armed strip the dB value gives way to the input box, and monitoring and input FX replace envelope and polarity in the button column; nothing overlaps.
+- [ ] The master: wider meter, teal pan pointer, a menu button (three lines) in the column, M, S and mono (one ring, two rings in stereo), the name on a teal bar.
 - [ ] Making the mixer taller or shorter stretches the fader and meter; the bottom rows stay at the bottom.
+- [ ] With the FX list hidden (right-click the mixer, Show FX inserts), no empty band at the top of the strips; with it shown, the list sits above the pan knob.

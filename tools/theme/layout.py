@@ -121,13 +121,17 @@ def tcp():
     return out
 
 
-# ---- Mixer strip (mcp), from the mockup: 78 px wide. Top to bottom: the FX list, the pan knob,
-# the fader and meter with a column of small buttons beside them, the volume value (or the input box
-# when armed), M S and record arm, and the name on a bar in the track's colour. Positions are for a
-# strip MH tall; everything from the volume value down is attached to the bottom edge, and the
-# fader and meter stretch with the strip's height.
-MW, MH = 78, 300
-FADER_TOP, FADER_H = 82, 150
+# ---- Mixer strip (mcp), from the mockup: 78 px wide. Top to bottom: the FX list (when the user
+# shows it), the pan knob, the fader and meter with a column of small buttons beside them, the
+# volume value (or the input box when armed), M S and record arm, and the name on a bar in the
+# track's colour. Positions are for a strip MH tall, the user's mixer at 100 % (about 240 px);
+# everything from the volume value down is attached to the bottom edge, and the fader and meter
+# stretch with the strip's height.
+MW, MH = 78, 240
+FXLIST_H = 50  # the FX list's room at the top, when shown
+TOP = 4  # the pan knob's top without the FX list
+FADER_TOP = 32  # the fader's top without the FX list
+BOTTOM_ROWS = 176  # where the bottom rows start, on the MH baseline
 
 
 def bottom(x, y, w, h, stretch_w=False):
@@ -140,89 +144,100 @@ def knob_colour(prefix, element):
             f"trackcolor_r trackcolor_g trackcolor_b 255] [{WHITE} {WHITE}]")
 
 
+def below_fxlist(element, c, grow=False):
+    """An element under the FX list: moved down by the list's height when the user shows it (and
+    shortened by it, for the fader and meter, so their bottom stays put)."""
+    shift = "fxgrow" if grow else "fxshift"
+    return f"set {element} + {coords(c)} {shift}"
+
+
+def strip(prefix, width, col_x, armed_rows=True):
+    """The parts the track and master strips share: FX list, pan knob, fader, meter, the top of the
+    button column."""
+    col_w = 24
+    fader_h = BOTTOM_ROWS - 4 - FADER_TOP
+    return [
+        f"set {prefix}.extmixer.mode [1]",
+        f"set {prefix}.extmixer.position [4 4 {width - 8} {FXLIST_H - 4} 0 0 1 0]",
+        f"set {prefix}.pan.fadermode [1]",
+        below_fxlist(f"{prefix}.pan", [width // 2 - 12 if not armed_rows else 27, TOP, 24, 24]),
+        f"set {prefix}.volume.fadermode [-1]",
+        below_fxlist(f"{prefix}.volume", [6, FADER_TOP, 14, fader_h, 0, 0, 0, 1], grow=True),
+        f"set {prefix}.meter.vu.div [2]",
+        below_fxlist(f"{prefix}.fx", [col_x, FADER_TOP, col_w, 18]),
+        below_fxlist(f"{prefix}.fxbyp", [col_x, FADER_TOP + 20, col_w, 8]),
+        below_fxlist(f"{prefix}.io", [col_x, FADER_TOP + 30, col_w, 18]),
+    ]
+
+
 def mcp():
-    col_x, col_w = 48, 24
+    col_x = 48
+    rows = BOTTOM_ROWS
     return [
         "; ---- Mixer strip (mcp) ----",
+        "; fxshift/fxgrow move what's under the FX list down by its height when the user shows it.",
+        f"set fxshift mcp_wantextmix&1 [0 {FXLIST_H}] [0 0]",
+        f"set fxgrow mcp_wantextmix&1 [0 {FXLIST_H} 0 -{FXLIST_H}] [0 0]",
         "clear mcp.*",
         f"set mcp.size [{MW} {MH} 60 200]",
-        "set mcp.extmixer.mode [1]",
-        f"set mcp.extmixer.position [4 4 {MW - 8} 46 0 0 1 0]",
-        "",
-        "; Pan knob, its pointer in the track's colour",
-        "set mcp.pan.fadermode [1]",
-        "set mcp.pan [27 54 24 24]",
+        *strip("mcp", MW, col_x),
         knob_colour("mcp", "pan"),
-        "set mcp.folder [58 59 16 14]",
+        below_fxlist("mcp.folder", [58, TOP + 5, 16, 14]),
+        below_fxlist("mcp.meter", [24, FADER_TOP, 18, rows - 4 - FADER_TOP, 0, 0, 0, 1], grow=True),
         "",
-        "; Fader, meter and the button column",
-        "set mcp.volume.fadermode [-1]",
-        f"set mcp.volume [6 {FADER_TOP} 14 {FADER_H} 0 0 0 1]",
-        f"set mcp.meter [24 {FADER_TOP} 18 {FADER_H} 0 0 0 1]",
-        "set mcp.meter.vu.div [2]",
-        f"set mcp.fx [{col_x} 82 {col_w} 18]",
-        f"set mcp.fxbyp [{col_x} 102 {col_w} 8]",
-        f"set mcp.io [{col_x} 112 {col_w} 18]",
-        f"set mcp.env [{col_x} 132 {col_w} 18]",
-        f"set mcp.phase [{col_x} 152 {col_w} 18]",
-        f"set mcp.recmon [{col_x} 172 {col_w} 18]",
-        f"set mcp.fxin recarm==0 [0] [{col_x} 192 {col_w} 18]",
-        f"set mcp.recmode recarm==0 [0] [{col_x} 212 {col_w} 18]",
+        "; The rest of the button column: envelope and polarity, or monitoring and input FX when armed",
+        "set mcp.env recarm!=0 [0] + " + coords([col_x, FADER_TOP + 50, 24, 18]) + " fxshift",
+        "set mcp.phase recarm!=0 [0] + " + coords([col_x, FADER_TOP + 70, 24, 18]) + " fxshift",
+        "set mcp.recmon recarm==0 [0] + " + coords([col_x, FADER_TOP + 50, 24, 18]) + " fxshift",
+        "set mcp.fxin recarm==0 [0] + " + coords([col_x, FADER_TOP + 70, 24, 18]) + " fxshift",
         "",
         "; The volume value, or the input box when armed",
-        f"set mcp.volume.label recarm!=0 [0] {coords(bottom(4, 238, MW - 8, 14, True))}",
+        f"set mcp.volume.label recarm!=0 [0] {coords(bottom(4, rows + 1, MW - 8, 14, True))}",
         f"set mcp.volume.label.color [{GREY} 0 0 0 0]",
         "set mcp.volume.label.margin [0 0 0 0 0.5]",
-        f"set mcp.recinput recarm==0 [0] {coords(bottom(4, 236, MW - 8, 18, True))}",
+        f"set mcp.recinput recarm==0 [0] {coords(bottom(4, rows, MW - 8, 17, True))}",
         "set mcp.recinput.color [207 207 207 255 48 48 48 255]",
         "set mcp.recinput.margin [4 0 2 0 0]",
         "",
         "; M, S, record arm",
-        f"set mcp.mute {coords(bottom(6, 256, 21, 18))}",
-        f"set mcp.solo {coords(bottom(30, 256, 21, 18))}",
-        f"set mcp.recarm {coords(bottom(54, 256, 18, 18))}",
+        f"set mcp.mute {coords(bottom(6, rows + 20, 21, 18))}",
+        f"set mcp.solo {coords(bottom(30, rows + 20, 21, 18))}",
+        f"set mcp.recarm {coords(bottom(54, rows + 20, 18, 18))}",
         "",
-        "; The name on a bar in the track's colour (dark text; white on grey with no colour), with",
-        "; the track number at its left",
-        f"set mcp.label {coords(bottom(0, MH - 22, MW, 20, True))}",
+        "; The name on a bar in the track's colour (dark text; white on near-black with no colour),",
+        "; with the track number at its left. mcp_namebg is transparent so the colour shows.",
+        f"set mcp.label {coords(bottom(0, MH - 22, MW, 22, True))}",
         "set mcp.label.color trackcolor_valid==1 [20 20 20 255 trackcolor_r trackcolor_g trackcolor_b 255] "
         "[255 255 255 255 20 20 20 255]",
         "set mcp.label.margin [16 0 2 0 0.5]",
-        f"set mcp.trackidx {coords(bottom(0, MH - 22, 16, 20))}",
-        "set mcp.trackidx.color [20 20 20 160 0 0 0 0]",
-        "set mcp.trackidx.margin [2 0 0 0 0.5]",
+        f"set mcp.trackidx {coords(bottom(0, MH - 22, 16, 22))}",
+        f"set mcp.trackidx.color [{GREY} 0 0 0 0]",
+        "set mcp.trackidx.margin [3 0 0 0 0.5]",
     ]
 
 
-# ---- Master strip: 104 px wide, the same order with a wider meter, and M, S and mono at the
-# bottom. The master's knob pointer and name bar are teal (decision A2).
+# ---- Master strip: 104 px wide, the same order with a wider meter, the mixer's menu button in the
+# column, and M, S and mono at the bottom. The master's knob pointer and name bar are teal
+# (decision A2).
 MMW = 104
 
 
 def master_mcp():
-    col_x, col_w = 74, 24
+    col_x = 74
+    rows = BOTTOM_ROWS
     return [
         "; ---- Master mixer strip (master.mcp) ----",
         "clear master.mcp.*",
         f"set master.mcp.size [{MMW} {MH} 80 200]",
-        "set master.mcp.extmixer.mode [1]",
-        f"set master.mcp.extmixer.position [4 4 {MMW - 8} 46 0 0 1 0]",
-        "set master.mcp.pan.fadermode [1]",
-        f"set master.mcp.pan [{MMW // 2 - 12} 54 24 24]",
+        *strip("master.mcp", MMW, col_x, armed_rows=False),
         "set master.mcp.pan.color [0 169 133 255 0 169 133 255]",
-        "set master.mcp.volume.fadermode [-1]",
-        f"set master.mcp.volume [8 {FADER_TOP} 14 {FADER_H} 0 0 0 1]",
-        f"set master.mcp.meter [26 {FADER_TOP} 44 {FADER_H} 0 0 0 1]",
-        "set master.mcp.meter.vu.div [2]",
-        f"set master.mcp.fx [{col_x} 82 {col_w} 18]",
-        f"set master.mcp.fxbyp [{col_x} 102 {col_w} 8]",
-        f"set master.mcp.io [{col_x} 112 {col_w} 18]",
-        f"set master.mcp.env [{col_x} 132 {col_w} 18]",
-        f"set master.mcp.menubutton [{col_x} 152 {col_w} 18]",
-        f"set master.mcp.mute {coords(bottom(MMW // 2 - 34, 256, 21, 18))}",
-        f"set master.mcp.solo {coords(bottom(MMW // 2 - 10, 256, 21, 18))}",
-        f"set master.mcp.mono {coords(bottom(MMW // 2 + 14, 256, 21, 18))}",
-        f"set master.mcp.label {coords(bottom(0, MH - 22, MMW, 20, True))}",
+        below_fxlist("master.mcp.meter", [26, FADER_TOP, 44, rows - 4 - FADER_TOP, 0, 0, 0, 1], grow=True),
+        below_fxlist("master.mcp.env", [col_x, FADER_TOP + 50, 24, 18]),
+        below_fxlist("master.mcp.menubutton", [col_x, FADER_TOP + 70, 24, 18]),
+        f"set master.mcp.mute {coords(bottom(MMW // 2 - 34, rows + 20, 21, 18))}",
+        f"set master.mcp.solo {coords(bottom(MMW // 2 - 10, rows + 20, 21, 18))}",
+        f"set master.mcp.mono {coords(bottom(MMW // 2 + 14, rows + 20, 21, 18))}",
+        f"set master.mcp.label {coords(bottom(0, MH - 22, MMW, 22, True))}",
         "set master.mcp.label.color [255 255 255 255 0 169 133 255]",
         "set master.mcp.label.margin [0 0 0 0 0.5]",
     ]

@@ -144,6 +144,26 @@ def icon_text(label, size=9.0, colour=TXT, weight="SemiBold"):
     return draw
 
 
+def icon_channels(stereo, colour):
+    """Mono: one ring. Stereo: two overlapping rings."""
+    def draw(c):
+        cx, cy = c.w / 2, c.h / 2
+        if stereo:
+            c.circle(cx - 2.6, cy, 4, outline=colour, width=1.3)
+            c.circle(cx + 2.6, cy, 4, outline=colour, width=1.3)
+        else:
+            c.circle(cx, cy, 4, outline=colour, width=1.3)
+    return draw
+
+
+def icon_menu(colour):
+    def draw(c):
+        cx, cy = c.w / 2, c.h / 2
+        for dy in (-3.5, 0, 3.5):
+            c.line([(cx - 5, cy + dy), (cx + 5, cy + dy)], colour, 1.4)
+    return draw
+
+
 def icon_recarm(on):
     def draw(c):
         cx, cy = c.w / 2, c.h / 2
@@ -502,6 +522,9 @@ IMAGES = {
     "track_folder_off": button(icon_folder("off"), 18, 14),
     "track_folder_on": button(icon_folder("on"), 18, 14),
     "track_folder_last": button(icon_folder("last"), 18, 14),
+    "track_mono": button(icon_channels(False, TEAL), B, B),
+    "track_stereo": button(icon_channels(True, TXT2), B, B),
+    "mixer_menu": button(icon_menu("#D6D6D6"), B, B),
     "track_fx_in_norm": button(icon_fx(TEAL), 20, B),
     "track_fx_in_empty": button(icon_fx(TXT2), 20, B),
     "track_fxon_v": button(icon_fxbypass("on"), 8, B, radius=2),
@@ -530,7 +553,8 @@ IMAGES = {
 
     # Name fields
     "tcp_namebg": name_field,
-    "mcp_namebg": name_field,
+    # Transparent, so the layout's background colour (the track's colour) fills the mixer's name bar
+    "mcp_namebg": rounded_bg((0, 0, 0, 0)),
 
     # Transport
     "transport_play": button(icon_transport("play", "#E0E0E0"), 34, 26),
