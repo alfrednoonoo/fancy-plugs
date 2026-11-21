@@ -44,7 +44,13 @@ KickerEditor::KickerEditor (KickerProcessor& processor)
       subLowpassKnob (parameter ("subLowpass"), "Low-pass", colours::uiRed, Knob::smallStyle),
       monoCheckbox (parameter ("monoBelow"), "Mono below Freq"),
       softClipCheckbox (parameter ("softClip"), "Soft clip"),
-      subMonoCheckbox (parameter ("subMono"), "Mono sub")
+      subMonoCheckbox (parameter ("subMono"), "Mono sub"),
+      subLengthKnob (parameter ("subLen"), "Length", colours::uiRed, Knob::tightStyle),
+      roomFreqKnob (parameter ("roomFreq"), "Make-room", colours::uiRed, Knob::tightStyle),
+      ceilingKnob (parameter ("ceiling"), "Ceiling", colours::uiTeal, Knob::tightStyle),
+      roomCheckbox (parameter ("roomCut"), "Make-room"),
+      polarityCheckbox (parameter ("subPolarity"), "Invert sub"),
+      autoGainCheckbox (parameter ("autoGain"), "Auto gain")
 {
     auto& body = getBody();
 
@@ -94,6 +100,28 @@ KickerEditor::KickerEditor (KickerProcessor& processor)
     drawer.addAndMakeVisible (drawerOutputKnob);
     drawer.addAndMakeVisible (softClipCheckbox);
 
+    // Phase 4 Wave 1: the Sub group under Soft clip (dimmed in Boost), then Auto gain and Ceiling.
+    subLengthKnob.setBounds (14, 250, 66, 80);
+    subLengthKnob.setTooltip ("Ends the sub this long after each hit, with a short fade, so a long tail doesn't run into the next kick. Off at the top.");
+    roomFreqKnob.setBounds (84, 250, 66, 80);
+    roomFreqKnob.setTooltip ("Where Make-room cuts the source kick.");
+    roomCheckbox.setBounds (156, 262, 110, 20);
+    roomCheckbox.setTooltip ("Cuts the source kick's lowest end, so the sub has it to itself.");
+    polarityCheckbox.setBounds (156, 290, 110, 20);
+    polarityCheckbox.setTooltip ("Flips the sub, for kicks whose own low end cancels it.");
+    autoGainCheckbox.setBounds (24, 346, 110, 20);
+    autoGainCheckbox.setTooltip ("Turns the output down by as much as Boost or Sub adds, so you hear the shape, not the level.");
+    ceilingKnob.setBounds (150, 330, 66, 80);
+    ceilingKnob.setTooltip ("Holds the output's true peak under this level. Off at the bottom.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &subLengthKnob, &roomFreqKnob, &roomCheckbox, &polarityCheckbox, &autoGainCheckbox, &ceilingKnob })
+        drawer.addAndMakeVisible (item);
+
+    // The sub meter, between In and Out.
+    subMeter.setBounds (leftPanelWidth + 70, 49, 6, 315);
+    subMeter.setInterceptsMouseClicks (false, false);
+    body.addChildComponent (subMeter);
+
     for (juce::Component* item : std::initializer_list<juce::Component*> { &qKnob, &monoCheckbox, &sensitivityKnob, &subLowpassKnob, &subMonoCheckbox })
         drawer.addChildComponent (item);
 
@@ -136,6 +164,16 @@ void KickerEditor::updateMode()
 
 void KickerEditor::onTick (float seconds)
 {
+    // Phase 4 Wave 1: the sub meter and the Sub group follow the mode.
+    {
+        const auto sub = juce::roundToInt (parameter ("mode").convertFrom0to1 (parameter ("mode").getValue())) == 1;
+        subMeter.setVisible (sub);
+        subMeter.update (dynamic_cast<KickerProcessor&> (getFancyProcessor()).takeSubPeak(), seconds);
+
+        for (auto* item : std::initializer_list<juce::Component*> { &subLengthKnob, &roomFreqKnob, &roomCheckbox, &polarityCheckbox })
+            item->setAlpha (sub ? 1.0f : 0.4f);
+    }
+
     auto& processor = getFancyProcessor();
     updateMode();
     meter.update (processor.inputMeter, processor.outputMeter, seconds);
@@ -165,4 +203,25 @@ std::vector<ShellEditor::PopupOpener> KickerEditor::getPopupOpeners()
     auto openers = ShellEditor::getPopupOpeners();
     openers.push_back ({ "value-freq", [this] { updateMode(); freqKnob.openValueEditor(); } });
     return openers;
+}
+
+// SubMeter (Phase 4 Wave 1) ---------------------------------------------------------------
+
+void KickerEditor::SubMeter::update (float peak, float seconds)
+{
+    const auto db = peak > 1.0e-6f ? 20.0f * std::log10 (peak) : -100.0f;
+    shownDb = db > shownDb ? db : std::max (db, shownDb - 20.0f * seconds);
+    repaint();
+}
+
+void KickerEditor::SubMeter::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    g.setColour (colours::bgWell);
+    g.fillRect (bounds);
+
+    // The In and Out meters' scale: 0 dBFS near the top, -54 at the bottom.
+    const auto fraction = juce::jlimit (0.0f, 1.0f, (shownDb + 54.0f) / 60.0f);
+    g.setColour (colours::uiRed);
+    g.fillRect (bounds.withTop (bounds.getBottom() - bounds.getHeight() * fraction));
 }

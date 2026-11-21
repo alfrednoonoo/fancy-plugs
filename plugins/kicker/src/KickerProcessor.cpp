@@ -3,6 +3,9 @@
 
 #include <fancy/plugin/ParamHelpers.h>
 
+#include <cmath>
+#include <vector>
+
 namespace
 {
 constexpr float levelFloorDb = -60.0f;
@@ -61,6 +64,27 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (hzParameter ("subLowpass", "Sub low-pass", 60.0f, 250.0f, 120.0f));
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "subMono", 1 }, "Mono sub", true));
 
+    // Phase 4 Wave 1 (docs/kicker.md), appended. Off, off, 60 Hz, off, off and Off are Kicker as it was.
+    layout.add (fancy::floatParameter (
+        "subLen", "Sub length", fancy::logRange (20.0f, 2000.0f, 1.0f), 2000.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("ms")
+            .withStringFromValueFunction ([] (float value, int) { return value >= 1999.5f ? juce::String ("Off") : juce::String (juce::roundToInt (value)) + " ms"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return text.trim().equalsIgnoreCase ("off") ? 2000.0f : juce::jlimit (20.0f, 2000.0f, fancy::parseMs (text)); })));
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "roomCut", 1 }, "Make-room", false));
+    layout.add (hzParameter ("roomFreq", "Make-room freq", 20.0f, 200.0f, 60.0f));
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "subPolarity", 1 }, "Invert sub", false));
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "autoGain", 1 }, "Auto gain", false));
+    layout.add (fancy::floatParameter (
+        "ceiling", "Ceiling", juce::NormalisableRange<float> ((float) fancy::dsp::OutputCeiling::offDb, 0.0f, 0.1f), (float) fancy::dsp::OutputCeiling::offDb,
+        juce::AudioParameterFloatAttributes {}
+            .withAutomatable (false)
+            .withLabel ("dBTP")
+            .withStringFromValueFunction ([] (float value, int)
+                                          { return value <= (float) fancy::dsp::OutputCeiling::offDb + 0.01f ? juce::String ("Off") : fancy::formatFixed (value, 1) + " dBTP"; })
+            .withValueFromStringFunction ([] (const juce::String& text)
+                                          { return text.trim().equalsIgnoreCase ("off") ? (float) fancy::dsp::OutputCeiling::offDb : juce::jlimit (-12.0f, 0.0f, fancy::parseNumber (text)); })));
+
     return layout;
 }
 
@@ -108,6 +132,12 @@ KickerProcessor::KickerProcessor()
       softClip (*getApvts().getRawParameterValue ("softClip")),
       bypass (*getApvts().getRawParameterValue ("bypass"))
 {
+    analysisThread.startThread (juce::Thread::Priority::low);
+}
+
+KickerProcessor::~KickerProcessor()
+{
+    analysisThread.stopThread (2000);
 }
 
 KickerDsp::Targets KickerProcessor::readTargets() const
@@ -131,6 +161,12 @@ KickerDsp::Targets KickerProcessor::readTargets() const
     targets.subSensitivityGain = fancy::dbToGain ((double) read ("subSensitivity"));
     targets.subLowpassHz = (double) read ("subLowpass");
     targets.subMono = read ("subMono") >= 0.5f;
+
+    const auto length = read ("subLen");
+    targets.subLengthMs = length >= 1999.5f ? 0.0 : (double) length;
+    targets.roomCut = read ("roomCut") >= 0.5f;
+    targets.roomHz = (double) read ("roomFreq");
+    targets.subPolarity = read ("subPolarity") >= 0.5f;
     return targets;
 }
 
@@ -139,6 +175,10 @@ void KickerProcessor::prepareAudio (double sampleRate, int)
     dsp.prepare (sampleRate);
     dsp.snapToTargets (readTargets());
     setLatencySamples (0);
+
+    ceiling.prepare (sampleRate);
+    autoTrim.setTime (200.0, sampleRate);
+    autoTrim.snapTo (1.0);
 }
 
 void KickerProcessor::reset()
@@ -170,13 +210,136 @@ void KickerProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::Midi
 
     inputMeter.push (channels, numChannels, numSamples);
 
-    dsp.setTargets (readTargets());
+    const auto targets = readTargets();
+    dsp.setTargets (targets);
     dsp.process (channels, numChannels, numSamples);
 
+    // Phase 4 Wave 1: Auto gain's trim, then the ceiling. Off and settled, nothing is touched.
+    const auto read = [this] (const char* id) { return getApvts().getRawParameterValue (id)->load (std::memory_order_relaxed); };
+    const auto autoOn = read ("autoGain") >= 0.5f;
+
+    if (autoOn && isNonRealtime())
+    {
+        bool stale;
+        {
+            const juce::SpinLock::ScopedLockType lock (analysisLock);
+            stale = ! analysed || analysedKey != keyFor (targets);
+        }
+
+        if (stale)
+            runAnalysis();
+    }
+
+    autoTrim.setTarget (autoOn ? std::pow (10.0, -(double) autoGainDb.load (std::memory_order_relaxed) / 20.0) : 1.0);
+
+    if (autoOn || ! autoTrim.isSettled())
+    {
+        for (int i = 0; i < numSamples; ++i)
+        {
+            const auto trim = (float) autoTrim.next();
+
+            for (int ch = 0; ch < numChannels; ++ch)
+                channels[ch][i] *= trim;
+        }
+    }
+
+    const auto ceilingDb = (double) read ("ceiling");
+    ceiling.process (channels, numChannels, numSamples, ceilingDb, targets.bypass);
+
     outputMeter.push (channels, numChannels, numSamples);
+
+    if (getLatencySamples() != ceiling.getLatencySamples (ceilingDb))
+        setLatencySamples (ceiling.getLatencySamples (ceilingDb));
 }
 
 juce::AudioProcessorEditor* KickerProcessor::createEditor()
 {
     return new KickerEditor (*this);
+}
+
+// Phase 4 Wave 1: Auto gain's measure (docs/kicker.md) ------------------------------------------
+
+KickerProcessor::AnalysisKey KickerProcessor::keyFor (const KickerDsp::Targets& t) noexcept
+{
+    return { t.frequencyHz, t.q, t.wetGain, t.dryGain, t.monoWet ? 1.0 : 0.0, t.softClip ? 1.0 : 0.0, t.sub ? 1.0 : 0.0, t.subCutoffHz,
+             (double) t.subDivisions, t.subGain, t.subSensitivityGain, t.subLowpassHz, t.subLengthMs, t.roomCut ? t.roomHz : 0.0 };
+}
+
+// A reference kick: a body falling from 120 to 50 Hz with a 150 ms decay, every half second,
+// peaking at -6 dBFS. The gain is the output's RMS against the input's over the last second.
+float KickerProcessor::measureGainDb (const KickerDsp::Targets& settings)
+{
+    constexpr double rate = 48000.0;
+    constexpr double pi = 3.14159265358979323846;
+
+    auto targets = settings;
+    targets.outputGain = 1.0;
+    targets.bypass = false;
+
+    const auto total = (int) (2.0 * rate);
+    std::vector<float> left ((size_t) total), right ((size_t) total);
+    auto phase = 0.0;
+
+    for (int i = 0; i < total; ++i)
+    {
+        const auto t = std::fmod ((double) i / rate, 0.5);
+        const auto hz = 50.0 + 70.0 * std::exp (-t / 0.03);
+
+        if (t < 1.0 / rate)
+            phase = 0.0;
+
+        phase += 2.0 * pi * hz / rate;
+        left[(size_t) i] = right[(size_t) i] = (float) (0.5 * std::exp (-t / 0.15) * std::sin (phase));
+    }
+
+    const auto input = left;
+
+    KickerDsp dsp;
+    dsp.prepare (rate);
+    dsp.snapToTargets (targets);
+
+    for (int start = 0; start < total; start += 512)
+    {
+        float* channels[] { left.data() + start, right.data() + start };
+        dsp.process (channels, 2, std::min (512, total - start));
+    }
+
+    double in = 0.0, out = 0.0;
+
+    for (int i = total / 2; i < total; ++i)
+    {
+        in += (double) input[(size_t) i] * (double) input[(size_t) i];
+        out += (double) left[(size_t) i] * (double) left[(size_t) i];
+    }
+
+    return (float) (10.0 * std::log10 (std::max (out, 1.0e-30) / std::max (in, 1.0e-30)));
+}
+
+void KickerProcessor::runAnalysis()
+{
+    const auto targets = readTargets();
+    const auto key = keyFor (targets);
+    autoGainDb.store (measureGainDb (targets), std::memory_order_relaxed);
+
+    const juce::SpinLock::ScopedLockType lock (analysisLock);
+    analysedKey = key;
+    analysed = true;
+}
+
+void KickerProcessor::AnalysisThread::run()
+{
+    while (! threadShouldExit())
+    {
+        const auto autoOn = processor.getApvts().getRawParameterValue ("autoGain")->load (std::memory_order_relaxed) >= 0.5f;
+        bool stale;
+        {
+            const juce::SpinLock::ScopedLockType lock (processor.analysisLock);
+            stale = ! processor.analysed || processor.analysedKey != keyFor (processor.readTargets());
+        }
+
+        if (autoOn && stale && ! processor.isNonRealtime())
+            processor.runAnalysis();
+
+        wait (100);
+    }
 }

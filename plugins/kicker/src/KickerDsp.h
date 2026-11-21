@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 
 // See docs/kicker.md and, for Sub mode, docs/kicker-sub.md. Contains no JUCE types, so tests can
@@ -34,7 +35,16 @@ public:
         double subSensitivityGain = 0.01;     // -40 dB
         double subLowpassHz = 120.0;
         bool subMono = true;
+
+        // Phase 4 Wave 1 (docs/kicker.md). The defaults leave Sub mode as it was, to the bit.
+        double subLengthMs = 0.0;     // 0 is Off: the sub lasts as long as the kick
+        bool roomCut = false;         // Make-room: a high-pass on the source kick
+        double roomHz = 60.0;
+        bool subPolarity = false;     // inverts the generated sub
     };
+
+    // Phase 4 Wave 1: the generated sub's peak level since the last call, for its meter.
+    float takeSubPeak() noexcept { return subPeak.exchange (0.0f, std::memory_order_relaxed); }
 
     void prepare (double newSampleRate)
     {
@@ -55,6 +65,13 @@ public:
         subLogLowpass.setTime (30.0, sampleRate);
         subMonoAmount.setTime (20.0, sampleRate);
 
+        roomAmount.setTime (20.0, sampleRate);
+        polarity.setTime (20.0, sampleRate);
+        roomAmount.snapTo (0.0);
+        polarity.snapTo (1.0);
+        onsetSlowCoefficient = 1.0 - std::exp (-1.0 / (0.03 * sampleRate));
+        lengthFadeSamples = std::max (1, (int) std::lround (0.02 * sampleRate));
+
         for (auto& filter : subsonic)
             filter.setButterworthHighPass (15.0, sampleRate);
 
@@ -74,6 +91,13 @@ public:
 
         for (auto& generator : generators)
             generator.reset();
+
+        for (auto& filter : roomFilters)
+            filter.reset();
+
+        lengthCount.fill (0);
+        onsetSlow.fill (0.0);
+        wasRunning.fill (false);
     }
 
     void setTargets (const Targets& targets)
@@ -175,9 +199,43 @@ private:
         }
     }
 
+    // Phase 4 Wave 1: Sub length. A new hit is the generator starting, or its level jumping
+    // over its own recent average; from there the sub plays for Sub length, then fades over 20 ms
+    // (60 dB, in dB steps) to silence. Off, it's always 1.
+    double lengthGain (int g) noexcept
+    {
+        if (lengthSamples == 0)
+            return 1.0;
+
+        auto& generator = generators[(size_t) g];
+        const auto envelope = generator.getEnvelope();
+        const auto running = generator.isRunning();
+        auto& slow = onsetSlow[(size_t) g];
+
+        if ((running && ! wasRunning[(size_t) g]) || (envelope > 1.6 * slow && lengthCount[(size_t) g] > lengthFadeSamples))
+            lengthCount[(size_t) g] = 0;
+
+        wasRunning[(size_t) g] = running;
+        slow += (envelope - slow) * onsetSlowCoefficient;
+
+        const auto count = lengthCount[(size_t) g]++;
+
+        if (count < lengthSamples)
+            return 1.0;
+
+        const auto fade = count - lengthSamples;
+
+        if (fade >= lengthFadeSamples)
+            return 0.0;
+
+        return std::pow (10.0, -3.0 * (double) fade / (double) lengthFadeSamples);
+    }
+
     // Sub mode, or a crossfade between the modes.
     void processWithSub (float* const* channels, int numChannels, int numSamples)
     {
+        auto peakHere = 0.0;
+
         for (int i = 0; i < numSamples; ++i)
         {
             if (! logFrequency.isSettled() || ! logQ.isSettled())
@@ -211,13 +269,24 @@ private:
 
             if (subMono > 0.0)
             {
-                const auto shared = generators[0].process (mid);
+                const auto shared = generators[0].process (mid) * lengthGain (0);
                 sub[0] = sub[1] = shared * subMono;
             }
 
             if (subMono < 1.0)
                 for (int ch = 0; ch < numChannels; ++ch)
-                    sub[(size_t) ch] += generators[(size_t) ch + 1].process ((double) channels[ch][i]) * (1.0 - subMono);
+                    sub[(size_t) ch] += generators[(size_t) ch + 1].process ((double) channels[ch][i]) * lengthGain (ch + 1) * (1.0 - subMono);
+
+            // Phase 4 Wave 1: polarity, and the sub meter.
+            const auto flip = polarity.isSettled() && polarity.getCurrent() == 1.0 ? 1.0 : polarity.next();
+
+            if (flip != 1.0)
+                for (auto& value : sub)
+                    value *= flip;
+
+            peakHere = std::max (peakHere, std::max (std::abs (sub[0]), std::abs (sub[1])) * subGain * mode);
+
+            const auto room = roomAmount.isSettled() && roomAmount.getCurrent() == 0.0 ? 0.0 : roomAmount.next();
 
             for (int ch = 0; ch < numChannels; ++ch)
             {
@@ -228,7 +297,15 @@ private:
                     continue;
 
                 const auto boost = in * dryGain + wetOut * wetGain;
-                const auto withSub = in * dryGain + sub[(size_t) ch] * subGain;
+
+                // Make-room: the source kick through a high-pass in Sub mode, so the sub has the
+                // low end to itself. The filter runs only while it's in use.
+                auto source = in;
+
+                if (room > 0.0)
+                    source += (roomFilters[ch].tick (roomCoefficients, in).high - in) * room;
+
+                const auto withSub = source * dryGain + sub[(size_t) ch] * subGain;
                 auto out = (boost + (withSub - boost) * mode) * outputGain;
 
                 if (clip > 0.0)
@@ -236,6 +313,12 @@ private:
 
                 channels[ch][i] = (float) (out + (in - out) * bypass);
             }
+        }
+
+        auto shown = subPeak.load (std::memory_order_relaxed);
+
+        while ((float) peakHere > shown && ! subPeak.compare_exchange_weak (shown, (float) peakHere, std::memory_order_relaxed))
+        {
         }
     }
 
@@ -273,6 +356,18 @@ private:
         assign (subLogCutoff, std::log (std::min (targets.subCutoffHz, nyquistLimit)));
         assign (subLogLowpass, std::log (std::min (targets.subLowpassHz, nyquistLimit)));
         assign (subMonoAmount, targets.subMono ? 1.0 : 0.0);
+
+        // Phase 4 Wave 1.
+        assign (roomAmount, targets.roomCut ? 1.0 : 0.0);
+        assign (polarity, targets.subPolarity ? -1.0 : 1.0);
+        lengthSamples = targets.subLengthMs > 0.0 ? std::max (1, (int) std::lround (targets.subLengthMs * 0.001 * sampleRate)) : 0;
+
+        if (targets.roomHz != roomHz || ! roomReady)
+        {
+            roomHz = targets.roomHz;
+            roomCoefficients.set (std::min (roomHz, 0.45 * sampleRate), 0.9, sampleRate);
+            roomReady = true;
+        }
 
         subDivisions = targets.subDivisions;
         subSensitivity = targets.subSensitivityGain;
@@ -327,4 +422,17 @@ private:
     double subSensitivity = 0.01;
     bool generatorsReady = false;
     bool subMonoOn = true;
+
+    // Phase 4 Wave 1.
+    fancy::dsp::Smoother roomAmount, polarity;
+    fancy::dsp::SvfCoefficients roomCoefficients;
+    fancy::dsp::Svf roomFilters[2];
+    double roomHz = 60.0;
+    bool roomReady = false;
+    int lengthSamples = 0, lengthFadeSamples = 960;
+    std::array<int, 3> lengthCount {};
+    std::array<double, 3> onsetSlow {};
+    std::array<bool, 3> wasRunning {};
+    double onsetSlowCoefficient = 0.001;
+    std::atomic<float> subPeak { 0.0f };
 };

@@ -40,6 +40,21 @@ private:
     fancy::ui::Knob qKnob, drawerOutputKnob, sensitivityKnob, subLowpassKnob;
     fancy::ui::ParamCheckbox monoCheckbox, softClipCheckbox, subMonoCheckbox;
 
+    // Phase 4 Wave 1: the Sub group, Auto gain and Ceiling in the drawer, and the sub meter.
+    class SubMeter final : public juce::Component
+    {
+    public:
+        void update (float peak, float seconds);
+        void paint (juce::Graphics&) override;
+
+    private:
+        float shownDb = -100.0f;
+    };
+
+    fancy::ui::Knob subLengthKnob, roomFreqKnob, ceilingKnob;
+    fancy::ui::ParamCheckbox roomCheckbox, polarityCheckbox, autoGainCheckbox;
+    SubMeter subMeter;
+
     int shownMode = -1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KickerEditor)
