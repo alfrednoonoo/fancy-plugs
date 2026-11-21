@@ -8,6 +8,8 @@ Approved by the user on 21 November 2026. Mockup: `design/reaper-theme-mockup/in
 - **The palette is approved** as drawn: 12 hues in rainbow order, dark shades at 65 % brightness.
 - **Filled** (mockup B) stays reachable through the tint-strength settings. For it: dark text on light colours (yellow, lime, and any colour whose luminance is above about 150 of 255), and a light outline on teal controls over teal and green tracks.
 - **Menus follow the design rules where REAPER allows it** (section 8).
+- **Knobs and faders in the track's colour** (mockup A2; user, 21 November 2026): the volume and pan knobs' arc and pointer and the fader fill take the track's colour. A track in a dark shade uses that hue's bright colour, a track with no colour uses white, and the master uses teal. If REAPER can't recolour these per track (to be tested early in Stage B with a screenshot from the user), they're white everywhere (mockup A3).
+- **Title bar** (section 9).
 
 ## 1. What it is
 
@@ -82,3 +84,7 @@ The suite's menu style (`docs/DESIGN_SYSTEM.md`: panel `#262626`, 1 px `#434343`
 - **Our own menus: fully styled.** The "Fancy: colour tracks" palette menu is drawn by our Lua action in its own small window (REAPER's `gfx`), not with REAPER's `gfx.showmenu`, which opens a standard Windows menu. It uses the suite's menu values exactly, with each row's swatch in its track colour. Checked from the user's screenshots.
 - **REAPER's own menus: dark, not restyled.** The menu bar, right-click and dropdown menus are standard Windows menus. A theme can't set their font, row height, radius, border or hover colour, so they can't match the design rules, and we won't claim they do. The closest is REAPER's Windows dark mode (Preferences > General > Advanced, marked experimental in REAPER 7.x), with Windows' apps set to dark: it should draw them dark grey, which sits well with the theme. The checklist has the user turn it on and send a screenshot of a menu, and the result is written here.
 - **REAPER's in-panel dropdowns** (the record input on the track panel, for example) are drawn from the theme's images and colours, so they get the suite's control look in Stage B: `#303030`, radius 3, with the `▾` in `#8D8D8D`. The list they open is again a Windows menu.
+
+## 9. Title bar (user, 21 November 2026)
+
+The window's title bar is drawn by Windows, not by REAPER's theme, so the theme can't colour it. REAPER's Windows dark mode does turn it dark: Preferences > General > Advanced UI/system tweaks > "Dark mode (experimental)" set to "Forced on", then restart REAPER (REAPER 7.81 or later; the user has 7.86). That also darkens REAPER's menus and dialogs (section 8). The bar is then Windows' own dark grey, close to the theme's `#1E1E1E` but not exactly it. Windows' "Show accent colour on title bars" could match it exactly, but it changes every app's title bar, so we don't recommend it. The theme's install notes and checklist include the dark mode step.

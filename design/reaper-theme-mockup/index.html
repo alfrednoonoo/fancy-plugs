@@ -160,9 +160,17 @@
 <p class="note">* = one of the plugins' accents. Top row: the colours. Bottom row: the dark shades (65 % brightness). The toolbar's rainbow button opens them as a menu.</p>
 <div class="palette" id="palette"></div>
 
-<h2>A. Light tint over grey (recommended)</h2>
+<h2>A. Light tint over grey (chosen), teal knobs</h2>
 <p class="note">Track colour as a strip on the panel, a light tint behind it, coloured items, and the colour on the mixer strip's name. Panels and mixer stay grey like the plugins' bodies. Track 3 is selected; Drums is record-armed; Bass is muted; Vox is soloed.</p>
 <div class="win light" id="winA"></div>
+
+<h2>A2. Light tint, knobs in the track's colour</h2>
+<p class="note">The volume and pan knobs take their track's colour. The master keeps teal. Faders are unchanged (teal) so only the knobs differ.</p>
+<div class="win light" id="winA2"></div>
+
+<h2>A3. Light tint, white knobs</h2>
+<p class="note">The volume and pan knobs in white on every track and the master.</p>
+<div class="win light" id="winA3"></div>
 
 <h2>B. Filled</h2>
 <p class="note">The same window with the track colour filling the panels, items and mixer strips.</p>
@@ -236,7 +244,8 @@ const TRACKS = [
   { n: "Pad", c: "#E8608A", items: [[0, 7.9, "pad"]], fx: ["Fancy FIR", "Fancy Limit"], vol: "-14", pan: .5, l: ["28%", "26%"], fl: .4 },
 ];
 
-function windowHtml() {
+function windowHtml(knobs = "teal") {
+  const kc = c => knobs === "track" ? c : knobs === "white" ? "#FFFFFF" : "#00A985";
   const barW = 112, x0 = 6;
   const menus = "File Edit View Insert Item Track Options Actions Extensions Help".split(" ").map(m => `<span>${m}</span>`).join("");
   const tb = ["＋", "✂", "⧉", "⌫", "|", "⌗", "⇥", "∿", "|", "◐", "⚲", "|"].map(g => g === "|" ? `<div class="sep"></div>` : `<div class="tb${g === "⌗" ? " on" : ""}">${g}</div>`).join("")
@@ -247,7 +256,7 @@ function windowHtml() {
       <div class="strip"></div><div class="idx">${i + 1}</div>
       <div class="ctl">
         <div class="row"><div class="rec${t.rec ? " on" : ""}"><i></i></div><div class="name">${t.n}</div><div class="btn m${t.m ? " on" : ""}">M</div><div class="btn s${t.s ? " on" : ""}">S</div><div class="btn">FX</div></div>
-        <div class="row">${knob(20, 0.72)}<span class="val">${t.vol} dB</span>${knob(20, t.pan, "#00A985", true)}<div class="dd">In 1</div><div class="btn">IO</div></div>
+        <div class="row">${knob(20, 0.72, kc(t.c))}<span class="val">${t.vol} dB</span>${knob(20, t.pan, kc(t.c), true)}<div class="dd">In 1</div><div class="btn">IO</div></div>
       </div>
       <div class="tmeter"><i style="--l:${t.l[0]}"></i><i style="--l:${t.l[1]}"></i></div>
     </div>`;
@@ -275,7 +284,7 @@ function windowHtml() {
     const slots = [...t.fx, "", "", ""].slice(0, 3).map(f => `<div class="${f ? "" : "empty"}">${f}</div>`).join("");
     mixer += `<div class="mcp" style="--c:${t.c}">
       <div class="fx">${slots}</div>
-      <div class="panrow">${knob(24, t.pan, "#00A985", true)}</div>
+      <div class="panrow">${knob(24, t.pan, kc(t.c), true)}</div>
       <div class="faderwrap"><div class="fader"><div class="track"></div><div class="fill" style="height:${t.fl * 100}%"></div><div class="thumb" style="bottom:calc(${t.fl * 100}% - 3px)"></div></div>
         <div class="mmeter"><i style="--l:${t.l[0]}"></i><i style="--l:${t.l[1]}"></i></div></div>
       <div class="ms"><div class="btn m${t.m ? " on" : ""}">M</div><div class="btn s${t.s ? " on" : ""}">S</div><div class="rec${t.rec ? " on" : ""}" style="width:18px;height:18px"><i></i></div></div>
@@ -284,7 +293,7 @@ function windowHtml() {
   });
   mixer += `<div class="mixgap"></div><div class="mcp master">
       <div class="fx"><div>Fancy Limit</div><div class="empty"></div><div class="empty"></div></div>
-      <div class="panrow">${knob(24, 0.5, "#00A985", true)}</div>
+      <div class="panrow">${knob(24, 0.5, kc("#00A985"), true)}</div>
       <div class="faderwrap"><div class="fader"><div class="track"></div><div class="fill" style="height:66%"></div><div class="thumb" style="bottom:calc(66% - 3px)"></div></div>
         <div class="mmeter" style="width:22px"><i style="--l:84%"></i><i style="--l:81%"></i></div></div>
       <div class="ms"><div class="btn">M</div><div class="btn">FX</div></div>
@@ -296,6 +305,10 @@ function windowHtml() {
 }
 
 document.getElementById("winA").innerHTML = windowHtml();
+seed = 7;
+document.getElementById("winA2").innerHTML = windowHtml("track");
+seed = 7;
+document.getElementById("winA3").innerHTML = windowHtml("white");
 seed = 7;
 document.getElementById("winB").innerHTML = windowHtml();
 </script>
