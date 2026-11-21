@@ -278,7 +278,7 @@ TRANSPORT = [
     ("trans.rec", 34), ("trans.repeat", 34), ("trans.automode", 34), None,
     ("trans.status", 220), None,
     ("trans.bpm.edit", 56), ("trans.curtimesig", 44), None,
-    ("trans.rate", 40), ("trans.rate.fader", 90), None,
+    ("trans.rate", 80), ("trans.rate.fader", 90), None,
     ("trans.sel", 230),
 ]
 WELL_RGBA = "20 20 20 255"
