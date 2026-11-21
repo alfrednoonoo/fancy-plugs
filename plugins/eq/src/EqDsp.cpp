@@ -16,7 +16,6 @@ constexpr double switchSettleSeconds = 0.02;
 // Dynamic bands (Phase 2.1 D).
 constexpr double levelWindowSeconds = 0.005;
 constexpr double kneeDb = 6.0;
-constexpr double fullRangeDb = 12.0;
 
 // The gain computer runs every 8 host samples, counted from the start of playback so the result
 // doesn't depend on block sizes. The level is already smoothed over 5 ms, and a band redesigns
@@ -25,6 +24,11 @@ constexpr int controlInterval = 8;
 
 // A moving band skips a redesign when its change has moved less than this.
 constexpr double redesignStepDb = 0.01;
+
+// Phase 4 Wave 1 (docs/eq.md).
+constexpr double autoTrimMs = 200.0;
+constexpr double soloFadeMs = 10.0;
+constexpr int autoGainPoints = 96;
 
 // How far the level is past Threshold, with a soft knee: 0 below Threshold - 3 dB.
 double distancePast (double distanceDb) noexcept
@@ -86,6 +90,12 @@ void EqDsp::prepare (double newSampleRate, int numChannels)
     output.setTime (parameterSmoothingMs, sampleRate);
     bypass.setTime (10.0, sampleRate);
     switchGain.setTime (switchFadeMs, sampleRate);
+    autoTrim.setTime (autoTrimMs, sampleRate);
+    soloMix.setTime (soloFadeMs, sampleRate);
+    autoTrim.snapTo (1.0);
+    soloMix.snapTo (0.0);
+    autoValid = false;
+    soloDesignedBand = -1;
 
     designedLength = -1;
 
@@ -309,7 +319,7 @@ void EqDsp::runDetectors (const float* const* main, int numMain, const float* co
             {
                 const auto levelDb = 10.0 * std::log10 (loudest + 1.0e-30);
                 const auto distance = settings.below ? settings.thresholdDb - levelDb : levelDb - settings.thresholdDb;
-                target = settings.rangeDb * std::min (1.0, distancePast (distance) / fullRangeDb);
+                target = settings.rangeDb * std::min (1.0, distancePast (distance) / std::max (0.1, settings.reachDb));
 
                 if (notch)
                     target = std::min (0.0, target);
@@ -392,6 +402,14 @@ void EqDsp::snapToTargets (const Targets& targets)
 
     gain.snapTo (targets.gain);
     output.snapTo (targets.outputGain);
+
+    autoValid = false;
+
+    if (targets.autoGain)
+        updateAutoGain();
+
+    autoTrim.snapTo (targets.autoGain ? std::pow (10.0, (double) autoGainDb.load() / 20.0) : 1.0);
+    soloMix.snapTo (targets.soloBand >= 0 ? 1.0 : 0.0);
     bypass.snapTo (targets.bypass ? 1.0 : 0.0);
     switchGain.snapTo (1.0);
 }
@@ -779,16 +797,52 @@ void EqDsp::processChunk (float* const* channels, int numChannels, int offset, i
     output.setTarget (current.outputGain);
     bypass.setTarget (current.bypass ? 1.0 : 0.0);
 
+    // Phase 4 Wave 1: both are skipped entirely while off and settled, so the output is as before.
+    if (current.autoGain)
+        updateAutoGain();
+    else
+        autoGainDb.store (0.0f, std::memory_order_relaxed);
+
+    autoTrim.setTarget (current.autoGain ? std::pow (10.0, (double) autoGainDb.load (std::memory_order_relaxed) / 20.0) : 1.0);
+    const auto trimming = current.autoGain || ! autoTrim.isSettled();
+
+    updateSolo();
+    soloMix.setTarget (current.soloBand >= 0 ? 1.0 : 0.0);
+    const auto soloing = current.soloBand >= 0 || ! soloMix.isSettled();
+
     for (int i = 0; i < numSamples; ++i)
     {
-        const auto wetGain = gain.next() * output.next();
+        auto wetGain = gain.next() * output.next();
         const auto bypassAmount = bypass.next();
         const auto fade = switchGain.next();
 
+        if (trimming)
+            wetGain *= autoTrim.next();
+
+        const auto solo = soloing ? soloMix.next() : 0.0;
+
         for (int ch = 0; ch < numChannels; ++ch)
         {
-            const auto wet = (double) signal[ch][i] * wetGain;
+            auto wet = (double) signal[ch][i] * wetGain;
             const auto dry = (double) dryBuffer.getReadPointer (ch)[i];
+
+            // The solo: the latency-aligned input through a band-pass at the band.
+            if (soloing)
+            {
+                auto x = dry;
+
+                for (int s = 0; s < soloFilter.numSections; ++s)
+                {
+                    const auto& c = soloFilter.sections[(size_t) s];
+                    auto& z = soloState[(size_t) ch][(size_t) s];
+                    const auto y = c.b0 * x + z[0];
+                    z[0] = c.b1 * x - c.a1 * y + z[1];
+                    z[1] = c.b2 * x - c.a2 * y;
+                    x = y;
+                }
+
+                wet += (x - wet) * solo;
+            }
 
             signal[ch][i] = (float) ((wet + bypassAmount * (dry - wet)) * fade);
         }
@@ -810,4 +864,101 @@ void EqDsp::process (float* const* channels, int numChannels, int numSamples,
         processChunk (channels, numChannels, done, chunk, sidechain, numSidechain);
         done += chunk;
     }
+}
+
+// Auto gain (Decision 3 A): the static curve's power, averaged over 20 Hz to 20 kHz in equal
+// steps of log frequency (pink weighting), for each channel; the trim cancels it. Dynamic bands
+// count at their static gain. Recomputed only when a band changes.
+void EqDsp::updateAutoGain() noexcept
+{
+    if (autoValid && autoBands == current.bands)
+        return;
+
+    autoBands = current.bands;
+    autoValid = true;
+
+    std::array<eq::BandFilter, eq::maxBands> filters;
+    std::array<eq::Channel, eq::maxBands> channels {};
+    std::array<bool, eq::maxBands> on {};
+
+    for (size_t b = 0; b < (size_t) eq::maxBands; ++b)
+    {
+        on[b] = current.bands[b].on;
+
+        if (on[b])
+        {
+            filters[b] = eq::design (current.bands[b], sampleRate);
+            channels[b] = current.bands[b].channel;
+        }
+    }
+
+    const auto mono = busChannels.load() < 2;
+    auto sum = 0.0;
+
+    for (int point = 0; point < autoGainPoints; ++point)
+    {
+        const auto hz = 20.0 * std::pow (1000.0, ((double) point + 0.5) / (double) autoGainPoints);
+
+        if (hz >= 0.49 * sampleRate)
+            continue;
+
+        const auto sinHalf = std::sin (juce::MathConstants<double>::pi * hz / sampleRate);
+        const auto sinSquared = sinHalf * sinHalf;
+        auto left = 1.0, right = 1.0;
+
+        for (size_t b = 0; b < (size_t) eq::maxBands; ++b)
+        {
+            if (! on[b])
+                continue;
+
+            const auto power = filters[b].powerAt (sinSquared);
+
+            if (mono || channels[b] != eq::Channel::right)
+                left *= power;
+
+            if (mono || channels[b] != eq::Channel::left)
+                right *= power;
+        }
+
+        sum += 0.5 * (left + right);
+    }
+
+    const auto average = sum / (double) autoGainPoints;
+    autoGainDb.store ((float) std::clamp (-10.0 * std::log10 (std::max (average, 1.0e-12)), -24.0, 24.0), std::memory_order_relaxed);
+}
+
+// The solo's band-pass (Decision 1 A): at the band's Freq and Q for a bell, notch or band pass,
+// and at its corner with Q 0.7 for the other types. Kept while the solo fades out.
+void EqDsp::updateSolo() noexcept
+{
+    const auto band = current.soloBand;
+
+    if (band < 0 || band >= eq::maxBands)
+        return;
+
+    const auto& spec = current.bands[(size_t) band];
+
+    eq::BandSpec shape;
+    shape.on = true;
+    shape.type = eq::BandType::bandPass;
+    shape.frequencyHz = std::clamp (spec.frequencyHz, 20.0, 0.45 * sampleRate);
+    shape.order = 2;
+
+    switch (spec.type)
+    {
+        case eq::BandType::band:
+        case eq::BandType::notch:
+        case eq::BandType::bandPass: shape.q = std::clamp (spec.q, 0.1, 40.0); break;
+        default:                     shape.q = 0.7; break;
+    }
+
+    if (band == soloDesignedBand && shape == soloSpec)
+        return;
+
+    if (band != soloDesignedBand)
+        soloState = {};
+
+    soloFilter = eq::design (shape, sampleRate);
+    soloSpec = shape;
+    soloDesignedBand = band;
 }

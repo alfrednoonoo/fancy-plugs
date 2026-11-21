@@ -254,7 +254,7 @@ The spectra, the card's settings and that memory are saved through a new `FancyP
 
 ## Phase 4 Wave 1: band solo, auto gain, dynamic reach and analyzer freeze
 
-Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2, 3 and 5 of section 4.
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Approved by the user on 21 November 2026 with every recommended option (R).** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2, 3 and 5 of section 4.
 
 ### 1. Band solo
 

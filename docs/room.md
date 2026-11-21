@@ -223,7 +223,7 @@ Everything passed: 439 test cases, pluginval, Steinberg's validator, the host ha
 
 ## Phase 4 Wave 1: mod rate, reverb EQ, gate and auto gain
 
-Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 3, 6 and 7 of section 14.
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Approved by the user on 21 November 2026 with every recommended option (R).** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 3, 6 and 7 of section 14.
 
 ### 1. Mod Rate
 

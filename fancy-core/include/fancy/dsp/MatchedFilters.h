@@ -46,6 +46,10 @@ struct DynamicSpec
     bool below = false;
     bool sidechain = false;
 
+    // Fancy EQ's Reach (docs/eq.md, Phase 4 Wave 1): the dB past Threshold where the full Range
+    // is reached. 12 is the curve every dynamic band had before.
+    double reachDb = 12.0;
+
     bool operator== (const DynamicSpec&) const = default;
 };
 

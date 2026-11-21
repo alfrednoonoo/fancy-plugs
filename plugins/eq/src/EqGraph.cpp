@@ -58,6 +58,11 @@ EqGraph::EqGraph (EqProcessor& processorToUse)
 {
     processor.analyzerActive.store (true);
     analyzerThread.startThread (juce::Thread::Priority::low);
+
+    // Phase 4 Wave 1.
+    freezeButton.onClick = [this] { toggleFreeze(); };
+    freezeButton.setTooltip ("Holds the current spectrum, drawn dimmer under the live one. Click again to let go.");
+    addChildComponent (freezeButton);
 }
 
 EqGraph::~EqGraph()
@@ -68,17 +73,17 @@ EqGraph::~EqGraph()
 
 void EqGraph::AnalyzerThread::run()
 {
-    fancy::dsp::SpectrumAnalyzer analyzer;
+    fancy::dsp::SpectrumAnalyzer analyzer, preAnalyzer;
     std::vector<float> scratch ((size_t) fancy::dsp::SampleFifo::capacity);
 
     while (! threadShouldExit())
     {
-        graph.analyse (analyzer, scratch);
+        graph.analyse (analyzer, preAnalyzer, scratch);
         wait (analyzerIntervalMs);
     }
 }
 
-void EqGraph::analyse (fancy::dsp::SpectrumAnalyzer& analyzer, std::vector<float>& scratch)
+void EqGraph::analyse (fancy::dsp::SpectrumAnalyzer& analyzer, fancy::dsp::SpectrumAnalyzer& preAnalyzer, std::vector<float>& scratch)
 {
     auto& apvts = processor.getApvts();
 
@@ -105,6 +110,18 @@ void EqGraph::analyse (fancy::dsp::SpectrumAnalyzer& analyzer, std::vector<float
     if (read ("anaPeak") < 0.5f)
         analyzer.resetPeaks();
 
+    // Phase 4 Wave 1: Pre + Post analyses the pre feed too.
+    const auto both = juce::roundToInt (read ("analyzer")) == 3;
+
+    if (both)
+    {
+        preAnalyzer.configure (rate, settings);
+        const auto preCount = processor.analyzerPreFifo.pop (scratch.data(), (int) scratch.size());
+
+        if (preCount > 0)
+            preAnalyzer.addSamples (scratch.data(), preCount);
+    }
+
     const auto width = columns.load (std::memory_order_relaxed);
 
     if (width <= 0)
@@ -122,6 +139,9 @@ void EqGraph::analyse (fancy::dsp::SpectrumAnalyzer& analyzer, std::vector<float
 
         spectrum[(size_t) x] = analyzer.levelBetween (low, high);
         peaks[(size_t) x] = analyzer.peakBetween (low, high);
+
+        if (both && (int) preSpectrum.size() == width)
+            preSpectrum[(size_t) x] = preAnalyzer.levelBetween (low, high);
     }
 }
 
@@ -140,7 +160,13 @@ void EqGraph::resized()
         const juce::SpinLock::ScopedLockType lock (spectrumLock);
         spectrum.assign ((size_t) width, -200.0f);
         peaks.assign ((size_t) width, -200.0f);
+        preSpectrum.assign ((size_t) width, -200.0f);
+        heldSpectrum.assign ((size_t) width, -200.0f);
+        held = false;
+        freezeButton.lit = false;
     }
+
+    freezeButton.setBounds (width - 112, 24, 64, 20);
 
     columns.store (width);
     needsRecalculation = true;
@@ -229,6 +255,8 @@ void EqGraph::update()
         analyzerMode = newMode;
         needsRecalculation = true;
     }
+
+    freezeButton.setVisible (analyzerMode != 0);
 
     const auto rate = processor.getSampleRate() > 0.0 ? processor.getSampleRate() : 48000.0;
 
@@ -527,7 +555,7 @@ void EqGraph::paintLabels (juce::Graphics& g)
     }
 
     if (analyzerMode != 0)
-        g.drawText (analyzerMode == 1 ? "pre" : "post", 40, 4, 30, 14, juce::Justification::centredLeft, false);
+        g.drawText (analyzerMode == 1 ? "pre" : analyzerMode == 3 ? "pre + post" : "post", 40, 4, 80, 14, juce::Justification::centredLeft, false);
 
     // Which channel the white total is for, while any band isn't Stereo (Phase 3 Q2.4). It sits
     // left of the right axis's top label.
@@ -566,6 +594,28 @@ void EqGraph::paintSpectrum (juce::Graphics& g)
         g.setColour (colours::accentOrange.withAlpha (opacity));
         g.strokePath (path, juce::PathStrokeType (1.0f));
     };
+
+    // Phase 4 Wave 1: the held spectrum in white and the pre spectrum dimmer, under the live one.
+    if (held && heldSpectrum.size() == spectrum.size())
+    {
+        juce::Path path;
+
+        for (int x = 0; x < (int) heldSpectrum.size(); ++x)
+        {
+            const auto y = juce::jmin (bottom, yForSpectrum (heldSpectrum[(size_t) x]));
+
+            if (x == 0)
+                path.startNewSubPath ((float) x, y);
+            else
+                path.lineTo ((float) x, y);
+        }
+
+        g.setColour (juce::Colours::white.withAlpha (0.35f));
+        g.strokePath (path, juce::PathStrokeType (1.0f));
+    }
+
+    if (analyzerMode == 3 && preSpectrum.size() == spectrum.size())
+        stroke (preSpectrum, 0.3f);
 
     stroke (spectrum, 0.7f);
 
@@ -897,6 +947,15 @@ void EqGraph::mouseDown (const juce::MouseEvent& event)
 
     select (band);
 
+    // Phase 4 Wave 1: Ctrl-drag (Cmd on a Mac) solos the band while the mouse is down. Alt is
+    // already Q, so the solo can't use it.
+    if (event.mods.isCommandDown())
+    {
+        processor.setListenTarget (band + 1);
+        processor.setListening (true);
+        soloing = true;
+    }
+
     dragBand = band;
     draggingQ = event.mods.isAltDown();
     dragPosition = bands[(size_t) band].handle;
@@ -942,6 +1001,12 @@ void EqGraph::mouseDrag (const juce::MouseEvent& event)
 
 void EqGraph::mouseUp (const juce::MouseEvent&)
 {
+    if (soloing)
+    {
+        processor.setListening (false);
+        soloing = false;
+    }
+
     if (dragBand < 0)
         return;
 
@@ -1083,4 +1148,41 @@ void EqGraph::showBandMenu (int band, juce::Point<float> position)
             self.setValue (band, "type", (float) (result - typeBase));
         }
     });
+}
+
+// FreezeButton (Phase 4 Wave 1) ------------------------------------------------
+
+void EqGraph::FreezeButton::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
+
+    g.setColour (lit ? colours::uiTeal : colours::bgSection);
+    g.fillRoundedRectangle (bounds, 4.0f);
+    g.setColour (lit ? colours::uiTeal : colours::menuBorder);
+    g.drawRoundedRectangle (bounds, 4.0f, 1.0f);
+
+    g.setFont (font (Weight::regular, 11.0f));
+    g.setColour (lit ? colours::bgWell : colours::textPrimary);
+    g.drawText (lit ? "Frozen" : "Freeze", bounds, juce::Justification::centred, false);
+}
+
+void EqGraph::FreezeButton::mouseDown (const juce::MouseEvent& event)
+{
+    if (! event.mods.isPopupMenu() && onClick != nullptr)
+        onClick();
+}
+
+void EqGraph::toggleFreeze()
+{
+    {
+        const juce::SpinLock::ScopedLockType lock (spectrumLock);
+        held = ! held;
+
+        if (held)
+            heldSpectrum = spectrum;
+    }
+
+    freezeButton.lit = held;
+    freezeButton.repaint();
+    repaint();
 }

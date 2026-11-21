@@ -270,7 +270,7 @@ Released in v1.6.0, run 43742763641 (commit `ff534e3`), 516 test cases.
 
 ## Phase 4 Wave 1: resonance tilt and learned curves
 
-Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1 and 3 of section 8.
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Approved by the user on 21 November 2026 with every recommended option (R).** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1 and 3 of section 8.
 
 ### 1. Resonance tilt
 

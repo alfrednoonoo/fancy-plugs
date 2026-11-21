@@ -94,9 +94,21 @@ private:
         bool operator== (const DynamicState&) const = default;
     };
 
+    // Phase 4 Wave 1: holds the analyzer's current spectrum, drawn dimmer under the live one.
+    class FreezeButton final : public juce::Component, public juce::SettableTooltipClient
+    {
+    public:
+        void paint (juce::Graphics&) override;
+        void mouseDown (const juce::MouseEvent&) override;
+
+        std::function<void()> onClick;
+        bool lit = false;
+    };
+
     void recalculate();
     static juce::String formatDbText (float db);
-    void analyse (fancy::dsp::SpectrumAnalyzer& analyzer, std::vector<float>& scratch);
+    void analyse (fancy::dsp::SpectrumAnalyzer& analyzer, fancy::dsp::SpectrumAnalyzer& preAnalyzer, std::vector<float>& scratch);
+    void toggleFreeze();
 
     float yForDb (float db) const noexcept;
     float dbForY (float y) const noexcept;
@@ -137,6 +149,12 @@ private:
 
     juce::SpinLock spectrumLock;
     std::vector<float> spectrum, peaks;
+
+    // Phase 4 Wave 1: the pre spectrum in Pre + Post, the held spectrum, and the band solo.
+    std::vector<float> preSpectrum, heldSpectrum;
+    bool held = false;
+    FreezeButton freezeButton;
+    bool soloing = false;
     std::atomic<int> columns { 0 };
     bool frozenSpectrum = false;
 

@@ -305,6 +305,33 @@ void EqEditor::BandEditor::TypeDropdown::clicked()
     });
 }
 
+// ValueField ------------------------------------------------------------------
+
+ValueField::ValueField (juce::RangedAudioParameter& parameter, const juce::String& label, juce::Colour fieldColour)
+    : ParamControl (parameter), labelText (label), colour (fieldColour)
+{
+}
+
+juce::Rectangle<int> ValueField::getValueArea() const
+{
+    return getLocalBounds().withTrimmedLeft (juce::jmin (46, getWidth() / 2));
+}
+
+void ValueField::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    const auto valueArea = getValueArea().toFloat();
+
+    g.setFont (font (Weight::regular, 12.0f));
+    g.setColour (colours::textPrimary);
+    g.drawText (labelText, bounds.withRight (valueArea.getX() - 4.0f), juce::Justification::centredLeft, false);
+
+    g.setColour (colours::bgBody);
+    g.fillRoundedRectangle (valueArea, 3.0f);
+    g.setColour (colour);
+    g.drawText (getValueText(), valueArea.reduced (6.0f, 0.0f), juce::Justification::centredLeft, false);
+}
+
 // BandEditor ------------------------------------------------------------------
 
 EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEditor& ownerToUse)
@@ -326,14 +353,17 @@ EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEdito
       attackKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "attack")), "Attack", bandColour (bandIndex), Knob::tightStyle),
       releaseKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "release")), "Release", bandColour (bandIndex), Knob::tightStyle),
       modeSwitch (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dynMode")), juce::Colour (0xff434343), juce::Colours::white),
-      sidechainCheckbox (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dynSc")), "Sidechain", bandColour (bandIndex))
+      sidechainCheckbox (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dynSc")), "Sidechain", bandColour (bandIndex)),
+      reachField (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "reach")), "Reach", bandColour (bandIndex))
 {
     for (juce::Component* item : std::initializer_list<juce::Component*> { &typeDropdown, &channelChip, &frequencyKnob, &gainKnob, &qKnob, &powerIcon, &plusButton, &closeButton })
         addAndMakeVisible (item);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &dynamicChip, &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob,
-                                                                           &modeSwitch, &sidechainCheckbox })
+                                                                           &modeSwitch, &sidechainCheckbox, &reachField })
         addChildComponent (item);
+
+    reachField.setTooltip ("Reach: how far past Threshold the full Range is reached. 12 dB is the classic curve; lower is harder.");
 
     dynamicChip.setTooltip ("Dynamic: the band's gain follows the level in its own region, up to Range.");
     channelChip.setTooltip ("Channel: Stereo, Left, Right, Mid or Side. Mid and Side work on the sum and the difference.");
@@ -381,6 +411,7 @@ void EqEditor::BandEditor::layoutDynamic (int dx, int dy, int buttonsX, int butt
     releaseKnob.setBounds (dx + 514, dy + 12, 56, 99);
     modeSwitch.setBounds (dx + 578, dy + 32, 88, 22);
     sidechainCheckbox.setBounds (dx + 578, dy + 64, 96, 20);
+    reachField.setBounds (dx + 578, dy + 90, 96, 20);
 
     powerIcon.setBounds (buttonsX, buttonsDy + 17, isCompact ? 14 : 18, isCompact ? 15 : 19);
     plusButton.setBounds (buttonsX, buttonsDy + 56, isCompact ? 14 : 18, isCompact ? 14 : 18);
@@ -404,7 +435,7 @@ void EqEditor::BandEditor::paint (juce::Graphics& g)
 
 void EqEditor::BandEditor::resized()
 {
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob, &modeSwitch, &sidechainCheckbox })
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob, &modeSwitch, &sidechainCheckbox, &reachField })
         item->setVisible (dynamicShown);
 
     dynamicChip.setVisible (chipShown);
@@ -477,7 +508,7 @@ void EqEditor::BandEditor::update()
         dynamicChip.setTooltip (linear ? linearTooltip : "Dynamic: the band's gain follows the level in its own region, up to Range.");
 
         for (juce::Component* item : std::initializer_list<juce::Component*> { &dynamicChip, &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob,
-                                                                               &modeSwitch, &sidechainCheckbox })
+                                                                               &modeSwitch, &sidechainCheckbox, &reachField })
             item->setAlpha (linear ? 0.4f : 1.0f);
     }
 
@@ -802,7 +833,8 @@ EqEditor::EqEditor (EqProcessor& processor)
       analyzerChannelDropdown (parameter ("anaChan")),
       tiltCheckbox (parameter ("anaTilt"), "Pink tilt"),
       peakCheckbox (parameter ("anaPeak"), "Peak hold"),
-      smoothingKnob (parameter ("anaSmooth"), "Smoothing", colours::uiTeal, Knob::smallStyle)
+      smoothingKnob (parameter ("anaSmooth"), "Smoothing", colours::uiTeal, Knob::smallStyle),
+      autoGainCheckbox (parameter ("autoGain"), "Auto gain")
 {
     // The title strip keeps one colour while the accent follows the selection.
     setTitleColour (bandColour (0));
@@ -821,6 +853,10 @@ EqEditor::EqEditor (EqProcessor& processor)
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &gainLabel, &gainFader, &logCheckbox, &gridCheckbox, &phaseCheckbox, &compactCheckbox, &tabs })
         body.addAndMakeVisible (item);
+
+    styleLabel (autoGainLabel, {}, colours::uiTeal, juce::Justification::centred);
+    autoGainLabel.setFont (font (Weight::regular, 11.0f));
+    body.addChildComponent (autoGainLabel);
 
     for (int band = 0; band < eq::maxBands; ++band)
     {
@@ -905,12 +941,14 @@ EqEditor::EqEditor (EqProcessor& processor)
     rangeDropdown.setBounds (controlX3, row (0), 110, rowHeight);
     tiltCheckbox.setBounds (labelX3, row (1) + 2, 90, 20);
     peakCheckbox.setBounds (labelX3, row (2) + 2, 90, 20);
+    autoGainCheckbox.setBounds (labelX3, row (3) + 2, 96, 20);
+    autoGainCheckbox.setTooltip ("Keeps the output as loud as the input whatever the curve does, worked out from the curve itself.");
     smoothingKnob.setBounds (610, row (1), 90, 99);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &phaseDropdown, &firDropdown, &oversamplingDropdown, &analyzerDropdown, &fftDropdown, &windowDropdown, &overlapDropdown,
              &analyzerChannelDropdown,
-             &rangeDropdown, &tiltCheckbox, &peakCheckbox, &smoothingKnob })
+             &rangeDropdown, &tiltCheckbox, &peakCheckbox, &smoothingKnob, &autoGainCheckbox })
         drawer.addAndMakeVisible (item);
 
     for (auto& dropdown : slopeDropdowns)
@@ -1125,6 +1163,7 @@ void EqEditor::layoutEditors()
     // Positions from the Figma frames; the row and the fader follow the window's edges.
     gainLabel.setBounds (contentWidth + 12, 24, 44, 17);
     gainFader.setBounds (contentWidth + 12, 49, 44, height - 73);
+    autoGainLabel.setBounds (contentWidth + 4, height - 20, 60, 14);
 
     const auto rowLeft = (contentWidth - 609) / 2;
     const auto rowY = optionsTop + 16;
@@ -1208,6 +1247,17 @@ void EqEditor::onTick (float)
     slopeDropdowns[(size_t) selectedBand]->setAlpha (usesSlope ? 1.0f : 0.4f);
 
     oversamplingDropdown.setAlpha (eqProcessor().readTargets().linearPhase ? 0.4f : 1.0f);
+
+    // Phase 4 Wave 1: Auto gain's trim, while it's on.
+    const auto autoOn = parameter ("autoGain").getValue() >= 0.5f;
+    autoGainLabel.setVisible (autoOn);
+
+    if (autoOn)
+    {
+        const auto trim = eqProcessor().getAutoGainDb();
+        autoGainLabel.setText ("auto " + juce::String (trim > 0.05f ? "+" : trim < -0.05f ? "-" : "") + juce::String (std::abs (trim), 1),
+                               juce::dontSendNotification);
+    }
 
     if (matchOpen)
     {

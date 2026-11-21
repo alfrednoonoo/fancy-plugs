@@ -145,7 +145,7 @@ Already ahead of the field on per-tap feedback, character, diffusion and ducking
 | # | Item | Effort | Wave | Where it goes |
 |---|---|---|---|---|
 | 1 | Freeze: stop the input, hold the loops (Timeless 3, Rose) | S | 1 | Footer; `freeze` |
-| 2 | Feedback cross-mix / feedback pan per tap (Timeless) | S | 1 | Motion page; `tNfbPan` |
+| 2 | ~~Feedback cross-mix / feedback pan per tap~~: dropped (user, 21 November 2026); per-tap Ping-pong and Pan cover it (`docs/delay.md`, Phase 4 Wave 1) | | | |
 | 3 | Reverse taps: read the ring backwards over the tap window | M | 3 | Tone page; `tNreverse` |
 | 4 | Pitch-shifted taps, ±12 st | M | 3 | Motion page; `tNpitch` |
 | 5 | Output true-peak ceiling so 100–110 % feedback cannot clip the bus | S | 1 | Drawer; `ceiling` |

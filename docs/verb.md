@@ -330,7 +330,7 @@ Three pushes, as planned. The models are `docs/research/verb-q28-model.py`.
 
 ## Phase 4 Wave 1: equal loudness, Post-EQ module and the IR browser
 
-Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2 and 3 of section 5. As with every module setting, nothing here is a host parameter (section "Parameters"): it's chain state, saved in the plugin state.
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Approved by the user on 21 November 2026 with every recommended option (R).** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2 and 3 of section 5. As with every module setting, nothing here is a host parameter (section "Parameters"): it's chain state, saved in the plugin state.
 
 ### 1. Equal loudness
 

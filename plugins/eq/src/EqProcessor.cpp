@@ -111,7 +111,7 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
 
     layout.add (setting ("range", "Graph range",
                          juce::StringArray { "Auto", plusMinus + "6 dB", plusMinus + "12 dB", plusMinus + "18 dB", plusMinus + "24 dB" }, 0));
-    layout.add (setting ("analyzer", "Analyzer", { "Off", "Pre", "Post" }, 2));
+    layout.add (setting ("analyzer", "Analyzer", { "Off", "Pre", "Post", "Pre + Post" }, 2));
     layout.add (setting ("anaFft", "Analyzer size", { "4096", "8192", "16384" }, 1));
     layout.add (setting ("anaWindow", "Analyzer window", { "Hann", "Blackman-Harris" }, 1));
     layout.add (setting ("anaOverlap", "Analyzer overlap", { "50 %", "75 %" }, 1));
@@ -158,6 +158,17 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
 
     // What the analyzer shows. Mid is the (L+R)/2 it always showed.
     layout.add (setting ("anaChan", "Analyzer channel", { "Mid", "Side", "Left", "Right" }, 0));
+
+    // Phase 4 Wave 1 (docs/eq.md), appended: Auto gain off and Reach 12 dB are the old sound.
+    layout.add (toggle ("autoGain", "Auto gain", false));
+
+    for (int band = 0; band < eq::maxBands; ++band)
+        layout.add (fancy::floatParameter (EqProcessor::id (band, "reach"), "Band " + juce::String (band + 1) + " Reach",
+                                           fancy::logRange (1.0f, 48.0f, 0.1f), 12.0f,
+                                           juce::AudioParameterFloatAttributes {}
+                                               .withLabel ("dB")
+                                               .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, value < 10.0f ? 1 : 0) + " dB"; })
+                                               .withValueFromStringFunction ([] (const juce::String& text) { return std::abs (fancy::parseNumber (text)); })));
 
     return layout;
 }
@@ -229,7 +240,8 @@ EqProcessor::EqProcessor (SharedFlag logScaleFlag)
                                          apvts.getRawParameterValue (id (band, "attack")),
                                          apvts.getRawParameterValue (id (band, "release")),
                                          apvts.getRawParameterValue (id (band, "dynMode")),
-                                         apvts.getRawParameterValue (id (band, "dynSc")) };
+                                         apvts.getRawParameterValue (id (band, "dynSc")),
+                                         apvts.getRawParameterValue (id (band, "reach")) };
 
     apvts.addParameterListener ("logFreq", this);
 }
@@ -293,6 +305,7 @@ eq::DynamicSpec EqProcessor::readDynamics (int band)
     spec.releaseMs = (double) load (values.release);
     spec.below = juce::roundToInt (load (values.mode)) == 1;
     spec.sidechain = load (values.sidechain) >= 0.5f;
+    spec.reachDb = (double) load (values.reach);
     return spec;
 }
 
@@ -318,6 +331,14 @@ EqDsp::Targets EqProcessor::readTargets()
     targets.oversampling = juce::roundToInt (read ("oversampling"));
     targets.linearPhase = isOn ("phase");
     targets.bypass = isOn ("bypass");
+
+    // Phase 4 Wave 1: the band solo is listen target band + 1 (FancyProcessor::setListenTarget).
+    targets.autoGain = isOn ("autoGain");
+    targets.soloBand = isListening() ? getListenTarget() - 1 : -1;
+
+    if (targets.soloBand >= eq::maxBands)
+        targets.soloBand = -1;
+
     return targets;
 }
 
@@ -413,18 +434,21 @@ void EqProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuff
     const auto analyzerChannel = numChannels >= 2 ? juce::jlimit (0, 3, juce::roundToInt (read ("anaChan"))) : 0;
 
     // Mid is the plain mono sum; Side, Left and Right are a weighted pair (Phase 3 Q2.4).
-    const auto feedAnalyzer = [&]
+    const auto feedAnalyzer = [&] (fancy::dsp::SampleFifo& fifo)
     {
         constexpr float weights[][2] { { 0.5f, 0.5f }, { 0.5f, -0.5f }, { 1.0f, 0.0f }, { 0.0f, 1.0f } };
 
         if (analyzerChannel == 0)
-            analyzerFifo.push (channels, numChannels, numSamples);
+            fifo.push (channels, numChannels, numSamples);
         else
-            analyzerFifo.pushWeighted (channels[0], channels[1], weights[analyzerChannel][0], weights[analyzerChannel][1], numSamples);
+            fifo.pushWeighted (channels[0], channels[1], weights[analyzerChannel][0], weights[analyzerChannel][1], numSamples);
     };
 
+    // Phase 4 Wave 1: Pre + Post feeds the pre spectrum to its own FIFO.
     if (analyzerSource == 1)
-        feedAnalyzer();
+        feedAnalyzer (analyzerFifo);
+    else if (analyzerSource == 3)
+        feedAnalyzer (analyzerPreFifo);
 
     const auto targets = readTargets();
     auto sidechainChosen = false;
@@ -445,8 +469,8 @@ void EqProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuff
     dsp.setTargets (targets);
     dsp.process (channels, numChannels, numSamples, sidechain, numSidechain);
 
-    if (analyzerSource == 2)
-        feedAnalyzer();
+    if (analyzerSource == 2 || analyzerSource == 3)
+        feedAnalyzer (analyzerFifo);
 
     if (getLatencySamples() != dsp.getLatencySamples())
         setLatencySamples (dsp.getLatencySamples());

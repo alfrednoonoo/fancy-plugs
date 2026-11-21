@@ -59,7 +59,7 @@ The EDIT drawer opens over the left panel, so the window and main layout don't c
 
 ## Phase 4 Wave 1: sub length, make-room, polarity, sub meter, auto gain and ceiling
 
-Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2, 3, 4 and 6 of section 1. Kicker's sidechain Duck (item 7) is its own Phase 4 item, after the tempo-synced trigger.
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Approved by the user on 21 November 2026 with every recommended option (R).** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2, 3, 4 and 6 of section 1. Kicker's sidechain Duck (item 7) is its own Phase 4 item, after the tempo-synced trigger.
 
 ### 1. Sub length
 

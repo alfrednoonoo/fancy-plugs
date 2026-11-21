@@ -31,6 +31,10 @@ public:
         int oversampling = 0;
         bool linearPhase = false;
         bool bypass = false;
+
+        // Phase 4 Wave 1 (docs/eq.md). Off and -1 leave the output as it was, to the bit.
+        bool autoGain = false;
+        int soloBand = -1;
     };
 
     // The channel count is the bus's, when it's known: Linear phase designs for it (a mono bus
@@ -57,6 +61,9 @@ public:
     void setStepLength (int samples) noexcept { stepLength = std::clamp (samples, 1, (int) stepSamples); }
 
     int getLatencySamples() const noexcept { return activeLatency.load (std::memory_order_relaxed); }
+
+    // Auto gain's trim in dB (0 while it's off), for the read-out under the Gain fader.
+    float getAutoGainDb() const noexcept { return autoGainDb.load (std::memory_order_relaxed); }
 
     // With this on, process() designs the FIR itself, so a render is repeatable.
     void setSynchronousDesign (bool shouldBeSynchronous) noexcept { synchronousDesign.store (shouldBeSynchronous); }
@@ -165,6 +172,20 @@ private:
     int designedLength = -1;
 
     fancy::dsp::Smoother gain, output, bypass, switchGain;
+
+    // Phase 4 Wave 1: auto gain from the static curve, and the band solo.
+    void updateAutoGain() noexcept;
+    void updateSolo() noexcept;
+
+    fancy::dsp::Smoother autoTrim, soloMix;
+    std::array<eq::BandSpec, eq::maxBands> autoBands;
+    bool autoValid = false;
+    std::atomic<float> autoGainDb { 0.0f };
+
+    eq::BandFilter soloFilter;
+    eq::BandSpec soloSpec;
+    int soloDesignedBand = -1;
+    std::array<std::array<std::array<double, 2>, eq::maxSections>, maxChannels> soloState {};
 
     std::array<std::vector<float>, maxChannels> dryDelay;
     int dryLength = 1;

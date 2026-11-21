@@ -80,6 +80,10 @@ public:
     fancy::dsp::SampleFifo analyzerFifo;
     std::atomic<bool> analyzerActive { false };
 
+    // Phase 4 Wave 1: the pre spectrum while the analyzer shows Pre + Post, and Auto gain's trim.
+    fancy::dsp::SampleFifo analyzerPreFifo;
+    float getAutoGainDb() const noexcept { return dsp.getAutoGainDb(); }
+
 private:
     class DesignThread final : public juce::Thread
     {
@@ -109,7 +113,7 @@ private:
 
     struct DynamicValues
     {
-        std::atomic<float>* on, *threshold, *range, *attack, *release, *mode, *sidechain;
+        std::atomic<float>* on, *threshold, *range, *attack, *release, *mode, *sidechain, *reach;
     };
 
     SharedFlag logScale;

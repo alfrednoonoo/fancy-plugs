@@ -8,6 +8,24 @@
 #include <memory>
 #include <vector>
 
+// A parameter's value as a small field with a label, for a row with no room for a knob (Phase 4
+// Wave 1: EQ's Reach). It drags, scrolls and types as a knob's value does.
+class ValueField final : public fancy::ui::ParamControl
+{
+public:
+    ValueField (juce::RangedAudioParameter& parameter, const juce::String& label, juce::Colour colour);
+
+    void paint (juce::Graphics&) override;
+    juce::Colour getAccentColour() const override { return colour; }
+
+protected:
+    juce::Rectangle<int> getValueArea() const override;
+
+private:
+    juce::String labelText;
+    juce::Colour colour;
+};
+
 class EqEditor final : public fancy::ui::ShellEditor
 {
 public:
@@ -122,6 +140,7 @@ private:
         fancy::ui::Knob thresholdKnob, rangeKnob, attackKnob, releaseKnob;
         fancy::ui::ParamSegments modeSwitch;
         fancy::ui::ParamCheckbox sidechainCheckbox;
+        ValueField reachField; // Phase 4 Wave 1
         int separatorX = -1, separatorTop = 0;
     };
 
@@ -234,6 +253,10 @@ private:
     std::vector<std::unique_ptr<fancy::ui::ParamDropdown>> slopeDropdowns;
     fancy::ui::ParamCheckbox tiltCheckbox, peakCheckbox;
     fancy::ui::Knob smoothingKnob;
+
+    // Phase 4 Wave 1: Auto gain in the drawer, and its trim under the Gain fader.
+    fancy::ui::ParamCheckbox autoGainCheckbox;
+    juce::Label autoGainLabel;
 
     bool compactMode = false;
     float lastRange = -1.0f;
