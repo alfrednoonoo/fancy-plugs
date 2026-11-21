@@ -24,8 +24,14 @@ private:
     fancy::ui::EditLink editLink;
     fancy::ui::InOutMeter meter;
 
+    // Phase 4 Wave 1: the listen switch and the THD read-out; Ceiling and Auto gain in the drawer.
+    fancy::ui::ListenCheckbox listenCheckbox;
+    juce::Label thdLabel;
+
     fancy::ui::EditDrawer drawer;
     fancy::ui::Knob characterKnob, drawerOutputKnob;
+    fancy::ui::Knob ceilingKnob;
+    fancy::ui::ParamCheckbox autoGainCheckbox;
     fancy::ui::ParamDropdown oversamplingDropdown;
     juce::Label oversamplingLabel;
 

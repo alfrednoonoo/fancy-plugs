@@ -19,7 +19,7 @@ if("FANCY_HAS_KICKER=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_EXCITER=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE ExciterTests.cpp LegacyExciterDsp.cpp)
+    target_sources(fancy-tests PRIVATE ExciterTests.cpp ExciterW1Tests.cpp LegacyExciterDsp.cpp)
 endif()
 
 if("FANCY_HAS_COMP=1" IN_LIST fancy_screen_defs)

@@ -27,6 +27,9 @@ public:
         double outputGain = 1.0;
         int oversampling = x4;
         bool bypass = false;
+
+        // Phase 4 Wave 1 (docs/exciter.md): plays only what Exciter adds. Temporary, never saved.
+        bool listen = false;
     };
 
     ExciterDsp();
@@ -86,4 +89,5 @@ private:
     int delayLength = 1;
 
     fancy::dsp::Smoother logFrequency, boost, harmonics, mixBack, character, output, bypass;
+    fancy::dsp::Smoother listenMix; // Phase 4 Wave 1
 };

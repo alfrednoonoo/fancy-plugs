@@ -60,6 +60,7 @@ void ExciterDsp::prepare (double newSampleRate)
     mixBack.setTime (20.0, sampleRate);
     output.setTime (20.0, sampleRate);
     bypass.setTime (10.0, sampleRate);
+    listenMix.setTime (10.0, sampleRate);
 
     reset();
 }
@@ -95,6 +96,7 @@ void ExciterDsp::setTargets (const Targets& targets)
     character.setTarget (targets.character);
     output.setTarget (targets.outputGain);
     bypass.setTarget (targets.bypass ? 1.0 : 0.0);
+    listenMix.setTarget (targets.listen ? 1.0 : 0.0);
     requestedOversampling = targets.oversampling;
 }
 
@@ -109,6 +111,7 @@ void ExciterDsp::snapToTargets (const Targets& targets)
     character.snapTo (targets.character);
     output.snapTo (targets.outputGain);
     bypass.snapTo (targets.bypass ? 1.0 : 0.0);
+    listenMix.snapTo (targets.listen ? 1.0 : 0.0);
 
     updateFilter (logFrequency.getCurrent());
     oversampling.select (targets.oversampling, false);
@@ -221,6 +224,7 @@ void ExciterDsp::processChunk (float* const* channels, int numChannels, int offs
         const auto outputGain = output.next();
         const auto bypassAmount = bypass.next();
         const auto fade = oversampling.nextFade();
+        const auto listening = listenMix.isSettled() && listenMix.getCurrent() == 0.0 ? 0.0 : listenMix.next();
         const auto readPosition = (delayWritePosition + i + delayLength - delay) % delayLength;
 
         for (int ch = 0; ch < 2; ++ch)
@@ -234,7 +238,11 @@ void ExciterDsp::processChunk (float* const* channels, int numChannels, int offs
                 continue;
 
             const auto dry = (double) state.dryDelay[(size_t) readPosition];
-            const auto out = (dry + wet * amount) * outputGain;
+            auto out = (dry + wet * amount) * outputGain;
+
+            // Phase 4 Wave 1: Listen plays only the added part, before Output.
+            if (listening > 0.0)
+                out += (wet * amount - out) * listening;
 
             channels[ch][offset + i] = (float) ((out + (dry - out) * bypassAmount) * fade);
         }

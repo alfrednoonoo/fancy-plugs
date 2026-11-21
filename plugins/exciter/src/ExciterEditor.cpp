@@ -27,9 +27,12 @@ ExciterEditor::ExciterEditor (ExciterProcessor& processor)
       mixBackKnob (parameter ("mixBack"), "Mix Back", colours::uiRed, Knob::mediumStyle),
       editLink (colours::uiRed),
       meter (meterGeometry),
+      listenCheckbox (processor, "Listen to added harmonics", colours::uiRed),
       characterKnob (parameter ("character"), "Character", colours::uiRed, Knob::smallStyle),
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
-      oversamplingDropdown (parameter ("oversampling"))
+      oversamplingDropdown (parameter ("oversampling")),
+      ceilingKnob (parameter ("ceiling"), "Ceiling", colours::uiTeal, Knob::smallStyle),
+      autoGainCheckbox (parameter ("autoGain"), "Auto gain")
 {
     auto& body = getBody();
 
@@ -47,6 +50,18 @@ ExciterEditor::ExciterEditor (ExciterProcessor& processor)
     for (juce::Component* item : std::initializer_list<juce::Component*> { &freqKnob, &clipBoostKnob, &harmonicsKnob, &mixBackKnob, &editLink, &meter })
         body.addAndMakeVisible (item);
 
+    // Phase 4 Wave 1.
+    listenCheckbox.setBounds (24, 309, 224, 20);
+    listenCheckbox.setTooltip ("Plays only what Exciter adds. Turns off when you close this window, and is never saved.");
+    thdLabel.setBounds (leftPanelWidth, bodyHeight - 17, baseWidth - leftPanelWidth, 14);
+    thdLabel.setFont (font (Weight::regular, 11.0f));
+    thdLabel.setColour (juce::Label::textColourId, colours::textSecondary);
+    thdLabel.setJustificationType (juce::Justification::centred);
+    thdLabel.setBorderSize ({});
+    thdLabel.setTooltip ("The harmonics these settings add to a tone an octave above Freq.");
+    body.addAndMakeVisible (listenCheckbox);
+    body.addAndMakeVisible (thdLabel);
+
     oversamplingLabel.setText ("Oversampling", juce::dontSendNotification);
     oversamplingLabel.setFont (font (Weight::regular, 14.0f));
     oversamplingLabel.setColour (juce::Label::textColourId, colours::textPrimary);
@@ -58,7 +73,13 @@ ExciterEditor::ExciterEditor (ExciterProcessor& processor)
     oversamplingLabel.setBounds (32, 186, 100, 24);
     oversamplingDropdown.setBounds (140, 186, 92, 24);
 
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &characterKnob, &drawerOutputKnob, &oversamplingLabel, &oversamplingDropdown })
+    ceilingKnob.setBounds (32, 222, 90, 99);
+    ceilingKnob.setTooltip ("Holds the output's true peak under this level, so Clip Boost can't pass it. Off at the bottom.");
+    autoGainCheckbox.setBounds (142, 262, 110, 20);
+    autoGainCheckbox.setTooltip ("Turns the output down by as much as the harmonics add, so you hear the colour, not the level.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &characterKnob, &drawerOutputKnob, &oversamplingLabel, &oversamplingDropdown,
+                                                                           &ceilingKnob, &autoGainCheckbox })
         drawer.addAndMakeVisible (item);
 
     body.addChildComponent (drawer);
@@ -70,6 +91,9 @@ void ExciterEditor::onTick (float seconds)
 {
     auto& processor = getFancyProcessor();
     meter.update (processor.inputMeter, processor.outputMeter, seconds);
+
+    const auto thd = dynamic_cast<ExciterProcessor&> (processor).getThdPercent();
+    thdLabel.setText ("THD " + juce::String (thd, thd < 10.0f ? 1 : 0) + " %", juce::dontSendNotification);
 }
 
 void ExciterEditor::showPreview (bool drawerOpen)
