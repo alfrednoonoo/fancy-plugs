@@ -121,7 +121,7 @@ fancy::FancyProcessor::Layout createLayout()
 
     layout.add (std::make_unique<Choice> (
         juce::ParameterID { "detector", 1 }, "Detector input",
-        juce::StringArray { "Main input L+R", "Main L", "Main R", "Sidechain L+R", "Sidechain L", "Sidechain R" }, 0));
+        juce::StringArray { "Main input L+R", "Main L", "Main R", "Sidechain L+R", "Sidechain L", "Sidechain R", "Mid", "Side" }, 0));
 
     layout.add (filterParameter ("lowpass", "Lowpass", 20.0f, (float) GateDsp::lowpassOffHz, (float) GateDsp::lowpassOffHz, true));
     layout.add (filterParameter ("highpass", "Highpass", (float) GateDsp::highpassOffHz, 5000.0f, (float) GateDsp::highpassOffHz, false));
@@ -153,6 +153,16 @@ fancy::FancyProcessor::Layout createLayout()
 
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
     layout.add (toggle ("bypass", "Bypass", false));
+
+    // Phase 4 Wave 1 (docs/gate.md), appended. Off, inf:1 and 0 % are the gate as it was.
+    layout.add (toggle ("midiIn", "MIDI trigger", false));
+    layout.add (fancy::floatParameter (
+        "ratio", "Ratio", fancy::logRange (1.1f, (float) GateDsp::infiniteRatio, 0.01f), (float) GateDsp::infiniteRatio,
+        juce::AudioParameterFloatAttributes {}
+            .withStringFromValueFunction ([] (float value, int)
+                                          { return value >= (float) GateDsp::infiniteRatio ? juce::String ("inf:1") : fancy::formatFixed (value, value < 10.0f ? 1 : 0) + ":1"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseRatio (text, (float) GateDsp::infiniteRatio); })));
+    layout.add (fancy::percentParameter ("deBleed", "De-bleed", 0.0f));
 
     return layout;
 }
@@ -248,6 +258,10 @@ GateDsp::Targets GateProcessor::readTargets() const
     targets.velocityWindowMs = (double) read ("velWindow");
     targets.bypass = isOn ("bypass");
 
+    targets.midiIn = isOn ("midiIn");
+    targets.ratio = (double) read ("ratio");
+    targets.deBleed = (double) read ("deBleed") * 0.01;
+
     return targets;
 }
 
@@ -283,6 +297,23 @@ bool GateProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 void GateProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     const juce::ScopedNoDenormals noDenormals;
+
+    // Phase 4 Wave 1: the MIDI trigger's notes, read before the buffer is reused for the
+    // gate's own MIDI out. Any note on any channel counts; velocity doesn't (Decision 1 A).
+    {
+        std::array<GateDsp::IncomingNote, GateDsp::maxIncomingNotes> notes {};
+        auto count = 0;
+
+        for (const auto metadata : midi)
+        {
+            const auto message = metadata.getMessage();
+
+            if (count < GateDsp::maxIncomingNotes && (message.isNoteOn() || message.isNoteOff()))
+                notes[(size_t) count++] = { metadata.samplePosition, message.isNoteOn() };
+        }
+
+        dsp.setIncomingNotes (notes.data(), count);
+    }
 
     midi.clear();
 

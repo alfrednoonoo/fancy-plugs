@@ -16,13 +16,17 @@
 class GateDsp
 {
 public:
-    enum Detector { mainLR, mainL, mainR, sideLR, sideL, sideR };
+    enum Detector { mainLR, mainL, mainR, sideLR, sideL, sideR, mid, side };
     enum Light { lightClosed, lightOpen, lightHold };
 
     static constexpr double lookaheadMs = 50.0;
     static constexpr double rangeFloorDb = -80.0;    // at or below this, Range is -inf
     static constexpr double curveFloorDb = -120.0;   // where a -inf Range's curve runs to
     static constexpr double lowpassOffHz = 22000.0, highpassOffHz = 20.0;
+
+    // Ratio at or above this is the gate's own open/close fade (Phase 4 Wave 1).
+    static constexpr double infiniteRatio = 100.0;
+    static constexpr int maxIncomingNotes = 256;
 
     struct Targets
     {
@@ -37,7 +41,22 @@ public:
         int note = 69, channel = 1;
         double velocityWindowMs = 2.0;
         bool bypass = false;
+
+        // Phase 4 Wave 1 (docs/gate.md). The defaults are the gate as it was, to the bit.
+        bool midiIn = false;
+        double ratio = infiniteRatio;
+        double deBleed = 0.0;   // 0 to 1
     };
+
+    // The notes that arrived this block, for the MIDI trigger: sample offset and on or off.
+    struct IncomingNote
+    {
+        int offset;
+        bool on;
+    };
+
+    // Call before process(), each block. Copies at most maxIncomingNotes.
+    void setIncomingNotes (const IncomingNote* notes, int count) noexcept;
 
     // One open, closed, attack, hold and release cycle. See "State machine" in docs/gate.md.
     struct Machine
@@ -107,6 +126,13 @@ private:
 
     double rate = 48000.0;
     Targets current;
+
+    // Phase 4 Wave 1.
+    std::array<IncomingNote, maxIncomingNotes> incomingNotes {};
+    int numIncomingNotes = 0;
+    int heldNotes = 0;
+    double expanderDb[2] { 0.0, 0.0 };
+    fancy::dsp::DetectorFilter bleedLevels[2];
 
     int lookaheadSamples = 2400;
     bool activeLookahead = false;

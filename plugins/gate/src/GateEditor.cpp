@@ -1,5 +1,7 @@
 #include "GateEditor.h"
 
+#include <algorithm>
+
 #include <fancy/plugin/ParamFormat.h>
 
 #include <cmath>
@@ -134,6 +136,9 @@ void GateEditor::History::update()
         return;
 
     const auto count = gateDsp.popHistory (incoming.data(), (int) incoming.size());
+
+    if (onColumns != nullptr && count > 0)
+        onColumns (incoming.data(), count);
 
     for (int i = 0; i < count; ++i)
     {
@@ -393,7 +398,11 @@ GateEditor::GateEditor (GateProcessor& processor)
       outMeter (outGeometry),
       wetFader (parameter ("wet"), colours::uiTeal),
       dryFader (parameter ("dry"), colours::uiTeal),
-      noiseFader (parameter ("noise"), noiseGrey)
+      noiseFader (parameter ("noise"), noiseGrey),
+      editLink (gateYellow),
+      midiInCheckbox (parameter ("midiIn"), "MIDI trigger", gateYellow),
+      ratioKnob (parameter ("ratio"), "Ratio", gateYellow, Knob::smallStyle),
+      deBleedKnob (parameter ("deBleed"), "De-bleed", colours::uiBlue, Knob::smallStyle)
 {
     auto& body = getBody();
 
@@ -439,6 +448,7 @@ GateEditor::GateEditor (GateProcessor& processor)
 
     detectorDropdown.addSection (0, "Main input");
     detectorDropdown.addSection (3, "Sidechain");
+    detectorDropdown.addSection (6, "Mid/side");
 
     hysteresisKnob.setTooltip ("How far below Threshold the level must fall before the gate closes. "
                                "It stops chatter on signals that hover around the threshold.");
@@ -461,6 +471,46 @@ GateEditor::GateEditor (GateProcessor& processor)
     linkCheckbox.setTooltip ("Both channels open and close together, on the louder one.");
     midiCheckbox.setTooltip ("Sends a note when the gate opens, and its note-off when it closes. "
                              "In REAPER, route this track's MIDI to an instrument track.");
+
+    // Phase 4 Wave 1: the EDIT link in the top row, and the drawer over the knob cards, so the
+    // history, meters and faders stay in view.
+    latencyLabel.setBounds (294, 9, 92, 24);
+    editLink.setBounds (388, 9, 50, 24);
+    editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
+    body.addAndMakeVisible (editLink);
+
+    drawer.setBounds (centreX, envelopeY - 4, centreWidth, lowerY + cardHeight - envelopeY + 4);
+
+    midiInCheckbox.setBounds (18, 50, 140, 20);
+    midiInCheckbox.setLabelHeight (12.0f);
+    midiInCheckbox.setTooltip ("Play the gate from MIDI: a note-on opens it, its note-off closes it. The detector is ignored.");
+    styleLabel (midiInNote, "Note-on opens, note-off closes. The detector is ignored.", colours::textSecondary, juce::Justification::topLeft, 11.0f);
+    midiInNote.setBounds (40, 72, 190, 30);
+
+    learnButton.setBounds (18, 118, 84, 26);
+    learnButton.onClick = [this]
+    {
+        learnedLevels.clear();
+        learnSeconds = 0.0f;
+        learnButton.setText ("Listening...");
+    };
+    styleLabel (learnNote, "Listens for 3 s and sets Threshold", colours::textSecondary, juce::Justification::centredLeft, 11.0f);
+    learnNote.setBounds (110, 118, 130, 26);
+
+    ratioKnob.setBounds (246, 40, 90, 99);
+    ratioKnob.setTooltip ("Below inf:1 the gate becomes an expander: the level falls this many dB for each dB under Threshold, never deeper than Range.");
+    deBleedKnob.setBounds (346, 40, 90, 99);
+    deBleedKnob.setTooltip ("Raises Threshold while the sound outside Lowpass and Highpass is louder than inside, so bleed can't open the gate.");
+    styleLabel (drawerNote, "De-bleed needs Lowpass and Highpass set: out-of-band thumps can't open the gate.",
+                colours::textSecondary, juce::Justification::topLeft, 11.0f);
+    drawerNote.setBounds (250, 146, 190, 44);
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &midiInCheckbox, &midiInNote, &learnButton, &learnNote, &ratioKnob, &deBleedKnob, &drawerNote })
+        drawer.addAndMakeVisible (item);
+
+    body.addChildComponent (drawer);
+
+    history.onColumns = [this] (const GateDsp::HistoryColumn* columns, int count) { learnFrom (columns, count); };
 
     // Right column.
     outMeter.setBounds (rightColumnX + 6, 10, 46, 350);
@@ -538,6 +588,48 @@ void GateEditor::onTick (float seconds)
     history.setWarning (dsp.isSidechainMissing());
     history.update();
     outMeter.update (processor.outputMeter, seconds);
+
+    if (learnSeconds >= 0.0f)
+    {
+        learnSeconds += seconds;
+
+        if (learnSeconds >= 3.0f)
+            finishLearning();
+    }
+}
+
+void GateEditor::learnFrom (const GateDsp::HistoryColumn* columns, int count)
+{
+    if (learnSeconds < 0.0f)
+        return;
+
+    for (int i = 0; i < count; ++i)
+        if (columns[i].levelDb > -200.0f)
+            learnedLevels.push_back (columns[i].levelDb);
+}
+
+void GateEditor::finishLearning()
+{
+    learnSeconds = -1.0f;
+    learnButton.setText ("Learn");
+
+    if (learnedLevels.size() < 8)
+        return;
+
+    std::sort (learnedLevels.begin(), learnedLevels.end());
+
+    const auto at = [this] (double fraction) { return learnedLevels[(size_t) juce::jlimit (0, (int) learnedLevels.size() - 1, (int) (fraction * (double) learnedLevels.size()))]; };
+    const auto floorDb = at (0.10), peakDb = at (0.95);
+
+    if (peakDb - floorDb < 3.0f)
+        return;
+
+    auto& threshold = parameter ("threshold");
+    const auto learned = floorDb + (peakDb - floorDb) / 3.0f;
+
+    threshold.beginChangeGesture();
+    threshold.setValueNotifyingHost (threshold.convertTo0to1 (learned));
+    threshold.endChangeGesture();
 }
 
 void GateEditor::showPreview (bool secondView)

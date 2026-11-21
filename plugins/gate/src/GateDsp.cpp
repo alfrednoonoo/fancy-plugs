@@ -193,6 +193,13 @@ void GateDsp::clearRings() noexcept
 
 void GateDsp::reset()
 {
+    heldNotes = 0;
+    numIncomingNotes = 0;
+    expanderDb[0] = expanderDb[1] = 0.0;
+
+    for (auto& bleed : bleedLevels)
+        bleed.reset();
+
     clearRings();
 
     for (int ch = 0; ch < 2; ++ch)
@@ -422,6 +429,14 @@ int GateDsp::popHistory (HistoryColumn* destination, int maxColumns) noexcept
 
 // Process -----------------------------------------------------------------------------------
 
+void GateDsp::setIncomingNotes (const IncomingNote* notes, int count) noexcept
+{
+    numIncomingNotes = std::clamp (count, 0, (int) maxIncomingNotes);
+
+    for (int i = 0; i < numIncomingNotes; ++i)
+        incomingNotes[(size_t) i] = notes[i];
+}
+
 void GateDsp::process (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples, juce::MidiBuffer* midi) noexcept
 {
     const auto blockStart = now;
@@ -433,8 +448,21 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
     const auto holdSamples = (int) std::lround (settings.holdMs * 0.001 * rate);
     const auto openDb = settings.thresholdDb;
     const auto closeDb = settings.thresholdDb + settings.hysteresisDb;
-    const auto usesSidechain = settings.detector >= sideLR;
+    const auto usesSidechain = settings.detector >= sideLR && settings.detector <= sideR;
     const auto channelMode = settings.detector % 3;
+
+    // Phase 4 Wave 1: each is skipped entirely at its default.
+    const auto midSide = settings.detector == mid || settings.detector == side;
+    const auto expanding = settings.ratio < infiniteRatio && ! settings.duck;
+    const auto deBleeding = settings.deBleed > 0.0;
+    const auto expanderSlope = settings.ratio - 1.0;
+    const auto expanderFloorDb = settings.rangeDb <= rangeFloorDb ? curveFloorDb : settings.rangeDb;
+    const auto expanderAttack = 1.0 - std::exp (-1.0 / attackSamples);
+    const auto expanderRelease = 1.0 - std::exp (-1.0 / releaseSamples);
+    auto nextNote = 0;
+
+    if (! settings.midiIn)
+        heldNotes = 0;
     const auto numChannels = std::min (numMain, 2);
 
     // Lookahead changes fade out, swap and fade back in, as a deliberate setting.
@@ -501,7 +529,10 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
         }
 
         const auto* source = usesSidechain ? key : in;
-        const double detectorIn[2] { channelMode == 2 ? source[1] : source[0], channelMode == 1 ? source[0] : source[1] };
+        double detectorIn[2] { channelMode == 2 ? source[1] : source[0], channelMode == 1 ? source[0] : source[1] };
+
+        if (midSide)
+            detectorIn[0] = detectorIn[1] = settings.detector == mid ? 0.5 * (in[0] + in[1]) : 0.5 * (in[0] - in[1]);
 
         double filtered[2], level[2];
 
@@ -514,9 +545,39 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
         const auto loudest = std::max (level[0], level[1]);
         const auto numMachines = settings.link ? 1 : 2;
 
+        // De-bleed: the threshold rises by how much louder the sound outside the detector's band
+        // is than inside it, scaled by De-bleed.
+        double raise[2] { 0.0, 0.0 };
+
+        if (deBleeding)
+        {
+            double outside[2];
+
+            for (int ch = 0; ch < 2; ++ch)
+                outside[ch] = bleedLevels[ch].levelDb (detectorIn[ch] - filtered[ch], rmsCoefficient);
+
+            for (int ch = 0; ch < 2; ++ch)
+                raise[ch] = settings.deBleed * std::max (0.0, settings.link ? std::max (outside[0], outside[1]) - loudest : outside[ch] - level[ch]);
+        }
+
+        // The MIDI trigger: a held note opens the gate, its release closes it.
+        if (settings.midiIn)
+        {
+            while (nextNote < numIncomingNotes && incomingNotes[(size_t) nextNote].offset <= i)
+            {
+                heldNotes = incomingNotes[(size_t) nextNote].on ? heldNotes + 1 : std::max (0, heldNotes - 1);
+                ++nextNote;
+            }
+        }
+
         for (int m = 0; m < numMachines; ++m)
         {
-            const auto event = machines[m].step (settings.link ? loudest : level[m], openDb, closeDb,
+            auto heard = settings.link ? loudest : level[m];
+
+            if (settings.midiIn)
+                heard = heldNotes > 0 ? 200.0 : -400.0;
+
+            const auto event = machines[m].step (heard, openDb + raise[m], closeDb + raise[m],
                                                  1.0 / attackSamples, 1.0 / releaseSamples, holdSamples);
 
             // MIDI follows the linked state, or the left channel's when unlinked.
@@ -549,6 +610,22 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
             {
                 cachedPosition[ch] = machine.position;
                 cachedGain[ch] = gainFor (machine.position);
+            }
+
+            // Ratio below inf: an expander, the level falling (ratio - 1) dB for each dB under
+            // Threshold, never deeper than Range, on Attack and Release (Gate mode only).
+            if (expanding)
+            {
+                auto heard = settings.link ? loudest : level[ch];
+
+                if (settings.midiIn)
+                    heard = heldNotes > 0 ? 200.0 : -400.0;
+
+                const auto target = std::max (expanderFloorDb, std::min (0.0, (heard - (openDb + raise[settings.link ? 0 : ch])) * expanderSlope));
+                auto& current = expanderDb[ch];
+                current += (target - current) * (target > current ? expanderAttack : expanderRelease);
+                cachedGain[ch] = std::pow (10.0, current / 20.0);
+                cachedPosition[ch] = -1.0;
             }
 
             gainRing[ch][(size_t) writeAt] = (float) cachedGain[ch];

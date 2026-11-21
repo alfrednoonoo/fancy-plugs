@@ -40,6 +40,9 @@ private:
 
         void update();
         void showColumns (std::vector<GateDsp::HistoryColumn> columns);
+
+        // Phase 4 Wave 1: every new column, for Learn.
+        std::function<void (const GateDsp::HistoryColumn*, int)> onColumns;
         void setWarning (bool shouldShow);
 
         void paint (juce::Graphics&) override;
@@ -90,6 +93,11 @@ private:
     void onTick (float seconds) override;
     void updateLocks();
 
+    // Phase 4 Wave 1: Learn listens to 3 s of the detector level and sets Threshold a third of
+    // the way from the noise floor (10th percentile) to the hits (95th), Decision 2 A.
+    void learnFrom (const GateDsp::HistoryColumn* columns, int count);
+    void finishLearning();
+
     // The stereo sidechain counts even while the host leaves it off, as the plugin has it.
     int getShownInputs() override { return juce::jmax (getFancyProcessor().getTotalNumInputChannels(), getFancyProcessor().getMainBusNumInputChannels() + 2); }
 
@@ -118,6 +126,17 @@ private:
     fancy::ui::OutMeter outMeter;
     juce::Label wetLabel, dryLabel, noiseLabel;
     fancy::ui::Fader wetFader, dryFader, noiseFader;
+
+    // Phase 4 Wave 1: the EDIT drawer (Decision 4 A).
+    fancy::ui::EditLink editLink;
+    fancy::ui::EditDrawer drawer;
+    fancy::ui::ParamCheckbox midiInCheckbox;
+    juce::Label midiInNote, learnNote;
+    fancy::ui::PillButton learnButton { "Learn" };
+    fancy::ui::Knob ratioKnob, deBleedKnob;
+    juce::Label drawerNote;
+    std::vector<float> learnedLevels;
+    float learnSeconds = -1.0f;   // -1 while not learning
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GateEditor)
 };

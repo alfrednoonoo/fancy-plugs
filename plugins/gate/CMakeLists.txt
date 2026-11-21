@@ -4,6 +4,7 @@ fancy_add_plugin(FancyGate
     BUNDLE_ID com.fancyplugs.gate
     SCREEN_MACRO FANCY_HAS_GATE
     PRODUCES_MIDI
+    ACCEPTS_MIDI
     AU_MUSIC_EFFECT
     SOURCES
         src/GateDsp.cpp

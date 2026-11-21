@@ -14,12 +14,19 @@
 # ENTRY holds createPluginFilter() and goes into the plugin only, because each
 # plugin defines that same symbol.
 function(fancy_add_plugin target)
-    cmake_parse_arguments(ARG "PRODUCES_MIDI;AU_MUSIC_EFFECT" "PRODUCT_NAME;PLUGIN_CODE;BUNDLE_ID;SCREEN_MACRO;ENTRY" "SOURCES" ${ARGN})
+    cmake_parse_arguments(ARG "PRODUCES_MIDI;ACCEPTS_MIDI;AU_MUSIC_EFFECT" "PRODUCT_NAME;PLUGIN_CODE;BUNDLE_ID;SCREEN_MACRO;ENTRY" "SOURCES" ${ARGN})
 
     if(ARG_PRODUCES_MIDI)
         set(needs_midi_output TRUE)
     else()
         set(needs_midi_output FALSE)
+    endif()
+
+    # Fancy Gate's MIDI trigger (docs/gate.md, Phase 4 Wave 1) needs notes in.
+    if(ARG_ACCEPTS_MIDI)
+        set(needs_midi_input TRUE)
+    else()
+        set(needs_midi_input FALSE)
     endif()
 
     if(APPLE)
@@ -45,7 +52,7 @@ function(fancy_add_plugin target)
         AU_MAIN_TYPE ${au_main_type}
         AU_SANDBOX_SAFE TRUE
         IS_SYNTH FALSE
-        NEEDS_MIDI_INPUT FALSE
+        NEEDS_MIDI_INPUT ${needs_midi_input}
         NEEDS_MIDI_OUTPUT ${needs_midi_output}
         IS_MIDI_EFFECT FALSE
         EDITOR_WANTS_KEYBOARD_FOCUS FALSE

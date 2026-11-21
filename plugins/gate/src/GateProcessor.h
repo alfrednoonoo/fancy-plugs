@@ -16,6 +16,7 @@ public:
     void processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) override;
 
     bool producesMidi() const override { return true; }
+    bool acceptsMidi() const override { return true; }   // Phase 4 Wave 1: the MIDI trigger
 
     juce::AudioProcessorEditor* createEditor() override;
 
