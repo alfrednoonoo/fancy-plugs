@@ -22,6 +22,7 @@ public:
     struct Readings
     {
         double shortTerm = -200.0, integrated = -200.0, truePeak = -200.0, range = 0.0;
+        int overs = 0; // Phase 4 Wave 1
     };
 
 private:
@@ -76,7 +77,20 @@ private:
         juce::String text;
     };
 
+    // Phase 4 Wave 1: measures 10 s of playback and moves Threshold once so the integrated
+    // loudness lands on the Target. A ring shows the progress.
+    class AutoTargetButton final : public juce::Component, public juce::SettableTooltipClient
+    {
+    public:
+        void paint (juce::Graphics&) override;
+        void mouseDown (const juce::MouseEvent&) override;
+
+        std::function<void()> onClick;
+        float progress = -1.0f; // -1 idle, 0 to 1 measuring
+    };
+
     void onTick (float seconds) override;
+    void updateAutoTarget (float seconds);
 
     LimitProcessor& limitProcessor() noexcept;
 
@@ -103,6 +117,14 @@ private:
     juce::Label oversamplingLabel, phaseLabel, ditherLabel, ballisticsLabel, resetLabel;
     fancy::ui::ParamDropdown oversamplingDropdown, phaseDropdown, ditherDropdown, ballisticsDropdown;
     fancy::ui::PillButton resetButton { "Reset loudness" };
+
+    // Phase 4 Wave 1.
+    fancy::ui::ToggleCheckbox gainLockCheckbox { "Gain lock", juce::Colour (0xffe74d3d) };
+    AutoTargetButton autoTargetButton;
+    float autoTargetSeconds = 0.0f;
+    juce::Label releaseCurveLabel, dcLabel;
+    fancy::ui::ParamDropdown releaseCurveDropdown;
+    fancy::ui::ParamCheckbox dcCheckbox;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LimitEditor)
 };

@@ -86,6 +86,19 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
     layout.add (toggle ("bypass", "Bypass", false));
 
+    // Phase 4 Wave 1 (docs/limit.md), appended. Off and Exponential are the old sound.
+    layout.add (toggle ("gainLock", "Gain lock", false));
+    layout.add (fancy::floatParameter (
+        "gainLockRef", "Gain lock reference", juce::NormalisableRange<float> (-30.0f, 0.0f, 0.01f), 0.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withAutomatable (false)
+            .withLabel ("dB")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " dB"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    layout.add (toggle ("dcFilter", "DC filter", false));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "releaseCurve", 1 }, "Release curve",
+                                          juce::StringArray { "Exponential", "Linear" }, 0));
+
     return layout;
 }
 
@@ -154,6 +167,11 @@ LimitDsp::Targets LimitProcessor::readTargets() const
     targets.outputGain = fancy::dbToGain ((double) read ("output"));
     targets.bypass = isOn ("bypass");
 
+    targets.gainLock = isOn ("gainLock");
+    targets.gainLockRefDb = (double) read ("gainLockRef");
+    targets.dcFilter = isOn ("dcFilter");
+    targets.linearRelease = isOn ("releaseCurve");
+
     return targets;
 }
 
@@ -169,6 +187,7 @@ void LimitProcessor::resetLoudness() noexcept
 {
     dsp.loudness.requestReset();
     dsp.truePeakMeter.requestReset();
+    dsp.requestOversReset();
 }
 
 void LimitProcessor::prepareAudio (double sampleRate, int)

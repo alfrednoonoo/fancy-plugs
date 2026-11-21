@@ -34,6 +34,7 @@ fancy::dsp::TruePeakLimiter::Settings LimitDsp::limiterSettings (const Targets& 
     settings.releaseMs = targets.releaseMs * releaseScale;
     settings.slowReleaseMs = std::min (8.0 * targets.releaseMs, 2000.0) * releaseScale;
     settings.autoRelease = targets.autoRelease;
+    settings.linearRelease = targets.linearRelease;
     settings.link = targets.link;
     settings.shape = targets.style == punchy ? Shape::punchy : Shape::smooth;
     settings.truePeak = targets.truePeak;
@@ -117,6 +118,9 @@ void LimitDsp::prepare (double sampleRate)
 
     switchGain.setTime (switchFadeMs / 5.0, sampleRate);
 
+    // Phase 4 Wave 1: the DC filter, a first-order high-pass at 5 Hz.
+    dcCoefficient = std::exp (-2.0 * juce::MathConstants<double>::pi * 5.0 / sampleRate);
+
     active = { current.oversampling, current.linearPhase };
     reset();
 }
@@ -157,6 +161,9 @@ void LimitDsp::reset()
     dryPosition = 0;
     holdOffSamples = 0;
     noiseState = 0x2545f491u;
+    dcInput.fill (0.0);
+    dcOutput.fill (0.0);
+    dcWasOn = false;
 
     for (auto& error : ditherError)
         error.fill (0.0);
@@ -175,7 +182,7 @@ void LimitDsp::snapToTargets (const Targets& targets) noexcept
     const auto margin = targets.truePeak ? dbToGain (-truePeakMarginDb) : 1.0;
     inputGain.snapTo (dbToGain (-targets.thresholdDb));
     ceilingGain.snapTo (dbToGain (targets.ceilingDb) * margin);
-    outputGain.snapTo (targets.outputGain);
+    outputGain.snapTo (outputTargetFor (targets));
     bypassMix.snapTo (targets.bypass ? 1.0 : 0.0);
     switchGain.snapTo (1.0);
 
@@ -264,7 +271,7 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
     const auto margin = settings.truePeak ? dbToGain (-truePeakMarginDb) : 1.0;
     inputGain.setTarget (dbToGain (-settings.thresholdDb));
     ceilingGain.setTarget (dbToGain (settings.ceilingDb) * margin);
-    outputGain.setTarget (settings.outputGain);
+    outputGain.setTarget (outputTargetFor (settings));
     bypassMix.setTarget (settings.bypass ? 1.0 : 0.0);
 
     // 1. Into the limiter's scale: the signal pushed up by -Threshold, over the ceiling's gain.
@@ -273,11 +280,42 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
     auto* a = scratch[0].data();
     auto* b = scratch[1].data();
 
+    // Phase 4 Wave 1: the DC filter, before everything. Switched on, it starts from rest.
+    if (settings.dcFilter && ! dcWasOn)
+    {
+        dcInput.fill (0.0);
+        dcOutput.fill (0.0);
+    }
+
+    dcWasOn = settings.dcFilter;
+
+    const auto blockDc = [this] (int channel, double x)
+    {
+        const auto y = x - dcInput[(size_t) channel] + dcCoefficient * dcOutput[(size_t) channel];
+        dcInput[(size_t) channel] = x;
+        dcOutput[(size_t) channel] = y;
+        return y;
+    };
+
+    if (oversResetRequested.exchange (false, std::memory_order_relaxed))
+        overs.store (0, std::memory_order_relaxed);
+
+    auto oversHere = 0;
+
     for (int i = 0; i < numSamples; ++i)
     {
         const auto gain = inputGain.next();
         const auto ceiling = ceilingGain.next();
-        const auto l = (double) left[i] * gain, r = (right != nullptr ? (double) right[i] : (double) left[i]) * gain;
+        auto inLeft = (double) left[i];
+        auto inRight = right != nullptr ? (double) right[i] : (double) left[i];
+
+        if (settings.dcFilter)
+        {
+            inLeft = blockDc (0, inLeft);
+            inRight = blockDc (1, inRight);
+        }
+
+        const auto l = inLeft * gain, r = inRight * gain;
 
         ceilings[(size_t) i] = ceiling;
         inputs[(size_t) i] = std::max (std::abs (l), std::abs (r));
@@ -347,6 +385,9 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
 
         if (! settings.listen)
         {
+            if (std::abs (l) > ceiling || std::abs (r) > ceiling)
+                ++oversHere;
+
             l = std::clamp (l, -ceiling, ceiling);
             r = std::clamp (r, -ceiling, ceiling);
         }
@@ -373,6 +414,9 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
 
     loudness.process (a, b, numSamples);
     truePeakMeter.process (a, b, numSamples);
+
+    if (oversHere > 0)
+        overs.fetch_add (oversHere, std::memory_order_relaxed);
 
     const auto reductionDb = -peakDb (smallestGain);
     auto shown = reduction.load (std::memory_order_relaxed);
@@ -433,4 +477,14 @@ int LimitDsp::popHistory (HistoryColumn* destination, int maxColumns) noexcept
 
     historyRead.store (read, std::memory_order_relaxed);
     return count;
+}
+
+// The Output knob's gain, and with Gain lock on, the output turned down by as much as Threshold
+// has been pushed past the reference (Decision 1 A).
+double LimitDsp::outputTargetFor (const Targets& targets) const noexcept
+{
+    if (! targets.gainLock)
+        return targets.outputGain;
+
+    return targets.outputGain * dbToGain (targets.thresholdDb - targets.gainLockRefDb);
 }

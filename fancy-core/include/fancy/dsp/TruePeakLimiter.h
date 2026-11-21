@@ -41,6 +41,11 @@ public:
         bool autoRelease = false;
         double slowReleaseMs = 400.0;
 
+        // Fancy Limit's release curve (docs/limit.md, Phase 4 Wave 1): the gain recovers at a
+        // constant rate in dB, one neper per release time, as Comp's Linear does. Off is the
+        // exponential release every limiter had before.
+        bool linearRelease = false;
+
         // 1 is fully linked; 0 is two independent channels.
         double link = 1.0;
 
@@ -79,6 +84,8 @@ public:
         lookahead = maxWindow + interpolatorDelay;
         releaseCoefficient = 1.0 - std::exp (-1.0 / (settings.releaseMs / 1000.0 * sampleRate));
         slowReleaseCoefficient = 1.0 - std::exp (-1.0 / (settings.slowReleaseMs / 1000.0 * sampleRate));
+        linearStep = std::exp (1.0 / std::max (1.0, settings.releaseMs / 1000.0 * sampleRate));
+        slowLinearStep = std::exp (1.0 / std::max (1.0, settings.slowReleaseMs / 1000.0 * sampleRate));
         sustainCoefficients[0] = 1.0 - std::exp (-1.0 / (0.3 * sampleRate));
         sustainCoefficients[1] = 1.0 - std::exp (-1.0 / (0.02 * sampleRate));
         longHold = std::max (maxWindow, (int) std::lround (0.03 * sampleRate));
@@ -138,10 +145,16 @@ public:
         const auto reshape = newWindow != window || settings.shape != current.shape;
 
         if (settings.releaseMs != current.releaseMs)
+        {
             releaseCoefficient = 1.0 - std::exp (-1.0 / (settings.releaseMs / 1000.0 * rate));
+            linearStep = std::exp (1.0 / std::max (1.0, settings.releaseMs / 1000.0 * rate));
+        }
 
         if (settings.slowReleaseMs != current.slowReleaseMs)
+        {
             slowReleaseCoefficient = 1.0 - std::exp (-1.0 / (settings.slowReleaseMs / 1000.0 * rate));
+            slowLinearStep = std::exp (1.0 / std::max (1.0, settings.slowReleaseMs / 1000.0 * rate));
+        }
 
         const auto wasLinked = current.link >= 1.0;
         current = settings;
@@ -317,7 +330,11 @@ private:
         double step (double required, TruePeakLimiter& owner) noexcept
         {
             const auto held = shortMinimum.push (required, owner.sampleIndex, owner.window);
-            releasing = std::min (held, releasing + owner.releaseCoefficient * (1.0 - releasing));
+
+            if (owner.current.linearRelease)
+                releasing = std::min ({ held, releasing * owner.linearStep, 1.0 });
+            else
+                releasing = std::min (held, releasing + owner.releaseCoefficient * (1.0 - releasing));
 
             if (! owner.current.autoRelease)
                 return releasing;
@@ -325,7 +342,10 @@ private:
             // A long hold and a slow release, weighted by how sustained the reduction is: its
             // 300 ms average against its 20 ms average.
             const auto longHeld = longMinimum.push (required, owner.sampleIndex, owner.longHold);
-            slow = std::min (longHeld, slow + owner.slowReleaseCoefficient * (1.0 - slow));
+            if (owner.current.linearRelease)
+                slow = std::min ({ longHeld, slow * owner.slowLinearStep, 1.0 });
+            else
+                slow = std::min (longHeld, slow + owner.slowReleaseCoefficient * (1.0 - slow));
 
             const auto depth = 1.0 - held;
             sustained += (depth - sustained) * owner.sustainCoefficients[0];
@@ -479,6 +499,7 @@ private:
     double rate = 48000.0;
     int window = 96, maxWindow = 96, lookahead = 104, longHold = 1440;
     double releaseCoefficient = 0.001, slowReleaseCoefficient = 0.0001;
+    double linearStep = 1.0, slowLinearStep = 1.0;
     std::array<double, 2> sustainCoefficients { 0.0001, 0.001 };
 
     std::array<std::vector<double>, 2> delayLines, gainDelays;

@@ -136,6 +136,7 @@ void LimitEditor::Display::update()
     readings.integrated = dsp.loudness.getIntegrated();
     readings.truePeak = dsp.truePeakMeter.getPeakDb();
     readings.range = dsp.loudness.getRange();
+    readings.overs = dsp.getOvers();
     ceilingDb = (float) limitProcessor.readTargets().ceilingDb;
 
     repaint();
@@ -250,6 +251,14 @@ void LimitEditor::Display::paint (juce::Graphics& g)
         g.setColour (colours::textSecondary);
         g.setFont (font (Weight::regular, 10.0f));
         g.drawText (units[i], juce::Rectangle<float> (panel.getX() + 16.0f + valueWidth, y + 15.0f, 40.0f, 16.0f), juce::Justification::centredLeft, false);
+
+        // Phase 4 Wave 1: the overs since the last reset, beside the held true peak.
+        if (i == 2)
+        {
+            g.setColour (readings.overs > 0 ? limitRed : colours::textSecondary);
+            g.drawText (juce::String (readings.overs) + (readings.overs == 1 ? " over" : " overs"),
+                        juce::Rectangle<float> (panel.getRight() - 58.0f, y, 50.0f, 14.0f), juce::Justification::centredRight, false);
+        }
 
         y += 34.0f;
     }
@@ -380,7 +389,9 @@ LimitEditor::LimitEditor (LimitProcessor& processor)
       oversamplingDropdown (parameter ("oversampling")),
       phaseDropdown (parameter ("osPhase")),
       ditherDropdown (parameter ("dither")),
-      ballisticsDropdown (parameter ("ballistics"))
+      ballisticsDropdown (parameter ("ballistics")),
+      releaseCurveDropdown (parameter ("releaseCurve")),
+      dcCheckbox (parameter ("dcFilter"), "5 Hz high-pass", limitRed)
 {
     auto& body = getBody();
 
@@ -445,6 +456,38 @@ LimitEditor::LimitEditor (LimitProcessor& processor)
     autoReleaseCheckbox.setTooltip ("Recovers fast from short peaks and slowly from sustained limiting, to avoid pumping and bass distortion.");
     listenCheckbox.setTooltip ("Plays only what the limiter takes away.");
 
+    // Phase 4 Wave 1: Gain lock remembers Threshold as it's switched on (Decision 1 A).
+    gainLockCheckbox.setBounds (leftX + 412, footerY, 100, 20);
+    gainLockCheckbox.onChange = [this] (bool on)
+    {
+        auto& processor = limitProcessor();
+
+        if (on)
+            processor.setParameter ("gainLockRef", processor.getApvts().getRawParameterValue ("threshold")->load());
+
+        processor.setParameter ("gainLock", on ? 1.0f : 0.0f);
+    };
+    body.addAndMakeVisible (gainLockCheckbox);
+
+    autoTargetButton.setBounds (290, rowY + 1, 112, 24);
+    autoTargetButton.setTooltip ("Listens for 10 s of playback, then moves Threshold once so the integrated loudness meets the Target.");
+    autoTargetButton.onClick = [this]
+    {
+        if (autoTargetButton.progress >= 0.0f)
+        {
+            autoTargetButton.progress = -1.0f;
+        }
+        else if (! limitProcessor().readTargets().gainLock)
+        {
+            limitProcessor().resetLoudness();
+            autoTargetSeconds = 0.0f;
+            autoTargetButton.progress = 0.0f;
+        }
+
+        autoTargetButton.repaint();
+    };
+    body.addAndMakeVisible (autoTargetButton);
+
     // Right column.
     outMeter.setBounds (rightColumnX + 2, 10, 74, 372);
     loudnessBar.setBounds (rightColumnX + 76, 10, 40, 372);
@@ -474,6 +517,8 @@ LimitEditor::LimitEditor (LimitProcessor& processor)
         { ditherLabel, "Dither", ditherDropdown },
         { ballisticsLabel, "Meter ballistics", ballisticsDropdown },
         { resetLabel, "Loudness", resetButton },
+        { releaseCurveLabel, "Release curve", releaseCurveDropdown },
+        { dcLabel, "DC filter", dcCheckbox },
     };
 
     auto y = 60;
@@ -495,10 +540,89 @@ LimitEditor::LimitEditor (LimitProcessor& processor)
     ditherDropdown.setTooltip ("Adds low-level noise before a bounce to a lower bit depth. Shaped moves it to the highs. "
                                "Keep Ceiling at -0.1 or lower with dither on.");
     ballisticsDropdown.setTooltip ("What the LUFS meter shows: short-term loudness (EBU) or plain RMS.");
+    releaseCurveDropdown.setTooltip ("Exponential recovers fast and then gently. Linear recovers at a constant rate in dB.");
+    dcCheckbox.setTooltip ("Removes DC offset before the limiter, so it can't use up headroom.");
     resetButton.onClick = [&processor] { processor.resetLoudness(); };
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
+}
+
+// AutoTargetButton (Phase 4 Wave 1) ----------------------------------------------
+
+void LimitEditor::AutoTargetButton::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    const auto enabled = isEnabled();
+
+    g.setColour (progress >= 0.0f ? colours::bgSection : limitRed.withAlpha (enabled ? 1.0f : 0.4f));
+    g.fillRoundedRectangle (bounds, 3.0f);
+
+    if (progress >= 0.0f)
+    {
+        g.setColour (limitRed);
+        g.drawRoundedRectangle (bounds.reduced (0.5f), 3.0f, 1.0f);
+
+        // The ring, filling as the 10 s go by.
+        const auto ring = bounds.withWidth (bounds.getHeight()).reduced (6.0f).translated (4.0f, 0.0f);
+        juce::Path arc;
+        arc.addCentredArc (ring.getCentreX(), ring.getCentreY(), ring.getWidth() * 0.5f, ring.getHeight() * 0.5f, 0.0f,
+                           0.0f, juce::MathConstants<float>::twoPi * juce::jlimit (0.01f, 1.0f, progress), true);
+        g.strokePath (arc, juce::PathStrokeType (2.0f));
+    }
+
+    g.setFont (font (Weight::semiBold, 12.0f));
+    g.setColour (progress >= 0.0f ? colours::textPrimary : colours::bgWell);
+    g.drawText (progress >= 0.0f ? "Listening..." : "Auto to target", bounds.withTrimmedLeft (progress >= 0.0f ? 18.0f : 0.0f),
+                juce::Justification::centred, false);
+}
+
+void LimitEditor::AutoTargetButton::mouseDown (const juce::MouseEvent& event)
+{
+    if (! event.mods.isPopupMenu() && isEnabled() && onClick != nullptr)
+        onClick();
+}
+
+// Counts the seconds with signal, and at 10 moves Threshold by target - measured, once, as one
+// undo step. Lowering Threshold raises the loudness by about as much.
+void LimitEditor::updateAutoTarget (float seconds)
+{
+    auto& processor = limitProcessor();
+    const auto locked = processor.readTargets().gainLock;
+
+    autoTargetButton.setEnabled (! locked);
+    autoTargetButton.setAlpha (locked ? 0.4f : 1.0f);
+
+    if (autoTargetButton.progress < 0.0f)
+        return;
+
+    if (locked)
+    {
+        autoTargetButton.progress = -1.0f;
+        autoTargetButton.repaint();
+        return;
+    }
+
+    if (processor.getDsp().loudness.getMomentary() > -70.0)
+        autoTargetSeconds += seconds;
+
+    autoTargetButton.progress = autoTargetSeconds / 10.0f;
+
+    if (autoTargetSeconds >= 10.0f)
+    {
+        const auto measured = processor.getDsp().loudness.getIntegrated();
+
+        if (measured > -70.0)
+        {
+            const auto threshold = processor.getApvts().getRawParameterValue ("threshold")->load();
+            const auto moved = juce::jlimit (-30.0f, 0.0f, threshold - (processor.getTargetLufs() - (float) measured));
+            processor.setParameter ("threshold", moved);
+        }
+
+        autoTargetButton.progress = -1.0f;
+    }
+
+    autoTargetButton.repaint();
 }
 
 LimitProcessor& LimitEditor::limitProcessor() noexcept
@@ -512,6 +636,10 @@ void LimitEditor::onTick (float seconds)
     auto& dsp = processor.getDsp();
 
     const auto reduction = juce::jmin (dsp.takeReduction(), 60.0f);
+
+    // Phase 4 Wave 1.
+    gainLockCheckbox.setOn (processor.readTargets().gainLock);
+    updateAutoTarget (seconds);
 
     thresholdMeter.update (processor.inputMeter, false, seconds);
     gainMeter.update (reduction, reduction, seconds);

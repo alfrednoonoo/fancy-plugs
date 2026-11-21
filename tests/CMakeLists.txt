@@ -51,7 +51,7 @@ if("FANCY_HAS_GATE=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_LIMIT=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE LimitTests.cpp)
+    target_sources(fancy-tests PRIVATE LimitTests.cpp LimitW1Tests.cpp LegacyLimitDsp.cpp)
 endif()
 
 if("FANCY_HAS_DS=1" IN_LIST fancy_screen_defs)

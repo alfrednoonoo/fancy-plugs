@@ -35,6 +35,12 @@ public:
         int dither = ditherOff;
         double outputGain = 1.0;
         bool bypass = false;
+
+        // Phase 4 Wave 1 (docs/limit.md). Off leaves the output as it was, to the bit.
+        bool gainLock = false;
+        double gainLockRefDb = 0.0;
+        bool dcFilter = false;
+        bool linearRelease = false;
     };
 
     // Allocates. Blocks of any length are processed in pieces of 256 samples.
@@ -55,6 +61,10 @@ public:
 
     // For the editor, all lock-free.
     float takeReduction() noexcept { return reduction.exchange (0.0f, std::memory_order_relaxed); }
+
+    // Phase 4 Wave 1: output samples the final clip had to catch since the last reset.
+    int getOvers() const noexcept { return overs.load (std::memory_order_relaxed); }
+    void requestOversReset() noexcept { oversResetRequested.store (true, std::memory_order_relaxed); }
 
     struct HistoryColumn
     {
@@ -126,4 +136,12 @@ private:
     std::atomic<int> historyWrite { 0 }, historyRead { 0 };
 
     std::atomic<float> reduction { 0.0f };
+
+    // Phase 4 Wave 1.
+    double outputTargetFor (const Targets& targets) const noexcept;
+    std::atomic<int> overs { 0 };
+    std::atomic<bool> oversResetRequested { false };
+    double dcCoefficient = 0.0;
+    std::array<double, 2> dcInput {}, dcOutput {};
+    bool dcWasOn = false;
 };
