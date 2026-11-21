@@ -359,10 +359,12 @@ RTCONFIG_HEAD = """; Fancy Plugs theme for REAPER (docs/reaper-theme.md). Genera
 version 5
 use_pngs 1
 ; Track colours (decision A, the mockup): tinttcp overrides REAPER's own track colour options.
-; 1 the track name's background in the track colour, 2 a tint on the track panel, 8, 32, 256 the
-; item background tinted by the track, item and take colour; peaks stay tinted by all three (their
-; bits 4, 16 and 128 are "off" switches, left clear).
-tinttcp 299
+; 1 the track name's background in the track colour; 8, 32, 256 the item background tinted by the
+; track, item and take colour; peaks stay tinted by all three (their bits 4, 16 and 128 are "off"
+; switches, left clear). Never 2: REAPER's panel tint fills the whole track panel and mixer strip
+; with the colour, which is the rejected style B (user, 21 November 2026). The panels stay grey,
+; with the colour strip and name bar from the layouts.
+tinttcp 297
 ; The 150 % images from 120 % display scaling up (the user runs 125 %: sharper scaled down from
 ; 150 % than up from 100 %), the 200 % ones from 174 %.
 misc_dpi_translate 120 150
