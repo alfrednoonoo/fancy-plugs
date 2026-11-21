@@ -6,6 +6,9 @@ namespace
 {
 // Figma Reacomp frame without its host title bar, widened by the GR panel.
 constexpr int baseWidth = 934;
+
+// Phase 4 Wave 2: Host sync's small Shape knob, 66 tall with its label and value.
+constexpr fancy::ui::Knob::Style syncKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
 constexpr int baseHeight = 527;
 constexpr int bodyHeight = baseHeight - ShellEditor::headerHeight;
 
@@ -92,6 +95,8 @@ CompEditor::CompEditor (CompProcessor& processor)
       upwardCurve (makeParameters()),
       holdKnob (parameter ("hold"), "Hold", colours::uiTeal, Knob::smallStyle),
       rangeKnob (parameter ("range"), "Range", colours::uiTeal, Knob::smallStyle),
+      syncRateDropdown (parameter ("syncRate")),
+      syncShapeKnob (parameter ("syncShape"), "Shape", colours::uiTeal, syncKnobStyle),
       zoomSwitch (juce::StringArray { "1.5 s", "3 s", "6 s", "12 s" }),
       gridCheckbox ("Grid"),
       historyBuffer ((size_t) fancy::dsp::LevelHistoryRecorder::capacity)
@@ -248,6 +253,32 @@ CompEditor::CompEditor (CompProcessor& processor)
     holdKnob.setTooltip ("The release waits this long after the last peak, so fast settings don't ripple on low notes.");
     rangeKnob.setTooltip ("The most gain reduction Comp will apply. Off at the top.");
 
+    // Phase 4 Wave 2 (reference/phase4/43__comp_w2_mockup.png): Host sync's group under the
+    // checkboxes, shown by updateSyncGroup while Host sync is the Detector input.
+    const auto setUpLabel = [] (juce::Label& label, const juce::String& text, float height, juce::Colour colour)
+    {
+        label.setText (text, juce::dontSendNotification);
+        label.setFont (font (Weight::regular, height));
+        label.setColour (juce::Label::textColourId, colour);
+        label.setJustificationType (juce::Justification::topLeft);
+        label.setBorderSize ({});
+    };
+
+    setUpLabel (syncCaption, "HOST SYNC", 10.0f, colours::textSecondary);
+    setUpLabel (syncRateLabel, "Rate", 14.0f, colours::textPrimary);
+    setUpLabel (syncNote, {}, 11.0f, colours::textSecondary);
+    syncRateLabel.setJustificationType (juce::Justification::centredLeft);
+    syncCaption.setBounds (28, 237, 120, 12);
+    syncRateLabel.setBounds (28, 257, 40, 24);
+    syncRateDropdown.setBounds (72, 257, 100, 24);
+    syncShapeKnob.setBounds (196, 237, 60, 66);
+    syncNote.setBounds (28, 289, 170, 44);
+    syncRateDropdown.setTooltip ("The grid Host sync hits on: a virtual kick on every step at the host's tempo.");
+    syncShapeKnob.setTooltip ("How long each virtual kick lasts, as a share of the step. Release shapes the duck most; Shape matters with short Releases.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &syncCaption, &syncRateLabel, &syncRateDropdown, &syncShapeKnob, &syncNote })
+        drawer.addChildComponent (item);
+
     tabContents[DrawerTabs::options] = { &oversamplingLabel, &oversamplingDropdown, &phaseLabel, &phaseDropdown, &releaseCurveLabel, &releaseCurveDropdown,
                                          &feedbackCheckbox, &attack90Checkbox, &linkAmountKnob, &drawerOutputKnob, &holdKnob, &rangeKnob };
 
@@ -316,10 +347,39 @@ CompParameters CompEditor::makeParameters()
 void CompEditor::showTab (int tab)
 {
     drawerTabs.setSelected (tab);
+    shownTab = tab;
 
     for (int t = 0; t < DrawerTabs::numTabs; ++t)
         for (auto* item : tabContents[t])
             item->setVisible (t == tab);
+
+    updateSyncGroup();
+}
+
+void CompEditor::updateSyncGroup()
+{
+    auto& detector = parameter ("detector");
+    const auto sync = juce::roundToInt (detector.convertFrom0to1 (detector.getValue())) == CompDsp::hostSync;
+    const auto shown = sync && shownTab == DrawerTabs::options;
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &syncCaption, &syncRateLabel, &syncRateDropdown, &syncShapeKnob, &syncNote })
+        item->setVisible (shown);
+
+    if (shown)
+    {
+        const auto hostTempo = dynamic_cast<CompProcessor&> (getFancyProcessor()).syncHasHostTempo();
+        syncNote.setText (hostTempo ? juce::String ("A hit on every step of the host's grid. Release shapes the duck most.")
+                                    : juce::String ("No host tempo: 120 BPM. Release shapes the duck most."),
+                          juce::dontSendNotification);
+    }
+}
+
+void CompEditor::showSyncPreview()
+{
+    showDrawerPreview (DrawerTabs::options);
+    setValue (parameter ("detector"), (float) CompDsp::hostSync);
+    showTab (DrawerTabs::options);
+    syncNote.setText ("A hit on every step of the host's grid. Release shapes the duck most.", juce::dontSendNotification);
 }
 
 void CompEditor::updateHistoryCaption()
@@ -346,6 +406,8 @@ void CompEditor::updateDimming()
 void CompEditor::onTick (float seconds)
 {
     auto& processor = dynamic_cast<CompProcessor&> (getFancyProcessor());
+
+    updateSyncGroup(); // Phase 4 Wave 2
 
     const auto left = processor.takeGainReduction (0);
     const auto right = processor.takeGainReduction (1);

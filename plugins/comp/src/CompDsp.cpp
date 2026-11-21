@@ -163,6 +163,7 @@ CompDsp::Config CompDsp::configFor (const Targets& targets) const noexcept
 void CompDsp::prepare (double newSampleRate)
 {
     sampleRate = newSampleRate;
+    trigger.prepare (newSampleRate); // Phase 4 Wave 2, at the base rate
 
     const auto build = [] (int stages, bool minimumPhase)
     {
@@ -352,6 +353,8 @@ double CompDsp::filterEq (ChannelState& state, double x) noexcept
 
 void CompDsp::resetCore()
 {
+    trigger.reset();
+
     for (auto& oversampler : mainOversamplers)
         if (oversampler != nullptr)
             oversampler->reset();
@@ -406,6 +409,9 @@ void CompDsp::updateBallistics() noexcept
 void CompDsp::setTargets (const Targets& targets)
 {
     current = targets;
+
+    trigger.setStep (targets.syncStepBeats);
+    trigger.setShape (targets.syncShape);
 
     threshold.setTarget (targets.thresholdDb);
     slope.setTarget (slopeFor (targets.ratio));
@@ -639,6 +645,7 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             case sideR:   detector[0] = detector[1] = keyRight; break;
             case mid:     detector[0] = detector[1] = 0.5 * (mainLeft + mainRight); break;
             case side:    detector[0] = detector[1] = 0.5 * (mainLeft - mainRight); break;
+            case hostSync: detector[0] = keyLeft; detector[1] = keyRight; break; // Phase 4 Wave 2
             case mainLR:
             default:      detector[0] = mainLeft; detector[1] = mainRight; break;
         }
@@ -650,8 +657,16 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
         {
             auto& state = channels[(size_t) ch];
 
-            filtered[ch] = state.detector.filter (detector[ch], highPassCoefficients, lowPassCoefficients, highPassBlend, lowPassBlend);
-            filtered[ch] = filterEq (state, filtered[ch]);
+            // Phase 4 Wave 2: the virtual kick skips the detector's filters and EQ, which are for audio.
+            if (current.detector == hostSync)
+            {
+                filtered[ch] = detector[ch];
+            }
+            else
+            {
+                filtered[ch] = state.detector.filter (detector[ch], highPassCoefficients, lowPassCoefficients, highPassBlend, lowPassBlend);
+                filtered[ch] = filterEq (state, filtered[ch]);
+            }
             level[ch] = state.detector.levelDb (filtered[ch], std::min (rmsCoefficient, maxDetectorCoefficient));
         }
 
@@ -804,6 +819,9 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
 
 void CompDsp::process (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples)
 {
+    // Phase 4 Wave 2: Host sync's grid follows the host from this block's start.
+    trigger.setPosition ({ transport.bpm > 0.0, transport.playing, transport.ppq, transport.bpm > 0.0 ? transport.bpm : 120.0 });
+
     for (int done = 0; done < numSamples;)
     {
         const auto chunk = std::min (numSamples - done, maxChunk);
@@ -836,6 +854,13 @@ void CompDsp::processChunk (float* const* main, int numMain, const float* const*
         }
     }
 
+    // Phase 4 Wave 2: with Host sync the detector hears the virtual kick in the key's place.
+    if (current.detector == hostSync)
+    {
+        trigger.process (keyBuffer.getWritePointer (0), numSamples);
+        keyBuffer.copyFrom (1, 0, keyBuffer, 0, 0, numSamples);
+    }
+
     auto mainBlock = juce::dsp::AudioBlock<float> (mainBuffer).getSubBlock (0, (size_t) numSamples);
     auto keyBlock = juce::dsp::AudioBlock<float> (keyBuffer).getSubBlock (0, (size_t) numSamples);
 
@@ -848,7 +873,7 @@ void CompDsp::processChunk (float* const* main, int numMain, const float* const*
         float* signal[] { upMain.getChannelPointer (0), upMain.getChannelPointer (1) };
         const float* key[] { signal[0], signal[1] };
 
-        if (current.detector == sideLR || current.detector == sideL || current.detector == sideR)
+        if (current.detector == sideLR || current.detector == sideL || current.detector == sideR || current.detector == hostSync)
         {
             auto upKey = oversamplerFor (activeConfig, true)->processSamplesUp (constKey);
 

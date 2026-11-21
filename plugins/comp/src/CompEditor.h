@@ -20,6 +20,9 @@ public:
     // The drawer open on one tab (DrawerTabs::Tab), with the Q2.5 mockup's values.
     void showDrawerPreview (int tab);
 
+    // Phase 4 Wave 2: the Options page with Host sync chosen (reference/phase4/43__comp_w2_mockup.png).
+    void showSyncPreview();
+
 private:
     class Panels final : public juce::Component
     {
@@ -29,6 +32,7 @@ private:
 
     void onTick (float seconds) override;
     void showTab (int tab);
+    void updateSyncGroup(); // Phase 4 Wave 2
     void updateDimming();
     void updateHistoryCaption();
     CompParameters makeParameters();
@@ -79,6 +83,12 @@ private:
 
     // Phase 4 Wave 1: Hold and Range on the Options page, and the History page.
     fancy::ui::Knob holdKnob, rangeKnob;
+
+    // Phase 4 Wave 2: Host sync's group on the Options page, shown while it's the Detector input.
+    juce::Label syncCaption, syncRateLabel, syncNote;
+    fancy::ui::ParamDropdown syncRateDropdown;
+    fancy::ui::Knob syncShapeKnob;
+    int shownTab = 0;
     DrawerTabs zoomSwitch;
     fancy::ui::ToggleCheckbox gridCheckbox;
     HistoryCaption historyCaption;

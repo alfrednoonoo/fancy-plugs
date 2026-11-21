@@ -2,6 +2,7 @@
 
 #include <fancy/dsp/Compression.h>
 #include <fancy/dsp/Detector.h>
+#include <fancy/dsp/TempoTrigger.h>
 #include <fancy/dsp/LevelHistory.h>
 #include <fancy/dsp/MatchedFilters.h>
 #include <fancy/dsp/Saturation.h>
@@ -21,7 +22,8 @@
 class CompDsp
 {
 public:
-    enum Detector { mainLR, mainL, mainR, sideLR, sideL, sideR, mid, side };
+    // Host sync (Phase 4 Wave 2) is appended, so stored indices keep their meaning.
+    enum Detector { mainLR, mainL, mainR, sideLR, sideL, sideR, mid, side, hostSync };
     enum Oversampling { off, x2, x4, x8 };
 
     // Phase 3 Q2.5.
@@ -89,6 +91,11 @@ public:
         double holdMs = 0.0;
         double rangeDb = 0.0;
         bool listenRemoved = false;
+
+        // Phase 4 Wave 2: Host sync's grid step in beats (1 is a quarter note) and the virtual
+        // kick's length as a share of the step.
+        double syncStepBeats = 1.0;
+        double syncShape = 0.25;
     };
 
     // The host's transport, for the history's beat and bar lines. Set once per block.
@@ -113,6 +120,9 @@ public:
     void process (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples);
 
     void setTransport (const Transport& newTransport) noexcept { transport = newTransport; }
+
+    // Phase 4 Wave 2: whether Host sync is running on the host's tempo (or on 120 BPM).
+    bool syncHasHostTempo() const noexcept { return trigger.hasHostTempo(); }
 
     // The level history's columns made since the last call (the editor's timer).
     int popHistory (fancy::dsp::LevelColumn* destination, int maxColumns) noexcept { return history.pop (destination, maxColumns); }
@@ -257,6 +267,7 @@ private:
     bool rangeOn = false;
     fancy::dsp::LevelHistoryRecorder history;
     Transport transport;
+    fancy::dsp::TempoTrigger trigger; // Phase 4 Wave 2: Host sync
     int chunkOffset = 0;
     std::int64_t lastBeat = 0;
     bool haveLastBeat = false;

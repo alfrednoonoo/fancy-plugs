@@ -11,6 +11,15 @@ class CompProcessor final : public fancy::FancyProcessor
 public:
     CompProcessor();
 
+    // Phase 4 Wave 2: Host sync's Rate choices (1/1 to 1/16, each plain, dotted and triplet),
+    // and a choice's step in beats (quarter notes).
+    static const juce::StringArray& syncRateNames();
+    static double syncStepBeats (int index) noexcept;
+    static constexpr int defaultSyncRate = 6; // 1/4
+
+    // Whether Host sync is running on the host's tempo, for the Options page's caption.
+    bool syncHasHostTempo() const noexcept { return dsp.syncHasHostTempo(); }
+
     void prepareAudio (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
     void reset() override;

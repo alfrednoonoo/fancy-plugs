@@ -156,6 +156,15 @@ Some settings change the plugin's latency: Oversampling. The plugin reports each
 
 Offline renders, Audacity's Apply, freezing and exporting all sound the same as playback. When the host renders faster than real time, the plugin does the work it would otherwise do in the background before each block, so nothing is skipped.
 
+## Host sync (Phase 4)
+
+**Detector input > Host sync** ducks on the song's beat with no sidechain kick: the detector hears a virtual kick on every step of the host's grid, so Threshold, Ratio, Attack, Release, Hold and Range shape the duck as they would with a real kick. On the Options page (EDIT > Options):
+
+- **Rate:** the grid, 1/1 to 1/16, each also dotted and triplet. 1/4 is a duck on every beat.
+- **Shape:** how long each virtual kick lasts, 5 to 100 % of the step. Release shapes the duck most; Shape matters most with short Releases.
+
+While the song is stopped it keeps ducking at the last tempo, so you can set it up, and lines up with the beat again when you press play. If the host sends no tempo it runs at 120 BPM and the Options page says so.
+
 ## Menus and dialogs
 
 Menus, tooltips, typed values and prompts are drawn inside the plugin window, in its own style, and follow the UI size. The preset menu groups **Factory** and **User** presets, marks the loaded one, and has **Save as new preset…** (Ctrl+S while the plugin window has focus), **Reload** to discard changes, **Rename…**, **Delete…** and **Open preset folder**. A **•** after the preset's name means something has changed since it loaded.

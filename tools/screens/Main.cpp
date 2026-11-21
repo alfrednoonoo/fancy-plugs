@@ -216,7 +216,9 @@ bool renderCompDrawer (const juce::File& outputDir)
         ok = writeBothScales (*editor, names[tab], outputDir) && ok;
     }
 
-    return ok;
+    // Phase 4 Wave 2: Host sync on the Options page.
+    editor->showSyncPreview();
+    return writeBothScales (*editor, "comp-sync", outputDir) && ok;
 }
 #endif
 

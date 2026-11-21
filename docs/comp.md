@@ -424,4 +424,13 @@ A new Detector input choice, **Host sync**, appended after Side. The detector th
 
 ### 6. Build order
 
-Approval of this note, then the Options page mockup (`reference/phase4/43__comp_w2_mockup.png`), then one push: `TempoTrigger`, Comp's Host sync, the tests, the manual and the checklist. Then Gate's, with the same trigger, as its own note.
+Approval of this note, then the Options page mockup (`reference/phase4/43__comp_w2_mockup.png`, **approved by the user on 21 November 2026**), then one push: `TempoTrigger`, Comp's Host sync, the tests, the manual and the checklist. Then Gate's, with the same trigger, as its own note.
+
+### 7. As built
+
+One push, with Decisions 1 to 3 all A.
+
+- **The trigger:** `fancy::dsp::TempoTrigger` (`fancy-core/include/fancy/dsp/TempoTrigger.h`, header-only). Comp gives it the host's position at each block's start (the transport the GR history already reads). Hits fire when the step index goes up; a jump of more than two samples from where it expected to be (play, a loop, a seek) re-aligns it, firing at once if the position is on a step. While stopped it runs on from its own position at the last tempo, whatever the stopped host reports; without host tempo it runs at 120 BPM.
+- **Comp:** `hostSync` is appended to the Detector enum and choice; the virtual kick fills the key buffer at the base rate (both channels) and goes through the key's oversampler, then skips the detector filters and EQ. `syncRate` is 15 choices (1/1 to 1/16, each plain, dotted and triplet), 1/4 by default; `syncShape` 5 to 100 %, 25 %.
+- **Options page:** the HOST SYNC group as mockup 43 places it (drawer coordinates: caption 28, 237; Rate 28 and 72, 257; Shape 196, 237; note 28, 289), shown while Host sync is chosen and the Options tab is open. The note reads "No host tempo: 120 BPM" without host tempo. Screenshot `comp-sync`.
+- **Tests:** `tests/CompW2Tests.cpp`.

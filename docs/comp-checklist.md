@@ -120,6 +120,14 @@ Tell me "Comp OK", or list which items failed and what you saw. Once it's OK, I'
 - [ ] Linked off on a stereo source with different channels: a second, lighter reduction line.
 - [ ] Save with Hold and Range set, close and reopen: both come back; neither listen switch is on.
 
+## Host sync (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Comp: it sounds as before, with its Detector input unchanged.
+- [ ] Detector input Host sync on a pad at 120 BPM, Ratio 8, Threshold -20: it ducks on every beat, exactly on the grid; the History page's beat lines line up with the ducks.
+- [ ] Rate 1/8 dotted, 1/16 triplet: the ducks follow. Shape changes the length most with a short Release.
+- [ ] Stop the song: it keeps ducking at the tempo; play from a bar: the ducks land on the beat again. Loop a bar: no doubled or missing duck at the loop point.
+- [ ] Render offline twice: the renders match.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
