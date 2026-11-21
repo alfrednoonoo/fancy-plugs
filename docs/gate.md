@@ -336,3 +336,48 @@ One push (`b89a7bc`), with every recommended option; `tests/GateW1Tests.cpp`.
 - **Learn:** listens for 3 s and sets Threshold a third of the way up from the floor to the peaks, in dB.
 - **Mid and Side** are appended to the Detector input choice, in a "Mid/side" section.
 - **De-bleed:** `deBleed`, 0 to 100 %, raises the threshold while the sound outside Highpass and Lowpass is louder than inside.
+
+## Phase 4 Wave 2: tempo-synced trigger
+
+**Draft, for approval.** Item 4 of the Wave 2 order (`docs/enhancements.md`; backlog item 9 of section 9), after Comp's (`docs/comp.md`, "Phase 4 Wave 2"), whose trigger it shares. Gate or duck on the host's beat grid with no sidechain: a trance gate in Gate mode, a pumping duck in Duck mode. Modelled first: `docs/research/gate-sync-model.py`.
+
+### 1. What it does
+
+**Host sync** is appended to the Detector input choice, after Side, in its own "Host sync" section of the menu. The detector then hears `fancy::dsp::TempoTrigger` instead of audio, at the host's tempo, with Comp's behaviour: hits on the grid to the sample at any block size, running on at the last tempo while stopped and re-aligning on play, 120 BPM without host tempo. It works in both modes; Attack, Hold, Release, Range and Ratio shape each opening as they do with audio.
+
+- `syncRate`: 1/1 to 1/16, each plain, dotted and triplet (Comp's list); default 1/8.
+- `syncShape`: 5 to 100 % of the step, default 50 %.
+
+### 2. What the model found
+
+Gate's detector is a threshold and a state machine, so what counts is how long each hit holds it open. With Comp's decaying virtual kick (0 dBFS falling 60 dB over Shape of the step), the key stays over Threshold for Shape × step × (−Threshold / 60): at 1/8 and Shape 50 %, 104 ms at −50 dB but 25 ms at −12 dB. Threshold would set the gate's length as much as Shape does. A flat pulse (0 dBFS for Shape of the step, then silence) holds it open for exactly Shape of the step at any Threshold below 0 dBFS.
+
+### 3. Decisions
+
+- **Decision 1: the virtual key's shape.**
+  - **A (R).** A flat pulse for Shape of the step: Shape is the gate's length, whatever Threshold is, which is what a tempo gate should do. `TempoTrigger` gets a `pulse` option; Comp keeps its decaying kick.
+  - **B.** Comp's decaying kick, so the two plugins behave alike; Threshold then lengthens or shortens every opening.
+- **Decision 2: with the MIDI trigger on.**
+  - **A (R).** MIDI wins, as it already does over every Detector input; the Host sync controls dim while it's on.
+  - **B.** Host sync greys out the MIDI trigger checkbox instead.
+- **Decision 3: where Rate and Shape go.**
+  - **A (R).** In the EDIT drawer, under De-bleed: a Rate dropdown and a small Shape knob, shown while Host sync is the Detector input. The main layout doesn't change. A mockup follows approval.
+  - **B.** On the main window, in the Lookahead row: faster to reach, but it changes the main layout.
+
+### 4. Details
+
+- The pulse goes into the detector after Highpass, Lowpass and De-bleed would act, so those don't touch it (they're for audio).
+- Lookahead delays the audio and not the pulse, so each opening starts Lookahead ahead of the beat, as with a real key.
+- The "No sidechain signal" notice doesn't show for Host sync. No latency of its own; `stateVersion` doesn't change.
+
+### 5. Tests
+
+1. Legacy: every other Detector input, Gate and Duck, lookahead on and off, renders as v1.6.0 (and as Wave 1).
+2. Hits on the grid to the sample at 44.1, 48 and 96 kHz and every block size (TempoTrigger's own tests cover the rest).
+3. Pulse length: Rate 1/8 at 120 BPM, Shape 50 %, Attack and Release 0.1 ms, Hold 0: open for 125 ± 1 ms at Threshold −50, −30 and −12 dB.
+4. Duck mode: the output is down by Range during each pulse and at 0 dB between them.
+5. MIDI trigger on: Host sync's pulses are ignored.
+
+### 6. Build order
+
+Approval, then the drawer mockup (`reference/phase4/44__gate_w2_mockup.png`), then one push: the pulse option in `TempoTrigger`, Gate's Host sync, tests, manual and checklist.
