@@ -55,7 +55,7 @@ if("FANCY_HAS_LIMIT=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_DS=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE DsTests.cpp)
+    target_sources(fancy-tests PRIVATE DsTests.cpp DsW1Tests.cpp LegacyDeEsser.cpp)
 endif()
 
 if("FANCY_HAS_DSMINI=1" IN_LIST fancy_screen_defs)

@@ -110,6 +110,7 @@ void DeEsser::reset()
     lookaheadPosition = rawPosition = dryPosition = gainPosition = 0;
 
     for (auto& filter : detectors) filter.reset();
+    for (auto& stages : extraDetectors) for (auto& filter : stages) filter.reset();
     for (auto& filter : splits) filter.reset();
     for (auto& follower : followers) follower.reset();
 
@@ -147,6 +148,7 @@ void DeEsser::snapToTargets (const Targets& targets) noexcept
 void DeEsser::continueFrom (const DeEsser& other) noexcept
 {
     detectors = other.detectors;
+    extraDetectors = other.extraDetectors;
     splits = other.splits;
     followers = other.followers;
     peakDb = other.peakDb;
@@ -318,7 +320,14 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
         for (int c = 0; c < (twoDetectors ? 2 : 1); ++c)
         {
             const auto out = detectors[(size_t) c].tick (coefficients, sources[(size_t) c]);
-            const auto filtered = settings.shelf ? out.high : coefficients.k * out.band;
+            auto filtered = settings.shelf ? out.high : coefficients.k * out.band;
+
+            // Phase 4 Wave 1: further identical stages for 24 and 48 dB/oct.
+            for (int stage = 0; stage < std::min (settings.slopeStages, 4) - 1; ++stage)
+            {
+                const auto more = extraDetectors[(size_t) c][(size_t) stage].tick (coefficients, filtered);
+                filtered = settings.shelf ? more.high : coefficients.k * more.band;
+            }
             const auto db = toDb (std::abs (filtered));
 
             // Peak, held for 1 ms, then falling at 20 dB/s.

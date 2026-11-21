@@ -6,6 +6,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <functional>
 #include <vector>
 
 namespace fancy::ui
@@ -32,6 +33,9 @@ public:
 
     // Reads the columns the engine has made since the last call.
     void update (dsp::DeEsser& engine);
+
+    // Phase 4 Wave 1: sees every new column, for Fancy DS's Learn.
+    std::function<void (const Column*, int)> onColumns;
 
     // Fixed columns, for rendered screenshots. Updates stop.
     void show (std::vector<Column> fixedColumns);

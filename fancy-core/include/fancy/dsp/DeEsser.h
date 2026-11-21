@@ -37,6 +37,10 @@ public:
         bool linearPhase = false;
         double outputGain = 1.0;
         bool bypass = false;
+
+        // Fancy DS's detection slope (docs/ds.md, Phase 4 Wave 1): 1, 2 or 4 detector filters in
+        // a row, 12, 24 or 48 dB/oct. 1 is the detector as it was; DS-Mini never changes it.
+        int slopeStages = 1;
     };
 
     static double lookaheadMs (int choice) noexcept;
@@ -112,6 +116,7 @@ private:
     fancy::dsp::SvfCoefficients coefficients;
     double warpedFreq = 0.4, bandQ = 1.414;
     std::array<fancy::dsp::Svf, 2> detectors, splits;
+    std::array<std::array<fancy::dsp::Svf, 3>, 2> extraDetectors; // Phase 4 Wave 1: the slope's further stages
     fancy::dsp::Smoother logFreq, width;
     int filterCountdown = 0;
 

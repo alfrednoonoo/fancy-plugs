@@ -39,6 +39,9 @@ private:
         void update();
         void showColumns (std::vector<DsDsp::HistoryColumn> columns);
 
+        // Phase 4 Wave 1: every new history column, for Learn.
+        void setColumnListener (std::function<void (const DsDsp::HistoryColumn*, int)> listener) { history.onColumns = std::move (listener); }
+
         void paint (juce::Graphics&) override;
         void resized() override;
         void mouseMove (const juce::MouseEvent&) override;
@@ -67,6 +70,10 @@ private:
 
     void onTick (float seconds) override;
     void updateLocks();
+
+    // Phase 4 Wave 1: Learn listens to 2 s of the detector level and sets Threshold at its 90th
+    // percentile, so only the loudest "s" sounds are turned down (Decision 1 A).
+    void finishLearning();
 
     // The stereo sidechain counts even while the host leaves it off, as the plugin has it.
     int getShownInputs() override { return juce::jmax (getFancyProcessor().getTotalNumInputChannels(), getFancyProcessor().getMainBusNumInputChannels() + 2); }
@@ -99,6 +106,14 @@ private:
     fancy::ui::EditDrawer drawer;
     juce::Label lookaheadLabel, phaseLabel;
     fancy::ui::ParamDropdown lookaheadDropdown, phaseDropdown;
+
+    // Phase 4 Wave 1.
+    fancy::ui::PillButton learnButton { "Learn" };
+    juce::Label learnNote, slopeLabel, ceilingLabel;
+    fancy::ui::ParamDropdown slopeDropdown;
+    fancy::ui::Knob ceilingKnob;
+    std::vector<float> learnedLevels;
+    float learnSeconds = -1.0f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DsEditor)
 };

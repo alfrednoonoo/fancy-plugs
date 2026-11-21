@@ -18,6 +18,9 @@ void DeEsserHistory::update (dsp::DeEsser& engine)
 
     const auto count = engine.popHistory (incoming.data(), (int) incoming.size());
 
+    if (onColumns != nullptr && count > 0)
+        onColumns (incoming.data(), count);
+
     for (int i = 0; i < count && ! columns.empty(); ++i)
     {
         columns[(size_t) writeIndex] = incoming[(size_t) i];

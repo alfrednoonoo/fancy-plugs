@@ -2,6 +2,7 @@
 
 #include <fancy/plugin/ParamFormat.h>
 
+#include <algorithm>
 #include <cmath>
 
 using namespace fancy::ui;
@@ -290,6 +291,8 @@ DsEditor::DsEditor (DsProcessor& processor)
       listenCheckbox (getFancyProcessor(), "Listen", dsGreen),
       linkCheckbox (parameter ("link"), "Link channels", dsGreen),
       editLink (dsGreen),
+      slopeDropdown (parameter ("slope")),
+      ceilingKnob (parameter ("ceiling"), "Ceiling", dsGreen, Knob::tightStyle),
       outMeter (outGeometry),
       gainFader (parameter ("output"), colours::uiTeal),
       lookaheadDropdown (parameter ("lookahead")),
@@ -397,8 +400,42 @@ DsEditor::DsEditor (DsProcessor& processor)
     addLatencyNote (lookaheadDropdown);
     addLatencyNote (phaseDropdown);
 
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &lookaheadLabel, &lookaheadDropdown, &phaseLabel, &phaseDropdown })
+    // Phase 4 Wave 1: Filter slope and Ceiling.
+    setUpLabel (slopeLabel, "Filter slope", juce::Justification::centredLeft, 14.0f);
+    setUpLabel (ceilingLabel, "Ceiling", juce::Justification::centredLeft, 14.0f);
+    slopeLabel.setBounds (24, 140, 170, 24);
+    slopeDropdown.setBounds (200, 140, 170, 24);
+    ceilingLabel.setBounds (24, 180, 170, 24);
+    ceilingKnob.setBounds (200, 170, 66, 80);
+    slopeDropdown.setTooltip ("How sharply the detector picks out the band. Steeper ignores more of the voice around it.");
+    ceilingKnob.setTooltip ("Holds the output's true peak under this level. Off at the bottom. Adds a little latency while on.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &lookaheadLabel, &lookaheadDropdown, &phaseLabel, &phaseDropdown,
+                                                                           &slopeLabel, &slopeDropdown, &ceilingLabel, &ceilingKnob })
         drawer.addAndMakeVisible (item);
+
+    // Learn, in the footer after Link channels.
+    learnButton.setBounds (leftX + 384, footerY - 2, 76, 24);
+    learnButton.onClick = [this]
+    {
+        learnedLevels.clear();
+        learnSeconds = 0.0f;
+        learnButton.setText ("Listening...");
+    };
+    setUpLabel (learnNote, "2 s of playback", juce::Justification::centredLeft, 11.0f);
+    learnNote.setBounds (leftX + 466, footerY - 2, 100, 24);
+    body.addAndMakeVisible (learnButton);
+    body.addAndMakeVisible (learnNote);
+
+    display.setColumnListener ([this] (const DsDsp::HistoryColumn* columns, int count)
+    {
+        if (learnSeconds < 0.0f)
+            return;
+
+        for (int i = 0; i < count; ++i)
+            if (columns[i].levelDb > -150.0f)
+                learnedLevels.push_back (columns[i].levelDb);
+    });
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
@@ -433,6 +470,31 @@ void DsEditor::onTick (float seconds)
     gainMeter.update (reduction, reduction, seconds);
     outMeter.update (processor.outputMeter, seconds);
     display.update();
+
+    if (learnSeconds >= 0.0f)
+    {
+        learnSeconds += seconds;
+
+        if (learnSeconds >= 2.0f)
+            finishLearning();
+    }
+}
+
+void DsEditor::finishLearning()
+{
+    learnSeconds = -1.0f;
+    learnButton.setText ("Learn");
+
+    if (learnedLevels.size() < 8)
+        return;
+
+    std::sort (learnedLevels.begin(), learnedLevels.end());
+    const auto learned = learnedLevels[(size_t) juce::jlimit (0, (int) learnedLevels.size() - 1, (int) (0.9 * (double) learnedLevels.size()))];
+
+    auto& threshold = parameter ("threshold");
+    threshold.beginChangeGesture();
+    threshold.setValueNotifyingHost (threshold.convertTo0to1 (learned));
+    threshold.endChangeGesture();
 }
 
 void DsEditor::showPreview (bool drawerOpen)

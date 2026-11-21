@@ -2,6 +2,7 @@
 
 #include "DsDsp.h"
 
+#include <fancy/dsp/TruePeakLimiter.h>
 #include <fancy/plugin/FancyProcessor.h>
 
 class DsProcessor final : public fancy::FancyProcessor
@@ -42,6 +43,16 @@ private:
     bool isOn (const char* parameterId) const;
 
     DsDsp dsp;
+
+    // Phase 4 Wave 1: the output ceiling (shared true-peak limiter), out of the path while Off.
+    fancy::dsp::TruePeakLimiter ceilingLimiter;
+    bool ceilingWasOn = false;
+
+public:
+    // Ceiling's bottom position, shown and typed as "Off".
+    static constexpr double ceilingOffDb = -12.5;
+
+private:
     DesignThread designThread;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DsProcessor)
