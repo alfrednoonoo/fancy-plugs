@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fancy Plugs theme for REAPER: mockup</title>
+<!--
+  docs/reaper-theme.md: the HTML mockup before Stage B. Original drawing in the suite's design
+  values (docs/DESIGN_SYSTEM.md); nothing copied from Cockos' themes or the Reapertips reference.
+  Shows the 24-colour palette, then the same window twice: light tint and filled.
+-->
+<style>
+  @font-face { font-family: Inter; font-weight: 400; src: url(../../assets/fonts/Inter-Regular.ttf); }
+  @font-face { font-family: Inter; font-weight: 500; src: url(../../assets/fonts/Inter-Medium.ttf); }
+  @font-face { font-family: Inter; font-weight: 600; src: url(../../assets/fonts/Inter-SemiBold.ttf); }
+  :root {
+    --hdr: #1E1E1E; --body: #303030; --sec: #262626; --well: #141414;
+    --g5: #424242; --g6: #4C4C4C; --txt: #FFFFFF; --txt2: #8D8D8D; --teal: #00A985; --red: #E74D3D;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px 40px 40px; background: #0E0E0E; color: var(--txt); font: 400 12px/1.3 Inter, sans-serif; }
+  h1 { font: 600 20px Inter; margin: 0 0 4px; }
+  h2 { font: 600 15px Inter; margin: 34px 0 4px; }
+  p.note { color: var(--txt2); margin: 0 0 12px; max-width: 1100px; }
+
+  /* palette */
+  .palette { display: grid; grid-template-columns: repeat(12, 96px); gap: 6px; }
+  .sw { height: 54px; border-radius: 4px; padding: 6px; display: flex; flex-direction: column; justify-content: space-between; }
+  .sw b { font: 600 11px Inter; }
+  .sw span { font: 500 10px Inter; opacity: .85; }
+  .sw.star b::after { content: " *"; }
+
+  /* window */
+  .win { width: 1280px; border-radius: 6px; overflow: hidden; background: var(--hdr); box-shadow: 0 10px 40px #000a; display: grid;
+         grid-template-rows: 22px 34px 513px 44px 236px; }
+  .menubar { background: var(--well); color: #D0D0D0; display: flex; gap: 14px; align-items: center; padding: 0 10px; font-size: 11.5px; }
+  .menubar .title { margin-left: auto; color: var(--txt2); }
+  .toolbar { background: var(--hdr); display: flex; gap: 4px; align-items: center; padding: 0 8px; border-bottom: 1px solid var(--well); }
+  .tb { width: 28px; height: 24px; border-radius: 3px; background: var(--body); display: grid; place-items: center; color: #CFCFCF; font-size: 13px; }
+  .tb.on { box-shadow: inset 0 -2px 0 var(--teal); color: #fff; }
+  .tb.pal { width: 34px; background: conic-gradient(#E74D3D, #E77E23, #F1C315, #A4C639, #2DCC70, #00A985, #1BB5D4, #3598DB, #5864D6, #9A59B5, #C94FA6, #E8608A, #E74D3D); }
+  .tb.pal i { width: 18px; height: 14px; border-radius: 2px; background: var(--body); display: block; }
+  .sep { width: 1px; height: 18px; background: var(--g5); margin: 0 4px; }
+
+  .main { display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+  .tcp { background: var(--sec); border-right: 1px solid var(--well); display: flex; flex-direction: column; }
+  .tcphead, .ruler { height: 26px; flex: none; background: var(--hdr); border-bottom: 1px solid var(--well); }
+  .tcphead { display: flex; align-items: center; padding: 0 8px; gap: 6px; color: var(--txt2); font-size: 11px; }
+  .arr { position: relative; background: #1B1B1B; overflow: hidden; }
+  .ruler { position: relative; color: var(--txt2); font-size: 10.5px; }
+  .ruler span { position: absolute; top: 4px; padding-left: 4px; border-left: 1px solid var(--g6); height: 22px; }
+
+  /* track panel */
+  .trk { --c: #888; height: 54px; flex: none; display: grid; grid-template-columns: 5px 22px 1fr 14px; border-bottom: 1px solid var(--well); position: relative; }
+  .trk .strip { background: var(--c); }
+  .trk .idx { display: grid; place-items: center; font: 500 10.5px Inter; color: var(--txt2); }
+  .trk .ctl { padding: 5px 6px 4px 2px; display: grid; grid-template-rows: 20px 20px; gap: 4px; }
+  .row { display: flex; gap: 4px; align-items: center; }
+  .name { flex: 1; height: 20px; border-radius: 3px; background: var(--well); display: flex; align-items: center; padding: 0 7px; font: 500 11.5px Inter; }
+  .btn { height: 20px; min-width: 20px; padding: 0 5px; border-radius: 3px; background: var(--body); display: grid; place-items: center; font: 600 10px Inter; color: #D6D6D6; }
+  .btn.m.on { background: #E77E23; color: #1E1E1E; }
+  .btn.s.on { background: #F1C315; color: #1E1E1E; }
+  .rec { width: 20px; height: 20px; border-radius: 3px; background: var(--body); display: grid; place-items: center; }
+  .rec i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #8D8D8D; display: block; }
+  .rec.on i { background: var(--red); border-color: var(--red); box-shadow: 0 0 6px #E74D3D88; }
+  .dd { height: 20px; flex: 1; border-radius: 3px; background: var(--body); display: flex; align-items: center; padding: 0 6px; color: #CFCFCF; font-size: 10.5px; justify-content: space-between; }
+  .dd::after { content: "▾"; color: var(--txt2); }
+  .val { font: 500 10px Inter; color: var(--txt2); width: 38px; }
+  .tmeter { display: flex; gap: 2px; padding: 6px 3px 6px 0; }
+  .tmeter i { flex: 1; background: var(--well); border-radius: 1px; position: relative; overflow: hidden; }
+  .tmeter i::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--l); background: linear-gradient(to top, #00FF96, #FFCF07 90%); }
+  .trk.sel::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 100%; box-shadow: inset 0 0 0 1px #FFFFFF2E; pointer-events: none; }
+
+  /* arrange lanes and items */
+  .lanes { position: absolute; top: 26px; left: 0; right: 0; }
+  .lane { height: 54px; border-bottom: 1px solid #141414; position: relative; }
+  .grid { position: absolute; top: 26px; bottom: 0; width: 1px; background: #2A2A2A; }
+  .grid.bar { background: #353535; }
+  .tsel { position: absolute; top: 26px; bottom: 0; background: #FFFFFF0D; border-left: 1px solid #FFFFFF22; border-right: 1px solid #FFFFFF22; }
+  .play { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--teal); }
+  .play::before { content: ""; position: absolute; top: 14px; left: -5px; border: 5px solid transparent; border-top: 7px solid var(--teal); }
+  .item { position: absolute; top: 2px; height: 49px; border-radius: 3px; overflow: hidden; }
+  .item .lbl { height: 13px; font: 600 9.5px Inter; padding: 1px 5px; white-space: nowrap; }
+  .item svg { position: absolute; left: 0; top: 13px; width: 100%; height: 36px; }
+
+  /* transport */
+  .transport { background: var(--hdr); border-top: 1px solid var(--well); border-bottom: 1px solid var(--well); display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .tbtn { width: 34px; height: 28px; border-radius: 3px; background: var(--body); display: grid; place-items: center; color: #E0E0E0; font-size: 12px; }
+  .tbtn.on { background: var(--teal); color: #fff; }
+  .tbtn.recb i { width: 12px; height: 12px; border-radius: 50%; background: var(--red); display: block; }
+  .clock { height: 30px; border-radius: 3px; background: var(--well); padding: 0 12px; display: flex; align-items: center; gap: 14px; margin: 0 8px; }
+  .clock b { font: 600 17px Inter; letter-spacing: .3px; font-variant-numeric: tabular-nums; }
+  .clock span { color: var(--txt2); font: 500 11px Inter; }
+  .bpm { height: 28px; border-radius: 3px; background: var(--well); padding: 0 10px; display: flex; align-items: center; gap: 6px; }
+  .bpm span { color: var(--txt2); font-size: 10.5px; }
+
+  /* mixer */
+  .mixer { background: var(--body); display: flex; gap: 4px; padding: 6px; }
+  .mcp { --c: #888; width: 78px; border-radius: 4px; display: grid; grid-template-rows: 46px 26px 1fr 22px 20px; gap: 4px; padding: 4px 5px 0; overflow: hidden; }
+  .fx { display: flex; flex-direction: column; gap: 2px; }
+  .fx div { height: 13px; border-radius: 2px; background: var(--well); font: 500 9px Inter; color: #CFCFCF; padding: 1px 4px; white-space: nowrap; overflow: hidden; }
+  .fx div.empty { background: #00000030; }
+  .panrow { display: flex; justify-content: center; align-items: center; gap: 4px; }
+  .faderwrap { display: flex; justify-content: center; gap: 6px; min-height: 0; }
+  .fader { width: 14px; position: relative; }
+  .fader .track { position: absolute; left: 6px; width: 2px; top: 0; bottom: 0; background: #000; }
+  .fader .fill { position: absolute; left: 5px; width: 4px; bottom: 0; background: var(--teal); }
+  .fader .thumb { position: absolute; left: 0; width: 14px; height: 7px; border-radius: 1.5px; background: #111; border: 1px solid #000; }
+  .fader .thumb::after { content: ""; position: absolute; left: 3px; right: 3px; top: 2px; height: 1.5px; background: var(--teal); }
+  .mmeter { display: flex; gap: 2px; width: 16px; }
+  .mmeter i { flex: 1; background: var(--well); border-radius: 1px; position: relative; overflow: hidden; }
+  .mmeter i::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--l); background: linear-gradient(to top, #00FF96, #FFCF07 90%); }
+  .mcp .ms { display: flex; gap: 3px; justify-content: center; }
+  .mcp .ms .btn { min-width: 21px; height: 18px; }
+  .mname { margin: 0 -5px; display: flex; align-items: center; justify-content: center; font: 600 10.5px Inter; }
+  .mcp.master { width: 104px; }
+  .mixgap { width: 1px; background: var(--well); margin: 0 4px; }
+
+  /* ---- variant: light tint over grey ---- */
+  .light .trk { background: color-mix(in srgb, var(--c) 9%, #2B2B2B); }
+  .light .trk.sel { background: color-mix(in srgb, var(--c) 16%, #353535); }
+  .light .lane:nth-child(odd) { background: #1D1D1D; }
+  .light .item { background: color-mix(in srgb, var(--c) 34%, #222); }
+  .light .item .lbl { background: color-mix(in srgb, var(--c) 70%, #222); color: #fff; }
+  .light .item path { fill: color-mix(in srgb, var(--c) 75%, #fff); }
+  .light .mcp { background: color-mix(in srgb, var(--c) 9%, #262626); }
+  .light .mname { background: var(--c); color: #141414; }
+
+  /* ---- variant: filled ---- */
+  .filled .trk { background: color-mix(in srgb, var(--c) 78%, #141414); }
+  .filled .trk.sel { background: color-mix(in srgb, var(--c) 94%, #fff); }
+  .filled .trk .idx { color: #000000A0; }
+  .filled .trk .btn, .filled .trk .rec, .filled .trk .dd { background: #00000038; color: #fff; }
+  .filled .trk .btn.m.on { background: #E77E23; color: #1E1E1E; }
+  .filled .trk .btn.s.on { background: #F1C315; color: #1E1E1E; }
+  .filled .trk .rec i { border-color: #FFFFFFB0; }
+  .filled .trk .rec.on i { border-color: var(--red); }
+  .filled .trk .val { color: #FFFFFFC0; }
+  .filled .trk .name { background: #00000055; }
+  .filled .lane:nth-child(odd) { background: #1D1D1D; }
+  .filled .item { background: color-mix(in srgb, var(--c) 88%, #000); }
+  .filled .item .lbl { background: #0000002E; color: #fff; }
+  .filled .item path { fill: #000000A0; }
+  .filled .mcp { background: color-mix(in srgb, var(--c) 70%, #141414); }
+  .filled .mcp .fx div { background: #00000055; }
+  .filled .mcp .btn { background: #00000038; color: #fff; }
+  .filled .mcp .btn.m.on { background: #E77E23; color: #1E1E1E; }
+  .filled .mcp .btn.s.on { background: #F1C315; color: #1E1E1E; }
+  .filled .mname { background: #00000040; color: #fff; }
+  .mcp.master { background: var(--sec) !important; }
+  .mcp.master .mname { background: var(--well) !important; color: #fff !important; }
+  .mcp.master .fx div { background: var(--well) !important; }
+  .mcp.master .btn { background: var(--body) !important; }
+</style>
+</head>
+<body>
+<h1>Fancy Plugs theme for REAPER: mockup</h1>
+<p class="note">For docs/reaper-theme.md. 100 % size (REAPER will show it at your 125 %). Drawn from the suite's design values; nothing copied from REAPER's own themes or the Reapertips reference. The track colours, the arrangement and the plugin names are sample content.</p>
+
+<h2>Track colour palette: 12 hues in rainbow order, each with a dark shade</h2>
+<p class="note">* = one of the plugins' accents. Top row: the colours. Bottom row: the dark shades (65 % brightness). The toolbar's rainbow button opens them as a menu.</p>
+<div class="palette" id="palette"></div>
+
+<h2>A. Light tint over grey (recommended)</h2>
+<p class="note">Track colour as a strip on the panel, a light tint behind it, coloured items, and the colour on the mixer strip's name. Panels and mixer stay grey like the plugins' bodies. Track 3 is selected; Drums is record-armed; Bass is muted; Vox is soloed.</p>
+<div class="win light" id="winA"></div>
+
+<h2>B. Filled</h2>
+<p class="note">The same window with the track colour filling the panels, items and mixer strips.</p>
+<div class="win filled" id="winB"></div>
+
+<script>
+const HUES = [
+  ["Red", "#E74D3D", 1], ["Orange", "#E77E23", 1], ["Yellow", "#F1C315", 1], ["Lime", "#A4C639", 0],
+  ["Green", "#2DCC70", 1], ["Teal", "#00A985", 1], ["Cyan", "#1BB5D4", 0], ["Blue", "#3598DB", 1],
+  ["Indigo", "#5864D6", 0], ["Purple", "#9A59B5", 1], ["Magenta", "#C94FA6", 0], ["Pink", "#E8608A", 0],
+];
+const shade = (hex, k) => "#" + [1, 3, 5].map(i => Math.round(parseInt(hex.substr(i, 2), 16) * k).toString(16).padStart(2, "0")).join("").toUpperCase();
+const lum = hex => { const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16)); return 0.299 * r + 0.587 * g + 0.114 * b; };
+
+const pal = document.getElementById("palette");
+for (const row of [1, 0.65])
+  for (const [name, hex, star] of HUES) {
+    const c = row === 1 ? hex : shade(hex, row);
+    const d = document.createElement("div");
+    d.className = "sw" + (star && row === 1 ? " star" : "");
+    d.style.background = c;
+    d.style.color = lum(c) > 150 ? "#141414" : "#fff";
+    d.innerHTML = `<b>${name}${row === 1 ? "" : " dark"}</b><span>${c}</span>`;
+    pal.appendChild(d);
+  }
+
+// a 300-degree knob from 7 o'clock, the suite's small knob
+function knob(size, v, accent = "#00A985", bipolar = false) {
+  const r = size / 2, ar = r - 1.5, cx = r, cy = r;
+  const a0 = 120, sweep = 300;
+  const pt = (deg, rad) => [cx + rad * Math.cos(deg * Math.PI / 180), cy + rad * Math.sin(deg * Math.PI / 180)];
+  const arc = (from, to) => { const [x1, y1] = pt(from, ar), [x2, y2] = pt(to, ar); const large = Math.abs(to - from) > 180 ? 1 : 0; return `M${x1},${y1} A${ar},${ar} 0 ${large} ${to > from ? 1 : 0} ${x2},${y2}`; };
+  const av = a0 + sweep * v, mid = a0 + sweep / 2;
+  const arcPath = bipolar ? (Math.abs(v - 0.5) < 0.01 ? "" : arc(Math.min(mid, av), Math.max(mid, av))) : arc(a0, av);
+  const [px, py] = pt(av, r - 5);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <defs><linearGradient id="kf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4F4F4F"/><stop offset="1" stop-color="#454545"/></linearGradient></defs>
+    <circle cx="${cx}" cy="${cy}" r="${r - 3.5}" fill="url(#kf)" stroke="#00000033"/>
+    ${arcPath ? `<path d="${arcPath}" stroke="${accent}" stroke-width="2" fill="none" stroke-linecap="round"/>` : ""}
+    <line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="${accent}" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+}
+
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function wave(w, kind) {
+  const n = Math.max(8, Math.floor(w / 2)), pts = [];
+  for (let i = 0; i <= n; i++) {
+    const x = i / n * w;
+    let a;
+    if (kind === "drums") a = (i % 16 < 2 ? 0.95 : i % 8 < 2 ? 0.7 : 0.12 + rnd() * 0.2) * (0.85 + rnd() * 0.15);
+    else if (kind === "pad") a = 0.35 + 0.25 * Math.sin(i / 9) + rnd() * 0.08;
+    else if (kind === "bass") a = 0.45 + 0.3 * Math.abs(Math.sin(i / 5)) + rnd() * 0.1;
+    else a = 0.15 + rnd() * 0.55 * (0.6 + 0.4 * Math.sin(i / 13));
+    pts.push([x, Math.min(1, a)]);
+  }
+  const top = pts.map(([x, a]) => `${x.toFixed(1)},${(18 - a * 16).toFixed(1)}`).join(" L");
+  const bot = pts.reverse().map(([x, a]) => `${x.toFixed(1)},${(18 + a * 16).toFixed(1)}`).join(" L");
+  return `<svg viewBox="0 0 ${w} 36" preserveAspectRatio="none"><path d="M${top} L${bot} Z"/></svg>`;
+}
+
+const TRACKS = [
+  { n: "Drums", c: "#E74D3D", rec: 1, items: [[0, 3.9, "drums"], [4, 7.9, "drums"]], fx: ["Fancy Comp", "Fancy EQ"], vol: "-2.1", pan: .5, l: ["82%", "78%"], fl: .64 },
+  { n: "Bass", c: "#E77E23", m: 1, items: [[0, 7.9, "bass"]], fx: ["Fancy Sature", "Fancy Comp"], vol: "-4.0", pan: .5, l: ["0%", "0%"], fl: .58 },
+  { n: "Keys", c: "#F1C315", sel: 1, items: [[1, 5.9, "pad"]], fx: ["Fancy EQ", "Fancy Delay"], vol: "-6.5", pan: .35, l: ["55%", "60%"], fl: .52 },
+  { n: "Guitar L", c: "#2DCC70", items: [[2, 7.9, "gtr"]], fx: ["Fancy Exciter"], vol: "-8.0", pan: .2, l: ["48%", "30%"], fl: .5 },
+  { n: "Guitar R", c: "#00A985", items: [[2, 7.9, "gtr"]], fx: ["Fancy Exciter"], vol: "-8.0", pan: .8, l: ["31%", "50%"], fl: .5 },
+  { n: "Vox", c: "#3598DB", s: 1, items: [[0.5, 3.6, "vox"], [4, 7.6, "vox"]], fx: ["Fancy DS", "Fancy Comp", "Fancy Verb"], vol: "-1.0", pan: .5, l: ["70%", "70%"], fl: .68 },
+  { n: "Vox Dbl", c: "#5864D6", items: [[4, 7.6, "vox"]], fx: ["Fancy DS-Mini"], vol: "-9.5", pan: .5, l: ["36%", "34%"], fl: .46 },
+  { n: "Reverb", c: "#9A59B5", items: [], fx: ["Fancy Room"], vol: "-12", pan: .5, l: ["22%", "24%"], fl: .42 },
+  { n: "Pad", c: "#E8608A", items: [[0, 7.9, "pad"]], fx: ["Fancy FIR", "Fancy Limit"], vol: "-14", pan: .5, l: ["28%", "26%"], fl: .4 },
+];
+
+function windowHtml() {
+  const barW = 112, x0 = 6;
+  const menus = "File Edit View Insert Item Track Options Actions Extensions Help".split(" ").map(m => `<span>${m}</span>`).join("");
+  const tb = ["＋", "✂", "⧉", "⌫", "|", "⌗", "⇥", "∿", "|", "◐", "⚲", "|"].map(g => g === "|" ? `<div class="sep"></div>` : `<div class="tb${g === "⌗" ? " on" : ""}">${g}</div>`).join("")
+           + `<div class="tb pal" title="Fancy: colour tracks"><i></i></div>`;
+  let tcp = `<div class="tcphead"><div class="btn">＋</div>Tracks</div>`;
+  TRACKS.forEach((t, i) => {
+    tcp += `<div class="trk${t.sel ? " sel" : ""}" style="--c:${t.c}">
+      <div class="strip"></div><div class="idx">${i + 1}</div>
+      <div class="ctl">
+        <div class="row"><div class="rec${t.rec ? " on" : ""}"><i></i></div><div class="name">${t.n}</div><div class="btn m${t.m ? " on" : ""}">M</div><div class="btn s${t.s ? " on" : ""}">S</div><div class="btn">FX</div></div>
+        <div class="row">${knob(20, 0.72)}<span class="val">${t.vol} dB</span>${knob(20, t.pan, "#00A985", true)}<div class="dd">In 1</div><div class="btn">IO</div></div>
+      </div>
+      <div class="tmeter"><i style="--l:${t.l[0]}"></i><i style="--l:${t.l[1]}"></i></div>
+    </div>`;
+  });
+  let ruler = "", grid = "", lanes = "";
+  for (let b = 0; b < 9; b++) {
+    ruler += `<span style="left:${x0 + b * barW}px">${b + 1}.1<br><small style="opacity:.6">0:${String(b * 2).padStart(2, "0")}.000</small></span>`;
+    for (let q = 0; q < 4; q++) grid += `<div class="grid${q === 0 ? " bar" : ""}" style="left:${x0 + b * barW + q * barW / 4}px"></div>`;
+  }
+  TRACKS.forEach(t => {
+    lanes += `<div class="lane" style="--c:${t.c}">` + t.items.map(([a, b, k]) => {
+      const w = (b - a) * barW;
+      return `<div class="item" style="left:${x0 + a * barW}px;width:${w}px"><div class="lbl">${t.n.toLowerCase().replace(" ", "_")}_take1.wav</div>${wave(Math.round(w), k)}</div>`;
+    }).join("") + `</div>`;
+  });
+  const arr = `<div class="arr"><div class="ruler">${ruler}</div>${grid}<div class="lanes">${lanes}</div>
+    <div class="tsel" style="left:${x0 + 4 * barW}px;width:${2 * barW}px"></div><div class="play" style="left:${x0 + 5.2 * barW}px"></div></div>`;
+  const transport = `<div class="transport">
+    <div class="tbtn">⏮</div><div class="tbtn">■</div><div class="tbtn on">▶</div><div class="tbtn">❚❚</div><div class="tbtn recb"><i></i></div><div class="tbtn on">⟲</div>
+    <div class="clock"><b>6.1.80</b><span>0:10.400</span></div>
+    <div class="bpm"><b>120</b><span>BPM</span><b>4/4</b></div>
+  </div>`;
+  let mixer = `<div class="mixer">`;
+  TRACKS.forEach(t => {
+    const slots = [...t.fx, "", "", ""].slice(0, 3).map(f => `<div class="${f ? "" : "empty"}">${f}</div>`).join("");
+    mixer += `<div class="mcp" style="--c:${t.c}">
+      <div class="fx">${slots}</div>
+      <div class="panrow">${knob(24, t.pan, "#00A985", true)}</div>
+      <div class="faderwrap"><div class="fader"><div class="track"></div><div class="fill" style="height:${t.fl * 100}%"></div><div class="thumb" style="bottom:calc(${t.fl * 100}% - 3px)"></div></div>
+        <div class="mmeter"><i style="--l:${t.l[0]}"></i><i style="--l:${t.l[1]}"></i></div></div>
+      <div class="ms"><div class="btn m${t.m ? " on" : ""}">M</div><div class="btn s${t.s ? " on" : ""}">S</div><div class="rec${t.rec ? " on" : ""}" style="width:18px;height:18px"><i></i></div></div>
+      <div class="mname">${t.n}</div>
+    </div>`;
+  });
+  mixer += `<div class="mixgap"></div><div class="mcp master">
+      <div class="fx"><div>Fancy Limit</div><div class="empty"></div><div class="empty"></div></div>
+      <div class="panrow">${knob(24, 0.5, "#00A985", true)}</div>
+      <div class="faderwrap"><div class="fader"><div class="track"></div><div class="fill" style="height:66%"></div><div class="thumb" style="bottom:calc(66% - 3px)"></div></div>
+        <div class="mmeter" style="width:22px"><i style="--l:84%"></i><i style="--l:81%"></i></div></div>
+      <div class="ms"><div class="btn">M</div><div class="btn">FX</div></div>
+      <div class="mname">MASTER</div></div></div>`;
+  return `<div class="menubar">${menus}<span class="title">song_v3.rpp - REAPER</span></div>
+    <div class="toolbar">${tb}</div>
+    <div class="main"><div class="tcp">${tcp}</div>${arr}</div>
+    ${transport}${mixer}`;
+}
+
+document.getElementById("winA").innerHTML = windowHtml();
+seed = 7;
+document.getElementById("winB").innerHTML = windowHtml();
+</script>
+</body>
+</html>
