@@ -434,3 +434,53 @@ One push, with Decisions 1 to 3 all A.
 - **Comp:** `hostSync` is appended to the Detector enum and choice; the virtual kick fills the key buffer at the base rate (both channels) and goes through the key's oversampler, then skips the detector filters and EQ. `syncRate` is 15 choices (1/1 to 1/16, each plain, dotted and triplet), 1/4 by default; `syncShape` 5 to 100 %, 25 %.
 - **Options page:** the HOST SYNC group as mockup 43 places it (drawer coordinates: caption 28, 237; Rate 28 and 72, 257; Shape 196, 237; note 28, 289), shown while Host sync is chosen and the Options tab is open. The note reads "No host tempo: 120 BPM" without host tempo. Screenshot `comp-sync`.
 - **Tests:** `tests/CompW2Tests.cpp`.
+
+## Phase 4 Wave 2: Optical mode
+
+**Draft, for approval.** Item 6 of the Wave 2 order (`docs/enhancements.md`; backlog item 10 of section 3, added by the user after the Waveform Compressor comparison). A third ballistics mode beside the default follower and Classic, behaving like an optical cell. Ballistics only: no tube colour or other "style model". Modelled first: `docs/research/comp-optical-model.py`.
+
+### 1. What it does
+
+A new follower in `fancy::dsp` (so MultiComp could offer it later), used instead of the default one, in dB of gain reduction:
+
+1. **Attack follows the signal:** the further over the threshold, the faster it closes, at Attack's rate × (over ÷ 6 dB), held between 0.5 × and 4 ×.
+2. **Two-stage release:** half the reduction lets go at Release ÷ 10, the rest at Release.
+3. **Memory:** a memory value charges while more than 3 dB is taken off (time constant 2 s) and drains back (6 s). The slow stage's time is Release × (1 + 3 × memory), so after long heavy compression it recovers up to 4 × more slowly, as a cell does.
+
+### 2. What the model found
+
+With Attack 10 ms and Release 500 ms at 48 kHz:
+
+| | Optical | Default |
+|---|---|---|
+| Attack to 63 %, 3 dB over | 20.0 ms | 10 ms |
+| 6 dB over | 16.1 ms | 10 ms |
+| 12 dB over | 8.6 ms | 10 ms |
+| Back to 1 dB after a 0.3 s burst of 12 dB | 1.7 s | 1.2 s |
+| after a 6 s burst of 12 dB | 3.3 s | 1.2 s |
+
+So peaks are caught faster and gentle overs more gently, and a long squash recovers slowly, without the knobs changing. At 6 dB over the attack is 16 ms rather than the knob's 10 ms, because it slows as it closes in. The manual will say Attack is the time "at about 12 dB over".
+
+### 3. Decisions
+
+- **Decision 1: how it's switched on.**
+  - **A (R).** An **Optical** checkbox, `optical`, appended (off). While it's on, Classic and Auto release dim and don't apply: Optical has its own release. Weird knee, Hold and Range still work.
+  - **B.** A "Ballistics" choice (Default, Classic, Optical) replacing the Classic and Auto checkboxes. Clearer, but it changes the main layout and the meaning of saved Classic values, so it would need a migration.
+- **Decision 2: where the checkbox goes.**
+  - **A (R).** On the Options page, under "Attack = 90 % rise", where it sits with the other ballistics options. The main layout doesn't change. A mockup follows approval.
+  - **B.** In the main window's row of checkboxes, beside Classic: easier to find, but the row has no room without moving the others.
+- **Decision 3: the memory's strength.**
+  - **A (R).** Fixed at up to 4 × as modelled: one switch, nothing more to learn.
+  - **B.** A **Memory** knob (0 to 100 %, default 50) on the Options page, for those who want a stickier or freer cell.
+
+### 4. Tests
+
+1. Legacy: Optical off renders as v1.6.0 (and as Wave 1) for every other setting.
+2. Attack: a step 12 dB over reaches 63 % in 8.6 ± 1 ms; 3 dB over in 20 ± 2 ms (Attack 10 ms).
+3. Release: after a 0.3 s and a 6 s burst of 12 dB reduction, back to 1 dB in 1.7 ± 0.2 s and 3.3 ± 0.3 s (Release 500 ms).
+4. Classic and Auto release have no effect while Optical is on; Hold and Range still do.
+5. Block-size independence and bit-identical offline renders, as for every follower.
+
+### 5. Build order
+
+Approval, then the Options page mockup (`reference/phase4/46__comp_w2_optical_mockup.png`), then one push: the follower in `fancy-core`, Comp's `optical`, tests, manual and checklist.
