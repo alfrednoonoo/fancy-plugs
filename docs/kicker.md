@@ -85,7 +85,7 @@ A thin meter beside the Out meter showing only the generated sub's level, in Kic
 ### 6. Where the controls go
 
 All five settings in the EDIT drawer (Sub length, Make-room and Polarity in a Sub group, dimmed in Boost mode); the sub meter on the main window beside the Out meter. **Decision 1:** the sub meter's place.
-- **A (R).** A 6 px bar inside the Out meter's column, left of it. Nothing else moves.
+- **A (R).** A 6 px bar between the In and Out meters. Nothing else moves.
 - **B.** No meter; the drawer shows the sub's level as a number.
 
 ### 7. Parameters
