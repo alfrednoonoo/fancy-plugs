@@ -159,6 +159,14 @@ def strip(prefix, width, col_x, armed_rows=True):
     return [
         f"set {prefix}.extmixer.mode [1]",
         f"set {prefix}.extmixer.position [4 4 {width - 8} {FXLIST_H - 4} 0 0 1 0]",
+        # "clear" also empties the lists' fonts, which leaves them with no rows: the label font at
+        # 13 px rows, small side margins.
+        f"set {prefix}.fxlist.font [0 13]",
+        f"set {prefix}.fxlist.margin [2 0 2 0 0]",
+        f"set {prefix}.sendlist.font [0 13]",
+        f"set {prefix}.sendlist.margin [2 0 2 0 0]",
+        f"set {prefix}.fxparm.font [0 13]",
+        f"set {prefix}.fxparm.margin [2 0 2 0 0]",
         f"set {prefix}.pan.fadermode [1]",
         below_fxlist(f"{prefix}.pan", [width // 2 - 12 if not armed_rows else 27, TOP, 24, 24]),
         f"set {prefix}.volume.fadermode [-1]",
@@ -205,13 +213,19 @@ def mcp():
         f"set mcp.recarm {coords(bottom(54, rows + 20, 18, 18))}",
         "",
         "; The name on a bar in the track's colour (dark text; white on near-black with no colour),",
-        "; with the track number at its left. mcp_namebg is transparent so the colour shows.",
+        "; with the track number at its left. The bar is a custom element, as the track panel's strip:",
+        "; a label's own background comes out blended at about a third of the colour.",
+        'custom mcp.custom.namebar ""',
+        f"set mcp.custom.namebar {coords(bottom(0, MH - 22, MW, 22, True))}",
+        "set mcp.custom.namebar.color trackcolor_valid==1 [0 0 0 0 trackcolor_r trackcolor_g trackcolor_b 255] "
+        "[0 0 0 0 20 20 20 255]",
         f"set mcp.label {coords(bottom(0, MH - 22, MW, 22, True))}",
-        "set mcp.label.color trackcolor_valid==1 [20 20 20 255 trackcolor_r trackcolor_g trackcolor_b 255] "
-        "[255 255 255 255 20 20 20 255]",
+        "set mcp.label.color trackcolor_valid==1 [20 20 20 255 0 0 0 0] [255 255 255 255 0 0 0 0]",
+        "front mcp.label",
+        "front mcp.trackidx",
         "set mcp.label.margin [16 0 2 0 0.5]",
         f"set mcp.trackidx {coords(bottom(0, MH - 22, 16, 22))}",
-        f"set mcp.trackidx.color [{GREY} 0 0 0 0]",
+        "set mcp.trackidx.color trackcolor_valid==1 [20 20 20 170 0 0 0 0] [141 141 141 255 0 0 0 0]",
         "set mcp.trackidx.margin [3 0 0 0 0.5]",
     ]
 
