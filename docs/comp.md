@@ -376,3 +376,52 @@ Push 1 (`2991726`) holds the whole item. The model is `docs/research/comp-w1-mod
 - **History:** `fancy/dsp/LevelHistory.h` (the recorder, at the oversampled rate, so it keeps time at every oversampling) and `fancy::ui::LevelHistory`, plus `fancy::ui::ToggleCheckbox` for Grid. **Changed from section 5:** DS and DS-Mini keep `DeEsserHistory`. Its column type is the de-esser engine's, and moving two released plugins over would only add risk to this item; the move can wait for the first item that needs one widget for both. The caption reads "paused - click to go on" while paused.
 - **Footer:** x 24, 167, 314, 453 and 624, as measured in the mockup.
 - **Tests:** `tests/CompW1Tests.cpp`; `tests/LegacyCompQ25Dsp.*` is `CompDsp` at v1.6.0.
+
+## Phase 4 Wave 2: tempo-synced trigger
+
+**Draft, for approval.** Backlog item 9 of `docs/enhancements.md` section 3, next in the Wave 2 order (Gate's follows it and Kicker's Duck will use the same trigger). Comp ducks on the host's beat grid with no sidechain kick, as Pro-C 3's Host Sync does. Modelled first: `docs/research/comp-sync-model.py`.
+
+### 1. What it does
+
+A new Detector input choice, **Host sync**, appended after Side. The detector then hears a **virtual kick** instead of audio: a 0 dBFS hit at every step of the host's grid, decaying to −60 dB over **Shape** of the step. Threshold, Ratio, Knee, Attack, Release, Hold and Range act on it exactly as on a real sidechain kick, so the ducking is shaped with the controls Comp already has.
+
+- `syncRate`: 1/1, 1/2, 1/4, 1/8, 1/16, each also dotted and triplet; default 1/4.
+- `syncShape`: 5 to 100 % of the step, default 25 %: how long the virtual kick lasts.
+- The trigger is `fancy::dsp::TempoTrigger` in `fancy-core`, so Gate and Kicker can share it.
+
+### 2. What the model found
+
+- **Hits must be found by step index, not by comparing positions.** Comparing each sample's grid position with the one before can fire twice at one step from floating-point rounding (samples 87120 and 87121 in the model, for some block sizes). Keeping the last step index fired, and firing only when it goes up, lands every hit on the grid sample at every block size (1, 64, 441, 512, 4096).
+- **Release shapes the duck more than Shape does.** At 120 BPM, quarter notes, Ratio 8 and Release 120 ms, Shape 10 % and 50 % differ by 3 dB a quarter of the way through the step (5.6 against 8.6 dB). Shape matters most with short Releases. The manual will say so.
+
+### 3. Decisions
+
+- **Decision 1: what drives the ducking.**
+  - **A (R).** The virtual kick into the detector, as above: every Comp control keeps its meaning, and Hold, Range and the GR history all work with it.
+  - **B.** A gain curve drawn directly, like a volume-shaping LFO: exact shapes, but Threshold, Ratio, Attack and Release stop meaning anything, and depth becomes a new knob.
+- **Decision 2: when the transport is stopped.**
+  - **A (R).** The trigger keeps running at the last tempo from where it stopped, so you can set the duck up while the song is stopped. Playback re-aligns it to the host's position at once. Offline renders always play, so they stay repeatable.
+  - **B.** No hits while stopped: nothing ducks until you press play.
+- **Decision 3: where Rate and Shape go.**
+  - **A (R).** On the Options page, beside Hold and Range: a Rate dropdown and a small Shape knob, shown while the Detector input is Host sync. The main layout doesn't change. A mockup follows approval.
+  - **B.** On the main window, in the RMS size knob's place while Host sync is chosen: faster to reach, but it changes a control's place on the main layout.
+
+### 4. Details
+
+- The virtual kick goes into the detector after the Detector EQ and the Highpass and Lowpass, which are for audio. It's the same for both channels, so Link doesn't matter for it.
+- Pre-comp delays the audio and not the virtual kick, so the duck starts Pre-comp ahead of the beat, as it would with a real kick.
+- The "No sidechain signal" notice doesn't show for Host sync. Without host tempo (a host that sends none), the trigger runs at 120 BPM and the Options page says so.
+- No latency. `stateVersion` doesn't change: the new choice is appended, and the two parameters have defaults.
+
+### 5. Tests
+
+1. Legacy: every other Detector input renders as v1.6.0 (and as Wave 1).
+2. Hits land on the grid to the sample at 44.1, 48 and 96 kHz, for block sizes 1, 64, 441, 4096 and random sizes, with no double hits; a tempo change mid-render moves the grid from that point.
+3. With Ratio 8 and Threshold −20, gain reduction at each hit is within 0.5 dB of a real sidechain kick of the same shape fed through the Sidechain input.
+4. Rate 1/8 dotted at 120 BPM hits every 375 ms.
+5. Stopped transport (Decision 2 A): hits continue at the last tempo; play re-aligns them to the host's bar.
+6. Offline renders of the same project match bit for bit.
+
+### 6. Build order
+
+Approval of this note, then the Options page mockup (`reference/phase4/43__comp_w2_mockup.png`), then one push: `TempoTrigger`, Comp's Host sync, the tests, the manual and the checklist. Then Gate's, with the same trigger, as its own note.
