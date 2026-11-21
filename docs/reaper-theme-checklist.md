@@ -78,9 +78,9 @@ Pick **Fancy Plugs (Stage C preview)** under Options > Themes. Have three tracks
 
 Re-select **Fancy Plugs (Stage C preview)**. Same three tracks, one armed, the mixer open and tall enough to show a full strip. 📷
 
-- [ ] Each strip: FX list at the top, a pan knob with its pointer in the track's colour, the fader and a thin stereo meter, a column of small buttons beside them, the dB value, then M, S and record arm.
-- [ ] The name sits on a bar in the track's colour with dark text; white on grey for the uncoloured track.
-- [ ] On the armed strip the dB value gives way to the input box, and monitoring and input FX replace envelope and polarity in the button column; nothing overlaps.
+- [x] Each strip: FX list at the top, a pan knob with its pointer in the track's colour, the fader and a thin stereo meter, a column of small buttons beside them, the dB value, then M, S and record arm.
+- [x] The name sits on a bar in the track's colour with dark text; white on grey for the uncoloured track.
+- [x] On the armed strip the dB value gives way to the input box, and monitoring and input FX replace envelope and polarity in the button column; nothing overlaps.
 - [ ] The master: wider meter, teal pan pointer, a menu button (three lines) in the column, M, S and mono (one ring, two rings in stereo), the name on a teal bar.
-- [ ] Making the mixer taller or shorter stretches the fader and meter; the bottom rows stay at the bottom.
+- [x] Making the mixer taller or shorter stretches the fader and meter; the bottom rows stay at the bottom.
 - [ ] With the FX list hidden (right-click the mixer, Show FX inserts), no empty band at the top of the strips; with it shown, the list sits above the pan knob.
