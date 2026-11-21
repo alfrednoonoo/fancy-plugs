@@ -512,12 +512,16 @@ int smoke (const juce::StringArray& args)
         }
     }
 
-    // 5. The example files run against our plugins, with competitors skipped.
+    // 5. The example files run against our plugins, with competitors skipped. Our plugin may be
+    // skipped too when its entry has a "todo" the user does on their PC, such as reverb.json's Verb
+    // preset exported from REAPER: the file still has to load, and every other entry has to run.
     for (const auto& file : examples.findChildFiles (juce::File::findFiles, false, "*.json"))
     {
         std::vector<juce::var> results;
         const auto code = runFile (file, out.getChildFile ("examples").getChildFile (file.getFileNameWithoutExtension()), true, &results);
-        const auto oursOk = ! results.empty() && results.front()["status"].toString() == "ok";
+        const auto oursStatus = results.empty() ? juce::String() : results.front()["status"].toString();
+        const auto oursReason = results.empty() ? juce::String() : results.front()["reason"].toString();
+        const auto oursOk = oursStatus == "ok" || (oursStatus == "skipped" && ! oursReason.startsWith ("not installed"));
         checks.report ("example " + file.getFileName() + " runs", code == 0 && oursOk,
                       results.empty() ? "no results" : results.front()["label"].toString() + ": " + results.front()["status"].toString() + " "
                                                         + results.front()["reason"].toString());
