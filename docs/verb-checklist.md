@@ -113,6 +113,15 @@
 - [ ] Save a project with a library IR, a pair and Modulate, close and reopen: everything comes back, and the project file is small with the library IR.
 - [ ] Render offline twice with Modulate on: the renders are identical.
 
+## Equal loudness, EQ module, Export IR, drop and favourites (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Verb: it loads, looks and sounds as before, and SETUP's Equal loudness is off.
+- [ ] SETUP > Equal loudness on: the gain shows beside it. Switch between Rooms > Booth and Halls > Concert Hall while playing: the level stays about the same, and the change fades without a click. Off: back to the old level.
+- [ ] Add module > EQ: a blue card with a flat curve. Raise the bell at 2 kHz: the curve and the reverb brighten there; the shelves cut the lows and highs. All bands at 0 dB sound like no EQ. Moving a knob costs no CPU while playing.
+- [ ] Right-click the waveform > Export IR...: the WAV plays back as the reverb's impulse, at the session rate. With a true-stereo IR, it's four channels and loads back as TS. Reset trim puts the handles back.
+- [ ] Drag a WAV from Explorer onto the rack: it tints and says "Drop to add a File module"; the drop adds the card at the end. Drop on a File card: its file is replaced. Drop a text file: refused with a message.
+- [ ] File dropdown: type "hall" in the search field: only halls are left. Star one: it's listed under FAVOURITES; still starred after closing and reopening REAPER, and not saved in the project.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

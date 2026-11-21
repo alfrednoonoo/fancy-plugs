@@ -112,6 +112,13 @@
 - [ ] The two new presets, **Resonance Tamer** and **Harsh Vocal** (Restoration), load from the preset browser.
 - [ ] Change FFT size and Low latency while Resonance plays: no clicks, and the latency follows.
 
+## Tilt and Learn (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy FIR: it sounds as before; Tilt reads 0 %.
+- [ ] Resonance on a harsh vocal: Tilt +100 % cuts the top resonances harder and the low ones less; -100 % the other way. 0 % is the old sound.
+- [ ] Gate mode on a noisy guitar: Learn while playing; after 3 s the curve sits just over the hiss, the hiss is gated between phrases and the notes come through. The points can be dragged; Undo brings the old curve back.
+- [ ] Compressor mode: Learn places the curve at the loud parts. Learn hides in the other modes.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

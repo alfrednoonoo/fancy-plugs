@@ -92,8 +92,30 @@ void FirGraph::analyse (fancy::dsp::SpectrumAnalyzer& before, fancy::dsp::Spectr
     before.configure (rate, {});
     after.configure (rate, {});
 
+    // Phase 4 Wave 1: Learn reads the same input.
+    if (learnState.load() == learnRequested)
+    {
+        learner.start (learnCurve.load(), rate);
+        learnProgress.store (0.0f);
+        learnState.store (learnRunning);
+    }
+
     if (const auto count = processor.inputFifo.pop (scratch.data(), (int) scratch.size()); count > 0)
+    {
         before.addSamples (scratch.data(), count);
+
+        if (learnState.load() == learnRunning)
+        {
+            learner.addSamples (scratch.data(), count);
+            learnProgress.store (learner.progress());
+
+            if (learner.isComplete())
+            {
+                learnedPoints = learner.result();
+                learnState.store (learnDone);
+            }
+        }
+    }
 
     if (const auto count = processor.outputFifo.pop (scratch.data(), (int) scratch.size()); count > 0)
         after.addSamples (scratch.data(), count);
@@ -146,7 +168,44 @@ void FirGraph::update()
     resLowHz = value ("resLow");
     resHighHz = value ("resHigh");
 
+    // Phase 4 Wave 1: a finished Learn sets the curve, as points or, in Freehand, as the table.
+    if (learnState.load() == learnDone)
+    {
+        const auto curve = learnCurve.load();
+
+        if (! learnedPoints.empty())
+        {
+            if (editMode == fir::freehand)
+            {
+                std::array<float, fir::curvePoints> table {};
+
+                for (int i = 0; i < fir::curvePoints; ++i)
+                    table[(size_t) i] = (float) fir::evaluateCurve (learnedPoints, true, fir::curveHz (i), fir::defaultCurveDb (curve));
+
+                processor.setFreehand (curve, table);
+            }
+            else
+            {
+                processor.setPoints (curve, learnedPoints);
+            }
+        }
+
+        learnState.store (learnIdle);
+    }
+
     repaint();
+}
+
+void FirGraph::startLearn (int curve)
+{
+    learnCurve.store (curve);
+    learnProgress.store (0.0f);
+    learnState.store (learnRequested);
+}
+
+void FirGraph::cancelLearn()
+{
+    learnState.store (learnIdle);
 }
 
 void FirGraph::showPreviewSpectra (bool resonances)

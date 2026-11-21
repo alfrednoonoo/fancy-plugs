@@ -40,6 +40,10 @@ File, Echo generator and Reverb Generator add to whatever is already in the chai
 - **Pair right input…** in the dropdown, which adds a second stereo file for the right input (the first one is then the left input's); **Remove pair** takes it away;
 - the library's IRs marked TS.
 
+**Finding an IR:** type in the search field at the top of the dropdown to filter the library by name or category. Click the star beside an IR to make it a favourite: favourites are listed first, on this computer, in every project. You can also drag an audio file from Explorer or Finder onto the rack: dropped on a File card it replaces that card's file, anywhere else it adds a new File module at the end.
+
+**Export IR...** (in the File dropdown, or right-click the waveform) saves the finished impulse, after the trim handles, as a 24-bit WAV at the session's rate. A true-stereo IR is saved as four channels, so it loads back as true stereo.
+
 Projects saved before 1.5 that used a four-channel file keep playing its first two channels, as they did; choose the file again to make it true stereo. True stereo costs about 1.1 to 1.3 times the CPU of a normal IR.
 
 | Control | What it does |
@@ -48,6 +52,14 @@ Projects saved before 1.5 that used a four-channel file keep playing its first t
 | Gain dropdown | Trims the file by 0 to -18 dB. SRC-gain also keeps the level the same when the file's sample rate differs from the session's, which no SRC-gain doesn't |
 
 **LP/HP** is a 24 dB/oct filter. Lowpass at the top of its range and Highpass at the bottom are off.
+
+**EQ** shapes the IR at its place in the chain: a low shelf, a bell and a high shelf. It changes the impulse once, when you move a knob, so it costs nothing while playing. The curve at the top of the card shows the response. A band at 0 dB does nothing.
+
+| Control | Range | Default |
+|---|---|---|
+| Low shelf Freq, Gain | 20 Hz to 1 kHz, ±18 dB | 120 Hz, 0 dB |
+| Bell Freq, Gain, Q | 100 Hz to 16 kHz, ±18 dB, 0.2 to 10 | 2 kHz, 0 dB, 1.0 |
+| High shelf Freq, Gain | 1 to 20 kHz, ±18 dB | 8 kHz, 0 dB |
 
 **Echo generator** adds a run of repeats.
 
@@ -114,6 +126,7 @@ Those five and the header's Output knob can be automated. Module settings can't,
 | Max FFT | The largest FFT used. 65536 is the lighter choice for long IRs |
 | IR storage | Whether a project keeps its own copy of the IR |
 | IR folder | Where to look for files that have moved |
+| Equal loudness | Sets the wet level so every IR plays about as loud as any other, so a small room and a cathedral don't jump 12 dB apart. The gain it applied shows beside it. Off by default |
 
 The late-block counter should stay at 0. If it climbs, a background job missed its deadline and a slice of the tail dropped out, so try Low CPU.
 

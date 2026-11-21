@@ -1,0 +1,147 @@
+// Fancy FIR's spectral engine at v1.6.0 (plugins/fir/src/SpectralEngine.h before Phase 4 Wave 1), in fir::legacy, for the legacy test.
+#pragma once
+
+#include "FirShared.h"
+
+#include <juce_dsp/juce_dsp.h>
+
+#include <memory>
+#include <vector>
+
+namespace fir::legacy
+{
+
+// What the engine needs from the parameters, once per block.
+struct FrameSettings
+{
+    int mode = eq;
+    double gateFloorGain = 0.01, gateAttackMs = 1.0, gateReleaseMs = 80.0;
+    double compSlope = 0.5, compAttackMs = 5.0, compReleaseMs = 80.0;
+    double reductionGain = 0.125, offsetPower = 1.0, smoothing = 0.35, subReleaseMs = 80.0;
+    bool reduceArtifacts = true, listen = false, sidechain = false;
+
+    // Phase 2.1 A: Learned, Adaptive or Both, and the minimum search's window in seconds.
+    int source = learnedSource;
+    double adaptSeconds = 2.0;
+
+    // Phase 3 Q2.7: Resonance mode. See docs/fir.md, "Phase 3 Q2.7".
+    double resDepthDb = 6.0, resSharpness = 0.5, resAttackMs = 5.0, resReleaseMs = 80.0;
+    double resLowHz = 100.0, resHighHz = 20000.0;
+};
+
+// One short-time Fourier transform engine. See docs/fir.md.
+//
+// The constructor allocates, so it's built on a worker thread, or inline offline. process()
+// never allocates.
+class SpectralEngine
+{
+public:
+    struct Config
+    {
+        int fftSize = 4096;
+        bool lowLatency = false;
+        bool convolve = false;
+
+        bool operator== (const Config&) const = default;
+    };
+
+    static int latencyOf (const Config& config) noexcept;
+
+    SpectralEngine (const Config& config, double sampleRate, Shared& shared);
+
+    const Config& getConfig() const noexcept { return engineConfig; }
+    int getLatency() const noexcept { return latency; }
+
+    void reset() noexcept;
+
+    // Replaces the output with the processed input, delayed by the latency. keyLeft and
+    // keyRight may be null. Only the engine that's heard should pass learns as true.
+    void process (const float* inLeft, const float* inRight, const float* keyLeft, const float* keyRight,
+                  float* outLeft, float* outRight, int numChannels, int numSamples,
+                  const FrameSettings& settings, bool learns) noexcept;
+
+private:
+    using FFT = juce::dsp::FFT;
+
+    static constexpr int numStages = 6;
+
+    void runStage (int stage) noexcept;
+    void analyse (int channel) noexcept;
+    void computeMasks() noexcept;
+    void synthesise (int channel) noexcept;
+    void convolveChannels() noexcept;
+
+    void refreshCurve (int curve) noexcept;
+    void refreshProfile() noexcept;
+    void learnFrame() noexcept;
+
+    // Phase 2.1 A: Martin's minimum statistics, once per frame. See docs/phase2_1-A.md.
+    void trackNoise (bool publishes) noexcept;
+    void startTracking() noexcept;
+    void publishTracking() noexcept;
+    void publishReduction() noexcept;
+
+    // Phase 3 Q2.7: one linked gain for both channels, into resonanceGain.
+    void computeResonance (double* reductionColumns) noexcept;
+    void prepareResonanceWindows (double sharpness) noexcept;
+    void prepareResonanceRange (double lowHz, double highHz) noexcept;
+
+    double perHop (double milliseconds) const noexcept;
+    void measureLevels (const std::vector<float>& spectrum) noexcept;
+    float binPower (const std::vector<float>& spectrum, int bin) const noexcept;
+
+    Config engineConfig;
+    Shared& shared;
+
+    double rate;
+    int frameLength, fftLength, bins, hop, synthesisLength, extra, latency;
+    int stageInterval = 0;
+
+    std::unique_ptr<FFT> fft;
+    std::vector<float> analysisWindow, synthesisWindow;
+    double levelScale = 1.0, powerScale = 1.0;
+
+    int inputSize, inputMask, outputSize, outputMask;
+    std::vector<float> inputRings[4], outputRings[2];
+    long long time = 0;
+
+    // The frame in progress.
+    long long frameEnd = -1;
+    int nextStage = numStages;
+    int frameChannels = 2;
+    bool frameKey = false, frameLearns = false;
+    FrameSettings frameSettings;
+    std::vector<float> spectra[4];
+
+    // Per bin, per channel.
+    std::vector<float> gains[2], envelopes[2], priorSnr[2], smoothedKey[2], mask[2];
+    std::vector<float> binHz, curveDb[numCurves], profilePower, scratch, detectorLevels;
+    int seenCurveVersion[numCurves] { -1, -1, -1 };
+    int seenProfileVersion = -1;
+    bool profileReady = false;
+
+    std::vector<double> learnSum;
+    int learnFrames = 0;
+
+    // The adaptive estimator's state, per bin. ring holds the last trackSubwindows sub-window
+    // minima, bin after bin.
+    static constexpr int trackSubwindows = 8;
+    std::vector<float> trackPower, trackSmoothed, trackNoise_, trackMoment1, trackMoment2, trackQInverse,
+        trackActMin, trackSubMin, trackRingMin, trackRing, trackRatio, trackSort, trackPresence;
+    std::vector<double> trackPrefix;
+    std::vector<int> trackHold;
+    double trackAlphaC = 1.0;
+    int trackSubFrames = 0, trackSubLength = 1, trackRingIndex = 0, trackPublishCountdown = 0;
+    bool trackStarted = false;
+
+    std::vector<int> binColumn;
+
+    // Resonance mode's state, per bin. The detector is shared by both channels (linked).
+    std::vector<float> resDetector, resLevel, resClipped, resEnvelope, resReduction, resWeight, resonanceGain;
+    std::vector<double> resPrefix;
+    std::vector<int> resLow, resHigh;
+    double resWindowSharpness = -1.0, resRangeLow = -1.0, resRangeHigh = -1.0;
+    bool resStarted = false;
+};
+
+} // namespace fir

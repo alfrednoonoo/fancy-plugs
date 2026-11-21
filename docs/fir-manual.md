@@ -54,6 +54,8 @@ In EQ, **Reset curve** goes back to flat, and **Flat**, **Tilt** and **De-mud** 
 
 Attack and Release are time constants, the time to reach about 63 % of the change. They're the same at every FFT size.
 
+**Learn** (top row, Gate and Compressor modes): play the track and click it. Over 3 s it measures each third of an octave and places the threshold curve: the Gate's just over the steady noise (6 dB above the quietest fifth of what it heard), the Compressor's at the loud parts (where the level is 80 % of the time). The points stay editable, and Undo takes the whole curve back. Click again to stop.
+
 Each frequency is judged by the loudest level within two of its neighbours. That way a tone opens or ducks as a whole, rather than losing its edges.
 
 ## Subtract
@@ -94,6 +96,7 @@ Resonance listens for narrow peaks that stand above the spectrum around them, su
 - **Depth:** the most a peak is turned down, 0 to 24 dB. A peak is never pushed below 4 dB above the spectrum around it, so a peak 12 dB up comes down by at most about 8 dB, whatever Depth says.
 - **Sharpness:** how narrow a peak must be to count. High values find only narrow rings; low values also take broader bumps.
 - **Attack and Release:** how fast the cut arrives and lets go, in ms.
+- **Tilt:** leans Depth towards the highs (positive) or the lows (negative), -100 to +100 %. At +100 % the depth doubles at 16 kHz and halves at 62 Hz; at 0 % it's the same everywhere.
 - **Range (Low and High):** Resonance only works between these two, fading out over half an octave outside them. The graph dims what's outside. Low starts at 100 Hz: below that, a 4096-point FFT can't tell a resonance from the slope of the spectrum. For low resonances, raise the FFT size and lower Low.
 
 Both channels get the same cut, so the stereo image never moves. The graph shows the cut in green, hanging from the 0 dB line. **Listen to removed resonances** plays only what's taken out.

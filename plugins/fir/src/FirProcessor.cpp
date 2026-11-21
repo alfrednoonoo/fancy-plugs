@@ -153,6 +153,14 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (frequencyParameter ("resLow", "Resonance low", 20.0f, 2000.0f, 100.0f));
     layout.add (frequencyParameter ("resHigh", "Resonance high", 1000.0f, 20000.0f, 20000.0f));
 
+    // Phase 4 Wave 1 (docs/fir.md), appended: 0 % is today's flat Depth.
+    layout.add (fancy::floatParameter (
+        "resTilt", "Resonance tilt", juce::NormalisableRange<float> (-100.0f, 100.0f, 1.0f), 0.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("%")
+            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
     return layout;
 }
 
@@ -299,6 +307,7 @@ FirDsp::Targets FirProcessor::readTargets() const
     frame.resReleaseMs = (double) read ("resRelease");
     frame.resLowHz = (double) read ("resLow");
     frame.resHighHz = (double) read ("resHigh");
+    frame.resTilt = (double) read ("resTilt") * 0.01;
 
     targets.engine.fftSize = getFftSize();
     targets.engine.lowLatency = isOn ("lowLatency");

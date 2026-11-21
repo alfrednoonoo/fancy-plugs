@@ -43,7 +43,7 @@ if("FANCY_HAS_MULTICOMP=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_FIR=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE FirTests.cpp AdaptiveTests.cpp FirQ27Tests.cpp)
+    target_sources(fancy-tests PRIVATE FirTests.cpp AdaptiveTests.cpp FirQ27Tests.cpp FirW1Tests.cpp LegacyFirEngine.cpp)
 endif()
 
 if("FANCY_HAS_GATE=1" IN_LIST fancy_screen_defs)
@@ -67,7 +67,7 @@ if("FANCY_HAS_SATURE=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_ROOM=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE RoomTests.cpp)
+    target_sources(fancy-tests PRIVATE RoomTests.cpp RoomW1Tests.cpp LegacyRoomDsp.cpp)
 endif()
 
 # Headers generated during the build, such as Fancy Sature's auto-gain table.

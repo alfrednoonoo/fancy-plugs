@@ -7,6 +7,9 @@ using namespace fir;
 
 namespace
 {
+// Phase 4 Wave 1: Resonance's Tilt, a small bipolar knob, 66 tall with its label and value.
+constexpr fancy::ui::Knob::Style tiltKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
+
 // design/phase2-mockup-src/fir.html at 100 %. The shared header is 16 px taller than the
 // mockup's, so the window is too.
 constexpr int baseWidth = 760;
@@ -271,6 +274,7 @@ FirEditor::FirEditor (FirProcessor& processor)
       resHighKnob (parameter ("resHigh"), {}, modeColour (resonance), Knob::compactStyle),
       resDepthKnob (parameter ("resDepth"), "Depth", modeColour (resonance), Knob::tightStyle),
       resSharpnessKnob (parameter ("resSharpness"), "Sharpness", modeColour (resonance), Knob::tightStyle),
+      resTiltKnob (parameter ("resTilt"), "Tilt", modeColour (resonance), tiltKnobStyle, true),
       resAttackKnob (parameter ("resAttack"), "Attack", modeColour (resonance), Knob::tightStyle),
       resReleaseKnob (parameter ("resRelease"), "Release", modeColour (resonance), Knob::tightStyle),
       fftDropdown (parameter ("fft")),
@@ -312,6 +316,19 @@ FirEditor::FirEditor (FirProcessor& processor)
     modeSwitch.setTextHeight (labelHeight);
     modeSwitch.setFitToText (true);
     editLabel.setBounds (484, 10, 40, 25);
+
+    // Phase 4 Wave 1: Learn between the Mode switch and Edit, in Gate and Compressor modes.
+    curveLearnButton.setBounds (455, 10, 48, 25);
+    curveLearnButton.setTooltip ("Listens to 3 s of playback and places the curve: the Gate's just over the steady noise in each band, "
+                                 "the Compressor's at the loud parts. Click again to stop.");
+    curveLearnButton.onClick = [this]
+    {
+        if (graph.isLearningCurve())
+            graph.cancelLearn();
+        else
+            graph.startLearn (firProcessor().getMode());
+    };
+    getBody().addChildComponent (curveLearnButton);
     editDropdown.setBounds (530, 10, 119, 25);
     editDropdown.setTextHeight (labelHeight);
 
@@ -383,6 +400,11 @@ FirEditor::FirEditor (FirProcessor& processor)
     fftDropdown.setBounds (471, cardY + 30, 100, 24);
     fftDropdown.setTextHeight (labelHeight);
     reduceCheckbox.setBounds (471, cardY + 64, 160, 20);
+
+    // Phase 4 Wave 1: Tilt beside FFT size.
+    resTiltKnob.setBounds (584, cardY, 60, 66);
+    resTiltKnob.setTooltip ("Leans Depth towards the highs (positive) or the lows (negative): at +100 %, twice the depth at 16 kHz "
+                            "and half at 62 Hz.");
     reduceCheckbox.setLabelHeight (labelHeight);
 
     analysisCheckbox.setBounds (15, footerY, 106, 20);
@@ -421,7 +443,7 @@ FirEditor::FirEditor (FirProcessor& processor)
              &floorKnob, &gateAttackKnob, &gateReleaseKnob, &ratioKnob, &compAttackKnob, &compReleaseKnob,
              &reductionKnob, &offsetKnob, &smoothingKnob, &subReleaseKnob, &eqHint,
              &rangeCaption, &rangeLowLabel, &rangeHighLabel, &resLowKnob, &resHighKnob,
-             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob,
+             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob, &resTiltKnob,
              &sidechainCheckbox, &listenNoiseCheckbox, &listenReducedCheckbox, &listenResonanceCheckbox })
         body.addChildComponent (item);
 
@@ -479,7 +501,7 @@ void FirEditor::updateMode()
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &rangeCaption, &rangeLowLabel, &rangeHighLabel, &resLowKnob, &resHighKnob,
-             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob, &listenResonanceCheckbox })
+             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob, &listenResonanceCheckbox, &resTiltKnob })
         item->setVisible (mode == resonance);
 
     const auto dynamics = mode == gate || mode == compressor || mode == subtract;
@@ -492,6 +514,12 @@ void FirEditor::updateMode()
     listenNoiseCheckbox.setVisible (mode == subtract);
     listenReducedCheckbox.setVisible (mode == gate || mode == compressor);
     lowLatencyCheckbox.setAlpha (mode == convolve ? 0.4f : 1.0f);
+
+    // Phase 4 Wave 1: Learn only where there's a threshold curve; Edit moves over for it.
+    const auto learns = mode == gate || mode == compressor;
+    graph.cancelLearn();
+    curveLearnButton.setVisible (learns);
+    editLabel.setBounds (learns ? 504 : 484, 10, learns ? 26 : 40, 25);
 }
 
 void FirEditor::onTick (float seconds)
@@ -501,6 +529,9 @@ void FirEditor::onTick (float seconds)
     updateMode();
     graph.update();
     learnCard.update();
+
+    // Phase 4 Wave 1: Learn's progress on its button.
+    curveLearnButton.setText (graph.isLearningCurve() ? juce::String (juce::roundToInt (graph.getCurveLearnProgress() * 100.0f)) + "%" : "Learn");
     outMeter.update (processor.outputMeter, seconds);
 
     const auto latency = processor.getLatency();

@@ -189,6 +189,7 @@ SpectralEngine::SpectralEngine (const Config& config, double sampleRate, Shared&
         state->assign ((size_t) bins, 0.0f);
 
     resonanceGain.assign ((size_t) bins, 1.0f);
+    resTiltFactor.assign ((size_t) bins, 1.0f);
     resPrefix.assign ((size_t) bins + 1, 0.0);
     resLow.assign ((size_t) bins, 0);
     resHigh.assign ((size_t) bins, 0);
@@ -911,6 +912,19 @@ void SpectralEngine::prepareResonanceRange (double lowHz, double highHz) noexcep
     }
 }
 
+double SpectralEngine::tiltFactor (double hz, double tilt) noexcept
+{
+    return std::pow (2.0, std::clamp (tilt, -1.0, 1.0) * std::log2 (std::max (hz, 1.0) / 1000.0) / 4.0);
+}
+
+void SpectralEngine::prepareResonanceTilt (double tilt) noexcept
+{
+    resTiltShown = tilt;
+
+    for (int k = 0; k < bins; ++k)
+        resTiltFactor[(size_t) k] = (float) tiltFactor ((double) binHz[(size_t) k], tilt);
+}
+
 void SpectralEngine::computeResonance (double* reductionColumns) noexcept
 {
     const auto& settings = frameSettings;
@@ -992,10 +1006,17 @@ void SpectralEngine::computeResonance (double* reductionColumns) noexcept
     const auto attack = perHop (settings.resAttackMs), release = perHop (settings.resReleaseMs);
     const auto depth = std::max (0.0, settings.resDepthDb);
 
+    // Phase 4 Wave 1: with a tilt, each bin's Depth is scaled; at 0 the old path, to the bit.
+    const auto tilted = settings.resTilt != 0.0;
+
+    if (tilted && settings.resTilt != resTiltShown)
+        prepareResonanceTilt (settings.resTilt);
+
     for (int k = 0; k < bins; ++k)
     {
         const auto excess = (double) resLevel[(size_t) k] - (double) resEnvelope[(size_t) k] - resonanceToleranceDb;
-        const auto target = std::clamp (excess, 0.0, depth) * (double) resWeight[(size_t) k];
+        const auto binDepth = tilted ? depth * (double) resTiltFactor[(size_t) k] : depth;
+        const auto target = std::clamp (excess, 0.0, binDepth) * (double) resWeight[(size_t) k];
 
         auto reduction = (double) resReduction[(size_t) k];
         reduction += (target - reduction) * (target > reduction ? attack : release);

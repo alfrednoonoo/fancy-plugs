@@ -26,6 +26,9 @@ struct FrameSettings
     // Phase 3 Q2.7: Resonance mode. See docs/fir.md, "Phase 3 Q2.7".
     double resDepthDb = 6.0, resSharpness = 0.5, resAttackMs = 5.0, resReleaseMs = 80.0;
     double resLowHz = 100.0, resHighHz = 20000.0;
+
+    // Phase 4 Wave 1 (docs/fir.md): Resonance tilt, -1 to 1. 0 is today's flat Depth.
+    double resTilt = 0.0;
 };
 
 // One short-time Fourier transform engine. See docs/fir.md.
@@ -84,6 +87,14 @@ private:
     void computeResonance (double* reductionColumns) noexcept;
     void prepareResonanceWindows (double sharpness) noexcept;
     void prepareResonanceRange (double lowHz, double highHz) noexcept;
+    void prepareResonanceTilt (double tilt) noexcept;
+
+public:
+    // Phase 4 Wave 1: Depth's factor at a frequency for a tilt (-1 to 1): log-linear about 1 kHz,
+    // 2 at 16 kHz and 0.5 at 62.5 Hz for +1.
+    static double tiltFactor (double hz, double tilt) noexcept;
+
+private:
 
     double perHop (double milliseconds) const noexcept;
     void measureLevels (const std::vector<float>& spectrum) noexcept;
@@ -140,6 +151,8 @@ private:
     std::vector<double> resPrefix;
     std::vector<int> resLow, resHigh;
     double resWindowSharpness = -1.0, resRangeLow = -1.0, resRangeHigh = -1.0;
+    std::vector<float> resTiltFactor; // Phase 4 Wave 1, per bin
+    double resTiltShown = 0.0;
     bool resStarted = false;
 };
 

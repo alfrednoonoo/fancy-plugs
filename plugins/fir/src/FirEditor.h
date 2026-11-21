@@ -76,6 +76,11 @@ private:
     fancy::ui::ParamSegments modeSwitch;
     fancy::ui::ParamDropdown editDropdown;
 
+    // Phase 4 Wave 1 (reference/phase4/41__fir_w1_mockup.png): Learn for the Gate and Compressor
+    // curves, and Resonance's Tilt.
+    fancy::ui::PillButton curveLearnButton { "Learn" };
+    fancy::ui::Knob resTiltKnob;
+
     FirGraph graph;
 
     // Left card, one per mode.

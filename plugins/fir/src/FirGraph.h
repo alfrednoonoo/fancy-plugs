@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FirLearn.h"
 #include "FirProcessor.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -22,6 +23,13 @@ public:
 
     // 30 Hz, from the editor.
     void update();
+
+    // Phase 4 Wave 1: Learn for the Gate (curve 1) and Compressor (curve 2) curves. The analyzer
+    // thread listens for 3 s of input; update() then sets the curve, as one undo step.
+    void startLearn (int curve);
+    void cancelLearn();
+    bool isLearningCurve() const noexcept { return learnState.load() != learnIdle; }
+    float getCurveLearnProgress() const noexcept { return learnProgress.load(); }
 
     // For rendered screenshots: stops the analyzers and draws fixed spectra instead.
     // resonances: Phase 3 Q2.7's mockup, two resonances and their reduction.
@@ -88,6 +96,13 @@ private:
     std::vector<float> inputSpectrum, outputSpectrum;
     std::atomic<int> columns { 0 };
     bool frozenSpectra = false;
+
+    // Phase 4 Wave 1: Learn's state, shared with the analyzer thread.
+    enum { learnIdle, learnRequested, learnRunning, learnDone };
+    fir::CurveLearner learner;
+    std::vector<fir::CurvePoint> learnedPoints;
+    std::atomic<int> learnState { learnIdle }, learnCurve { 1 };
+    std::atomic<float> learnProgress { 0.0f };
 
     // Phase 3 Q2.7: Resonance's range, and the preview's reduction per display column.
     float resLowHz = 100.0f, resHighHz = 20000.0f;
