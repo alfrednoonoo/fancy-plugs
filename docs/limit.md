@@ -281,3 +281,50 @@ One push (`3816ef6`), with every recommended option; `tests/LimitW1Tests.cpp`.
 - **Auto to target:** a button in the top row, left of the Target menu, reading "Listening..." with a progress ring for 10 s, then one move of Threshold; greyed while Gain lock is on. Clicking while it listens stops it.
 - **DC filter** (`dcFilter`, "5 Hz high-pass") and **Release curve** (`releaseCurve`, Exponential or Linear) are in the drawer; the linear release is the shared limiter's, off by default.
 - **Peak statistics:** the loudness panel shows the overs count (red when above 0) under the held true peak; a click resets both.
+
+## Phase 4 Wave 2: clipper
+
+**Draft, for approval.** Item 9 of the Wave 2 order (`docs/enhancements.md`; backlog item 3 of section 10). A soft clipper before the limiter, the common clip-then-limit mastering chain: it shaves the fastest peaks (kick and snare clicks, a few ms long), so the limiter, which can only turn the whole signal down, has less to do. Modelled first: `docs/research/limit-clip-model.py`.
+
+### 1. What it does
+
+- `clip` (off) and `clipAmount` (0 to 12 dB, default 3): after Threshold's push and before the limiter, a soft clipper whose ceiling sits 12 − Clip amount dB above Ceiling. At 12 it clips at Ceiling and the limiter only catches what's left; at 0 it's 12 dB above and almost never touches anything.
+- The clip curve is linear up to 6 dB under its ceiling, then a cubic knee that meets the ceiling flat (no corner, so fewer high harmonics than a hard clip).
+- It runs inside Limit's oversampling, at the same rate as the limiter, so at 2× and up its harmonics fold back far less. True peak and the final safety clip are unchanged.
+- Off, it isn't run: a saved project renders as before to the bit.
+
+### 2. What the model found
+
+A drum-like test signal (kicks with a 3 ms click, noise snares, a quiet pad) pushed 8 dB into a 0 dBFS ceiling:
+
+| Clip shaves | Loudness | Limiter GR, mean | GR, deepest | GR on the pad between hits | Clipper's added signal |
+|---|---|---|---|---|---|
+| nothing (limiter alone) | −15.3 dB | 4.3 dB | 17.3 dB | 1.7 dB | none |
+| 3 dB of the peaks | −14.9 dB | 4.1 dB | 14.3 dB | 1.6 dB | −33 dB under the signal |
+| 6 dB of the peaks | −14.1 dB | 3.7 dB | 11.3 dB | 1.5 dB | −25 dB |
+
+So clipping trades a little distortion, all inside the transients, for up to about 1 dB more loudness and gentler limiting at the same push. The manual will say it's for dense, drum-heavy material and that 2 to 4 dB is the usual range.
+
+### 3. Decisions
+
+- **Decision 1: the control.**
+  - **A (R).** One **Clip** amount knob (0 to 12 dB, as above) with an on switch: one number for how hard the clipper works.
+  - **B.** Ozone's pair, **Clip drive** and **Clip ceiling**: more control, but two coupled knobs for one job.
+- **Decision 2: the curve.**
+  - **A (R).** Soft only, the cubic knee: the gentler sound, and the one the model measured.
+  - **B.** A Soft / Hard choice: hard clipping is louder still, with harsher edges.
+- **Decision 3: where it goes.**
+  - **A (R).** In the drawer, with the DC filter and Release curve: a **Clip before limiting** checkbox and the Clip knob. The loudness panel's GR history shows clipped peaks in a second colour, so you can see what the clipper takes. A mockup follows approval.
+  - **B.** On the main window beside Threshold: quicker, but it changes the main layout.
+
+### 4. Tests
+
+1. Legacy: Clip off renders as v1.6.0 (and as Wave 1) at every oversampling and True peak setting.
+2. Peaks: with Clip 12, nothing over Ceiling reaches the limiter; with Clip 6, a test tone 10 dB over Ceiling reaches it at most 6 dB over (soft knee included).
+3. Loudness: the model's signal, Clip shaving 3 dB, comes out louder than the limiter alone by 0.2 to 0.8 dB at the same output ceiling.
+4. Aliasing: a 7 kHz sine clipped by 6 dB at 4× oversampling: no alias above −90 dBFS under 20 kHz.
+5. Output: never over Ceiling (dBTP with True peak), as now.
+
+### 5. Build order
+
+Approval, then the drawer mockup (`reference/phase4/49__limit_w2_mockup.png`), then one push: the clipper in the limiter path, parameters, drawer, the GR history's second colour, tests, manual and checklist.
