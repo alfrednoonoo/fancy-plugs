@@ -363,4 +363,4 @@ A new module type, **EQ**, in the add panel: three bands (low shelf, bell, high 
 5. Drop: a dropped WAV adds a File module with that file; a non-audio file is refused with a message.
 6. Favourites survive a restart and don't appear in the saved state.
 
-Mockup: to follow (`reference/phase4/36__verb_w1_mockup.png`): the EQ card, the library's search and stars, the drawer option.
+Mockup: `reference/phase4/36__verb_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the EQ card, the library's search and stars, the drawer option.

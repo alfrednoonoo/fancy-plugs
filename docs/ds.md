@@ -196,4 +196,4 @@ A **Learn** button in the footer: over 2 s of playback, measures the sibilance b
 3. Slope: at 24 dB/oct the detector filter is 12 dB further down one octave out than at 12 (± 1 dB); the frequency doesn't move.
 4. Ceiling: a full-scale 0 dBFS square with Output +6 dB stays under the ceiling in true peak; latency reported matches.
 
-Mockup: to follow (`reference/phase4/33__ds_w1_mockup.png`): the footer's Learn and the drawer's two settings. DS-Mini's item is in `docs/ds-mini.md`.
+Mockup: `reference/phase4/33__ds_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the footer's Learn and the drawer's two settings. DS-Mini's item is in `docs/ds-mini.md`.

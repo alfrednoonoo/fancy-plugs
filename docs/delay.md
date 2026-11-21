@@ -224,7 +224,7 @@ Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waitin
 
 ### 1. Freeze
 
-`freeze` (off): the input stops entering the taps and every tap's feedback is held at exactly 100 %, with the loop's filters and saturation bypassed while frozen so the loop neither dies nor grows. The frozen loop keeps playing until Freeze goes off, when the taps' own feedback takes over again (a 30 ms crossfade, as toggles do today). A parameter, so it can be automated for build-ups; a checkbox in the footer.
+`freeze` (off): the input stops entering the taps and every tap's feedback is held at exactly 100 %, with the loop's filters and saturation bypassed while frozen so the loop neither dies nor grows. The frozen loop keeps playing until Freeze goes off, when the taps' own feedback takes over again (a 30 ms crossfade, as toggles do today). A parameter, so it can be automated for build-ups. The footer is full, so it's a **Freeze** button on the tap graph, top left: lit and the graph tinted while frozen.
 
 ### 2. Feedback pan per tap: drop it
 
@@ -244,4 +244,4 @@ Each tap already has **Ping-pong** and **Pan** (section "Ping-pong"), which give
 2. Freeze: a burst into a 250 ms tap at 50 % feedback, then Freeze: the loop's level after 10 s is within 0.5 dB of its level at freeze time; new input isn't heard.
 3. Ceiling: feedback 110 % for 10 s never exceeds the ceiling in true peak.
 
-Mockup: to follow (`reference/phase4/38__delay_w1_mockup.png`): Freeze in the footer, the drawer's Ceiling.
+Mockup: `reference/phase4/38__delay_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): Freeze on the tap graph, frozen and not, and the drawer's Ceiling after Ducking.

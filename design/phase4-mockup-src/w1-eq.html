@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy EQ: Phase 4 Wave 1 mockup</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#121212;color:#EDEDED;font-family:Inter,sans-serif;padding:24px;width:1500px}
+h1{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px}
+.lead{font-size:11.5px;color:#8D8D8D;line-height:1.5;max-width:1400px;margin-bottom:18px}
+.sec{margin-bottom:26px}
+.h{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px}
+.n{font-size:11px;color:#8D8D8D;line-height:1.5;max-width:1400px;margin-bottom:8px}
+.row{display:flex;gap:24px;align-items:flex-start}
+.shot{position:relative;flex:none;overflow:hidden;border:1px solid #2a2a2a}
+.shot img{display:block}
+.side{font-size:11px;color:#8D8D8D;line-height:1.55;width:330px}
+.side b{color:#ddd}
+.o{position:absolute}
+.new{outline:1.5px dashed #FFCF07;outline-offset:2px;border-radius:3px}
+.cover{position:absolute;background:var(--bg,#303030)}
+.cb{display:flex;align-items:center;gap:7px;font-size:14px;color:#fff;white-space:nowrap}
+.cb i{width:14px;height:14px;border-radius:3px;background:#1E1E1E;border:1px solid #8D8D8D;display:inline-block;position:relative;flex:none}
+.cb i.x{background:var(--a,#00A985);border-color:var(--a,#00A985)}
+.cb i.x:after{content:"";position:absolute;left:4px;top:1px;width:3.5px;height:7px;border:solid #141414;border-width:0 1.6px 1.6px 0;transform:rotate(45deg)}
+.btn{background:#303030;border-radius:3px;font-size:13px;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.pill{border-radius:12px;font-size:12px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.dd{background:#303030;border-radius:3px;font-size:13px;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;white-space:nowrap}
+.dd:after{content:"\2303\2304";font-size:7px;color:#8D8D8D;writing-mode:vertical-lr;line-height:5px}
+.lbl{font-size:14px;color:#fff;white-space:nowrap}
+.cap{font-size:11px;color:#8D8D8D;white-space:nowrap}
+.val{font-size:13px;white-space:nowrap}
+.menu{background:#262626;border:1px solid #434343;border-radius:6px;padding:4px 0;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.menu div{padding:4px 12px;white-space:nowrap}
+.menu .on{background:#383838}
+</style></head><body><h1>Fancy EQ: Phase 4 Wave 1 mockup</h1><div class="lead">docs/eq.md, Phase 4 Wave 1. New things in dashed yellow, on the plugin's real screenshot (1x coordinates).</div><div class="sec"><div class="h">1 · Band solo (Decision 2 A) and Reach (Decision 4 A)</div><div class="n">Holding Alt while dragging band 2's handle solos it: a purple halo on the handle and LISTENING in the title strip, for as long as the mouse is down. Reach sits under Sidechain in the DYN half, as a small value field in the band colour (the row has no room for a seventh knob); 12 dB is today's curve.</div><div class="row"><div class="shot" style="width:802px;height:645px"><div style="position:absolute;left:0px;top:0px;width:802px;height:645px"><img src="../../docs/images/eq-dynamic.png" style="width:802px;height:645px"><div class="o" style="left:472px;top:229px;width:32px;height:32px;border-radius:16px;background:rgba(154,89,181,.25);border:2px solid #9A59B5;box-shadow:0 0 12px #9A59B5"></div><div class="o new" style="left:512px;top:262px;padding:2px 8px;background:#1e1e1e;border-radius:4px;font-size:11px;color:#fff">Alt-drag: solo band 2</div><div class="o new pill" style="left:356px;top:2px;width:96px;height:16px;background:#9A59B5;color:#141414;font-weight:700;font-size:10px;letter-spacing:.06em">LISTENING</div><div class="cover" style="left:588px;top:545px;width:90px;height:44px;--bg:#303030"></div><div class="o new" style="left:590px;top:548px;display:flex;align-items:center;gap:6px"><span class="cap" style="color:#ddd;font-size:12px">Reach</span><span class="dd" style="width:64px;height:22px;font-size:12px;color:#9A59B5">12 dB</span></div><div class="o new cap" style="left:741px;top:626px;width:54px;text-align:center;color:#00A985">auto &minus;1.8</div></div></div><div class="side"><b>Reach</b> types and drags like a knob's value (1 to 48 dB). <b>auto −1.8</b> under the Gain fader is Auto gain's trim, shown only while Auto gain is on.</div></div></div><div class="sec"><div class="h">2 · Analyzer freeze and Pre + Post</div><div class="n">Freeze sits at the graph's top right while the analyzer is on (the F key too). The frozen spectrum stays, dimmer, under the live one until Freeze is clicked again. The Analyzer menu gains Pre + Post at the end; Auto gain goes in the drawer's free third column.</div><div class="row"><div class="shot" style="width:802px;height:645px"><div style="position:absolute;left:0px;top:0px;width:802px;height:645px"><img src="../../docs/images/eq.png" style="width:802px;height:645px"><div class="o new btn" style="left:640px;top:78px;width:62px;height:22px;font-size:11px;background:#262626;border:1px solid #434343">&#10052; Freeze</div></div></div><div class="side">Freeze is a view action: not saved, no undo step.</div></div></div><div class="sec"><div class="h">3 · EDIT drawer: Auto gain, and the Analyzer menu open</div><div class="n">Auto gain under Peak hold. Off by default: today's output, to the bit.</div><div class="row"><div class="shot" style="width:802px;height:645px"><div style="position:absolute;left:0px;top:0px;width:802px;height:645px"><img src="../../docs/images/eq-edit.png" style="width:802px;height:645px"><div class="o new" style="left:500px;top:575px"><div class="cb"><i class="x"></i>Auto gain</div></div><div class="o new menu" style="left:332px;top:494px;width:140px"><div>Off</div><div>Pre</div><div>Post</div><div class="on">&#10003; Pre + Post</div></div></div></div><div class="side">Decision 3 A: the trim comes from the static curve, pink-weighted, so renders always match.</div></div></div><script>
+const P=(cx,cy,r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];
+function arc(cx,cy,r,a0,a1){const[x0,y0]=P(cx,cy,r,a0),[x1,y1]=P(cx,cy,r,a1);const lg=Math.abs(a1-a0)>Math.PI?1:0;return `M${x0},${y0} A${r},${r} 0 ${lg} ${a1>a0?1:0} ${x1},${y1}`}
+document.querySelectorAll('[data-k]').forEach((el,i)=>{const v=+el.dataset.v,c=el.dataset.c||'#00A985',s=+(el.dataset.s||36),bi=el.dataset.bi!==undefined;
+const R=s/2,cx=R+5,cy=R+5,A=Math.PI*5/6,a=-A+v*2*A,a0=bi?0:-A,tip=P(cx,cy,R*.62,a);
+el.style.display='flex';el.style.flexDirection='column';el.style.alignItems='center';
+el.innerHTML=`<div class="lbl" style="font-size:${el.dataset.fs||13}px">${el.dataset.l||''}</div><svg width="${s+10}" height="${s+10}">
+<defs><linearGradient id="kg${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4F4F4F"/><stop offset="1" stop-color="#454545"/></linearGradient></defs>
+<path d="${arc(cx,cy,R+2.5,Math.min(a0,a),Math.max(a0,a)+.0001)}" stroke="${c}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<circle cx="${cx}" cy="${cy}" r="${R-2}" fill="url(#kg${i})" stroke="rgba(0,0,0,.2)"/>
+<polygon points="${tip.join(',')} ${P(cx,cy,R*.3,a-.42).join(',')} ${P(cx,cy,R*.3,a+.42).join(',')}" fill="${c}"/></svg>
+<div class="val" style="color:${c}">${el.dataset.t||''}</div>`});
+</script></body></html>

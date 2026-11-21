@@ -247,7 +247,7 @@ A **Learn** button on the graph: over 5 s of playback, the spectrum is averaged 
 
 ### 2. Band mute
 
-`bNmute` per band (8 parameters), off by default: a muted band is taken out of the sum entirely (Active off keeps it in the mix, unprocessed). An M button beside the band's Solo.
+`bNmute` per band (8 parameters), off by default: a muted band is taken out of the sum entirely (Active off keeps it in the mix, unprocessed). An M button in the band row, before the channel menu, lit in the band colour when on.
 
 ### 3. Tests
 
@@ -255,4 +255,4 @@ A **Learn** button on the graph: over 5 s of playback, the spectrum is averaged 
 2. Mute: a muted band's frequencies drop by over 60 dB at its centre; the rest stays flat within 0.1 dB of the crossover sum.
 3. Learn: pink noise gives crossovers near today's defaults; a bass-heavy test moves the lowest crossover down.
 
-Mockup: to follow (`reference/phase4/35__multicomp_w1_mockup.png`): the Learn button and the M buttons.
+Mockup: `reference/phase4/35__multicomp_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the Learn button and the M buttons.

@@ -274,11 +274,11 @@ Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waitin
 
 ### 1. Resonance tilt
 
-`resTilt` −100 to +100 %, default 0 (today): Resonance mode's Depth leans towards the highs (positive) or the lows (negative). At +100 % the depth doubles at 16 kHz and halves at 62 Hz, log-linear about 1 kHz; between Low and High only, as Depth is. A small knob beside Depth.
+`resTilt` −100 to +100 %, default 0 (today): Resonance mode's Depth leans towards the highs (positive) or the lows (negative). At +100 % the depth doubles at 16 kHz and halves at 62 Hz, log-linear about 1 kHz; between Low and High only, as Depth is. A small bipolar knob in the Resonance card beside FFT size.
 
 ### 2. Learn for the Gate and Compressor curves
 
-A **Learn** button on the left card in Gate and Compressor modes: over 3 s of playback, every bin's level is measured, and the curve's points are placed on the result.
+A **Learn** button in the top row, between the Mode switch and the Edit menu, shown in Gate and Compressor modes only: over 3 s of playback, every bin's level is measured, and the curve's points are placed on the result.
 
 - **Gate:** the threshold curve at each bin's 20th percentile + 6 dB, so steady noise is under it and the music over it.
 - **Compressor:** the threshold curve at each bin's 80th percentile, so only the loud parts of each band are compressed.
@@ -293,4 +293,4 @@ A **Learn** button on the left card in Gate and Compressor modes: over 3 s of pl
 2. Tilt +100 %: depth at 16 kHz is twice that at 1 kHz (± 10 %).
 3. Learn, Gate: white noise at −50 dBFS plus a tone: the learned curve sits 6 ± 1 dB over the noise and under the tone.
 
-Mockup: to follow (`reference/phase4/41__fir_w1_mockup.png`).
+Mockup: `reference/phase4/41__fir_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`).

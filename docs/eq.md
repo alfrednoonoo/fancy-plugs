@@ -275,7 +275,7 @@ Keeps the output as loud as the input whatever the curve does, so A/B comparison
 - **Decision 3: how the trim is worked out.**
   - **A (R).** From the static curve: the power average of the total response over 20 Hz to 20 kHz, weighted like pink noise, applied as an output trim smoothed over 200 ms. Deterministic: renders always match. Dynamic bands are counted at their static gain.
   - **B.** Measured: input and output loudness compared live, as Compare does. Follows dynamic bands, but pumps on transients and makes renders depend on where playback started.
-- `autoGain`, off by default, on the Output page beside Gain. The applied trim shows under the Gain knob ("auto −1.8 dB").
+- `autoGain`, off by default, a checkbox in the EDIT drawer's third column under Peak hold. The applied trim shows under the Gain fader's value ("auto −1.8").
 
 ### 3. Dynamic reach
 
@@ -284,7 +284,7 @@ Today a dynamic band moves its full Range over the 12 dB past Threshold: the slo
 - **Decision 4: the control.**
   - **A (R).** **Reach** per band, 1 to 48 dB, default 12: how far past Threshold the full Range is reached. 12 is today's curve, bit for bit; 3 is a hard, compressor-like move; 48 a gentle one.
   - **B.** A ratio (0.5:1 to ∞) with an extra "Auto" position at the bottom that keeps today's Range/12 slope. Familiar, but two models in one knob.
-- 24 parameters `bNreach`, on the DYN half of the band editor after Range (a small knob, the band colour).
+- 24 parameters `bNreach`, on the DYN half of the band editor: a small value field under Sidechain, in the band colour (the row has no room for a seventh knob). It drags and types like a knob's value.
 
 ### 4. Analyzer freeze and pre and post together
 
@@ -308,4 +308,4 @@ Plus "Pre + Post" at the end of `analyzer`.
 4. Reach: at Reach 12 the change matches today's formula exactly; at Reach 3 the full Range is reached 3 dB past Threshold (±0.2 dB).
 5. Freeze and Pre + Post draw (screenshot `eq-freeze`).
 
-Mockup: to follow (`reference/phase4/30__eq_w1_mockup.png`): the Freeze button, the auto-trim read-out, the Reach knob in the DYN row.
+Mockup: `reference/phase4/30__eq_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the solo, Reach, the auto-trim read-out, Freeze, the drawer's Auto gain and Pre + Post.

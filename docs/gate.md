@@ -263,7 +263,7 @@ Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waitin
 Play the gate from a MIDI part: note-on opens it, note-off closes it (through Hold and Release as now), and the detector is ignored. For rhythmic gating of pads.
 
 - Gate gains a MIDI input. Its AU is already a music effect; the VST3 gets an event input bus (`NEEDS_MIDI_INPUT`). **Risk:** a changed bus layout can make a host rescan the plugin. Projects should still load (REAPER keys plugins by class ID), and the host-compatibility checks (H) run again before release.
-- `midiIn` (off), a checkbox in the footer. The existing MIDI *output* (trigger notes) is unchanged; both can be on.
+- `midiIn` (off), a checkbox in the drawer (section 6). The existing MIDI *output* (trigger notes) is unchanged; both can be on.
 - **Decision 1: velocity.**
   - **A (R).** Ignored: the gate opens fully on any note.
   - **B.** Sets how far it opens (velocity 127 = fully open, 1 = Range).
@@ -272,11 +272,11 @@ Play the gate from a MIDI part: note-on opens it, note-off closes it (through Ho
 
 With Ratio below ∞, Gate becomes an expander: below Threshold the level falls by `(Threshold − level) × (ratio − 1)` dB, never more than Range. ∞ is today's gate, bit for bit, and the open/hold/close state machine is untouched there.
 
-- `ratio` 1.1:1 to ∞, default ∞, a small knob on the Envelope card after Range.
+- `ratio` 1.1:1 to ∞, default ∞, a knob in the drawer.
 
 ### 3. Auto threshold
 
-A **Learn** button in the footer: listens for 3 s of playback and sets Threshold between the noise floor (the 10th percentile of the detector level) and the hits (the 95th percentile).
+A **Learn** button in the drawer: listens for 3 s of playback and sets Threshold between the noise floor (the 10th percentile of the detector level) and the hits (the 95th percentile).
 
 - **Decision 2: where between them.**
   - **A (R).** A third of the way up from the floor, in dB: opens reliably on soft hits, still shuts on bleed.
@@ -293,10 +293,18 @@ A snare mic hears the kick too; de-bleed makes the gate ignore loud sound outsid
 
 - `deBleed` 0 to 100 %, default 0 (today). The detector compares its filtered level with the level outside the band (input minus filtered); the effective Threshold rises by `deBleed × max (0, outside − inside)` dB, so out-of-band thumps can't open the gate.
 - **Decision 3: keep it in Wave 1?**
-  - **A (R).** Yes, as above: a small knob on the Detector card. It needs Highpass and Lowpass set to mean anything, which the manual says.
+  - **A (R).** Yes, as above: a knob in the drawer. It needs Highpass and Lowpass set to mean anything, which the manual says.
   - **B.** Move it to Wave 2 with the detector modes (item 4), where a band-split detector would do it better.
 
-### 6. Parameters
+### 6. Where the controls go
+
+Gate is the only plugin without an EDIT drawer, and its footer and knob cards are full (checked on its screenshot).
+
+- **Decision 4.**
+  - **A (R).** An **EDIT** link in the top row's free space, after the lookahead's latency note, opens a drawer over the knob cards, as the other plugins have: MIDI trigger, Learn, Ratio and De-bleed. The threshold meter, graph and faders stay visible. Mid and Side go in the Detector input menu.
+  - **B.** Grow the window by a row for the four controls. Always visible, but every Gate window gets taller.
+
+### 7. Parameters
 
 | ID | Name | Range | Default |
 |---|---|---|---|
@@ -306,7 +314,7 @@ A snare mic hears the kick too; de-bleed makes the gate ignore loud sound outsid
 
 Plus "Mid" and "Side" at the end of `detector`.
 
-### 7. Tests
+### 8. Tests
 
 1. Legacy: v1.6.0's Gate against the new one, Gate and Duck modes, lookahead on and off: identical.
 2. MIDI: a note-on at sample 1000 opens the gate there (± attack), a note-off closes it after Hold and Release, with the input silent of hits.
@@ -316,4 +324,4 @@ Plus "Mid" and "Side" at the end of `detector`.
 6. De-bleed 100 %: with Highpass 200 Hz, a 60 Hz burst 20 dB over Threshold doesn't open the gate; a 1 kHz one does.
 7. Host checks (H) with the new MIDI input.
 
-Mockup: to follow (`reference/phase4/32__gate_w1_mockup.png`): footer (MIDI trigger, Learn), Ratio on the Envelope card, De-bleed on the Detector card.
+Mockup: `reference/phase4/32__gate_w1_mockup.png`: the EDIT link, the Detector menu with Mid and Side, and the drawer.

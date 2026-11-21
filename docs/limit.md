@@ -242,7 +242,7 @@ Lower the Threshold and Limit gets louder; with Gain Lock on, the output is turn
 
 ### 2. Auto to Target
 
-A button in the loudness panel: measures the integrated loudness for 10 s of playback (a progress ring in the button), then moves Threshold by `target − measured`, once. An action, not a parameter: one undo step. With Gain Lock on, it's greyed out (the two contradict).
+A button in the top row, left of the Target menu: measures the integrated loudness for 10 s of playback (a progress ring in the button), then moves Threshold by `target − measured`, once. An action, not a parameter: one undo step. With Gain Lock on, it's greyed out (the two contradict).
 
 ### 3. DC filter and release shape
 
@@ -271,4 +271,4 @@ The loudness panel's true-peak read-out gets a held maximum since the last reset
 5. Release curve: linear falls at a constant dB rate (Comp's test).
 6. Peak statistics: the held maximum equals the largest true peak measured offline within 0.1 dB.
 
-Mockup: to follow (`reference/phase4/31__limit_w1_mockup.png`): the footer's Gain lock, the Auto to Target button and the peak statistics in the loudness panel, the drawer's two settings.
+Mockup: `reference/phase4/31__limit_w1_mockup.png`: Gain lock in the footer, **Auto to target** in the top row left of the Target menu (not in the loudness panel, which has no room), the peak statistics beside True peak, and the drawer's two rows.

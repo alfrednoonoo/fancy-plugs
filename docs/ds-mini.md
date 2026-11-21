@@ -181,4 +181,4 @@ With Auto on, Amount rides itself: the more sibilant the voice (the profile band
 2. Auto: the same voice with its "s" sounds 6 dB louder gets more reduction (at least 2 dB more) with Auto on; with Auto off, the same.
 3. The working value never leaves the ±30 % window.
 
-Mockup: to follow (`reference/phase4/34__dsmini_w1_mockup.png`): the Auto pill and the second arc.
+Mockup: `reference/phase4/34__dsmini_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the Auto pill and the second arc.

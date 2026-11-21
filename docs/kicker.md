@@ -106,4 +106,4 @@ All five settings in the EDIT drawer (Sub length, Make-room and Polarity in a Su
 4. Polarity: the sub with Polarity on sums with it off to under −90 dBFS.
 5. Ceiling and auto gain, as Exciter's tests.
 
-Mockup: to follow (`reference/phase4/40__kicker_w1_mockup.png`).
+Mockup: `reference/phase4/40__kicker_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`).

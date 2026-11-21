@@ -268,4 +268,4 @@ A gate on the tail, for gated drum reverbs: when the **input** has been under `g
 4. Gate: a drum hit then silence: the wet signal is 60 dB down within hold + decay + 10 ms.
 5. Auto gain: Decay 1 s against 6 s on the same pink-noise burst: wet RMS within 1.5 dB with Auto gain on.
 
-Mockup: to follow (`reference/phase4/37__room_w1_mockup.png`), for Decision 1 A: the drawer's Tone and Gate groups.
+Mockup: `reference/phase4/37__room_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`), for Decision 1 A: the drawer's Tone and Gate groups.

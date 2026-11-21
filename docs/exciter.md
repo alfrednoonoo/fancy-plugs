@@ -76,11 +76,11 @@ Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waitin
 
 ### 1. Listen to added harmonics
 
-A temporary listen (§0.3), a footer checkbox in the accent: plays only what Exciter adds (the output minus the latency-aligned input, before Output), so Harmonics and Clip Boost can be set by ear.
+A temporary listen (§0.3), a checkbox in the accent above the footer (EDIT and the name): plays only what Exciter adds (the output minus the latency-aligned input, before Output), so Harmonics and Clip Boost can be set by ear.
 
 ### 2. THD read-out
 
-Like Sature's harmonics card, but as one line under the meters: a background thread runs a private copy of Exciter's path (Freq, Clip Boost, Harmonics, Mix Back, Character, oversampling) on a test tone whenever one of those changes, and the read-out says "THD 2.4 %".
+Like Sature's harmonics card, but as one line under the meters: a background thread runs a private copy of Exciter's path (Freq, Clip Boost, Harmonics, Mix Back, Character, oversampling) on a test tone whenever one of those changes, and the read-out under the Out meter says "THD 2.4 %".
 
 - **Decision 1: the test tone.**
   - **A (R).** One octave above Freq, at −12 dBFS: always inside the band Exciter works on, so the figure moves with every knob.
@@ -106,4 +106,4 @@ Like Sature's harmonics card, but as one line under the meters: a background thr
 4. Ceiling: Clip Boost 24 dB on a full-scale signal stays under the ceiling in true peak.
 5. Auto gain: on pink noise, output RMS within 0.5 dB of input RMS at Harmonics 100 %.
 
-Mockup: to follow (`reference/phase4/39__exciter_w1_mockup.png`): the footer's listen, the THD line, the drawer.
+Mockup: `reference/phase4/39__exciter_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the footer's listen, the THD line, the drawer.
