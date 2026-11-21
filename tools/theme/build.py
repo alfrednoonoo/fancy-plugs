@@ -200,9 +200,10 @@ COLOURS = {
     "timesig_sel_bg": TEAL_DARK,
     "col_tsigmark": TXT2,
 
-    # Meters: the suite's gradient, top to bottom, with the red clip cap
-    "col_vutop": METER_TOP,
-    "col_vumid": "#80E74E",
+    # Meters (user, 21 November 2026): red at the very top, through yellow, to green at the bottom,
+    # with the red clip cap. The plugins' own meters keep the suite's yellow-to-green.
+    "col_vutop": RED,
+    "col_vumid": METER_TOP,
     "col_vubot": METER_BOT,
     "col_vuclip": RED,
     "col_vuintcol": WELL,

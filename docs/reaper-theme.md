@@ -10,6 +10,7 @@ Approved by the user on 21 November 2026. Mockup: `design/reaper-theme-mockup/in
 - **Menus follow the design rules where REAPER allows it** (section 8).
 - **Knobs and faders in the track's colour** (mockup A2; user, 21 November 2026): the volume and pan knobs' arc and pointer and the fader fill take the track's colour. A track in a dark shade uses that hue's bright colour, a track with no colour uses white, and the master uses teal. If REAPER can't recolour these per track (to be tested early in Stage B with a screenshot from the user), they're white everywhere (mockup A3).
 - **Title bar** (section 9).
+- **Meters** (user, 21 November 2026): red at the very top, shading through yellow to green at the bottom (`#E74D3D`, `#FFCF07`, `#00FF96`), with the red clip cap. This replaces the suite's yellow-to-green for the theme only; the plugins' meters are unchanged. Stage C's meter images follow it.
 
 ## 1. What it is
 
