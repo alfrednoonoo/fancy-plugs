@@ -11,6 +11,8 @@ on:
       - 'site-src/**'
       - 'tools/site/**'
       - 'content-src/**'
+      - 'theme/**'
+      - 'tools/theme/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
     inputs:
