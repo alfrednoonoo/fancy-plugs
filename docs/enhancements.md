@@ -282,10 +282,28 @@ features).
    MIDI in, ratio, auto threshold and Mid/Side sources; DS auto threshold and slope; Delay freeze and
    ceiling; Verb auto gain, Post-EQ module and IR browser; Room Mod Rate/Depth, reverb EQ and gate;
    Exciter delta and THD; Kicker sub length, make-room, polarity and auto gain; FIR resonance tilt.
-2. **Wave 2** — one design note per item, each with a Python model first, in this order:
-   MultiComp dynamic-phase crossover, FIR depth nodes, Comp tempo-synced trigger (then Gate's),
-   Sature outer-band drive, Comp Optical mode, Verb decay module, Verb ducking and level gate, Limit clipper, DS
-   dual-band, Gate detector modes.
+2. **Wave 2** — one design note per item, each with a Python model first, in this order
+   (items 11 onwards added by the user on 21 November 2026, grouped by plugin):
+   1. MultiComp dynamic-phase crossover (done), 2. FIR depth nodes (done), 3. Comp tempo-synced
+   trigger (done), 4. Gate tempo-synced trigger, 5. Sature outer-band drive, 6. Comp Optical mode,
+   7. Verb decay module, 8. Verb ducking and level gate, 9. Limit clipper, 10. DS dual-band,
+   11. Gate detector modes, 12. Gate upward expansion,
+   13. Comp sidechain EQ to 6 bands, 14. Comp link modes,
+   15. EQ brickwall cut slope, 16. EQ character output stage,
+   17. Verb attack/onset, 18. Verb width to 200 %,
+   19. Room per-band decay, 20. Room attack/onset, 21. Room external sidechain for Ducking,
+   22. Delay LFO waveform and per-tap phase,
+   23. MultiComp per-band lookahead, 24. MultiComp per-band detector EQ, 25. MultiComp per-band
+   crossover slope, 26. MultiComp per-band GR history,
+   27. FIR ratio curve for Compressor mode, 28. FIR Mid/Side mode, 29. FIR attack and release in EQ mode,
+   30. Limit M/S and per-channel link, 31. Limit external sidechain,
+   32. DS per-channel M/S reduction, 33. DS hiss mode, 34. DS-Mini hiss profile,
+   35. Sature curve shaping (Offset, Knee), 36. Sature curve families (diode, fold), 37. Sature low and
+   high cut, 38. Sature harmonic spread, 39. Sature Mid/Side,
+   40. Exciter two-band, 41. Exciter transient emphasis, 42. Exciter low and high cut, 43. Exciter
+   harmonics width, 44. Exciter minimum-phase oversampling,
+   45. Kicker oversampled soft clipper,
+   46. ▲ EQ band list and groups (layout approval first).
 3. **Wave 3** — Limit multiband (▲), Gate multiband (▲), EQ spectral dynamics, Verb freeze and
    shimmer, Room shimmer, Delay reverse and pitch taps.
 
