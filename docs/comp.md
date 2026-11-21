@@ -365,3 +365,14 @@ Range shows and types "Off" at the top of its travel, as Dry shows −inf at the
 ### 8. Build order
 
 One push with everything: the follower's Hold, Range, the listen target, `LevelHistory`, the drawer page, the footer and the tests. Then the screenshots (`comp`, `comp-options`, `comp-history`, `comp-listening`), the manual, the checklist and the CPU figures. Before the push, a Python model of test 4 (Hold's distortion) to set its margin. Then the REAPER check, then the next plugin of Wave 1, EQ.
+
+### 9. As built
+
+Push 1 (`2991726`) holds the whole item. The model is `docs/research/comp-w1-model.py`: at 50 Hz, 12 dB over a 4:1 threshold with Attack 1 ms and Release 20 ms, Hold 0 gives −26.6 dB THD and Hold 10 or 30 ms −134 dB. Once Hold is longer than the period the gain is flat between peaks, so test 4 asks for 30 dB less and under −60 dB.
+
+- **Hold:** `Ballistics::setHold` and the follower's countdown in `fancy/dsp/Compression.h`. Comp's lift uses its own copy of the ballistics with Hold at 0 (`upBallistics`).
+- **Range:** the parameter runs 1 to 41 dB, and 41 shows and types as "Off"; the DSP gets 0 for Off. Moves are smoothed over 20 ms, and switching it on starts at its value.
+- **Listen to removed:** `FancyProcessor::setListenTarget` and `ListenCheckbox`'s optional target; Comp's Preview filter is target 0. The removed signal fades in and out over 10 ms, at the oversampled rate and at the base rate where Wet, Dry and Output are bypassed.
+- **History:** `fancy/dsp/LevelHistory.h` (the recorder, at the oversampled rate, so it keeps time at every oversampling) and `fancy::ui::LevelHistory`, plus `fancy::ui::ToggleCheckbox` for Grid. **Changed from section 5:** DS and DS-Mini keep `DeEsserHistory`. Its column type is the de-esser engine's, and moving two released plugins over would only add risk to this item; the move can wait for the first item that needs one widget for both. The caption reads "paused - click to go on" while paused.
+- **Footer:** x 24, 167, 314, 453 and 624, as measured in the mockup.
+- **Tests:** `tests/CompW1Tests.cpp`; `tests/LegacyCompQ25Dsp.*` is `CompDsp` at v1.6.0.

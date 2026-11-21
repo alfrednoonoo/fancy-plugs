@@ -29,6 +29,7 @@ Fancy Comp is a compressor with a sidechain input, detector filters, lookahead a
 | Link channels | on | Both channels share gain reduction, which keeps the stereo image steady |
 | Auto make-up | off | Adds back half of the gain reduction a full-scale signal would get |
 | Preview filter | off | Lets you hear the filtered detector signal, to set Lowpass and Highpass. It's temporary: it turns off when you close the window, it's never saved in a project or preset, and it isn't automatable. While it's on, the title strip shows **LISTENING**. A project saved with it on in v1.2.0 or earlier opens with it off |
+| Listen to removed | off | Plays only what the compression takes off, before make-up, so you hear which parts of the sound it's pulling down: the attack of a snare, the low end of a mix. It's temporary, like Preview filter, and the two switch each other off. Wet, Dry and Output don't apply while it's on |
 | Limit output | off | Turns on a brickwall limiter with a 0 dBFS ceiling. It adds 104 samples of latency |
 
 ## Detector input
@@ -44,7 +45,7 @@ To use the sidechain in REAPER, route another track to channels 3 and 4 of this 
 
 ## EDIT drawer
 
-Click **EDIT** at the right of the Detector input row to open it, and **Done** to close it. A switch in its title row picks one of four pages: **Detector**, **Character**, **Upward** and **Options**. The drawer opens on the page you used last.
+Click **EDIT** at the right of the Detector input row to open it, and **Done** to close it. A switch in its title row picks one of five pages: **Detector**, **Character**, **Upward**, **Options** and **History**. The drawer opens on the page you used last.
 
 ### Options
 
@@ -57,6 +58,8 @@ Click **EDIT** at the right of the Detector input row to open it, and **Done** t
 | Attack = 90 % rise | off | See below |
 | Link amount | 100 % | How strongly linked channels follow the louder one |
 | Output | 0.0 dB | The same control as the header knob |
+| Hold | 0.0 ms | The release waits this long after the last peak. With fast settings and peak detection, the gain otherwise follows each cycle of a low note, which is distortion: a Hold a little longer than the note's period (20 ms for 50 Hz) keeps it steady. The upward lift doesn't hold |
+| Range | Off | The most gain reduction Comp will apply, 1 to 40 dB; Off is the top of the knob. With Auto threshold it makes a level rider that never pulls a passage down by more than Range. Auto make-up then adds back half of what Range allows, not half of what the curve would take |
 
 Aliasing only matters with very fast settings on bright material. In a harsh test (15 kHz sine, attack 0.1 ms, release 1 ms), the worst alias is -56.8 dBFS with oversampling off, -79.2 dBFS at 2x and -100.9 dBFS at 4x.
 
@@ -85,6 +88,17 @@ The graph shows the curve for the current Type and Drive, input against output. 
 Upward compression raises quiet passages, as in Fancy MultiComp: below **Up threshold** the level is raised by **Up ratio** (1:2 lifts a signal 10 dB under the Up threshold by 5 dB), up to **Max lift**. Below **Floor** nothing is raised, and the lift fades out over the 8 dB above it, so noise and silence stay where they are. Up threshold is held at or below Threshold. The lift uses Attack and Release (and Auto release) like the downward part.
 
 The graph draws the whole static curve, downward in teal and upward in green, with a dot at the current level. The GR meter still shows only the reduction.
+
+### History
+
+The last seconds of what Comp did, oldest on the left: the input waveform in grey, the output in teal over it (before make-up, so the gap between them is what was taken off), the gain reduction as a yellow line from the top (0 to 24 dB, scale on the right; unlinked, the right channel is a lighter second line) and the threshold in use as a dashed pair of lines.
+
+- **1.5 s, 3 s, 6 s, 12 s** sets how much time is shown.
+- **Grid** draws beat lines, and bar lines brighter, from REAPER's tempo while it plays.
+- **Click the graph** to pause it, and again to go on. The audio carries on.
+- **peak** at the top right is the largest reduction in view; click it to clear it.
+
+The history keeps recording while the drawer is closed, so it's current when you open it.
 
 ## Attack and release times
 

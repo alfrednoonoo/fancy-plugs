@@ -227,7 +227,7 @@ void LevelHistory::paint (juce::Graphics& g)
     // The threshold in use, a dashed pair at its level.
     if (threshold > -100.0f)
     {
-        const auto level = juce::jmin (1.0f, juce::Decibels::decibelsToGain (threshold)) * amplitude;
+        const auto level = juce::jmin (1.0f, std::pow (10.0f, threshold / 20.0f)) * amplitude;
         const float dashes[] { 4.0f, 4.0f };
         g.setColour (juce::Colours::white.withAlpha (0.45f));
 

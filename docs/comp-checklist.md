@@ -109,6 +109,17 @@ Tell me "Comp OK", or list which items failed and what you saw. Once it's OK, I'
 - [ ] The three new presets (Warm Bus, Upward Vocal, Level Rider) load from the preset browser, in Bus and Vocals.
 - [ ] Save the project with every stage on, close and reopen: everything comes back, including the drawer's settings.
 
+## Hold, Range, Listen to removed and History (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Comp: it loads, looks and sounds as before. Hold reads 0.0 ms and Range Off.
+- [ ] The footer has five checkboxes, evenly spaced: Link channels, Auto make-up, Preview filter, **Listen to removed**, Limit output.
+- [ ] **Listen to removed:** on a drum bus with a few dB of reduction: you hear only the hits being pulled down. Preview filter on: Listen to removed goes off, and the other way round. Close the window: both off.
+- [ ] **Hold:** on a bass, Attack 1 ms, Release 20 ms, RMS size 0: buzzy. Hold 30 ms (Options page): the buzz goes.
+- [ ] **Range:** Ratio inf:1, Threshold -40 dB on a loud track: the GR meter stops at Range (try 6 and 12 dB). Top of the knob reads Off. With Auto make-up on, the level comes back by half of Range.
+- [ ] **History:** EDIT > History while playing: grey input, teal output, yellow reduction line, dashed threshold. Beat lines move with the music; Grid off hides them. Try each zoom. Click the graph: it freezes and the caption says paused; click again. Click "peak": it clears.
+- [ ] Linked off on a stereo source with different channels: a second, lighter reduction line.
+- [ ] Save with Hold and Range set, close and reopen: both come back; neither listen switch is on.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

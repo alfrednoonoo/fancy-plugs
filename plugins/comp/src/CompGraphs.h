@@ -37,7 +37,7 @@ private:
 
 // The history page's read-out (docs/comp.md, Phase 4 Wave 1, section 5): the largest reduction
 // in view, in the GR meter's yellow, or "paused" while the history is. A click calls onClick.
-class HistoryCaption final : public juce::Component
+class HistoryCaption final : public juce::Component, public juce::SettableTooltipClient
 {
 public:
     void setText (const juce::String& newText, bool isPaused);
