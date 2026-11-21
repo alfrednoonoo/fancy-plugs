@@ -21,7 +21,7 @@ constexpr int maxCurvePoints = 64;
 
 inline double defaultCurveDb (int curve) noexcept
 {
-    constexpr double defaults[] { 0.0, -60.0, -30.0 };
+    constexpr double defaults[] { 0.0, -60.0, -30.0, 100.0 };
     return defaults[std::clamp (curve, 0, numCurves - 1)];
 }
 
@@ -87,6 +87,12 @@ inline double freehandAt (const std::array<float, curvePoints>& table, double hz
     const auto fraction = position - (double) index;
 
     return (double) table[(size_t) index] + fraction * (double) (table[(size_t) index + 1] - table[(size_t) index]);
+}
+
+// What a curve's values may be: dB for EQ, Gate and Compressor, percent for the depth curve.
+inline double clampCurveValue (int curve, double value) noexcept
+{
+    return curve == depthCurve ? std::clamp (value, 0.0, maxDepthPercent) : std::clamp (value, -150.0, 48.0);
 }
 
 inline void sortPoints (std::vector<CurvePoint>& points)

@@ -63,6 +63,13 @@ private:
     void analyse (fancy::dsp::SpectrumAnalyzer& before, fancy::dsp::SpectrumAnalyzer& after, std::vector<float>& scratch);
 
     bool editsCurve() const noexcept;
+
+    // Phase 4 Wave 2: which curve the mode edits (Resonance: the depth curve), and its values on
+    // the graph, which for the depth curve depend on Depth, Tilt and the frequency.
+    int curve() const noexcept;
+    double ceilingScale (double hz) const noexcept;
+    float yForValue (double value, double hz) const noexcept;
+    double valueAt (float y, double hz) const noexcept;
     float yFor (float db) const noexcept;
     float dbAt (float y) const noexcept;
     int pointAt (juce::Point<float> position) const;
@@ -106,6 +113,7 @@ private:
 
     // Phase 3 Q2.7: Resonance's range, and the preview's reduction per display column.
     float resLowHz = 100.0f, resHighHz = 20000.0f;
+    float resDepthDb = 6.0f, resTilt = 0.0f; // Phase 4 Wave 2
     std::vector<float> previewReduction;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FirGraph)

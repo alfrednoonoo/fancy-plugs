@@ -338,4 +338,13 @@ There's no new signal processing: a node curve changes one clamp per bin. Rather
 
 ### 5. Mockup and build order
 
-The graph's look changes in Resonance mode (a ceiling line with nodes), so a mockup comes first after this note: `reference/phase4/42__fir_w2_mockup.png`, from the Resonance screenshot. Then one push: engine, graph editing, state, tests, manual and checklist.
+The graph's look changes in Resonance mode (a ceiling line with nodes), so a mockup comes first after this note: `reference/phase4/42__fir_w2_mockup.png`, from the Resonance screenshot, **approved by the user on 21 November 2026**. Then one push: engine, graph editing, state, tests, manual and checklist.
+
+### 6. As built
+
+One push.
+
+- **Curve 3:** `fir::numCurves` is 4, with `depthCurve` = 3 in percent (flat 100, `clampCurveValue` holds it to 0 to 200; the dB curves keep -150 to +48). `fir::Shared` starts it at 100, so an engine built without the processor takes the old path. The engine marks the curve flat when every bin reads exactly 100 and then skips it; otherwise each bin's ceiling is Depth x Tilt's factor x the curve.
+- **Graph:** Resonance edits curve 3 (`FirGraph::curve`), drawn where the ceiling lands: `yForValue` and `valueAt` convert between percent and the graph's dB with Depth and Tilt at that frequency. The ceiling is dashed in the mode colour between Low and High, with a light fill from 0 dB and the nodes on it. Editing is the curves' own: a click on the line adds a node, drag moves it, Alt-click deletes it and right-click types it (Depth in %), Ctrl-drag moves the whole curve; double-click puts a node back to 100 %. **Changed from the mockup's notes:** they said double-click adds and right-click deletes; the Gate and Compressor curves add on click, delete with Alt-click and type with right-click, and the depth curve works the same way.
+- **Reset curve** sits in the Range card's top row, beside RANGE, in Resonance mode only.
+- **Tests:** `tests/FirW2Tests.cpp`; FirW1Tests' legacy test covers the flat curve.

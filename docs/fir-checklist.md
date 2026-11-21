@@ -119,6 +119,12 @@
 - [ ] Gate mode on a noisy guitar: Learn while playing; after 3 s the curve sits just over the hiss, the hiss is gated between phrases and the notes come through. The points can be dragged; Undo brings the old curve back.
 - [ ] Compressor mode: Learn places the curve at the loud parts. Learn hides in the other modes.
 
+## Depth nodes (Phase 4 Wave 2)
+
+- [ ] Resonance mode: the dashed ceiling sits at -Depth between Low and High; a project from before it sounds the same.
+- [ ] Add a node at 3 kHz and drag it down: that region is cut harder, up to twice Depth; drag one to 0 %: nothing is cut there. Depth and Tilt still scale the whole curve.
+- [ ] Right-click a node to type its percentage; Reset curve makes it flat; Undo, A/B and a project reload keep the nodes.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

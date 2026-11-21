@@ -126,7 +126,8 @@ private:
     // Per bin, per channel.
     std::vector<float> gains[2], envelopes[2], priorSnr[2], smoothedKey[2], mask[2];
     std::vector<float> binHz, curveDb[numCurves], profilePower, scratch, detectorLevels;
-    int seenCurveVersion[numCurves] { -1, -1, -1 };
+    int seenCurveVersion[numCurves] { -1, -1, -1, -1 };
+    bool depthFlat = true; // Phase 4 Wave 2: the depth curve at 100 % everywhere
     int seenProfileVersion = -1;
     bool profileReady = false;
 

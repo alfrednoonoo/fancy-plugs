@@ -17,7 +17,11 @@ constexpr int numModes = 6;
 enum Source { learnedSource, adaptiveSource, bothSources };
 enum EditMode { smoothPoints, flatPoints, freehand };
 
-constexpr int numCurves = 3; // EQ, Gate and Compressor
+// EQ, Gate and Compressor, in dB; then Phase 4 Wave 2's Resonance depth curve, in percent of
+// Depth (docs/fir.md), appended so saved indices keep their meaning.
+constexpr int numCurves = 4;
+constexpr int depthCurve = 3;
+constexpr double maxDepthPercent = 200.0;
 
 constexpr int numSizes = 9;
 constexpr int sizes[numSizes] { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768 };
@@ -61,6 +65,10 @@ struct Shared
         for (auto& curve : curves)
             for (auto& value : curve)
                 value.store (0.0f);
+
+        // Phase 4 Wave 2: the depth curve starts flat at 100 %, today's Resonance.
+        for (auto& value : curves[(size_t) depthCurve])
+            value.store ((float) 100.0);
 
         for (auto& value : profile)
             value.store (0.0f);

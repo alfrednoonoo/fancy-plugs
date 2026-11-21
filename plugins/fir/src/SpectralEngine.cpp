@@ -268,6 +268,10 @@ void SpectralEngine::refreshCurve (int curve) noexcept
 
         curveDb[curve][(size_t) k] = low + fraction * (high - low);
     }
+
+    // Phase 4 Wave 2: a flat depth curve leaves Resonance on its old path, to the bit.
+    if (curve == depthCurve)
+        depthFlat = std::all_of (curveDb[curve].begin(), curveDb[curve].end(), [] (float value) { return value == 100.0f; });
 }
 
 void SpectralEngine::refreshProfile() noexcept
@@ -1007,7 +1011,9 @@ void SpectralEngine::computeResonance (double* reductionColumns) noexcept
     const auto depth = std::max (0.0, settings.resDepthDb);
 
     // Phase 4 Wave 1: with a tilt, each bin's Depth is scaled; at 0 the old path, to the bit.
+    // Phase 4 Wave 2: and by the depth curve's nodes, when it isn't flat.
     const auto tilted = settings.resTilt != 0.0;
+    const auto noded = ! depthFlat;
 
     if (tilted && settings.resTilt != resTiltShown)
         prepareResonanceTilt (settings.resTilt);
@@ -1015,7 +1021,10 @@ void SpectralEngine::computeResonance (double* reductionColumns) noexcept
     for (int k = 0; k < bins; ++k)
     {
         const auto excess = (double) resLevel[(size_t) k] - (double) resEnvelope[(size_t) k] - resonanceToleranceDb;
-        const auto binDepth = tilted ? depth * (double) resTiltFactor[(size_t) k] : depth;
+        auto binDepth = tilted ? depth * (double) resTiltFactor[(size_t) k] : depth;
+
+        if (noded)
+            binDepth *= std::clamp ((double) curveDb[depthCurve][(size_t) k], 0.0, maxDepthPercent) * 0.01;
         const auto target = std::clamp (excess, 0.0, binDepth) * (double) resWeight[(size_t) k];
 
         auto reduction = (double) resReduction[(size_t) k];

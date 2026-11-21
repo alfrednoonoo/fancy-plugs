@@ -167,6 +167,8 @@ void FirGraph::update()
     showAnalysis = value ("showAnalysis") >= 0.5f;
     resLowHz = value ("resLow");
     resHighHz = value ("resHigh");
+    resDepthDb = value ("resDepth");
+    resTilt = value ("resTilt");
 
     // Phase 4 Wave 1: a finished Learn sets the curve, as points or, in Freehand, as the table.
     if (learnState.load() == learnDone)
@@ -292,7 +294,30 @@ void FirGraph::showPreviewSpectra (bool resonances)
 
 bool FirGraph::editsCurve() const noexcept
 {
-    return mode == eq || mode == gate || mode == compressor;
+    return mode == eq || mode == gate || mode == compressor || mode == resonance;
+}
+
+// Phase 4 Wave 2: Resonance edits the depth curve, in percent of Depth, drawn where its ceiling
+// lands (Depth x the curve x Tilt, hanging from 0 dB). The other curves are in dB as drawn.
+int FirGraph::curve() const noexcept
+{
+    return mode == resonance ? fir::depthCurve : mode;
+}
+
+double FirGraph::ceilingScale (double hz) const noexcept
+{
+    return std::max (0.05, (double) resDepthDb * fir::SpectralEngine::tiltFactor (hz, (double) resTilt * 0.01)) * 0.01;
+}
+
+float FirGraph::yForValue (double value, double hz) const noexcept
+{
+    return mode == resonance ? yFor ((float) (-value * ceilingScale (hz))) : yFor ((float) value);
+}
+
+double FirGraph::valueAt (float y, double hz) const noexcept
+{
+    return mode == resonance ? fir::clampCurveValue (fir::depthCurve, -(double) dbAt (y) / ceilingScale (hz))
+                             : (double) dbAt (y);
 }
 
 float FirGraph::yFor (float db) const noexcept
@@ -327,11 +352,11 @@ int FirGraph::pointAt (juce::Point<float> position) const
     if (! editsCurve() || editMode == fir::freehand)
         return -1;
 
-    const auto& points = processor.getPoints (mode);
+    const auto& points = processor.getPoints (curve());
 
     for (int i = (int) points.size() - 1; i >= 0; --i)
     {
-        const juce::Point<float> handle (xForHz (points[(size_t) i].hz, (float) getWidth()), yFor ((float) points[(size_t) i].db));
+        const juce::Point<float> handle (xForHz (points[(size_t) i].hz, (float) getWidth()), yForValue (points[(size_t) i].db, points[(size_t) i].hz));
 
         if (handle.getDistanceFrom (position) <= grabRadius)
             return i;
@@ -459,6 +484,53 @@ void FirGraph::paintModeLayer (juce::Graphics& g)
             g.fillRect (x0, zero, x1 - x0, yFor (-reduction) - zero);
         }
 
+        // Phase 4 Wave 2 (reference/phase4/42__fir_w2_mockup.png): the depth ceiling, dashed,
+        // between Low and High, with the nodes on it.
+        juce::Path ceiling;
+        const auto from = std::max (plotLeft, left), to = std::min (width - plotRight, right);
+
+        for (auto x = from; x <= to; x += 1.0f)
+        {
+            const auto hz = hzForX (x, width);
+            const auto y = juce::jlimit (plotTop, bottom, yForValue (processor.curveDbAt (fir::depthCurve, hz), hz));
+
+            if (x == from)
+                ceiling.startNewSubPath (x, y);
+            else
+                ceiling.lineTo (x, y);
+        }
+
+        if (! ceiling.isEmpty())
+        {
+            auto fill = ceiling;
+            fill.lineTo (to, zero);
+            fill.lineTo (from, zero);
+            fill.closeSubPath();
+
+            g.setColour (colour.withAlpha (0.10f));
+            g.fillPath (fill);
+
+            juce::Path dashed;
+            const float dashes[] { 5.0f, 3.0f };
+            juce::PathStrokeType (1.6f).createDashedStroke (dashed, ceiling, dashes, 2);
+            g.setColour (colour);
+            g.fillPath (dashed);
+        }
+
+        if (editMode != fir::freehand)
+        {
+            for (const auto& point : processor.getPoints (fir::depthCurve))
+            {
+                const juce::Point<float> centre (xForHz (point.hz, width), yForValue (point.db, point.hz));
+                const auto circle = juce::Rectangle<float> (pointRadius * 2.0f, pointRadius * 2.0f).withCentre (centre);
+
+                g.setColour (colours::textPrimary);
+                g.fillEllipse (circle);
+                g.setColour (colour);
+                g.drawEllipse (circle, 2.0f);
+            }
+        }
+
         return;
     }
 
@@ -517,7 +589,7 @@ void FirGraph::paintModeLayer (juce::Graphics& g)
     if (! editsCurve() || editMode == fir::freehand)
         return;
 
-    for (const auto& point : processor.getPoints (mode))
+    for (const auto& point : processor.getPoints (curve()))
     {
         const juce::Point<float> centre (xForHz (point.hz, width), yFor ((float) point.db));
         const auto circle = juce::Rectangle<float> (pointRadius * 2.0f, pointRadius * 2.0f).withCentre (centre);
@@ -639,7 +711,7 @@ void FirGraph::paintAdaptive (juce::Graphics& g)
 
 void FirGraph::drawFreehand (juce::Point<float> from, juce::Point<float> to)
 {
-    auto table = processor.getFreehand (mode);
+    auto table = processor.getFreehand (curve());
 
     const auto width = (float) getWidth();
     const auto first = curvePosition (hzForX (juce::jmin (from.x, to.x), width));
@@ -650,14 +722,14 @@ void FirGraph::drawFreehand (juce::Point<float> from, juce::Point<float> to)
         const auto x = xForHz (curveHz (i), width);
         const auto t = to.x == from.x ? 1.0f : (x - from.x) / (to.x - from.x);
 
-        table[(size_t) i] = juce::jlimit (-150.0f, 48.0f, dbAt (from.y + (to.y - from.y) * t));
+        table[(size_t) i] = (float) fir::clampCurveValue (curve(), valueAt (from.y + (to.y - from.y) * t, curveHz (i)));
     }
 
     // A single click still sets the nearest value.
     const auto nearest = juce::jlimit (0, curvePoints - 1, juce::roundToInt (curvePosition (hzForX (to.x, width))));
-    table[(size_t) nearest] = juce::jlimit (-150.0f, 48.0f, dbAt (to.y));
+    table[(size_t) nearest] = (float) fir::clampCurveValue (curve(), valueAt (to.y, curveHz (nearest)));
 
-    processor.setFreehand (mode, table);
+    processor.setFreehand (curve(), table);
 }
 
 void FirGraph::mouseDown (const juce::MouseEvent& event)
@@ -675,7 +747,7 @@ void FirGraph::mouseDown (const juce::MouseEvent& event)
         if (event.mods.isCommandDown() || event.mods.isCtrlDown())
         {
             draggingCurve = true;
-            dragStartTable = processor.getFreehand (mode);
+            dragStartTable = processor.getFreehand (curve());
             return;
         }
 
@@ -684,7 +756,7 @@ void FirGraph::mouseDown (const juce::MouseEvent& event)
         return;
     }
 
-    auto points = processor.getPoints (mode);
+    auto points = processor.getPoints (curve());
     const auto index = pointAt (event.position);
 
     if (event.mods.isPopupMenu())
@@ -707,7 +779,7 @@ void FirGraph::mouseDown (const juce::MouseEvent& event)
         if (event.mods.isAltDown())
         {
             points.erase (points.begin() + index);
-            processor.setPoints (mode, points);
+            processor.setPoints (curve(), points);
             return;
         }
 
@@ -718,14 +790,14 @@ void FirGraph::mouseDown (const juce::MouseEvent& event)
 
     // A click on the curve adds a point there.
     const auto hz = hzForX (event.position.x, (float) getWidth());
-    const auto curveY = yFor ((float) processor.curveDbAt (mode, hz));
+    const auto curveY = yForValue (processor.curveDbAt (curve(), hz), hz);
 
     if (std::abs (curveY - event.position.y) > curveGrab || (int) points.size() >= maxCurvePoints)
         return;
 
-    points.push_back ({ hz, (double) dbAt (event.position.y) });
+    points.push_back ({ hz, valueAt (event.position.y, hz) });
     sortPoints (points);
-    processor.setPoints (mode, points);
+    processor.setPoints (curve(), points);
 
     dragPoint = pointAt (event.position);
     dragStartHz = hz;
@@ -744,16 +816,17 @@ void FirGraph::mouseDrag (const juce::MouseEvent& event)
 
     if (draggingCurve)
     {
-        const auto shift = dbAt ((float) event.getMouseDownY() + (float) event.getDistanceFromDragStartY()) - dbAt ((float) event.getMouseDownY());
+        const auto shift = (float) (valueAt ((float) event.getMouseDownY() + (float) event.getDistanceFromDragStartY(), 1000.0)
+                                    - valueAt ((float) event.getMouseDownY(), 1000.0));
 
         if (editMode == fir::freehand)
         {
             auto table = dragStartTable;
 
             for (auto& value : table)
-                value = juce::jlimit (-150.0f, 48.0f, value + shift);
+                value = (float) fir::clampCurveValue (curve(), value + shift);
 
-            processor.setFreehand (mode, table);
+            processor.setFreehand (curve(), table);
         }
         else
         {
@@ -762,7 +835,7 @@ void FirGraph::mouseDrag (const juce::MouseEvent& event)
             for (auto& point : points)
                 point.db += (double) shift;
 
-            processor.setPoints (mode, points);
+            processor.setPoints (curve(), points);
         }
 
         return;
@@ -771,7 +844,7 @@ void FirGraph::mouseDrag (const juce::MouseEvent& event)
     if (dragPoint < 0)
         return;
 
-    auto points = processor.getPoints (mode);
+    auto points = processor.getPoints (curve());
 
     if (dragPoint >= (int) points.size())
         return;
@@ -779,14 +852,14 @@ void FirGraph::mouseDrag (const juce::MouseEvent& event)
     auto& point = points[(size_t) dragPoint];
 
     point.hz = event.mods.isShiftDown() ? dragStartHz : juce::jlimit (curveLowHz, 20000.0, hzForX (event.position.x, width));
-    point.db = (double) dbAt (juce::jlimit (plotTop, (float) getHeight() - plotBottom, event.position.y));
+    point.db = valueAt (juce::jlimit (plotTop, (float) getHeight() - plotBottom, event.position.y), point.hz);
 
     const auto moved = point;
 
-    processor.setPoints (mode, points);
+    processor.setPoints (curve(), points);
 
     // Sorting may have moved it.
-    const auto& sorted = processor.getPoints (mode);
+    const auto& sorted = processor.getPoints (curve());
 
     for (int i = 0; i < (int) sorted.size(); ++i)
         if (sorted[(size_t) i] == moved)
@@ -818,22 +891,26 @@ void FirGraph::mouseDoubleClick (const juce::MouseEvent& event)
     if (index < 0)
         return;
 
-    auto points = processor.getPoints (mode);
-    points[(size_t) index].db = 0.0;
-    processor.setPoints (mode, points);
+    auto points = processor.getPoints (curve());
+    points[(size_t) index].db = fir::defaultCurveDb (curve());
+    processor.setPoints (curve(), points);
 }
 
 void FirGraph::typePoint (int index)
 {
-    const auto point = processor.getPoints (mode)[(size_t) index];
+    const auto point = processor.getPoints (curve())[(size_t) index];
 
     fancy::ui::DialogSpec spec;
     spec.title = "Point " + juce::String (index + 1);
     spec.action = "Set";
     spec.fields.push_back ({ "Frequency", fancy::formatHz ((float) point.hz) });
-    spec.fields.push_back ({ "Gain", fancy::formatFixed ((float) point.db, 1) + " dB" });
+    // Phase 4 Wave 2: the depth curve's points are a percentage of Depth.
+    if (mode == resonance)
+        spec.fields.push_back ({ "Depth", juce::String (juce::roundToInt (point.db)) + " %" });
+    else
+        spec.fields.push_back ({ "Gain", fancy::formatFixed ((float) point.db, 1) + " dB" });
 
-    const auto curve = mode;
+    const auto curve = this->curve();
 
     fancy::ui::showDialog (*this, std::move (spec),
                            [safeThis = juce::Component::SafePointer<FirGraph> (this), index, curve] (bool accepted, const juce::StringArray& values)
@@ -850,7 +927,7 @@ void FirGraph::typePoint (int index)
             points[(size_t) index].hz = (double) fancy::parseHz (values[0]);
 
         if (fancy::isValueText (values[1]))
-            points[(size_t) index].db = (double) fancy::parseNumber (values[1]);
+            points[(size_t) index].db = fir::clampCurveValue (curve, (double) fancy::parseNumber (values[1]));
 
         safeThis->processor.setPoints (curve, points);
     });

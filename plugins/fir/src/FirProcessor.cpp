@@ -390,7 +390,7 @@ void FirProcessor::loadCurves (const juce::ValueTree& tree)
             const auto* values = static_cast<const float*> (block.getData());
 
             for (int i = 0; i < curvePoints; ++i)
-                freehand[(size_t) curve][(size_t) i] = std::isfinite (values[i]) ? std::clamp (values[i], -150.0f, 48.0f) : (float) defaultCurveDb (curve);
+                freehand[(size_t) curve][(size_t) i] = std::isfinite (values[i]) ? (float) clampCurveValue (curve, values[i]) : (float) defaultCurveDb (curve);
         }
     }
 
@@ -404,7 +404,7 @@ void FirProcessor::setPoints (int curve, std::vector<CurvePoint> newPoints)
     for (auto& point : newPoints)
     {
         point.hz = std::clamp (point.hz, curveLowHz, curveHighHz);
-        point.db = std::clamp (point.db, -150.0, 48.0);
+        point.db = clampCurveValue (curve, point.db);
     }
 
     sortPoints (newPoints);

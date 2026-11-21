@@ -376,6 +376,10 @@ FirEditor::FirEditor (FirProcessor& processor)
     // Phase 3 Q2.7: RANGE, with Low and High as compact knobs under their own labels.
     styleLabel (rangeCaption, "RANGE", colours::textSecondary, juce::Justification::topLeft);
     rangeCaption.setBounds (leftCardX + 12, cardY + 8, 80, 16);
+
+    // Phase 4 Wave 2 (reference/phase4/42__fir_w2_mockup.png): back to a flat depth curve.
+    resetDepthButton.setBounds (leftCardX + 60, cardY + 5, 88, 20);
+    resetDepthButton.onClick = [this] { firProcessor().resetCurve (fir::depthCurve); };
     styleLabel (rangeLowLabel, "Low", colours::textPrimary, juce::Justification::centred);
     styleLabel (rangeHighLabel, "High", colours::textPrimary, juce::Justification::centred);
 
@@ -441,7 +445,7 @@ FirEditor::FirEditor (FirProcessor& processor)
              &floorKnob, &gateAttackKnob, &gateReleaseKnob, &ratioKnob, &compAttackKnob, &compReleaseKnob,
              &reductionKnob, &offsetKnob, &smoothingKnob, &subReleaseKnob, &eqHint,
              &rangeCaption, &rangeLowLabel, &rangeHighLabel, &resLowKnob, &resHighKnob,
-             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob, &resTiltKnob,
+             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob, &resTiltKnob, &resetDepthButton,
              &sidechainCheckbox, &listenNoiseCheckbox, &listenReducedCheckbox, &listenResonanceCheckbox })
         body.addChildComponent (item);
 
@@ -499,7 +503,7 @@ void FirEditor::updateMode()
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &rangeCaption, &rangeLowLabel, &rangeHighLabel, &resLowKnob, &resHighKnob,
-             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob, &listenResonanceCheckbox, &resTiltKnob })
+             &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob, &listenResonanceCheckbox, &resTiltKnob, &resetDepthButton })
         item->setVisible (mode == resonance);
 
     const auto dynamics = mode == gate || mode == compressor || mode == subtract;

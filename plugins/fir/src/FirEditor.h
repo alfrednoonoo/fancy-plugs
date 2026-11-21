@@ -79,6 +79,7 @@ private:
     // Phase 4 Wave 1 (reference/phase4/41__fir_w1_mockup.png): Learn for the Gate and Compressor
     // curves, and Resonance's Tilt.
     fancy::ui::PillButton curveLearnButton { "Learn" };
+    fancy::ui::PillButton resetDepthButton { "Reset curve" }; // Phase 4 Wave 2: the depth curve
     fancy::ui::Knob resTiltKnob;
 
     FirGraph graph;

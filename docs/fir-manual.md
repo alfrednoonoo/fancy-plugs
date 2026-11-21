@@ -96,6 +96,7 @@ Resonance listens for narrow peaks that stand above the spectrum around them, su
 - **Depth:** the most a peak is turned down, 0 to 24 dB. A peak is never pushed below 4 dB above the spectrum around it, so a peak 12 dB up comes down by at most about 8 dB, whatever Depth says.
 - **Sharpness:** how narrow a peak must be to count. High values find only narrow rings; low values also take broader bumps.
 - **Attack and Release:** how fast the cut arrives and lets go, in ms.
+- **Depth curve:** the dashed line on the graph is the most each frequency may be cut, Depth × the curve × Tilt. Click the line to add a node and drag it: up for less cut there, down for more, from 0 % to 200 % of Depth. Alt-click deletes a node, right-click types it, Ctrl-drag moves the whole curve, and **Reset curve** (Range card) makes it flat again.
 - **Tilt:** leans Depth towards the highs (positive) or the lows (negative), -100 to +100 %. At +100 % the depth doubles at 16 kHz and halves at 62 Hz; at 0 % it's the same everywhere.
 - **Range (Low and High):** Resonance only works between these two, fading out over half an octave outside them. The graph dims what's outside. Low starts at 100 Hz: below that, a 4096-point FFT can't tell a resonance from the slope of the spectrum. For low resonances, raise the FFT size and lower Low.
 
