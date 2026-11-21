@@ -259,7 +259,7 @@ Mockup: `reference/phase4/35__multicomp_w1_mockup.png` (source `design/phase4-mo
 
 ## Phase 4 Wave 2: dynamic-phase crossover
 
-**Draft, for approval.** Backlog item 1 of `docs/enhancements.md` section 7, the first item of Wave 2. A fourth Crossover choice, **Dynamic phase**: with no latency, the signal is untouched while the bands aren't changing it, and phase shift appears only where neighbouring bands' gains differ and only while they do (the behaviour of Pro-MB's mode of the same name). There's no published method, so it was modelled first: `docs/research/multicomp-dynphase-model.py` (three bands, crossovers at 200 Hz and 2 kHz, analogue responses, against today's compensated LR 24).
+**Approved by the user on 21 November 2026 with every recommended option (A).** Backlog item 1 of `docs/enhancements.md` section 7, the first item of Wave 2. A fourth Crossover choice, **Dynamic phase**: with no latency, the signal is untouched while the bands aren't changing it, and phase shift appears only where neighbouring bands' gains differ and only while they do (the behaviour of Pro-MB's mode of the same name). There's no published method, so it was modelled first: `docs/research/multicomp-dynphase-model.py` (three bands, crossovers at 200 Hz and 2 kHz, analogue responses, against today's compensated LR 24).
 
 ### 1. What the model found
 
@@ -307,3 +307,12 @@ Mockup: `reference/phase4/35__multicomp_w1_mockup.png` (source `design/phase4-mo
 ### 5. Build order
 
 Approval of this note, then one push: the shelf cascade (`fancy-core`, so a multiband Gate or Limit in Wave 3 can share it), MultiComp's Dynamic phase path, the tests, the manual and the checklist.
+
+### 6. As built
+
+One push, with Decisions 1 to 3 all A.
+
+- **The cascade:** `fancy::dsp::ShelfCascade` (`fancy-core/include/fancy/dsp/ShelfCascade.h`, header-only, so a multiband Gate or Limit can use it): band 1's gain, then a second-order TPT high shelf (Simper's form, Q 0.707) at each crossover from the band below's gain to the band above's, with A = sqrt (step) and g = tan (pi f / fs) x sqrt (A). At a step of exactly 1 the shelf's output is its input, to the bit, and its state keeps running, so it starts shaping without a click.
+- **MultiComp:** `CrossoverType::dynamic`, appended. The main crossover runs as LR 24 for the detectors (and for Solo and Mute). Each band's gain, with Active's mix, is recorded per sample on L/R (Stereo, Left, Right bands) and M/S (Mid, Side bands); `processDynamic` runs the input, delayed by Lookahead, through an L/R cascade and, only while a band is Mid or Side, an M/S one. Dry is the delayed input. While any band is soloed or muted the output blends over 20 ms to the LR 24 bands (Decision 2 A).
+- **Changed from section 2:** Feedback needs no extra split. A Feedback band's detector already reads its LR 24 band times its own gain, which is that band of the output.
+- **Tests:** `tests/MultiCompW2Tests.cpp`. The legacy check for LR 24, LR 48 and Linear is MultiCompQ26Tests' test against the old DSP, which runs every crossover type.

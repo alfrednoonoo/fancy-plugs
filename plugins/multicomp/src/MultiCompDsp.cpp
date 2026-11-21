@@ -76,7 +76,12 @@ void MultiCompDsp::prepare (double newSampleRate)
         bypassDelay[ch].assign ((size_t) bypassLength, 0.0f);
         wetMix[ch].assign ((size_t) maxChunk, 0.0);
         dryMix[ch].assign ((size_t) maxChunk, 0.0);
+        dynamicOut[ch].assign ((size_t) maxChunk, 0.0); // Phase 4 Wave 2
     }
+
+    gainsLR.assign ((size_t) (maxBands * 2 * maxChunk), 1.0);
+    gainsMS.assign ((size_t) (maxBands * 2 * maxChunk), 1.0);
+    bandPath.setTime (20.0, sampleRate);
 
     for (auto& state : bandStates)
         for (auto* smoother : { &state.threshold, &state.slope, &state.knee, &state.gainDb, &state.rms, &state.activeMix, &state.soloGain,
@@ -118,6 +123,13 @@ void MultiCompDsp::resetCore() noexcept
 
     bypassPosition = 0;
     lookaheadPosition = 0;
+
+    // Phase 4 Wave 2.
+    for (auto* cascades : { &cascadeLR, &cascadeMS })
+        for (auto& cascade : *cascades)
+            cascade.reset();
+
+    shelfCount = -1;
 }
 
 void MultiCompDsp::reset()
@@ -198,6 +210,12 @@ void MultiCompDsp::setTargets (const Targets& targets) noexcept
         }
     }
 
+    // Phase 4 Wave 2, Decision 2 A: a shelf can't silence a band, so Solo and Mute use the LR 24
+    // bands while they're in use.
+    const auto anyMute = std::any_of (targets.bands.begin(), targets.bands.begin() + activeConfig.bands,
+                                      [] (const BandSpec& band) { return band.mute; });
+    bandPath.setTarget (anySolo || anyMute ? 1.0 : 0.0);
+
     wet.setTarget (targets.wetGain);
     dry.setTarget (targets.dryGain);
     output.setTarget (targets.outputGain);
@@ -251,7 +269,7 @@ void MultiCompDsp::snapToTargets (const Targets& targets) noexcept
         state.rmsCoefficient = fancy::dsp::timeCoefficient (state.rms.getCurrent(), sampleRate);
     }
 
-    for (auto* smoother : { &wet, &dry, &output, &bypass, &limiterAmount })
+    for (auto* smoother : { &wet, &dry, &output, &bypass, &limiterAmount, &bandPath })
         smoother->snapToTarget();
 
     switchGain.snapTo (1.0);
@@ -395,6 +413,11 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
     auto* dryLeft = dryMix[0].data();
     auto* dryRight = dryMix[1].data();
 
+    // Phase 4 Wave 2.
+    const auto dynamic = isDynamic();
+    double* dynamicLR[2] { bandBuffer (gainsLR, b, 0), bandBuffer (gainsLR, b, 1) };
+    double* dynamicMS[2] { bandBuffer (gainsMS, b, 0), bandBuffer (gainsMS, b, 1) };
+
     for (int i = 0; i < numSamples; ++i)
     {
         const auto thresholdDb = state.threshold.next();
@@ -531,6 +554,18 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
         state.previousOutput[0] = compressedLeft;
         state.previousOutput[1] = compressedRight;
 
+        // Phase 4 Wave 2: the band's gain for the shelves, with Active's mix.
+        if (dynamic)
+        {
+            const auto effective = 1.0 + (gain - 1.0) * activeMix;
+            const auto index = (size_t) i;
+
+            dynamicLR[0][index] = channel == MultiCompDsp::stereo || channel == MultiCompDsp::left ? effective : 1.0;
+            dynamicLR[1][index] = channel == MultiCompDsp::stereo || channel == MultiCompDsp::right ? effective : 1.0;
+            dynamicMS[0][index] = channel == MultiCompDsp::mid ? effective : 1.0;
+            dynamicMS[1][index] = channel == MultiCompDsp::side ? effective : 1.0;
+        }
+
         peakReduction = std::max (peakReduction, reduction * activeMix);
 
         wetLeft[i] += (audioLeft + (compressedLeft - audioLeft) * activeMix) * soloGain;
@@ -548,6 +583,62 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
 
     while (newPeak > stored && ! state.gainReduction.compare_exchange_weak (stored, newPeak, std::memory_order_relaxed))
     {
+    }
+}
+
+// Phase 4 Wave 2: the input, delayed as the bands' audio is, through the bands' gains as shelves:
+// an L/R cascade for Stereo, Left and Right bands, then an M/S one, run only while a band is Mid
+// or Side.
+void MultiCompDsp::processDynamic (int numSamples, int lookahead) noexcept
+{
+    const auto count = activeConfig.bands;
+
+    if (shelfCount != count - 1 || ! std::equal (crossoverHz.begin(), crossoverHz.begin() + std::max (0, count - 1), shelfHz.begin()))
+    {
+        shelfCount = count - 1;
+        std::copy (crossoverHz.begin(), crossoverHz.end(), shelfHz.begin());
+
+        for (auto* cascades : { &cascadeLR, &cascadeMS })
+            for (auto& cascade : *cascades)
+                cascade.setCrossovers (shelfHz.data(), shelfCount, sampleRate);
+    }
+
+    const auto usesMS = std::any_of (current.bands.begin(), current.bands.begin() + count,
+                                     [] (const BandSpec& band) { return band.channel == mid || band.channel == side; });
+
+    double gains[multicomp::maxBands];
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        const auto readPosition = (bypassPosition + i + bypassLength - lookahead) % bypassLength;
+        double x[2] { (double) bypassDelay[0][(size_t) readPosition], (double) bypassDelay[1][(size_t) readPosition] };
+
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            for (int b = 0; b < count; ++b)
+                gains[b] = bandBuffer (gainsLR, b, ch)[i];
+
+            x[ch] = cascadeLR[(size_t) ch].process (x[ch], gains);
+        }
+
+        if (usesMS)
+        {
+            double ms[2] { 0.5 * (x[0] + x[1]), 0.5 * (x[0] - x[1]) };
+
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                for (int b = 0; b < count; ++b)
+                    gains[b] = bandBuffer (gainsMS, b, ch)[i];
+
+                ms[ch] = cascadeMS[(size_t) ch].process (ms[ch], gains);
+            }
+
+            x[0] = ms[0] + ms[1];
+            x[1] = ms[0] - ms[1];
+        }
+
+        dynamicOut[0][(size_t) i] = x[0];
+        dynamicOut[1][(size_t) i] = x[1];
     }
 }
 
@@ -610,6 +701,9 @@ void MultiCompDsp::processChunk (float* const* main, int numMain, const float* c
 
     lookaheadPosition = (lookaheadPosition + numSamples) % lookaheadLength;
 
+    if (isDynamic())
+        processDynamic (numSamples, activeConfig.lookahead);
+
     // The bypass path waits as long as the bands: the crossover and the lookahead.
     const auto crossoverLatency = (activeConfig.crossover == CrossoverType::linear ? linearCrossover.getLatencySamples() : 0)
                                 + activeConfig.lookahead;
@@ -626,10 +720,20 @@ void MultiCompDsp::processChunk (float* const* main, int numMain, const float* c
 
         double out[2];
 
+        // Phase 4 Wave 2: in Dynamic phase the wet signal is the shelved input and Dry is the
+        // input itself, blended to the LR 24 bands while a band is soloed or muted.
+        const auto path = isDynamic() ? bandPath.next() : 1.0;
+
         for (int ch = 0; ch < 2; ++ch)
         {
             const auto delayed = (double) bypassDelay[ch][(size_t) readPosition];
-            const auto mixed = (wetMix[ch][(size_t) i] * wetGain + dryMix[ch][(size_t) i] * dryGain) * outputGain;
+            auto mixed = (wetMix[ch][(size_t) i] * wetGain + dryMix[ch][(size_t) i] * dryGain) * outputGain;
+
+            if (path < 1.0)
+            {
+                const auto shelved = (dynamicOut[ch][(size_t) i] * wetGain + delayed * dryGain) * outputGain;
+                mixed = path <= 0.0 ? shelved : shelved + (mixed - shelved) * path;
+            }
 
             out[ch] = bypassAmount >= 1.0 ? delayed : mixed + (delayed - mixed) * bypassAmount;
         }

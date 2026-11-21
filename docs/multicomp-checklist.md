@@ -109,6 +109,14 @@
 - [ ] On a mono track the chip is greyed, with its tooltip.
 - [ ] The two new presets, **Lookahead Glue** (Bus) and **Mid/Side Master** (Mastering), load from the preset browser.
 
+## Dynamic phase (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy MultiComp: it sounds as before, with its crossover unchanged.
+- [ ] Crossover > Dynamic phase on a mix with nothing compressing: a null test against the dry track is silent. Latency reads 0 (plus Lookahead).
+- [ ] Compress the low mids hard: the bands sound like LR 24's; transients keep their shape better while nothing is compressing; no zipper with a 1 ms attack.
+- [ ] Solo a band, then Mute one: they work as in LR 24, with a short smooth switch and no click.
+- [ ] A Mid band on a wide stereo mix: only the centre is compressed.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

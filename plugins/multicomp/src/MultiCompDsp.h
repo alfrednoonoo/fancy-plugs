@@ -5,6 +5,7 @@
 
 #include <fancy/dsp/Compression.h>
 #include <fancy/dsp/MeterTap.h>
+#include <fancy/dsp/ShelfCascade.h>
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/TruePeakLimiter.h>
 
@@ -166,6 +167,19 @@ private:
     bool synchronousDesign = false;
 
     fancy::dsp::Smoother wet, dry, output, bypass, limiterAmount, switchGain;
+
+    // Phase 4 Wave 2: Dynamic phase. Each band's gain per sample, on L/R (Stereo, Left and Right
+    // bands) and on M/S (Mid and Side bands), for the shelf cascades; and the blend to the LR 24
+    // bands while a band is soloed or muted (Decision 2 A).
+    bool isDynamic() const noexcept { return activeConfig.crossover == multicomp::CrossoverType::dynamic; }
+    void processDynamic (int numSamples, int lookahead) noexcept;
+
+    std::vector<double> gainsLR, gainsMS; // (band * 2 + channel) * maxChunk
+    std::array<fancy::dsp::ShelfCascade<multicomp::maxBands>, 2> cascadeLR, cascadeMS;
+    std::vector<double> dynamicOut[2];
+    fancy::dsp::Smoother bandPath; // 0 dynamic, 1 the LR 24 bands
+    std::array<double, multicomp::maxCrossovers> shelfHz {};
+    int shelfCount = -1;
 
     // Phase 3 Q2.6: the bands' audio waits Lookahead behind their detectors.
     std::array<std::array<std::vector<double>, 2>, multicomp::maxBands> lookaheadRings;

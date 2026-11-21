@@ -305,7 +305,7 @@ One push holds the whole item. `tests/LegacyFirEngine.*` is `SpectralEngine` at 
 
 ## Phase 4 Wave 2: Resonance depth nodes
 
-**Draft, for approval.** Backlog item 2 of `docs/enhancements.md` section 8, the second item of Wave 2. A node curve on the graph in Resonance mode sets how deep the cut may go at each frequency, the way soothe2's node graph does. It generalises Wave 1's Tilt: Tilt is one slope, and the nodes are any shape.
+**Approved by the user on 21 November 2026 with every recommended option (A), without a Python model (section 3).** Backlog item 2 of `docs/enhancements.md` section 8, the second item of Wave 2. A node curve on the graph in Resonance mode sets how deep the cut may go at each frequency, the way soothe2's node graph does. It generalises Wave 1's Tilt: Tilt is one slope, and the nodes are any shape.
 
 ### 1. What it does
 

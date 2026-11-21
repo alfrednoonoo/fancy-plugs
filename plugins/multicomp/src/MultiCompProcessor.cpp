@@ -129,7 +129,9 @@ fancy::FancyProcessor::Layout createLayout (const fancy::SwitchableFrequencyPara
 
     layout.add (std::make_unique<Choice> (
         juce::ParameterID { "crossover", 1 }, "Crossover",
-        juce::StringArray { "LR 24 dB " + dot + " Min phase", "LR 48 dB " + dot + " Min phase", "Linear phase" }, 0));
+        juce::StringArray { "LR 24 dB " + dot + " Min phase", "LR 48 dB " + dot + " Min phase", "Linear phase",
+                            // Phase 4 Wave 2 (docs/multicomp.md), appended.
+                            "Dynamic phase" }, 0));
 
     layout.add (toggle ("link", "Link bands", false));
     layout.add (toggle ("limit", "Limit output", false));
@@ -451,7 +453,7 @@ MultiCompDsp::Targets MultiCompProcessor::readTargets() const
 
     targets.numBands = getNumBands();
     targets.detector = juce::roundToInt (read ("detector"));
-    targets.crossover = (multicomp::CrossoverType) juce::jlimit (0, 2, juce::roundToInt (read ("crossover")));
+    targets.crossover = (multicomp::CrossoverType) juce::jlimit (0, 3, juce::roundToInt (read ("crossover")));
     targets.wetGain = fancy::levelToGain (read ("wet"), mixFloorDb);
     targets.dryGain = fancy::levelToGain (read ("dry"), mixFloorDb);
     targets.outputGain = fancy::dbToGain ((double) read ("output"));

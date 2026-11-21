@@ -82,8 +82,9 @@ Moving Threshold, Ratio, Attack, Release or Gain on one band moves the others by
 | LR 24 dB · Min phase | None | The default. Gentle overlap between bands |
 | LR 48 dB · Min phase | None | Sharper bands, with a little more phase shift around the crossovers |
 | Linear phase | 2559 samples, 53 ms | For mastering. No phase shift at all |
+| Dynamic phase | None | The audio isn't split: while the bands aren't changing anything it passes untouched, with no phase shift at all, and phase appears only around crossovers whose bands differ, only while they do |
 
-All three sum flat. Below about 150 Hz, Linear phase's bands overlap more than the LR types, because its transition is about 75 Hz wide at any frequency.
+All four sum flat. In **Dynamic phase** the band gains are applied as gentle shelves at the crossovers, so a band's shape is within about 0.5 dB of LR 24's for moves of 6 dB, and Dry is the input itself. A shelf can't silence a band, so while a band is soloed or muted MultiComp uses the LR 24 bands, switching over 20 ms. Below about 150 Hz, Linear phase's bands overlap more than the LR types, because its transition is about 75 Hz wide at any frequency.
 
 ## Wet and Dry
 
