@@ -256,3 +256,54 @@ A **Learn** button on the graph: over 5 s of playback, the spectrum is averaged 
 3. Learn: pink noise gives crossovers near today's defaults; a bass-heavy test moves the lowest crossover down.
 
 Mockup: `reference/phase4/35__multicomp_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the Learn button and the M buttons.
+
+## Phase 4 Wave 2: dynamic-phase crossover
+
+**Draft, for approval.** Backlog item 1 of `docs/enhancements.md` section 7, the first item of Wave 2. A fourth Crossover choice, **Dynamic phase**: with no latency, the signal is untouched while the bands aren't changing it, and phase shift appears only where neighbouring bands' gains differ and only while they do (the behaviour of Pro-MB's mode of the same name). There's no published method, so it was modelled first: `docs/research/multicomp-dynphase-model.py` (three bands, crossovers at 200 Hz and 2 kHz, analogue responses, against today's compensated LR 24).
+
+### 1. What the model found
+
+| Candidate | At unity | Every band −6 dB | Band 2 −6 dB, error against LR 24's shape | Verdict |
+|---|---|---|---|---|
+| Today, LR 24 compensated | flat, but 180° of all-pass phase always | exact | (the reference) | |
+| Residual: in + Σ (gₖ − 1) bandₖ on LR bands | exact, no phase | 9.5 dB ripple | 5.7 dB | the bands sum to the all-pass, not to 1 |
+| Residual with the common gain taken out first | exact | exact | 2.4 to 6.1 dB, depending on the gains | still several dB off at crossovers |
+| Complementary split (1 − L) | exact | exact | a −6 dB cut reaches only −1.9 dB; a +6 dB boost leaks 6.9 dB outside the band | the bands aren't in phase with the input |
+| Crossfade dry ↔ LR by activity | exact | exact | | halfway through a fade the two cancel: −66 dB notches at the crossovers |
+| **Shelves in series, order 2** | **exact, no phase** | **exact** | **0.5 dB (1.9 dB at −12/0/−12)** | **recommended** |
+| Shelves in series, order 4 | exact | exact | 1.3 dB (3.4 dB) | sharper than LR 24's summed shape, so further from it |
+
+**How the recommended method works.** The audio isn't split at all. The band gains are applied as a minimum-phase filter: band 1's gain, then at each crossover a high shelf from the band below's gain to the band above's. When neighbouring gains are equal that shelf is exactly 1, so it adds no phase. Phase appears only around crossovers where the bands differ: at most about 25° for a 6 dB difference, against today's full all-pass rotation all the time. The crossover is where it differs from LR 24. LR sums the bands' amplitudes there (the mean of the gains), and a shelf passes their geometric mean: −3.0 dB instead of −2.5 dB for a band at −6. In the band, the gain is exact (−6.00 against −5.83).
+
+### 2. How the rest of MultiComp works in this mode
+
+- **Detection:** the detectors still need bands, so the input (or sidechain) is split with today's LR 24 crossover for the detectors only, as the sidechain is now. A band set to Feedback reads an LR 24 split of the output, run only when a band uses Feedback.
+- **Gain:** each band's smoothed gain (compression, make-up, Active, Wet) goes to the shelves. The shelves are TPT state-variable filters (the Cytomic form, which stays clean under fast modulation). Each crossover's tan term is fixed, so a sample needs one exp per shelf for √A: 7 shelves × 2 channels at most.
+- **Channel per band** (Phase 3 Q2.6): two cascades, one on L/R for Stereo, Left and Right bands, then one on M/S for Mid and Side bands. A band's gain is 1 in the domain it doesn't use.
+- **Dry:** the input itself (delayed by Lookahead), with no phase at all, where today Dry is the bands summed.
+- **Lookahead:** as now, the audio path is delayed and the detectors aren't.
+- **Latency:** 0 plus Lookahead. CPU should be close to LR 24's (one LR split for detection, plus at most 14 second-order shelves). Measured with §0.4 before release; the target is under 1.3 × LR 24's.
+
+### 3. Decisions
+
+- **Decision 1: the shelf order.**
+  - **A (R).** Order 2: closest to the LR 24 band shapes users know (0.5 dB), with the least phase.
+  - **B.** Order 4: steeper transitions between bands, 1.3 dB from LR 24's shapes and more phase.
+- **Decision 2: Solo and band Mute in this mode.** A shelf can't silence a band: order-2 shelves spread an 80 dB step over about 7 octaves.
+  - **A (R).** While any band is soloed or muted, the audio runs through today's LR 24 bands, switched with a 20 ms crossfade. The model shows a crossfade only cancels while the two paths differ in phase, so the 20 ms is kept short and happens only when you press Solo or Mute.
+  - **B.** Solo and Mute are greyed in Dynamic phase.
+- **Decision 3: the menu.** "Dynamic phase" is appended as the fourth Crossover choice (LR 24, LR 48, Linear, Dynamic phase), so stored indices keep their meaning, as Fancy FIR's Resonance mode was added. The default stays LR 24, so saved projects are bit-identical. Host automation of Crossover in an old project would map to the new choices differently; Crossover changes the plugin's structure, so it's rarely automated. No layout change and no mockup: it's one menu entry.
+
+### 4. Tests
+
+1. Legacy: LR 24, LR 48 and Linear render as v1.6.0 (and as Wave 1).
+2. Unity: with every band idle (no gain reduction, make-up 0), the output equals the input bit for bit, at 0 latency.
+3. Equal gains: every band at −6 dB is a −6 dB gain within 0.01 dB, with no phase shift.
+4. Shape: band 2 at −6 dB is within 0.6 dB of LR 24's magnitude at every frequency (the model's 0.5 dB at 48 kHz, in the digital domain).
+5. Modulation: a 1 ms attack on a sine sweep adds nothing above −90 dB that LR 24 at the same gains doesn't (no zipper from the shelves).
+6. Solo and Mute (Decision 2 A): switching in and out makes no step larger than the signal's own.
+7. Channel per band: a Mid band compresses only the mid; L/R balance holds.
+
+### 5. Build order
+
+Approval of this note, then one push: the shelf cascade (`fancy-core`, so a multiband Gate or Limit in Wave 3 can share it), MultiComp's Dynamic phase path, the tests, the manual and the checklist.

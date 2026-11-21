@@ -302,3 +302,40 @@ One push holds the whole item. `tests/LegacyFirEngine.*` is `SpectralEngine` at 
 - **Tilt:** `resTilt`, appended, -100 to +100 % (0). `SpectralEngine::tiltFactor` is 2^(tilt x log2 (f / 1 kHz) / 4): 2 at 16 kHz and 0.5 at 62.5 Hz for +100 %. Each bin's Depth is scaled by it, inside the Range weighting as Depth is; the factors are worked out once per tilt. At 0 the engine takes the old path, to the bit. The knob is a small bipolar one beside FFT size, as the mockup places it.
 - **Learn:** `fir::CurveLearner` (`plugins/fir/src/FirLearn.h`) runs on the graph's analyzer thread, from the same input feed the graph draws, so it never touches the audio thread. Each analysis reads 31 third-octave bands (20 Hz to 20 kHz), each the average of 8 readings across the band (Decision 1 A's smoothing), and after 3 s of input the curve gets a point per band: the Gate's at the 20th percentile + 6 dB, the Compressor's at the 80th percentile. The graph sets it with `setPoints` (or the Freehand table in Freehand mode), one undo step. The button shows progress and stops a Learn when clicked again; it's in the top row in Gate and Compressor modes, and Edit's label moves right to make room.
 - **Tests:** `tests/FirW1Tests.cpp`. Test 3 plays the tone 1 s in every 1.5 s: a steady tone is, to a percentile, steady noise, so the Gate would learn over it.
+
+## Phase 4 Wave 2: Resonance depth nodes
+
+**Draft, for approval.** Backlog item 2 of `docs/enhancements.md` section 8, the second item of Wave 2. A node curve on the graph in Resonance mode sets how deep the cut may go at each frequency, the way soothe2's node graph does. It generalises Wave 1's Tilt: Tilt is one slope, and the nodes are any shape.
+
+### 1. What it does
+
+- In Resonance mode the graph draws the **depth ceiling**, the most each frequency may be cut (Depth × the curve × Tilt, inside Low to High), as a line hanging from the 0 dB line. The green reduction moves inside it. The curve has nodes, edited as the Gate and Compressor curves are: double-click to add, drag, right-click to delete, and the Edit menu's Points (smooth), Points (flat) and Freehand. **Reset curve** in the left card goes back to flat.
+- With no nodes the curve is flat at 100 %, which is today. The engine then skips it, so the output is bit-identical.
+- **Decision 1: what a node holds.**
+  - **A (R).** A multiplier on Depth, 0 to 200 %, drawn where it lands (a node at 50 % with Depth 6 dB sits at −3 dB). The Depth knob stays the master, and Tilt stacks on top, so nothing about the existing controls changes meaning.
+  - **B.** The depth itself, in dB. Easier to read at a glance, but the Depth knob would then have to become an offset or hide in Resonance mode.
+- **Decision 2: Learn.** Wave 1's Learn is for the Gate and Compressor curves only.
+  - **A (R).** Not in Resonance mode: what to cut is the detector's job, and the nodes are a taste control.
+  - **B.** A Learn that lowers the ceiling where the material is already dull (from the analyzer's tilt). It's guesswork, so it isn't recommended.
+
+### 2. Engine and state
+
+- A fourth curve, index 3, in `fir::Shared::curves` and the saved curves, in percent, read per bin as the engine reads the other curves (per frame, at the curve's version). An older FIR skips curve indices it doesn't know, so it loads these projects with a flat curve.
+- Each bin's ceiling is `Depth × curve × tiltFactor`, applied where Depth is today (the clamp on each bin's reduction), so the detector, Sharpness and the 4 dB floor over the surrounding spectrum are unchanged.
+- No new host parameters: like the other curves, the nodes are state, not automation (`resNodes` in the backlog's wording becomes curve 3).
+
+### 3. Model
+
+There's no new signal processing: a node curve changes one clamp per bin. Rather than a Python model, the curve maths is shared with the Gate and Compressor curves (`fir::evaluateCurve`, already tested), and the engine tests below check the clamp directly. If you'd still like a model first, as the Wave 2 rule says, it would be a copy of `docs/research/fir-resonance-model.py` with the ceiling made per bin.
+
+### 4. Tests
+
+1. Legacy: with no nodes, Resonance renders as v1.6.0 and as Wave 1 (Tilt 0 and Tilt ±100 %).
+2. A node at 3 kHz at 200 %: a resonance there that today is cut by the full Depth is cut by up to twice Depth (still never below 4 dB over its surroundings); one at 700 Hz with flat nodes is unchanged.
+3. A node at 0 % on a resonance: no cut there.
+4. Nodes × Tilt multiply.
+5. State: nodes survive save and load, undo and A/B; a project with nodes loads in v1.6.0's FIR (curve 3 ignored).
+
+### 5. Mockup and build order
+
+The graph's look changes in Resonance mode (a ceiling line with nodes), so a mockup comes first after this note: `reference/phase4/42__fir_w2_mockup.png`, from the Resonance screenshot. Then one push: engine, graph editing, state, tests, manual and checklist.
