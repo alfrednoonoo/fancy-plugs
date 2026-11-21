@@ -1,0 +1,103 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy Comp Phase 4 Wave 1 mockup</title><link rel="stylesheet" href="../phase3-mockup-src/common.css"><link rel="stylesheet" href="../phase3-mockup-src/kit2.css"><script src="../phase3-mockup-src/lib2.js"></script>
+<style>
+body{--a:#00A985}
+.sheet{display:flex;flex-direction:column;gap:18px;width:1100px}
+.h{font-size:13px;font-weight:700;color:#fff;margin:4px 0 2px}.n{font-size:11px;color:#8D8D8D;margin-bottom:8px;line-height:1.45;max-width:1080px}
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+/* EDIT drawer at native size, as in comp-q25.html: 524 x 374 */
+.drawer{position:relative;width:524px;height:374px;background:#262626;outline:1px dashed #3a3a3a;flex:none}
+.drawer .t{position:absolute;left:24px;top:0;height:48px;display:flex;align-items:center;font-size:14px;font-weight:600;letter-spacing:.06em}
+.drawer .done{position:absolute;left:446px;top:12px;width:62px;height:24px;border-radius:12px;background:#303030;font-size:12px;display:flex;align-items:center;justify-content:center}
+.drawer .tabs{position:absolute;left:82px;top:12px;height:24px}
+.drawer .tabs span{padding:3px 8px}
+.abs{position:absolute}
+.k50 .lbl{font-size:12px}.k50 .val{font-size:12px}
+.ddv{background:#303030;border-radius:3px;font-size:12px;padding:0 8px;height:24px;display:flex;align-items:center;justify-content:space-between;width:110px}
+.ddv:after{content:"⌃⌄";font-size:7px;color:#8D8D8D;writing-mode:vertical-lr;line-height:5px}
+.l14{font-size:14px;color:#fff;height:24px;display:flex;align-items:center}
+.cb{font-size:13px}
+.note{font-size:11px;color:#8D8D8D}
+.new{outline:1.5px dashed #FFCF07;outline-offset:3px;border-radius:4px}
+/* main window footer, native: 750 px left of the Out meter, 527 - 440 */
+.foot2{position:relative;width:934px;height:70px;background:#303030;flex:none}
+.foot2 .cbr{position:absolute;top:24px;display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap}
+.foot2 .cbr i{width:16px;height:16px;border-radius:3px;background:#1E1E1E;border:1px solid #4C4C4C;display:inline-block;position:relative}
+.foot2 .cbr i.x{background:#00A985;border-color:#00A985}
+.foot2 .cbr i.x:after{content:"";position:absolute;left:4.6px;top:1.6px;width:4px;height:8px;border:solid #141414;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.foot2 .rc{position:absolute;left:750px;top:0;width:184px;height:70px;background:#262626}
+</style></head><body>
+<div class="sheet">
+
+<div><div class="h">1 · Footer: "Listen to removed" (Decision 3 A)</div><div class="n">The only change to the main layout. A fifth footer checkbox, a temporary listen switch like Preview filter (§0.3: not a parameter, off when the window closes, never saved). The two are exclusive: switching one on switches the other off. The five are spaced evenly across the 750 px left of the Out meter, each placed by its measured width (positions below). Top: today. Bottom: with the new switch on, in the accent, as Limit's and Sature's listen switches are.</div>
+<div class="foot2" id="f4"></div>
+<div style="height:8px"></div>
+<div class="foot2" id="f5"></div>
+<div class="n" id="fpos" style="margin-top:6px"></div>
+</div>
+
+<div><div class="h">2 · EDIT drawer, Options page: Hold and Range</div><div class="n">Today's Options page with two knobs added under Link amount and Output, the same medium knob. <b>Hold</b> 0 to 500 ms, default 0 (today's sound): the release waits this long after the last peak. <b>Range</b> 1 to 40 dB with "Off" at the top, default Off: the most reduction Comp will apply, so heavy settings ride the level without crushing it. Both dim nothing else; nothing else on the page moves.</div>
+<div class="row">
+ <div class="drawer">
+  <div class="t">EDIT</div>
+  <div class="seg tabs"><span>Detector</span><span>Character</span><span>Upward</span><span class="a">Options</span><span>History</span></div>
+  <div class="done">Done</div>
+  <div class="abs l14" style="left:24px;top:60px">Oversampling</div><div class="abs ddv" style="left:160px;top:60px">Off</div>
+  <div class="abs l14" style="left:24px;top:96px">Oversampling filter</div><div class="abs ddv" style="left:160px;top:96px">Linear</div>
+  <div class="abs l14" style="left:24px;top:132px">Release curve</div><div class="abs ddv" style="left:160px;top:132px">Exponential</div>
+  <div class="abs" style="left:24px;top:180px"><div class="cb"><i></i>Feedback detection</div></div>
+  <div class="abs" style="left:24px;top:212px"><div class="cb"><i></i>Attack = 90 % rise</div></div>
+  <div class="abs" style="left:306px;top:60px"><div class="knob" data-k data-v="1" data-c="#00A985" data-s="42" data-l="Link amount" data-t="100 %" style="width:90px"></div></div>
+  <div class="abs" style="left:412px;top:60px"><div class="knob" data-k data-v=".5" data-c="#00A985" data-s="42" data-bi data-l="Output" data-t="0.0 dB" style="width:90px"></div></div>
+  <div class="abs new" style="left:306px;top:184px"><div class="knob" data-k data-v=".32" data-c="#00A985" data-s="42" data-l="Hold" data-t="20.0 ms" style="width:90px"></div></div>
+  <div class="abs new" style="left:412px;top:184px"><div class="knob" data-k data-v=".3" data-c="#00A985" data-s="42" data-l="Range" data-t="12.0 dB" style="width:90px"></div></div>
+ </div>
+ <div class="drawer" style="transform:scale(.5);transform-origin:0 0;margin-right:-262px;margin-bottom:-187px">
+  <div class="t">EDIT</div>
+  <div class="seg tabs"><span>Detector</span><span>Character</span><span>Upward</span><span class="a">Options</span><span>History</span></div>
+  <div class="done">Done</div>
+  <div class="abs l14" style="left:24px;top:60px">Oversampling</div><div class="abs ddv" style="left:160px;top:60px">Off</div>
+  <div class="abs l14" style="left:24px;top:96px">Oversampling filter</div><div class="abs ddv" style="left:160px;top:96px">Linear</div>
+  <div class="abs l14" style="left:24px;top:132px">Release curve</div><div class="abs ddv" style="left:160px;top:132px">Exponential</div>
+  <div class="abs" style="left:24px;top:180px"><div class="cb"><i></i>Feedback detection</div></div>
+  <div class="abs" style="left:24px;top:212px"><div class="cb"><i></i>Attack = 90 % rise</div></div>
+  <div class="abs" style="left:306px;top:60px"><div class="knob" data-k data-v="1" data-c="#00A985" data-s="42" data-l="Link amount" data-t="100 %" style="width:90px"></div></div>
+  <div class="abs" style="left:412px;top:60px"><div class="knob" data-k data-v=".5" data-c="#00A985" data-s="42" data-bi data-l="Output" data-t="0.0 dB" style="width:90px"></div></div>
+  <div class="abs" style="left:306px;top:184px"><div class="knob" data-k data-v="0" data-c="#00A985" data-s="42" data-l="Hold" data-t="0.0 ms" style="width:90px"></div></div>
+  <div class="abs" style="left:412px;top:184px"><div class="knob" data-k data-v="1" data-c="#00A985" data-s="42" data-l="Range" data-t="Off" style="width:90px"></div></div>
+ </div>
+ <div class="n" style="width:200px">Right, at half size: the defaults, Hold 0.0 ms and Range Off, which leave Comp as it is today, to the bit.</div>
+</div></div>
+
+<div><div class="h">3 · EDIT drawer, History page (Decision 4 A)</div><div class="n">A fifth page in the view switch. The last 3 seconds, oldest on the left, one column per pixel (about 6.5 ms each): the detector level as a grey fill (0 to −60 dB, left scale), the effective threshold as a white line (it moves with Auto threshold), and the gain reduction in yellow from the top (0 to 30 dB, right scale), the GR meter's colour. Unlinked, the left channel is the solid yellow and the right a lighter line over it; linked, the two are one. The read-out at the top right is the largest reduction in the shown 3 s; click it to clear. While the drawer is open, the threshold meter, GR meter and faders stay visible to its left and right.</div>
+<div class="row">
+ <div class="drawer">
+  <div class="t">EDIT</div>
+  <div class="seg tabs"><span>Detector</span><span>Character</span><span>Upward</span><span>Options</span><span class="a">History</span></div>
+  <div class="done">Done</div>
+  <svg id="his" class="abs" style="left:24px;top:56px;background:#141414;border-radius:6px" width="476" height="294"></svg>
+ </div>
+ <div class="n" style="width:300px">The drawing is the shared history widget that Fancy DS and DS-Mini use today (<code>DeEsserHistory</code>), generalised in <code>fancy-core</code> so Comp (now), and MultiComp, Gate and Limit (later items), draw history the same way. DS and DS-Mini keep their look: same scales, same colours, same caption.</div>
+</div></div>
+
+</div>
+<script>
+// 1 footer
+function foot(id,five){const items=[['Link channels',0],['Auto make-up',1],['Preview filter',0]];if(five)items.push(['Listen to removed',2]);items.push(['Limit output',1]);
+const el=document.getElementById(id);el.innerHTML='<div class="rc"></div>';const nodes=items.map(([t,x])=>{const d=document.createElement('div');d.className='cbr'+(x==2?' new':'');d.innerHTML=`<i class="${x?'x':''}"></i>${t}`;if(x==2)d.style.color='#fff';el.appendChild(d);return d});
+let pos=[];if(!five){[72,232,392,552].forEach((x,i)=>nodes[i].style.left=x+'px');pos=[72,232,392,552]}else{const w=nodes.map(n=>n.getBoundingClientRect().width),total=w.reduce((a,b)=>a+b,0),gap=(750-48-total)/(w.length-1);let x=24;nodes.forEach((n,i)=>{n.style.left=Math.round(x)+'px';pos.push([Math.round(x),Math.ceil(w[i])]);x+=w[i]+gap});
+document.getElementById('fpos').textContent='Measured (x, width) at 100 %: '+pos.map((p,i)=>`${items[i][0]} (${p[0]}, ${p[1]})`).join(' · ')+`. Gap ${gap.toFixed(0)} px.`}}
+foot('f4',false);foot('f5',true);
+// 3 history
+(()=>{const W=476,H=294,top=22,bot=H-10,lf=-60,yl=d=>top+(bot-top)*(d/lf),yr=g=>top+(bot-top)*(g/30);let s='';
+[-12,-24,-36,-48].forEach(d=>s+=`<line x1="0" y1="${yl(d)}" x2="${W}" y2="${yl(d)}" stroke="#202020"/><text x="4" y="${yl(d)-3}" fill="#5a5a5a" font-size="9">${d}</text>`);
+[6,12,18,24].forEach(g=>s+=`<text x="${W-4}" y="${yr(g)-3}" fill="#6b6220" font-size="9" text-anchor="end">${g}</text>`);
+let lev=[],grL=[],grR=[];let env=-60,gl=0,gr2=0;const T=-20;
+for(let x=0;x<W;x++){const t=x*6.5/1000;const beat=(t*2.2)%1;let l=beat<0.04?-10:-10-30*beat;l=Math.max(-58,l+(Math.sin(x*0.9)*1.5));lev.push(l);
+const over=Math.max(0,l-T),tgt=over*(1-1/3);gl=tgt>gl?gl+0.6*(tgt-gl):gl+0.05*(tgt-gl);grL.push(gl);const tgt2=tgt*0.8;gr2=tgt2>gr2?gr2+0.6*(tgt2-gr2):gr2+0.05*(tgt2-gr2);grR.push(gr2)}
+let p=`M0,${bot}`;lev.forEach((l,x)=>p+=`L${x},${yl(l)}`);p+=`L${W},${bot}Z`;s+=`<path d="${p}" fill="#4C4C4C" fill-opacity=".6"/>`;
+s+=`<line x1="0" y1="${yl(T)}" x2="${W}" y2="${yl(T)}" stroke="#fff" stroke-opacity=".75" stroke-width="1.5"/>`;
+let g=`M0,${top}`;grL.forEach((v,x)=>g+=`L${x},${yr(v)}`);g+=`L${W},${top}Z`;s+=`<path d="${g}" fill="#FFCF07" fill-opacity=".55"/>`;
+let g2='';grR.forEach((v,x)=>g2+=(x?'L':'M')+x+','+yr(v));s+=`<path d="${g2}" stroke="#FFE88A" stroke-width="1.2" fill="none"/>`;
+const pk=Math.max(...grL);s+=`<rect x="0" y="0" width="${W}" height="${top}" fill="#141414"/><text x="8" y="15" fill="#8D8D8D" font-size="10">3 s · level, threshold, gain reduction</text><text x="${W-8}" y="15" fill="#FFCF07" font-size="11" text-anchor="end">peak ${pk.toFixed(1)} dB</text>`;
+document.getElementById('his').innerHTML=s})();
+</script></body></html>

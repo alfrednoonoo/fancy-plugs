@@ -99,8 +99,8 @@ The most complete plugin in the set; the gaps are the standard ones.
 | 2 | Range (max GR); pairs with Auto threshold as a level rider | S | 1 | Options page; `range`, default Off = no cap, so today's output to the bit |
 | 3 | Delta / listen to removed, through `setListening` as DS and Sature do (Comp's listen today is the detector Preview) | S | 1 | Footer; DSP only |
 | 4 | GR history (3 s) in the GR panel, with a peak-hold read-out | S | 1 | GR panel; new shared widget |
-| 5 | Lookahead, 0–20 ms, reported as latency; 0 = today (Pro-C 3 has 1–20 ms; Comp has none) | S | 1 | Options page; `lookahead` |
-| 6 | Per-channel GR read-out when unlinked (one `GainReductionMeter` today) | S | 1 | GR panel; no parameter |
+| 5 | ~~Lookahead~~: dropped, Pre-comp (0–250 ms) already is lookahead with reported latency (`docs/comp.md`, Phase 4 Wave 1, section 1) | | | |
+| 6 | ~~Per-channel GR read-out~~: dropped, the GR meter already has a bar and read-out per channel (same section) | | | |
 | 7 | Sidechain EQ from 3 to 6 bands, with shelf and brickwall cut types | M | 2 | Detector page; three new bands |
 | 8 | Link modes Stereo / M>S / S>M beyond Link % | M | 2 | Options page; `linkMode` |
 | 9 | Tempo-synced trigger: duck on a host-tempo pattern with no sidechain kick (Pro-C 3's Host Sync) | M | 2 | Detector menu; `syncRate`, `syncShape` |
@@ -277,7 +277,7 @@ features).
 ## Suggested order (within the Phase 4 order above)
 
 1. **Wave 1** — every S item above with no new engine: EQ band solo, auto gain and analyzer freeze;
-   Comp Hold, Range, delta, GR history and lookahead; Limit gain lock, auto gain and DC filter; Gate
+   Comp Hold, Range, delta and GR history; Limit gain lock, auto gain and DC filter; Gate
    MIDI in, ratio, auto threshold and Mid/Side sources; DS auto threshold and slope; Delay freeze and
    ceiling; Verb auto gain, Post-EQ module and IR browser; Room Mod Rate/Depth, reverb EQ and gate;
    Exciter delta and THD; Kicker sub length, make-room, polarity and auto gain; FIR resonance tilt.

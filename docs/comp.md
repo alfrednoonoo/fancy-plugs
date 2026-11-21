@@ -277,3 +277,85 @@ Push 1 holds the whole item: the moves into `fancy-core`, 8x, Character, Upward,
 - **Screenshots:** `comp-detector`, `comp-character`, `comp-upward` and `comp-options`, with the mockup's values.
 - **Green:** run 43633937359 (`d21fb1b`), 476 test cases, pluginval, Steinberg's validator, the host harness and FancyBench. The first push (`9b77d50`) failed to compile: a tooltip on a plain component and Catch's `range` without its header.
 - **CPU targets restated** (`docs/measurements/comp-q25.txt`): as first written, everything on at 4x (4.37 %) and 8x (8.3 %) missed 1.5 % and 3 %, because Comp at 4x with nothing new on already costs 3.38 %. On 14 November 2026 the user restated the targets as the cost added over the same oversampling. Run 43639193810 (`5b71497`): everything on adds 0.86 % at 4x (3.13 % against 2.27 %) and 1.76 % at 8x (5.90 % against 4.14 %), inside both.
+
+## Phase 4 Wave 1: Hold, Range, Listen to removed and GR history
+
+Items 1 to 6 of `docs/enhancements.md` section 3, the first plugin of Wave 1 in the Phase 4 order (`docs/enhancements.md`, "Phase 4 order"). On 21 November 2026 the user said to go on with Phase 4, which this note takes as the proposed order, Comp first. **Waiting for the user's approval; no code before it.** Mockup: `design/phase4-mockup-src/comp-w1.html`, rendered at 2x as `reference/phase4/29__comp_w1_mockup.png`.
+
+### 1. Two items are already there
+
+Checked in the code before writing this note:
+
+- **Item 5, lookahead, isn't needed.** Pre-comp (0 to 250 ms) already is lookahead: it delays the audio and not the detector (`preCompDelay` in `CompDsp::compress`), reports the delay as latency and delays the dry path to match (section "Latency"). The backlog's "Comp has none" was wrong; Pre-comp covers Pro-C 3's 1 to 20 ms and more.
+- **Item 6, per-channel GR, isn't needed.** The GR meter already draws two bars, left and right, each with its own read-out (`gainReductionMeter.update (left, right, …)`; `docs/images/comp.png` shows −2.8 dB and −2.6 dB). Unlinked, they differ.
+
+Both get crossed off in `docs/enhancements.md` with that reason. That leaves four items.
+
+### 2. Hold
+
+The release waits Hold after the last moment the reduction was rising or level, then releases as now.
+
+- **Where:** in the shared `fancy::dsp::EnvelopeFollower` (`fancy/dsp/Compression.h`). `Ballistics` gets `holdSamples` and the follower a countdown. Each sample where the target is at or above the envelope reloads the countdown; while the target is below and the countdown runs, the envelope stays put. With `holdSamples` at 0 the new branch is never entered, so MultiComp, Gate and FIR, which share the follower and never set it, stay bit-identical (their legacy tests prove it).
+- **In Comp:** it holds the gain reduction, in both the default (branching) and Classic modes, and before both stages of Auto release. The upward lift has its own follower and doesn't hold: Hold is about not letting the reduction ripple between peaks.
+- **Why it matters:** with a fast release and peak detection, the reduction follows each cycle of a low note, which is distortion. A Hold a little longer than the period (20 ms for 50 Hz) keeps the gain flat between peaks.
+
+### 3. Range
+
+The most reduction Comp will apply. With Auto threshold, it turns Comp into a level rider that never pulls a passage down by more than Range.
+
+- The cap applies to the static curve's output: before the follower in the default mode, after the smoothed level in Classic. So the ballistics stay smooth up to the cap. The GR meter and the history show the capped reduction. Upward lift is unaffected.
+- **Off** (default) skips the cap, so the path is today's to the bit.
+- **Decision 1: Auto make-up with Range.**
+  - **A (R).** Auto make-up uses the capped figure: `0.5 × min (Range, (1 − 1/ratio) × −threshold)`. With a deep threshold and a small Range, make-up then matches what Comp can actually take off. At Off it is today's formula.
+  - **B.** Keep today's formula whatever Range is. Simpler, but at Threshold −40 dB, 4:1 and Range 6 dB, make-up adds 15 dB to a signal that lost at most 6.
+
+### 4. Listen to removed
+
+A temporary listen switch (§0.3 of `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md`): not a parameter, never saved, automated or undone, and off when the last editor closes.
+
+- **Decision 2: what it plays.**
+  - **A (R).** What the downward compression took off: the delayed input times `1 − 10^(−reduction/20)`, before make-up, lift and Character. It is taken where the gain is applied, so at the oversampled rate and through the same down-sampler. Wet, Dry and Output don't apply; the output limiter does, if it's on. With make-up, Upward and Character off, the normal output plus this signal is the input (a null test, section 7).
+  - **B.** The input minus the final output. That includes make-up, so with Auto make-up on it is mostly the input turned up, which says little about the compression.
+- **Two listen switches.** `FancyProcessor` has one listen flag. It gets a listen *target*, an int that defaults to 0, and `ListenCheckbox` an optional target: a checkbox is on when listening is on and the target is its own, and clicking it sets both. Preview filter is target 0 and Listen to removed target 1, so the two are exclusive. Every other plugin uses target 0 and is unchanged.
+- **Decision 3: where the switch goes.**
+  - **A (R).** A fifth footer checkbox, between Preview filter and Limit output, so the two listens sit together. The five are spaced evenly across the 750 px left of the Out meter (mockup, section 1: x 24, 167, 314, 453 and 624, with 29 px gaps). This is the one change to the main layout; the window size doesn't change.
+  - **B.** On the drawer's Options page. The footer stays as it is, but a listen switch is then hidden behind EDIT, where nobody looks for one.
+
+### 5. GR history
+
+The last 3 s, oldest on the left: the detector level as a grey fill, the effective threshold as a white line (it moves with Auto threshold), and the gain reduction in yellow from the top, the GR meter's colour. Unlinked, the right channel is a lighter line over the left. A read-out shows the largest reduction in the shown 3 s; a click clears it.
+
+- **Shared widget:** `DeEsserHistory` becomes a general `fancy::ui::LevelHistory` in `fancy-core`, with its own column type (level, threshold, reduction left and right) rather than the de-esser's. DS and DS-Mini switch to it with their look unchanged, and their screenshots must match. MultiComp, Gate and Limit can use it in later items.
+- **Data:** the audio thread makes one column per 1/476 of 3 s (about 6.3 ms, the maximum of each value over that time) into a lock-free FIFO, as the de-esser engine does. The editor reads it on its timer. Nothing is allocated on the audio thread.
+- **Decision 4: where it goes.**
+  - **A (R).** A fifth page of the EDIT drawer, **History**, filling the page (476 × 294). No change to the main layout or the window size. While the drawer is open, the threshold meter, GR meter and faders stay visible on either side. But the main grid's knobs (Ratio, Attack, Release…) are under the drawer, so you watch the history, close the drawer, turn a knob and look again.
+  - **B.** Grow the window by a 90 px strip under the main grid, always visible (934 × 527 to about 934 × 617). Best for tuning Attack and Release by eye, but it changes the main layout, the window size and every screenshot.
+  - **C.** Leave the history out of Wave 1 and decide it together with MultiComp's, so both plugins get the same answer.
+
+### 6. Parameters and state
+
+Appended after `scHighGain`, so no ID or index moves:
+
+| ID | Name | Range | Default | Unit | Skew |
+|---|---|---|---|---|---|
+| `hold` | Hold | 0 to 500 | 0 | ms | skewed, as Attack |
+| `range` | Range | 1 to 40, top = Off | Off | dB | linear |
+
+Range shows and types "Off" at the top of its travel, as Dry shows −inf at the bottom. Both are shared `Knob`s on the Options page (mockup, section 2), so typed values come with them. **State:** `stateVersion` doesn't change. A state without the two IDs loads their defaults, which are today's path, so v1.6.0 projects load and render bit-identically. No new factory presets.
+
+### 7. Tests (Catch2)
+
+1. **Compatibility:** `tests/LegacyCompQ25Dsp.*`, `CompDsp` as released in v1.6.0, renders identically to the new `CompDsp` at Off, 2x, 4x and 8x, in the six existing setting variants plus Character, Upward and Auto threshold on. A state stripped of `hold` and `range` renders identically to the instance that saved it.
+2. **Shared follower:** MultiComp's, Gate's and FIR's existing legacy and render tests pass unchanged.
+3. **Hold:** a 0 dBFS burst into ∞:1, then −40 dBFS. With Hold 100 ms the reduction stays within 0.1 dB of its peak for 100 ms (±1 ms) and then releases; with Hold 0 it releases at once.
+4. **Hold and low-note distortion:** a 50 Hz sine 12 dB over threshold, RMS size 0, Attack 1 ms, Release 20 ms. The THD with Hold 30 ms is at least 10 dB under Hold 0.
+5. **Range:** ∞:1, Threshold −40 dB, a 0 dBFS sine. The reduction equals Range within 0.1 dB at 6, 12 and 24 dB, and is 40 dB at Off. Auto make-up follows Decision 1.
+6. **Listen to removed, null test:** at Oversampling Off, the normal output plus the removed signal equals the delayed input within −120 dBFS. At 4x, it is within −100 dBFS of the input rendered through the same oversampler at 1:1.
+7. **Two listens:** switching one on switches the other off; closing the editor turns both off; neither changes the saved state.
+8. **History:** columns arrive at 476 per 3 s at 44.1, 48 and 96 kHz and every block size; the peak read-out equals the largest reduction in the window; DS's and DS-Mini's screenshots are unchanged.
+9. **Automation and host:** the existing bit-identical automation test and H's offline-render and flood tests cover the two new parameters.
+10. **CPU (§0.4):** Comp at its defaults stays at 1.00 × itself within noise, and Hold, Range and the history together add under 0.1 % at 48 kHz/128 samples (`docs/measurements/comp-w1.txt`).
+
+### 8. Build order
+
+One push with everything: the follower's Hold, Range, the listen target, `LevelHistory`, the drawer page, the footer and the tests. Then the screenshots (`comp`, `comp-options`, `comp-history`, `comp-listening`), the manual, the checklist and the CPU figures. Before the push, a Python model of test 4 (Hold's distortion) to set its margin. Then the REAPER check, then the next plugin of Wave 1, EQ.
