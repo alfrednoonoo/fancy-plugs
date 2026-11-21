@@ -191,3 +191,53 @@ Other choices made while building:
 - Character's odd half blends towards a symmetric knee at 0.97 to 1.03 for every Type, so it hardens Clip too, rather than towards Transistor's knee as the note said, which would have softened Clip.
 - The aliasing tests run with Character neutral and Auto gain off, matching the model's bare curve.
 - Low's knob is Off below 20 Hz (the first 5 % of its travel) and High's above 20 kHz (the last 7 %). Both accept "off" when typed.
+
+## Phase 4 Wave 2: outer-band drive
+
+**Draft, for approval.** Item 5 of the Wave 2 order (`docs/enhancements.md`; backlog item 1 of section 13). Today only the band between Low and High is saturated, and below Low and above High pass clean. This gives each of those outer bands its own Drive and Mix, through the same `added` path. Modelled first: `docs/research/sature-outer-model.py`.
+
+### 1. What it does
+
+```
+low  = LP48 (Low)  ─► up ─► ×Low drive  ─► shaper ─► ... ─► down ─► s_low  ;  added_low  = s_low  − m_low
+high = HP48 (High) ─► up ─► ×High drive ─► shaper ─► ... ─► down ─► s_high ;  added_high = s_high − m_high
+out  = ((m + added + Low mix × added_low + High mix × added_high) × Wet + m × Dry) × Output
+```
+
+- Four parameters, appended: `lowDrive` and `highDrive` (0 to 36 dB, default 0), `lowMix` and `highMix` (0 to 100 %, default 100 %). With both drives at 0 the outer paths aren't run, so the output is today's to the bit.
+- An outer band exists only while its edge is set: with Low at Off the whole low end is already in the mid band, so Low drive and Low mix dim, and the same for High.
+- The outer bands use the mid band's Type, Character, Tape HF loss and Tone, and the same per-Drive auto gain table (looked up with their own Drive), so each band stays at its level as it's driven.
+- Listen to added harmonics plays all three bands' `added`.
+
+### 2. What the model found
+
+The 48 dB/oct Butterworth low-pass and high-pass at the same frequency are power complementary: below Low, the low band hears 0 dB and the mid band −84 dB at 60 Hz (the existing test's figure); at Low both hear −3 dB; above, the mid band hears all of it. With Low 200 Hz and High 6 kHz the three bands' powers sum to exactly 0 dB from 30 Hz to 18 kHz. So turning the outer drives up never drives any frequency twice, and no crossover has to sum flat: each band only adds its own difference, as the mid band does now.
+
+### 3. Decisions
+
+- **Decision 1: what the outer bands share.**
+  - **A (R).** The mid band's Type, Character, Tape HF loss and Tone, with their own Drive and Mix only: four parameters, as the backlog has it, and one auto gain table.
+  - **B.** Their own Type and Character too (eight parameters): a clean tape low end under a fuzzy top, say. More to learn and to show, and the drawer would need a second page.
+- **Decision 2: the outer bands' edges.**
+  - **A (R).** The same 48 dB/oct Butterworth as the mid band's (Decision 1 B of 2026), so the three bands are power complementary.
+  - **B.** 24 dB/oct, half the filtering cost; the bands then overlap by up to 12 dB an octave from each edge, so the low end would also drive the mid band's saturator.
+- **Decision 3: where the controls go.**
+  - **A (R).** An "Outer bands" group in the EDIT drawer: Low drive, Low mix, High drive and High mix as small knobs. The band display shades the outer bands lightly while their drive is up. A mockup follows approval.
+  - **B.** Drive knobs beside the Low and High knobs on the main window: faster, but it changes the main layout.
+
+### 4. Cost and latency
+
+Each outer band with Drive above 0 adds a band filter, an up- and down-sampler pair and a shaper per channel, so CPU is up to 3 × today's saturation work with both on, and the same as today with both at 0. Measured with §0.4 before release. No latency change: the outer bands use the same oversampling as the mid band.
+
+### 5. Tests
+
+1. Legacy: both outer drives at 0 render as v1.6.0 for every Type, Character and oversampling setting.
+2. Isolation: Low 200 Hz, Low drive 24 dB: a 60 Hz sine gains harmonics, a 1 kHz sine alone is unchanged within −90 dB.
+3. Mix 0 % with Drive 24 dB is the same as Drive 0.
+4. Auto gain: pink noise at −18 dBFS RMS through Low drive 0 and 24 dB is within 1 dB in loudness.
+5. Low at Off: Low drive does nothing and its controls dim.
+6. Wet 0 dB, Dry 0 dB, every drive 0: flat within 0.1 dB, 20 Hz to 20 kHz (the existing flatness test, still passing).
+
+### 6. Build order
+
+Approval, then the drawer mockup (`reference/phase4/45__sature_w2_mockup.png`), then one push: the two outer paths, parameters, drawer, tests, manual, checklist and the CPU figures.
