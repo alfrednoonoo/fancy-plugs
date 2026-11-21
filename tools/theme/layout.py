@@ -157,8 +157,10 @@ def strip(prefix, width, col_x, armed_rows=True):
     col_w = 24
     fader_h = BOTTOM_ROWS - 4 - FADER_TOP
     return [
-        f"set {prefix}.extmixer.mode [1]",
-        f"set {prefix}.extmixer.position [4 4 {width - 8} {FXLIST_H - 4} 0 0 1 0]",
+        # REAPER places the FX, send and parameter lists itself (default handling, no extra margin):
+        # placing them at a fixed position kept their room but drew no list (user's screenshot).
+        f"set {prefix}.extmixer.mode [-1]",
+        f"set {prefix}.extmixer.position [0 0 0 0]",
         # "clear" also empties the lists' fonts, which leaves them with no rows: the label font at
         # 13 px rows, small side margins.
         f"set {prefix}.fxlist.font [0 13]",
@@ -183,9 +185,10 @@ def mcp():
     rows = BOTTOM_ROWS
     return [
         "; ---- Mixer strip (mcp) ----",
-        "; fxshift/fxgrow move what's under the FX list down by its height when the user shows it.",
-        f"set fxshift mcp_wantextmix&1 [0 {FXLIST_H}] [0 0]",
-        f"set fxgrow mcp_wantextmix&1 [0 {FXLIST_H} 0 -{FXLIST_H}] [0 0]",
+        "; fxshift/fxgrow would move what's under a fixed FX list; with REAPER placing the list",
+        "; itself they are zero (kept so a fixed list can come back in one place).",
+        "set fxshift [0 0]",
+        "set fxgrow [0 0]",
         "clear mcp.*",
         f"set mcp.size [{MW} {MH} 60 200]",
         *strip("mcp", MW, col_x),
