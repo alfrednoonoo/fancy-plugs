@@ -194,6 +194,18 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (std::make_unique<Choice> (juce::ParameterID { "satCurve", 1 }, "Saturate curve", juce::StringArray { "Exact", "Fast" }, 1,
                                           juce::AudioParameterChoiceAttributes {}.withAutomatable (false)));
 
+    // Phase 4 Wave 1 (docs/delay.md), appended: Freeze off and Ceiling Off are the delay as it was.
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "freeze", 1 }, "Freeze", false));
+    layout.add (fancy::floatParameter (
+        "ceiling", "Ceiling", juce::NormalisableRange<float> ((float) fancy::dsp::OutputCeiling::offDb, 0.0f, 0.1f), (float) fancy::dsp::OutputCeiling::offDb,
+        juce::AudioParameterFloatAttributes {}
+            .withAutomatable (false)
+            .withLabel ("dBTP")
+            .withStringFromValueFunction ([] (float value, int)
+                                          { return value <= (float) fancy::dsp::OutputCeiling::offDb + 0.01f ? juce::String ("Off") : fancy::formatFixed (value, 1) + " dBTP"; })
+            .withValueFromStringFunction ([] (const juce::String& text)
+                                          { return text.trim().equalsIgnoreCase ("off") ? (float) fancy::dsp::OutputCeiling::offDb : juce::jlimit (-12.0f, 0.0f, fancy::parseNumber (text)); })));
+
     return layout;
 }
 
@@ -340,6 +352,7 @@ DelayDsp::Targets DelayProcessor::readTargets() const
     targets.duckReleaseMs = (double) read ("duckRel");
     targets.swing = (double) read ("swing") * 0.01;
     targets.fastTanh = read ("satCurve") >= 0.5f;
+    targets.freeze = read ("freeze") >= 0.5f;
 
     return targets;
 }
@@ -362,6 +375,7 @@ void DelayProcessor::updateTempo()
 void DelayProcessor::prepareAudio (double sampleRate, int)
 {
     dsp.prepare (sampleRate);
+    ceiling.prepare (sampleRate);
     updateTempo();
     dsp.snapToTargets (readTargets(), getMainBusNumOutputChannels() < 2);
 }
@@ -399,6 +413,13 @@ void DelayProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiB
 
     dsp.setTargets (readTargets(), numChannels < 2);
     dsp.process (channels, numChannels, numSamples);
+
+    // Phase 4 Wave 1: the output ceiling, out of the path while Off.
+    const auto ceilingDb = (double) read ("ceiling");
+    ceiling.process (channels, numChannels, numSamples, ceilingDb, read ("bypass") >= 0.5f);
+
+    if (getLatencySamples() != ceiling.getLatencySamples (ceilingDb))
+        setLatencySamples (ceiling.getLatencySamples (ceilingDb));
 
     outputMeter.push (channels, numChannels, numSamples);
 }

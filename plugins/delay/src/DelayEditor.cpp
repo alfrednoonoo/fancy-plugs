@@ -375,7 +375,9 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
       swingKnob (parameter ("swing"), "Swing", colours::uiTeal, Knob::tightStyle),
       duckAmountKnob (parameter ("duckAmt"), "Amount", colours::uiTeal, Knob::tightStyle),
       duckThresholdKnob (parameter ("duckThr"), "Threshold", colours::uiTeal, Knob::tightStyle),
-      duckReleaseKnob (parameter ("duckRel"), "Release", colours::uiTeal, Knob::tightStyle)
+      duckReleaseKnob (parameter ("duckRel"), "Release", colours::uiTeal, Knob::tightStyle),
+      freezeToggle (parameter ("freeze"), "Freeze", colours::accentYellow),
+      ceilingKnob (parameter ("ceiling"), "Ceiling", colours::uiTeal, Knob::tightStyle)
 {
     auto& body = getBody();
 
@@ -386,6 +388,11 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
     tapMap.setBounds (mapX, mapY, mapWidth, mapHeight);
     tapMap.onTapSelected = [this] (int tap) { selectTap (tap); };
     body.addAndMakeVisible (tapMap);
+
+    // Phase 4 Wave 1: Freeze, top left of the tap graph after "dry" (the footer is full).
+    freezeToggle.setBounds (mapX + 94, mapY + 10, 70, 22);
+    freezeToggle.setTooltip ("Freeze: the repeats hold for as long as it's on, and new input isn't heard. Automatable.");
+    body.addAndMakeVisible (freezeToggle);
 
     tabs.setBounds (mapX, tabRowY, 480, tabRowHeight);
     tabs.onSelect = [this] (int tap) { selectTap (tap); };
@@ -452,7 +459,11 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
     swingKnob.setTooltip ("For Note-mode taps on an odd eighth note: 50 % is straight, higher pushes them later.");
     duckAmountKnob.setTooltip ("How far the repeats dip while you play above the threshold. 0 dB is off.");
 
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &swingKnob, &duckingLabel, &duckAmountKnob, &duckThresholdKnob, &duckReleaseKnob })
+    // Phase 4 Wave 1: Ceiling, after Ducking.
+    ceilingKnob.setBounds (560, 56, 72, 99);
+    ceilingKnob.setTooltip ("Holds the output's true peak under this level, so feedback at 100 % and over can't clip the bus. Off at the bottom.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &swingKnob, &duckingLabel, &duckAmountKnob, &duckThresholdKnob, &duckReleaseKnob, &ceilingKnob })
         drawer.addAndMakeVisible (item);
     drawer.addAndMakeVisible (drawerOutputKnob);
 

@@ -52,14 +52,14 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (std::make_unique<Choice> (juce::ParameterID { "slope", 1 }, "Filter slope",
                                           juce::StringArray { "12 dB/oct", "24 dB/oct", "48 dB/oct" }, 0));
     layout.add (fancy::floatParameter (
-        "ceiling", "Ceiling", juce::NormalisableRange<float> ((float) DsProcessor::ceilingOffDb, 0.0f, 0.1f), (float) DsProcessor::ceilingOffDb,
+        "ceiling", "Ceiling", juce::NormalisableRange<float> ((float) fancy::dsp::OutputCeiling::offDb, 0.0f, 0.1f), (float) fancy::dsp::OutputCeiling::offDb,
         juce::AudioParameterFloatAttributes {}
             .withAutomatable (false)
             .withLabel ("dBTP")
             .withStringFromValueFunction ([] (float value, int)
-                                          { return value <= (float) DsProcessor::ceilingOffDb ? juce::String ("Off") : fancy::formatFixed (value, 1) + " dBTP"; })
+                                          { return value <= (float) fancy::dsp::OutputCeiling::offDb ? juce::String ("Off") : fancy::formatFixed (value, 1) + " dBTP"; })
             .withValueFromStringFunction ([] (const juce::String& text)
-                                          { return text.trim().equalsIgnoreCase ("off") ? (float) DsProcessor::ceilingOffDb : juce::jlimit (-12.0f, 0.0f, fancy::parseNumber (text)); })));
+                                          { return text.trim().equalsIgnoreCase ("off") ? (float) fancy::dsp::OutputCeiling::offDb : juce::jlimit (-12.0f, 0.0f, fancy::parseNumber (text)); })));
 
     return layout;
 }
@@ -159,8 +159,7 @@ void DsProcessor::DesignThread::run()
 
 void DsProcessor::prepareAudio (double sampleRate, int)
 {
-    ceilingLimiter.prepare (sampleRate);
-    ceilingWasOn = false;
+    ceiling.prepare (sampleRate);
 
     designThread.stopThread (2000);
 
@@ -240,43 +239,13 @@ void DsProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuff
     dsp.setTargets (readTargets());
     dsp.process (main, numChannels, sidechain, numSidechain, numSamples);
 
-    // Phase 4 Wave 1: the output ceiling, out of the path entirely while it's Off. Bypass lets
-    // the signal through it untouched, still delayed, so the latency doesn't move.
-    const auto ceilingDb = read ("ceiling");
-    const auto ceilingOn = ceilingDb > (float) ceilingOffDb;
-
-    if (ceilingOn)
-    {
-        auto settings = ceilingLimiter.getSettings();
-        settings.truePeak = true;
-
-        if (settings.truePeak != ceilingLimiter.getSettings().truePeak)
-            ceilingLimiter.setSettings (settings);
-
-        const auto ceiling = std::pow (10.0, (double) ceilingDb / 20.0);
-        const auto amount = isOn ("bypass") ? 0.0 : 1.0;
-
-        for (int i = 0; i < numSamples; ++i)
-        {
-            auto l = (double) main[0][i] / ceiling;
-            auto r = (numChannels > 1 ? (double) main[1][i] : l * ceiling) / ceiling;
-            ceilingLimiter.process (l, r, amount);
-            main[0][i] = (float) (l * ceiling);
-
-            if (numChannels > 1)
-                main[1][i] = (float) (r * ceiling);
-        }
-    }
-
-    if (ceilingOn != ceilingWasOn)
-    {
-        ceilingLimiter.reset();
-        ceilingWasOn = ceilingOn;
-    }
+    // Phase 4 Wave 1: the output ceiling, out of the path entirely while it's Off.
+    const auto ceilingDb = (double) read ("ceiling");
+    ceiling.process (main, numChannels, numSamples, ceilingDb, isOn ("bypass"));
 
     outputMeter.push (main, numChannels, numSamples);
 
-    const auto latency = dsp.getLatencySamples() + (ceilingOn ? ceilingLimiter.getLatencySamples() : 0);
+    const auto latency = dsp.getLatencySamples() + ceiling.getLatencySamples (ceilingDb);
 
     if (getLatencySamples() != latency)
         setLatencySamples (latency);

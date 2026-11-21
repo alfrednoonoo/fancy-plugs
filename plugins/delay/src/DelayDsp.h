@@ -43,6 +43,9 @@ public:
         double duckAmountDb = 0.0, duckThresholdDb = -24.0, duckReleaseMs = 250.0;
         double swing = 0.5;
         bool fastTanh = false;
+
+        // Phase 4 Wave 1 (docs/delay.md): the loops hold and the input stops. Off is the delay as it was.
+        bool freeze = false;
     };
 
     // tanh within 5e-4, never above 1 in size (Phase 3 Q2.3).
@@ -124,7 +127,7 @@ private:
     };
 
     void updateCoefficients (Tap&) noexcept;
-    void processTap (Tap&, const float* inLeft, const float* inRight, double* wetLeft, double* wetRight, int numSamples) noexcept;
+    void processTap (Tap&, const float* inLeft, const float* inRight, double* wetLeft, double* wetRight, int numSamples, const double* frozen = nullptr) noexcept;
     float readHead (const Tap&, int channel, int writeAt, int head) const noexcept;
     float readGlide (const Tap&, int channel, int writeAt) const noexcept;
     float readAt (const Tap&, int channel, int writeAt, double position) const noexcept;
@@ -144,6 +147,8 @@ private:
     Smoother wetGain, dryGain, outputGain, bypassMix;
 
     // Phase 3 Q2.3.
+    // Phase 4 Wave 1: Freeze's crossfade, 30 ms, worked out once per chunk for every tap.
+    fancy::dsp::Smoother freezeMix;
     Smoother duckAmount;
     double duckThresholdDb = -24.0, duckEnvelope = 0.0, duckAttack = 1.0, duckRelease = 1.0;
 

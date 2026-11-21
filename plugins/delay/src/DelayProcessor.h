@@ -2,6 +2,7 @@
 
 #include "DelayDsp.h"
 
+#include <fancy/dsp/OutputCeiling.h>
 #include <fancy/plugin/FancyProcessor.h>
 
 #include <array>
@@ -64,6 +65,7 @@ private:
     std::atomic<double> tempo { 120.0 };
     std::atomic<bool> hostTempo { false };
     DelayDsp dsp;
+    fancy::dsp::OutputCeiling ceiling; // Phase 4 Wave 1
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayProcessor)
 };

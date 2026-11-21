@@ -131,6 +131,10 @@ private:
     juce::Label duckingLabel;
     fancy::ui::Knob swingKnob, duckAmountKnob, duckThresholdKnob, duckReleaseKnob;
 
+    // Phase 4 Wave 1: Freeze on the tap graph, Ceiling in the drawer.
+    fancy::ui::ParamTextToggle freezeToggle;
+    fancy::ui::Knob ceilingKnob;
+
     int selectedTap = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayEditor)

@@ -107,6 +107,9 @@ double DelayDsp::tapMs (const TapSpec& spec, double bpm, double swing) noexcept
 
 void DelayDsp::prepare (double sampleRate)
 {
+    freezeMix.setTime (30.0, sampleRate);
+    freezeMix.snapTo (0.0);
+
     rate = sampleRate;
 
     maxDelaySamples = (int) std::ceil (delay::maxDelayMs * 0.001 * rate);
@@ -455,7 +458,7 @@ void DelayDsp::updateCoefficients (Tap& tap) noexcept
         tap.crushScale = std::exp2 (tap.bits.next() - 1.0);
 }
 
-void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, double* wetLeft, double* wetRight, int numSamples) noexcept
+void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, double* wetLeft, double* wetRight, int numSamples, const double* frozen) noexcept
 {
     auto writeAt = writeIndex;
     auto wroteSound = false;
@@ -635,10 +638,23 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
                 loop[ch] = blocked * feedback;
         }
 
+        // Phase 4 Wave 1: frozen, the loop writes back exactly what it read, and the input stops.
+        const auto hold = frozen != nullptr ? frozen[i] : 0.0;
+
+        if (hold > 0.0)
+            for (int ch = 0; ch < 2; ++ch)
+                loop[ch] += (read[ch] - loop[ch]) * hold;
+
         // Back into the ring ----------------------------------------------------------------
 
-        const auto left = (double) inLeft[i] * inGate;
-        const auto right = (double) inRight[i] * inGate;
+        auto left = (double) inLeft[i] * inGate;
+        auto right = (double) inRight[i] * inGate;
+
+        if (hold > 0.0)
+        {
+            left *= 1.0 - hold;
+            right *= 1.0 - hold;
+        }
 
         auto writeLeft = left + loop[0];
         auto writeRight = right + loop[1];
@@ -727,9 +743,18 @@ void DelayDsp::process (float* const* channels, int numChannels, int numSamples)
         std::fill_n (wetLeft, count, 0.0);
         std::fill_n (wetRight, count, 0.0);
 
+        // Phase 4 Wave 1: Freeze's crossfade for this chunk, or none at all while it's off.
+        double frozen[chunkSize];
+        const auto freezing = current.freeze || ! freezeMix.isSettled() || freezeMix.getCurrent() > 0.0;
+        freezeMix.setTarget (current.freeze ? 1.0 : 0.0);
+
+        if (freezing)
+            for (int i = 0; i < count; ++i)
+                frozen[i] = freezeMix.next();
+
         for (auto& tap : taps)
             if (! tap.asleep)
-                processTap (tap, left, right, wetLeft, wetRight, count);
+                processTap (tap, left, right, wetLeft, wetRight, count, freezing ? frozen : nullptr);
 
         for (int i = 0; i < count; ++i)
         {
