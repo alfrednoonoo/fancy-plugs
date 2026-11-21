@@ -16,6 +16,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 
@@ -484,10 +485,22 @@ int smoke (const juce::StringArray& args)
                 testRatios[name] = ratio;
         }
 
+        // The median of three timings: one timing flaked on Mac runners (docs/mac.md, runs
+        // 43777506992 and 44850888836: Delay 0.66 to 0.74 x Comp against 0.39 to 0.42 x).
         const auto timeCpu = [&] (const PluginEntry& entry, juce::String& error) -> double
         {
             auto rig = smokeRig (entry, true, error);
-            return rig == nullptr ? 0.0 : measureCpu (*rig, 128, 5.0, 5, false, true, {}).mean;
+
+            if (rig == nullptr)
+                return 0.0;
+
+            double means[3];
+
+            for (auto& mean : means)
+                mean = measureCpu (*rig, 128, 5.0, 5, false, true, {}).mean;
+
+            std::sort (std::begin (means), std::end (means));
+            return means[1];
         };
 
         juce::String error;
