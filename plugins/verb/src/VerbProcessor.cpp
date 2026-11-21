@@ -194,7 +194,13 @@ VerbProcessor::VerbProcessor()
       buildThread (*this)
 {
     if (const auto xml = juce::XmlDocument::parse (settingsFile()))
+    {
         irFolder = juce::File (xml->getStringAttribute ("irFolder"));
+
+        // Phase 4 Wave 1: library favourites.
+        favourites = juce::StringArray::fromLines (xml->getStringAttribute ("favourites"));
+        favourites.removeEmptyStrings();
+    }
 
     getApvts().state.appendChild (verb::makeChain(), nullptr);
     pendingChain = verb::readChain (getChain());
@@ -299,10 +305,14 @@ void VerbProcessor::buildNow()
 
     irSeconds.store (built.preview.trimmedSeconds);
 
+    auto forExport = std::make_shared<const juce::AudioBuffer<float>> (verb::exportableIr (built));
+
     {
         const std::lock_guard lock (buildMutex);
         preview = std::move (built.preview);
         missing = notFound;
+        exportable = std::move (forExport);
+        exportableRate = buildRate.load();
     }
 
     builtMode.store ((int) mode);
@@ -671,14 +681,127 @@ void VerbProcessor::setIrFolder (const juce::File& folder)
         irFolder = folder;
     }
 
+    saveSettings();
+    requestBuild();
+}
+
+void VerbProcessor::saveSettings()
+{
     juce::XmlElement xml ("FANCY_VERB_SETTINGS");
-    xml.setAttribute ("irFolder", folder.getFullPathName());
+
+    {
+        const std::lock_guard lock (buildMutex);
+        xml.setAttribute ("irFolder", irFolder.getFullPathName());
+    }
+
+    if (! favourites.isEmpty())
+        xml.setAttribute ("favourites", favourites.joinIntoString ("\n"));
 
     const auto file = settingsFile();
     file.getParentDirectory().createDirectory();
     xml.writeTo (file);
+}
 
-    requestBuild();
+// Phase 4 Wave 1 ------------------------------------------------------------------------------
+
+bool VerbProcessor::getEqualLoudness()
+{
+    return getChain().getProperty (verb::ids::equalLoudness, false);
+}
+
+void VerbProcessor::setEqualLoudness (bool on)
+{
+    auto chain = getChain();
+
+    if (getEqualLoudness() == on)
+        return;
+
+    // Off removes the property, so the state is what it was before the option existed.
+    if (on)
+        chain.setProperty (verb::ids::equalLoudness, true, nullptr);
+    else
+        chain.removeProperty (verb::ids::equalLoudness, nullptr);
+
+    chainEdited (false);
+}
+
+bool VerbProcessor::exportIr (const juce::File& file)
+{
+    std::shared_ptr<const juce::AudioBuffer<float>> audio;
+    double rate = 48000.0;
+
+    {
+        const std::lock_guard lock (buildMutex);
+        audio = exportable;
+        rate = exportableRate;
+    }
+
+    if (audio == nullptr || audio->getNumSamples() == 0)
+        return false;
+
+    file.deleteFile();
+    std::unique_ptr<juce::OutputStream> stream = std::make_unique<juce::FileOutputStream> (file);
+
+    if (! static_cast<juce::FileOutputStream&> (*stream).openedOk())
+        return false;
+
+    juce::WavAudioFormat wav;
+    const auto options = juce::AudioFormatWriterOptions{}
+                             .withSampleRate (rate)
+                             .withNumChannels (audio->getNumChannels())
+                             .withBitsPerSample (24);
+
+    auto writer = wav.createWriterFor (stream, options);
+
+    if (writer == nullptr)
+        return false;
+
+    return writer->writeFromAudioSampleBuffer (*audio, 0, audio->getNumSamples());
+}
+
+bool VerbProcessor::dropFile (const juce::File& file, int uid)
+{
+    if (verb::readAudioFile (file) == nullptr)
+        return false;
+
+    if (uid > 0 && findModule (uid)[verb::ids::type].toString() == verb::storedName (ModuleType::file))
+        return loadFile (uid, file);
+
+    const auto added = addModule (ModuleType::file, getChain().getNumChildren());
+
+    if (added == 0)
+        return false;
+
+    if (! loadFile (added, file))
+    {
+        removeModule (added);
+        return false;
+    }
+
+    return true;
+}
+
+juce::StringArray VerbProcessor::getFavourites()
+{
+    return favourites;
+}
+
+bool VerbProcessor::isFavourite (const juce::String& key)
+{
+    return favourites.contains (key);
+}
+
+void VerbProcessor::setFavourite (const juce::String& key, bool favourite)
+{
+    if (favourite == favourites.contains (key))
+        return;
+
+    if (favourite)
+        favourites.add (key);
+    else
+        favourites.removeString (key);
+
+    saveSettings();
 }
 
 juce::AudioProcessorEditor* VerbProcessor::createEditor()

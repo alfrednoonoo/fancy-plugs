@@ -13,12 +13,12 @@
 namespace verb
 {
 
-// Modulate (Phase 3 Q2.8) is appended, so stored types keep their meaning.
-enum class ModuleType { file, lpHp, echo, normalize, trim, reverse, reverb, modulate };
+// Modulate (Phase 3 Q2.8) and EQ (Phase 4 Wave 1) are appended, so stored types keep their meaning.
+enum class ModuleType { file, lpHp, echo, normalize, trim, reverse, reverb, modulate, eq };
 
-inline constexpr std::array<ModuleType, 8> allModuleTypes {
+inline constexpr std::array<ModuleType, 9> allModuleTypes {
     ModuleType::file, ModuleType::lpHp, ModuleType::echo, ModuleType::normalize,
-    ModuleType::trim, ModuleType::reverse, ModuleType::reverb, ModuleType::modulate
+    ModuleType::trim, ModuleType::reverse, ModuleType::reverb, ModuleType::modulate, ModuleType::eq
 };
 
 inline constexpr int maxModules = 16;
@@ -63,7 +63,9 @@ inline const juce::Identifier chain ("CHAIN"), module ("MODULE"), type ("type"),
     // knows about it, so a project that used a four-channel file before keeps its first two.
     trueStereo ("ts"), pairPath ("pairPath"), pairHash ("pairHash"), pairFlac ("pairFlac"), pairRate ("pairRate"),
     // A library IR, as "Category/Name" (Phase 3 Q2.8).
-    factory ("factory");
+    factory ("factory"),
+    // Phase 4 Wave 1: Equal loudness, on the chain. Absent or false keeps the wet level as it was.
+    equalLoudness ("eqLoud");
 }
 
 struct IrAudio
@@ -105,6 +107,9 @@ struct ChainSpec
     std::vector<ModuleSpec> modules;
     double trimStart = 0.0; // seconds from the start of the built IR
     double trimEnd = 0.0;   // seconds from the start; 0 keeps everything
+
+    // Phase 4 Wave 1 (docs/verb.md): the finished IR is scaled to the reference loudness.
+    bool equalLoudness = false;
 };
 
 juce::ValueTree makeModule (ModuleType type, int uid);

@@ -15,6 +15,9 @@ public:
     // Called during a handle drag, in seconds. End 0 means the end of the IR.
     std::function<void (double, double)> onTrimChanged;
 
+    // A right-click, with its position (Phase 4 Wave 1: Export IR, Reset trim).
+    std::function<void (juce::Point<float>)> onContextMenu;
+
     void paint (juce::Graphics&) override;
     void mouseMove (const juce::MouseEvent&) override;
     void mouseDown (const juce::MouseEvent&) override;

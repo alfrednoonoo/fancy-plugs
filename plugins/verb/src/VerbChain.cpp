@@ -62,6 +62,17 @@ const std::vector<Setting> modulateSettings {
     { "depth", "Depth", 0.0f, 100.0f, 50.0f, 1.0f, 1.0f, 0, "%" },
     { "spread", "Spread", 0.0f, 100.0f, 100.0f, 1.0f, 1.0f, 0, "%" },
 };
+
+// Phase 4 Wave 1: a post-EQ on the IR. Each band at 0 dB is skipped, so the IR stays as it was.
+const std::vector<Setting> eqSettings {
+    { "lowFreq", "Freq", 20.0f, 1000.0f, 120.0f, 1.0f, 1.0f, 0, "Hz", true },
+    { "lowGain", "Gain", -18.0f, 18.0f, 0.0f, 0.1f, 1.0f, 1, "dB" },
+    { "midFreq", "Freq", 100.0f, 16000.0f, 2000.0f, 1.0f, 1.0f, 0, "Hz", true },
+    { "midGain", "Gain", -18.0f, 18.0f, 0.0f, 0.1f, 1.0f, 1, "dB" },
+    { "midQ", "Q", 0.2f, 10.0f, 1.0f, 0.01f, 1.0f, 1, "", true },
+    { "highFreq", "Freq", 1000.0f, 20000.0f, 8000.0f, 1.0f, 1.0f, 0, "Hz", true },
+    { "highGain", "Gain", -18.0f, 18.0f, 0.0f, 0.1f, 1.0f, 1, "dB" },
+};
 } // namespace
 
 const juce::StringArray& earlyTypeNames()
@@ -80,6 +91,7 @@ const std::vector<Setting>& settingsOf (ModuleType type)
         case ModuleType::trim:      return trimSettings;
         case ModuleType::reverb:    return reverbSettings;
         case ModuleType::modulate:  return modulateSettings;
+        case ModuleType::eq:        return eqSettings;
         case ModuleType::file:
         case ModuleType::reverse:
         default:                    return noSettings;
@@ -98,6 +110,7 @@ juce::String storedName (ModuleType type)
         case ModuleType::reverse:   return "reverse";
         case ModuleType::reverb:    return "reverb";
         case ModuleType::modulate:  return "modulate";
+        case ModuleType::eq:        return "eq";
         default:                    return {};
     }
 }
@@ -114,6 +127,7 @@ juce::String titleOf (ModuleType type)
         case ModuleType::reverse:   return "Reverse";
         case ModuleType::reverb:    return "REVERB GENERATOR";
         case ModuleType::modulate:  return "MODULATE";
+        case ModuleType::eq:        return "EQ";
         default:                    return {};
     }
 }
@@ -130,6 +144,7 @@ juce::String chipOf (ModuleType type)
         case ModuleType::reverse:   return "REVERSE";
         case ModuleType::reverb:    return "REVERB";
         case ModuleType::modulate:  return "MODULATE";
+        case ModuleType::eq:        return "EQ";
         default:                    return {};
     }
 }
@@ -146,6 +161,7 @@ juce::String menuNameOf (ModuleType type)
         case ModuleType::reverse:   return "Reverse";
         case ModuleType::reverb:    return "Reverb Generator";
         case ModuleType::modulate:  return "Modulate";
+        case ModuleType::eq:        return "EQ";
         default:                    return {};
     }
 }
@@ -248,6 +264,7 @@ ChainSpec readChain (const juce::ValueTree& chain)
     ChainSpec spec;
     spec.trimStart = chain[ids::trimStart];
     spec.trimEnd = chain[ids::trimEnd];
+    spec.equalLoudness = chain.getProperty (ids::equalLoudness, false);
 
     for (const auto module : chain)
     {

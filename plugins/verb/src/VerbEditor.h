@@ -10,7 +10,7 @@ class VerbEditor final : public fancy::ui::ShellEditor
 public:
     static constexpr int baseWidth = 866, baseHeight = 677;
 
-    enum class Preview { rack, addPanel, setup, scrolled, library, generators };
+    enum class Preview { rack, addPanel, setup, scrolled, library, generators, eqModule, picker, drop };
 
     explicit VerbEditor (VerbProcessor& processor);
 
@@ -30,6 +30,7 @@ private:
     void updateDisplay();
     void setValue (const char* id, float value);
     void chooseIrFolder();
+    void showDisplayMenu (juce::Point<float> position); // Phase 4 Wave 1
 
     VerbProcessor& processor;
 
@@ -53,6 +54,10 @@ private:
     juce::Label latencyLabel, fftLabel, storageLabel, folderLabel, folderPath, lateLabel;
     fancy::ui::ParamDropdown latencyDropdown, fftDropdown, storageDropdown;
     fancy::ui::PillButton folderButton { "Choose..." };
+
+    // Phase 4 Wave 1: Equal loudness, and the trim it applied.
+    fancy::ui::ToggleCheckbox loudnessToggle { "Equal loudness", fancy::ui::colours::uiPurple };
+    juce::Label loudnessTrim;
     std::unique_ptr<juce::FileChooser> chooser;
 
     int seenChainRevision = -1;

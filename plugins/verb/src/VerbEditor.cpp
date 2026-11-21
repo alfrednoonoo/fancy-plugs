@@ -1,4 +1,5 @@
 #include "VerbEditor.h"
+#include "LibraryPicker.h"
 
 #include <cmath>
 
@@ -88,6 +89,10 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
 
     display.onTrimChanged = [this] (double start, double end) { processor.setTrim (start, end); };
 
+    // Phase 4 Wave 1: Export IR from the display's right-click menu, and the rack's messages.
+    display.onContextMenu = [this] (juce::Point<float> position) { showDisplayMenu (position); };
+    rack.onMessage = [this] (const juce::String& text) { showTip (rack, text); };
+
     setupButton.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
 
     const std::pair<juce::Label*, const char*> labels[] {
@@ -119,8 +124,15 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
     folderButton.onClick = [this] { chooseIrFolder(); };
     addLatencyNote (latencyDropdown);
 
+    // Phase 4 Wave 1 (docs/verb.md section 1): Equal loudness, with the applied trim beside it.
+    loudnessToggle.setBounds (labelX, row (5), 150, rowHeight);
+    loudnessToggle.onChange = [this] (bool on) { processor.setEqualLoudness (on); };
+    styleLabel (loudnessTrim, {}, colours::textSecondary, juce::Justification::centredLeft, 12.0f);
+    loudnessTrim.setBounds (labelX + 160, row (5), 200, rowHeight);
+    loudnessTrim.setTooltip ("The gain Equal loudness applied, so this IR plays at the same loudness as any other.");
+
     for (juce::Component* item : std::initializer_list<juce::Component*> {
-             &latencyDropdown, &fftDropdown, &storageDropdown, &folderButton, &folderPath, &lateLabel })
+             &latencyDropdown, &fftDropdown, &storageDropdown, &folderButton, &folderPath, &lateLabel, &loudnessToggle, &loudnessTrim })
         drawer.addAndMakeVisible (item);
 
     getBody().addChildComponent (drawer);
@@ -174,8 +186,34 @@ bool VerbEditor::listsParameter (const juce::AudioProcessorParameter& candidate)
 void VerbEditor::updateDisplay()
 {
     const auto chain = processor.getChain();
-    display.setPreview (processor.getPreview(), chain[verb::ids::trimStart], chain[verb::ids::trimEnd]);
+    const auto preview = processor.getPreview();
+    display.setPreview (preview, chain[verb::ids::trimStart], chain[verb::ids::trimEnd]);
     rack.refresh();
+
+    const auto trim = preview.loudnessTrimDb;
+    loudnessTrim.setText (processor.getEqualLoudness() ? juce::String (trim > 0.0 ? "+" : "") + juce::String (trim, 1) + " dB" : juce::String(),
+                          juce::dontSendNotification);
+}
+
+void VerbEditor::showDisplayMenu (juce::Point<float> position)
+{
+    const auto chain = processor.getChain();
+    const auto trimmed = (double) chain[verb::ids::trimStart] > 0.0 || (double) chain[verb::ids::trimEnd] > 0.0;
+
+    fancy::ui::Menu menu;
+    menu.addItem (1, "Export IR...", processor.getPreview().trimmedSeconds > 0.0);
+    menu.addItem (2, "Reset trim", trimmed);
+
+    menu.showAt (display, position, [safeThis = juce::Component::SafePointer<VerbEditor> (this)] (int chosen)
+    {
+        if (safeThis == nullptr)
+            return;
+
+        if (chosen == 1)
+            safeThis->rack.exportIr();
+        else if (chosen == 2)
+            safeThis->processor.setTrim (0.0, 0.0);
+    });
 }
 
 void VerbEditor::onTick (float)
@@ -201,6 +239,7 @@ void VerbEditor::onTick (float)
     strip.repaint();
 
     folderPath.setText (processor.getIrFolder().getFullPathName(), juce::dontSendNotification);
+    loudnessToggle.setOn (processor.getEqualLoudness());
     lateLabel.setText ("Late blocks since reset: " + juce::String (processor.getLateBlocks()), juce::dontSendNotification);
 }
 
@@ -264,19 +303,34 @@ void VerbEditor::showPreview (Preview preview)
         processor.setModuleValue (normalize, "peak", -34.3f);
     }
 
+    closePopups();
+    rack.fileDragExit ({});
+
+    // Phase 4 Wave 1's previews start from the library one.
+    const auto wave1 = preview == Preview::eqModule || preview == Preview::picker || preview == Preview::drop;
+
     // Phase 3 Q2.8: a library IR in true stereo, and the Reverb generator with Modulate.
-    if (preview == Preview::library || preview == Preview::generators)
+    if (preview == Preview::library || preview == Preview::generators || wave1)
     {
         while (processor.getChain().getNumChildren() > 0)
             processor.removeModule ((int) processor.getChain().getChild (0)[verb::ids::uid]);
 
-        if (preview == Preview::library)
+        if (preview == Preview::library || wave1)
         {
             const auto file = processor.addModule (ModuleType::file, 0);
             processor.loadLibrary (file, "Halls/Concert Hall");
 
             const auto filter = processor.addModule (ModuleType::lpHp, 1);
             processor.setModuleValue (filter, "highpass", 93.0f);
+
+            // The mockup's EQ card (reference/phase4/36__verb_w1_mockup.png).
+            if (preview == Preview::eqModule)
+            {
+                const auto eq = processor.addModule (ModuleType::eq, 2);
+                processor.setModuleValue (eq, "lowGain", -2.0f);
+                processor.setModuleValue (eq, "midGain", 3.0f);
+                processor.setModuleValue (eq, "highGain", -1.5f);
+            }
         }
         else
         {
@@ -308,6 +362,26 @@ void VerbEditor::showPreview (Preview preview)
     drawer.setVisible (preview == Preview::setup);
     onTick (0.0f);
     strip.repaint();
+
+    if (preview == Preview::picker)
+    {
+        processor.setFavourite ("Halls/Concert Hall", true);
+
+        for (const auto& card : rack.getCards())
+        {
+            if (card->getType() == ModuleType::file)
+            {
+                card->showFileMenu();
+                break;
+            }
+        }
+
+        if (auto* picker = LibraryPicker::findOpen (getPopupParent()))
+            picker->setSearch ("hall");
+    }
+
+    if (preview == Preview::drop)
+        rack.showDropPreview ("Bright Room.wav");
 }
 
 juce::Colour VerbEditor::getAccentColour()

@@ -31,7 +31,7 @@ if("FANCY_HAS_EQ=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_VERB=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE VerbTests.cpp VerbQ28Tests.cpp LegacyVerbConvolver.cpp LegacyVerbIrBuilder.cpp)
+    target_sources(fancy-tests PRIVATE VerbTests.cpp VerbQ28Tests.cpp VerbW1Tests.cpp LegacyVerbConvolver.cpp LegacyVerbIrBuilder.cpp)
 endif()
 
 if("FANCY_HAS_DELAY=1" IN_LIST fancy_screen_defs)

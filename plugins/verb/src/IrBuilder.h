@@ -25,6 +25,9 @@ struct IrPreview
     double sampleRate = 48000.0;
     int numChannels = 0;
     double peakDb = -200.0;
+
+    // Phase 4 Wave 1: the gain Equal loudness applied, in dB, or 0 with it off.
+    double loudnessTrimDb = 0.0;
 };
 
 // Modulate (Phase 3 Q2.8): the tail after Start in two versions with the same decay, which the
@@ -69,5 +72,17 @@ std::vector<double> resample (const double* source, int numSamples, double ratio
 
 // Runs the chain's modules in order and applies the display handles.
 BuiltIr buildIr (const ChainSpec& chain, double sampleRate);
+
+// Phase 4 Wave 1 (docs/verb.md): Equal loudness. The pink-weighted energy of one IR channel
+// (1/f weights from 20 Hz to 20 kHz over frames of about 1/6 s), equal to the plain energy for
+// white noise. The trim brings an IR's energy to the reference: a white exponential tail
+// starting at -18 dBFS with a 2 s RT60, about what a file at the default gain mode gives.
+double pinkEnergy (const std::vector<double>& samples, double sampleRate);
+double referenceLoudnessEnergy (double sampleRate) noexcept;
+inline constexpr double maxLoudnessTrimDb = 24.0;
+
+// The finished IR as a file holds it (Phase 4 Wave 1, Export IR): Modulate's tail added back,
+// and true stereo in a four-channel file's order, LL, LR, RL, RR.
+juce::AudioBuffer<float> exportableIr (const BuiltIr& built);
 
 } // namespace verb

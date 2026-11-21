@@ -1,5 +1,7 @@
 #include "IrBuilder.h"
 
+#include <fancy/dsp/MatchedFilters.h>
+
 #include <juce_core/juce_core.h>
 #include <juce_dsp/juce_dsp.h>
 
@@ -285,6 +287,60 @@ void applyLpHp (Channels& ir, const ModuleSpec& module, double sampleRate)
 
         if (useLowpass)
             runSections (lowpass, false);
+    }
+}
+
+// Phase 4 Wave 1: low shelf, bell and high shelf, with Fancy EQ's matched filters. A band at
+// 0 dB isn't run at all, so an EQ module at its defaults leaves the IR bit-identical.
+void applyEq (Channels& ir, const ModuleSpec& module, double sampleRate)
+{
+    namespace matched = fancy::dsp::matched;
+
+    const auto band = [sampleRate] (matched::BandType type, float hz, float gainDb, double q)
+    {
+        matched::BandSpec spec;
+        spec.type = type;
+        spec.frequencyHz = std::min ((double) hz, sampleRate * 0.45);
+        spec.gainDb = gainDb;
+        spec.q = q;
+        spec.order = 2;
+        spec.on = true;
+        return matched::design (spec, sampleRate);
+    };
+
+    std::vector<matched::BandFilter> filters;
+
+    if (module.values[1] != 0.0f)
+        filters.push_back (band (matched::BandType::lowShelf, module.values[0], module.values[1], matched::butterworthQ));
+
+    if (module.values[3] != 0.0f)
+        filters.push_back (band (matched::BandType::band, module.values[2], module.values[3], (double) module.values[4]));
+
+    if (module.values[6] != 0.0f)
+        filters.push_back (band (matched::BandType::highShelf, module.values[5], module.values[6], matched::butterworthQ));
+
+    for (auto& channel : ir)
+    {
+        if (channel.empty())
+            continue;
+
+        for (const auto& filter : filters)
+        {
+            for (int k = 0; k < filter.numSections; ++k)
+            {
+                const auto& c = filter.sections[(size_t) k];
+                double s1 = 0.0, s2 = 0.0;
+
+                for (auto& sample : channel)
+                {
+                    const auto x = sample;
+                    const auto y = c.b0 * x + s1;
+                    s1 = c.b1 * x - c.a1 * y + s2;
+                    s2 = c.b2 * x - c.a2 * y;
+                    sample = y;
+                }
+            }
+        }
     }
 }
 
@@ -907,7 +963,139 @@ void splitForModulation (const Channels& ir, const ModuleSpec& modulate, double 
         }
     }
 }
+double weightedEnergyOf (const double* samples, size_t length, double sampleRate)
+{
+    if (length == 0)
+        return 0.0;
+
+    // Frames about 1/6 s long, so the lowest bins sit near 6 Hz at any rate.
+    const auto order = juce::jlimit (8, 16, (int) std::ceil (std::log2 (sampleRate / 6.0)));
+    const auto size = 1 << order;
+    juce::dsp::FFT fft (order);
+    std::vector<float> frame ((size_t) size * 2);
+
+    const auto binHz = sampleRate / (double) size;
+    const auto top = std::min (20000.0, sampleRate * 0.49);
+    double weightSum = 0.0;
+    std::vector<std::pair<int, double>> weights;
+
+    for (int k = 1; k < size / 2; ++k)
+    {
+        const auto hz = binHz * (double) k;
+
+        if (hz >= 20.0 && hz <= top)
+        {
+            weights.emplace_back (k, 1.0 / hz);
+            weightSum += 1.0 / hz;
+        }
+    }
+
+    if (weightSum <= 0.0)
+        return 0.0;
+
+    double energy = 0.0;
+
+    for (size_t from = 0; from < length; from += (size_t) size)
+    {
+        std::fill (frame.begin(), frame.end(), 0.0f);
+        const auto count = std::min ((size_t) size, length - from);
+
+        for (size_t i = 0; i < count; ++i)
+            frame[i] = (float) samples[from + i];
+
+        fft.performRealOnlyForwardTransform (frame.data(), true);
+
+        double sum = 0.0;
+
+        for (const auto& [k, weight] : weights)
+        {
+            const auto re = (double) frame[(size_t) (2 * k)];
+            const auto im = (double) frame[(size_t) (2 * k + 1)];
+            sum += (re * re + im * im) * weight;
+        }
+
+        energy += sum / weightSum;
+    }
+
+    return energy;
+}
+
+// Scales every channel to the reference loudness and returns the trim in dB.
+double applyEqualLoudness (Channels& ir, size_t start, size_t end, double sampleRate)
+{
+    end = std::min (end, lengthOf (ir));
+
+    if (start >= end)
+        return 0.0;
+
+    const auto energyOf = [&] (size_t ch)
+    {
+        return ir[ch].size() < end ? 0.0 : weightedEnergyOf (ir[ch].data() + start, end - start, sampleRate);
+    };
+
+    // What each output gets from two uncorrelated inputs, averaged over the two outputs.
+    const auto energy = isTrueStereo (ir) ? 0.5 * (energyOf (0) + energyOf (1) + energyOf (crossToLeft) + energyOf (crossToRight))
+                                          : 0.5 * (energyOf (0) + energyOf (1));
+
+    if (! (energy > 1.0e-20))
+        return 0.0;
+
+    const auto trimDb = juce::jlimit (-maxLoudnessTrimDb, maxLoudnessTrimDb,
+                                      10.0 * std::log10 (referenceLoudnessEnergy (sampleRate) / energy));
+    const auto gain = std::pow (10.0, trimDb / 20.0);
+
+    for (auto& channel : ir)
+        for (auto& sample : channel)
+            sample *= gain;
+
+    return trimDb;
+}
 } // namespace
+
+double pinkEnergy (const std::vector<double>& samples, double sampleRate)
+{
+    return weightedEnergyOf (samples.data(), samples.size(), sampleRate);
+}
+
+double referenceLoudnessEnergy (double sampleRate) noexcept
+{
+    // A white tail at -18 dBFS falling 60 dB in 2 s: amplitude squared, summed over every sample.
+    const auto amplitude = std::pow (10.0, -18.0 / 20.0);
+    const auto perSample = std::exp (-sixtyDbInNepers / sampleRate);
+    return amplitude * amplitude / (1.0 - perSample);
+}
+
+juce::AudioBuffer<float> exportableIr (const BuiltIr& built)
+{
+    const auto& audio = built.audio;
+    const auto channels = audio.getNumChannels();
+    const auto length = audio.getNumSamples();
+    juce::AudioBuffer<float> out (channels >= 4 ? 4 : 2, length);
+
+    if (channels == 0)
+        return out;
+
+    // The build holds LL, RR, RL, LR; a four-channel file is LL, LR, RL, RR.
+    const int order[4] = { 0, 3, 2, 1 };
+
+    for (int ch = 0; ch < out.getNumChannels(); ++ch)
+    {
+        const auto from = channels >= 4 ? order[ch] : juce::jmin (ch, channels - 1);
+        auto* dest = out.getWritePointer (ch);
+
+        for (int i = 0; i < length; ++i)
+        {
+            auto value = audio.getSample (from, i);
+
+            if (built.modulation.on && from < built.tailA.getNumChannels() && i < built.tailA.getNumSamples())
+                value += built.tailA.getSample (from, i);
+
+            dest[i] = value;
+        }
+    }
+
+    return out;
+}
 
 BuiltIr buildIr (const ChainSpec& chain, double sampleRate)
 {
@@ -928,6 +1116,7 @@ BuiltIr buildIr (const ChainSpec& chain, double sampleRate)
             case ModuleType::trim:      applyTrim (ir, module, sampleRate); break;
             case ModuleType::reverse:   applyReverse (ir); break;
             case ModuleType::reverb:    addReverb (ir, module, sampleRate); break;
+            case ModuleType::eq:        applyEq (ir, module, sampleRate); break;
             default: break;
         }
     }
@@ -935,10 +1124,16 @@ BuiltIr buildIr (const ChainSpec& chain, double sampleRate)
     auto& preview = built.preview;
     preview.sampleRate = sampleRate;
     preview.fullSeconds = (double) lengthOf (ir) / sampleRate;
-    makePreview (ir, preview);
 
     const auto start = (size_t) (chain.trimStart * sampleRate);
     const auto end = chain.trimEnd > 0.0 ? (size_t) (chain.trimEnd * sampleRate) : lengthOf (ir);
+
+    // Phase 4 Wave 1: Equal loudness scales the whole IR before the display sees it, so the
+    // waveform and peak show what plays. Off, nothing here runs.
+    if (chain.equalLoudness)
+        preview.loudnessTrimDb = applyEqualLoudness (ir, start, end, sampleRate);
+
+    makePreview (ir, preview);
     cutTo (ir, start, end);
 
     const auto length = lengthOf (ir);

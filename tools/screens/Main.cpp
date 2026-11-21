@@ -250,7 +250,20 @@ bool renderVerb (const juce::File& outputDir)
     ok = writeBothScales (*editor, "verb-library", outputDir) && ok;
 
     editor->showPreview (VerbEditor::Preview::generators);
-    return writeBothScales (*editor, "verb-generators", outputDir) && ok;
+    ok = writeBothScales (*editor, "verb-generators", outputDir) && ok;
+
+    // Phase 4 Wave 1: the EQ module, the library picker with its search and a favourite, a drop.
+    editor->showPreview (VerbEditor::Preview::eqModule);
+    ok = writeBothScales (*editor, "verb-eq", outputDir) && ok;
+
+    editor->showPreview (VerbEditor::Preview::picker);
+    ok = writeBothScales (*editor, "verb-picker", outputDir) && ok;
+
+    editor->showPreview (VerbEditor::Preview::drop);
+    ok = writeBothScales (*editor, "verb-drop", outputDir) && ok;
+
+    editor->showPreview (VerbEditor::Preview::rack);
+    return ok;
 }
 #endif
 

@@ -75,6 +75,13 @@ void IrDisplay::mouseMove (const juce::MouseEvent& event)
 
 void IrDisplay::mouseDown (const juce::MouseEvent& event)
 {
+    if (event.mods.isPopupMenu() && onContextMenu != nullptr)
+    {
+        dragged = Handle::none;
+        onContextMenu (event.position);
+        return;
+    }
+
     dragged = handleAt (event.position.x);
 }
 

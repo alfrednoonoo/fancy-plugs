@@ -1,6 +1,8 @@
 #include "ModuleRack.h"
+#include "LibraryPicker.h"
 #include "VerbLibrary.h"
 
+#include <fancy/dsp/MatchedFilters.h>
 #include <fancy/plugin/ParamHelpers.h>
 #include <fancy/ui/ShellEditor.h>
 
@@ -18,12 +20,17 @@ constexpr int gripWidth = 8, gripHeight = 22;
 constexpr int stripLeft = 24, stripWidth = 687;
 constexpr int chipTop = 24, chipHeight = 24, chipGap = 2;
 
+// Phase 4 Wave 1: the EQ card's small knobs, its curve and its three band rows.
+constexpr Knob::Style eqKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
+constexpr int eqKnobHeight = 66, eqCurveTop = 46, eqCurveHeight = 48, eqRowTop = 98, eqRowStep = 82;
+
 juce::Colour accentOf (ModuleType type)
 {
     switch (type)
     {
         case ModuleType::file:      return colours::uiPurple;
         case ModuleType::lpHp:      return colours::uiBlue;
+        case ModuleType::eq:        return colours::uiBlue;
         case ModuleType::normalize: return colours::accentGreen;
         default:                    return colours::uiTeal;
     }
@@ -157,6 +164,7 @@ int ModuleCard::widthOf (ModuleType type)
         case ModuleType::normalize: return 163;
         case ModuleType::reverse:   return 163;
         case ModuleType::modulate:  return 247;
+        case ModuleType::eq:        return 207; // Phase 4 Wave 1 (reference/phase4/36__verb_w1_mockup.png)
         default:                    return 356;
     }
 }
@@ -230,13 +238,17 @@ void ModuleCard::addSettingKnobs()
         control.link = std::make_unique<Link> (*control.parameter, [this, id = juce::Identifier (setting.id)] (float value)
         {
             processor.setModuleValue (uid, id, value);
+
+            if (type == ModuleType::eq)
+                repaint(); // the curve
         });
 
         const auto colour = accent();
-        const auto& style = type == ModuleType::reverb || type == ModuleType::modulate ? Knob::tightStyle
+        const auto& style = type == ModuleType::eq ? eqKnobStyle
+                          : type == ModuleType::reverb || type == ModuleType::modulate ? Knob::tightStyle
                           : controls.size() >= 3       ? Knob::smallStyle
                                                        : Knob::mediumStyle;
-        const auto bipolar = juce::String (setting.id) == "gain";
+        const auto bipolar = juce::String (setting.id) == "gain" || juce::String (setting.id).endsWith ("Gain");
 
         auto knob = std::make_unique<Knob> (*control.parameter, setting.label, colour, style, bipolar);
         addAndMakeVisible (*knob);
@@ -324,6 +336,17 @@ void ModuleCard::placeKnobs()
     {
         for (size_t i = 0; i < controls.size(); ++i)
             place (i, wideGridSlots[i]);
+    }
+    else if (type == ModuleType::eq)
+    {
+        // Phase 4 Wave 1 (reference/phase4/36__verb_w1_mockup.png): the curve, then a row per
+        // band under its name: Freq and Gain, and Q on the bell.
+        constexpr int columns[] { 14, 74, 134 };
+        constexpr int rowTops[] { eqRowTop, eqRowTop + eqRowStep, eqRowTop + 2 * eqRowStep };
+        const std::pair<int, int> slots[] { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 }, { 1, 2 }, { 2, 0 }, { 2, 1 } };
+
+        for (size_t i = 0; i < controls.size() && i < 7; ++i)
+            place (i, { columns[slots[i].second], rowTops[slots[i].first] + 12, 60, eqKnobHeight });
     }
 }
 
@@ -484,85 +507,65 @@ void ModuleCard::showFileMenu()
         return;
     }
 
-    // Phase 3 Q2.8: the library first, by category, then the IR folder.
-    constexpr int libraryId = 200000;
-    const auto& library = verb::Library::builtIn().getEntries();
-
-    fancy::ui::Menu menu;
-
-    if (! library.empty())
-    {
-        menu.addSection ("Library");
-
-        for (const auto& category : verb::Library::categories())
-        {
-            fancy::ui::Menu sub;
-            auto holdsCurrent = false;
-
-            for (size_t i = 0; i < library.size(); ++i)
-            {
-                if (library[i].category != category)
-                    continue;
-
-                const auto ticked = library[i].key() == factory;
-                holdsCurrent = holdsCurrent || ticked;
-                sub.addItem (libraryId + (int) i, library[i].name, true, ticked, library[i].isTrueStereo() ? "TS" : juce::String());
-            }
-
-            if (! sub.isEmpty())
-                menu.addSubMenu (category, std::move (sub), true, holdsCurrent);
-        }
-    }
-
+    // Phase 4 Wave 1: the library with a search field and favourites, then the IR folder and the
+    // file actions (LibraryPicker).
     const auto files = current.existsAsFile() ? verb::audioFilesBeside (current)
                      : processor.getIrFolder().isDirectory() ? verb::audioFilesBeside (processor.getIrFolder().getChildFile ("_"))
                                                              : juce::Array<juce::File>();
 
-    if (! files.isEmpty())
-    {
-        menu.addSection ("IR folder");
-
-        for (int i = 0; i < files.size(); ++i)
-            menu.addItem (i + 1, files[i].getFileName(), true, files[i] == current);
-    }
-
-    if (menu.isEmpty())
-    {
-        browse();
-        return;
-    }
-
-    // Phase 3 Q2.8: true stereo from two stereo files, one per input.
-    constexpr int pairId = 100000, removePairId = 100001;
+    constexpr int pairId = 1, removePairId = 2, exportId = 3;
     const auto paired = tree[verb::ids::pairPath].toString().isNotEmpty() || tree[verb::ids::pairFlac].toString().isNotEmpty();
+
+    std::vector<LibraryPicker::Row> actions;
+
+    const auto addAction = [&actions] (int id, const juce::String& text)
+    {
+        LibraryPicker::Row row;
+        row.kind = LibraryPicker::Row::Kind::action;
+        row.id = id;
+        row.text = text;
+        actions.push_back (row);
+    };
 
     if (current.existsAsFile())
     {
-        menu.addSeparator();
-        menu.addItem (pairId, paired ? "Change right input..." : "Pair right input...");
+        addAction (pairId, paired ? "Change right input..." : "Pair right input...");
 
         if (paired)
-            menu.addItem (removePairId, "Remove pair");
+            addAction (removePairId, "Remove pair");
     }
 
-    menu.show (fileDropdown, [safeThis = juce::Component::SafePointer<ModuleCard> (this), files] (int chosen)
+    addAction (exportId, "Export IR...");
+
+    LibraryPicker::show (fileDropdown, processor, factory, files, current, std::move (actions),
+                         [safeThis = juce::Component::SafePointer<ModuleCard> (this), files] (const LibraryPicker::Row& row)
     {
-        if (safeThis == nullptr || chosen <= 0)
+        if (safeThis == nullptr)
             return;
 
-        if (chosen >= libraryId)
+        switch (row.kind)
         {
-            const auto& entries = verb::Library::builtIn().getEntries();
+            case LibraryPicker::Row::Kind::library:
+                safeThis->processor.loadLibrary (safeThis->uid, row.key);
+                break;
 
-            if ((size_t) (chosen - libraryId) < entries.size())
-                safeThis->processor.loadLibrary (safeThis->uid, entries[(size_t) (chosen - libraryId)].key());
+            case LibraryPicker::Row::Kind::file:
+                if (row.id >= 0 && row.id < files.size())
+                    safeThis->processor.loadFile (safeThis->uid, files[row.id]);
+                break;
+
+            case LibraryPicker::Row::Kind::action:
+                if (row.id == pairId)
+                    safeThis->browsePair();
+                else if (row.id == removePairId)
+                    safeThis->processor.clearPair (safeThis->uid);
+                else if (row.id == exportId)
+                    safeThis->owner.exportIr();
+                break;
+
+            case LibraryPicker::Row::Kind::section:
+                break;
         }
-        else if (chosen == pairId)
-            safeThis->browsePair();
-        else if (chosen == removePairId)
-            safeThis->processor.clearPair (safeThis->uid);
-        else if (chosen <= files.size())
-            safeThis->processor.loadFile (safeThis->uid, files[chosen - 1]);
     });
 }
 
@@ -641,6 +644,18 @@ void ModuleCard::paint (juce::Graphics& g)
         g.setFont (font (Weight::regular, 14.0f));
         g.drawText ("Plays the IR backwards", getLocalBounds().withTrimmedLeft (12).withTrimmedRight (12), juce::Justification::centred, true);
     }
+    else if (type == ModuleType::eq)
+    {
+        paintEqCurve (g, dim);
+
+        g.setColour (colours::textSecondary.withMultipliedAlpha (dim));
+        g.setFont (font (Weight::medium, 10.0f));
+
+        const char* names[] { "LOW SHELF", "BELL", "HIGH SHELF" };
+
+        for (int i = 0; i < 3; ++i)
+            g.drawText (names[i], 14, eqRowTop + i * eqRowStep, 120, 12, juce::Justification::centredLeft, false);
+    }
 
     g.setColour (colours::textSecondary);
 
@@ -654,6 +669,63 @@ void ModuleCard::paint (juce::Graphics& g)
 
     for (const auto x : { 2.0f, (float) getWidth() - 3.0f })
         g.fillRect (x, gripY, 1.0f, (float) gripHeight);
+}
+
+// Phase 4 Wave 1: the EQ module's response, from the same matched filters the build uses.
+void ModuleCard::paintEqCurve (juce::Graphics& g, float dim) const
+{
+    namespace matched = fancy::dsp::matched;
+
+    const juce::Rectangle<float> area (12.0f, (float) eqCurveTop, (float) getWidth() - 24.0f, (float) eqCurveHeight);
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (area, 3.0f);
+
+    constexpr double rate = 48000.0, rangeDb = 18.0;
+    const auto value = [this] (const char* id, float fallback) { return (double) (float) tree.getProperty (id, fallback); };
+
+    std::vector<matched::BandFilter> filters;
+
+    const auto add = [&] (matched::BandType bandType, double hz, double gainDb, double q)
+    {
+        if (gainDb == 0.0)
+            return;
+
+        matched::BandSpec spec;
+        spec.type = bandType;
+        spec.frequencyHz = std::min (hz, rate * 0.45);
+        spec.gainDb = gainDb;
+        spec.q = q;
+        spec.order = 2;
+        spec.on = true;
+        filters.push_back (matched::design (spec, rate));
+    };
+
+    add (matched::BandType::lowShelf, value ("lowFreq", 120.0f), value ("lowGain", 0.0f), matched::butterworthQ);
+    add (matched::BandType::band, value ("midFreq", 2000.0f), value ("midGain", 0.0f), value ("midQ", 1.0f));
+    add (matched::BandType::highShelf, value ("highFreq", 8000.0f), value ("highGain", 0.0f), matched::butterworthQ);
+
+    juce::Path curve;
+    const auto steps = (int) area.getWidth();
+
+    for (int i = 0; i <= steps; ++i)
+    {
+        const auto hz = 20.0 * std::pow (1000.0, (double) i / (double) steps);
+        auto db = 0.0;
+
+        for (const auto& filter : filters)
+            db += 20.0 * std::log10 (std::max (1.0e-9, std::abs (filter.responseAt (2.0 * juce::MathConstants<double>::pi * hz / rate))));
+
+        const auto x = area.getX() + (float) i;
+        const auto y = area.getCentreY() - (float) (juce::jlimit (-rangeDb, rangeDb, db) / rangeDb) * (area.getHeight() * 0.5f - 3.0f);
+
+        if (i == 0)
+            curve.startNewSubPath (x, y);
+        else
+            curve.lineTo (x, y);
+    }
+
+    g.setColour (accent().withMultipliedAlpha (dim));
+    g.strokePath (curve, juce::PathStrokeType (1.5f, juce::PathStrokeType::curved));
 }
 
 void ModuleCard::mouseMove (const juce::MouseEvent& event)
@@ -797,7 +869,8 @@ ModuleRack::ModuleRack (VerbProcessor& processorToUse)
     content.addChildComponent (addBox);
     content.addMouseListener (this, false);
 
-    // Phase 3 Q2.8: eight types at 34 px spacing, then Cancel, inside the 352 tall panel.
+    // Phase 3 Q2.8: the types, then Cancel, inside the 352 tall panel. Phase 4 Wave 1's EQ makes
+    // nine, at 31 px spacing.
     int y = 16;
 
     for (const auto type : verb::allModuleTypes)
@@ -813,7 +886,7 @@ ModuleRack::ModuleRack (VerbProcessor& processorToUse)
         panelButton->setBounds (16, y, panelButton->idealWidth(), 28);
         addPanel.addAndMakeVisible (*panelButton);
         addButtons.push_back (std::move (panelButton));
-        y += 34;
+        y += 31;
 
         // An empty rack has nothing to modulate.
         if (type == verb::ModuleType::modulate)
@@ -923,7 +996,7 @@ void ModuleRack::resized()
     layoutContent();
 
     // Figma's empty state: two centred rows of buttons.
-    constexpr int firstRow = 4, secondRow = 3, gap = 15, buttonHeight = 35, rowOneY = 96, rowTwoY = 146;
+    constexpr int firstRow = 4, secondRow = 4, gap = 15, buttonHeight = 35, rowOneY = 96, rowTwoY = 146;
 
     const auto placeRow = [this] (int start, int count, int y)
     {
@@ -1011,6 +1084,144 @@ void ModuleRack::cardDropped (ModuleCard& card, int deltaX)
 
     processor.moveModule (card.getUid(), position);
     layoutContent();
+}
+
+// Phase 4 Wave 1: Export IR and drag and drop ------------------------------------------------
+
+ModuleRack::~ModuleRack()
+{
+    stopTimer();
+}
+
+void ModuleRack::exportIr()
+{
+    const auto folder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
+    exportChooser = std::make_unique<juce::FileChooser> ("Export IR", folder.getChildFile ("Fancy Verb IR.wav"), "*.wav");
+
+    exportChooser->launchAsync (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
+                                    | juce::FileBrowserComponent::warnAboutOverwriting,
+                                [safeThis = juce::Component::SafePointer<ModuleRack> (this)] (const juce::FileChooser& chooser)
+                                {
+                                    if (safeThis == nullptr || chooser.getResult() == juce::File())
+                                        return;
+
+                                    const auto file = chooser.getResult().withFileExtension ("wav");
+                                    const auto written = safeThis->processor.exportIr (file);
+
+                                    if (safeThis->onMessage != nullptr)
+                                        safeThis->onMessage (written ? "IR exported: " + file.getFileName()
+                                                                     : "Couldn't write " + file.getFileName() + ".");
+                                });
+}
+
+ModuleCard* ModuleRack::fileCardAt (int x, int y) const
+{
+    const auto point = content.getLocalPoint (this, juce::Point<int> (x, y));
+
+    for (const auto& card : cards)
+        if (card->getType() == ModuleType::file && card->getBounds().contains (point))
+            return card.get();
+
+    return nullptr;
+}
+
+bool ModuleRack::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    return files.size() == 1;
+}
+
+void ModuleRack::fileDragEnter (const juce::StringArray& files, int x, int y)
+{
+    fileDragMove (files, x, y);
+}
+
+void ModuleRack::fileDragMove (const juce::StringArray& files, int x, int y)
+{
+    stopTimer();
+    dragging = true;
+    dropPoint = { x, y };
+
+    const auto name = juce::File (files[0]).getFileName();
+    dropCaption = fileCardAt (x, y) != nullptr ? "Drop to replace this file: " + name
+                                               : "Drop to add a File module: " + name;
+    repaint();
+}
+
+void ModuleRack::fileDragExit (const juce::StringArray&)
+{
+    dragging = false;
+    dropCaption.clear();
+    repaint();
+}
+
+void ModuleRack::filesDropped (const juce::StringArray& files, int x, int y)
+{
+    dragging = false;
+
+    const juce::File file (files[0]);
+    const auto* card = fileCardAt (x, y);
+
+    if (processor.dropFile (file, card != nullptr ? card->getUid() : 0))
+    {
+        dropCaption.clear();
+    }
+    else
+    {
+        // A refusal stays up for a few seconds.
+        dropCaption = processor.getChain().getNumChildren() >= verb::maxModules && card == nullptr
+                        ? "The chain is full."
+                        : "Not an audio file Fancy Verb can read: " + file.getFileName();
+        dropPoint = { x, y };
+        startTimer (3000);
+    }
+
+    repaint();
+}
+
+void ModuleRack::showDropPreview (const juce::String& fileName)
+{
+    fileDragMove (juce::StringArray { fileName }, getWidth() / 2 - 40, getHeight() / 2 + 40);
+}
+
+void ModuleRack::timerCallback()
+{
+    stopTimer();
+    dropCaption.clear();
+    repaint();
+}
+
+void ModuleRack::paintOverChildren (juce::Graphics& g)
+{
+    if (dragging)
+    {
+        // The mockup's tint: the rack in the File module's purple, with a dashed edge.
+        g.setColour (colours::uiPurple.withAlpha (0.22f));
+        g.fillRect (getLocalBounds());
+
+        juce::Path edge;
+        edge.addRectangle (getLocalBounds().toFloat().reduced (1.0f));
+        juce::Path dashed;
+        const float dashes[] { 5.0f, 4.0f };
+        juce::PathStrokeType (1.0f).createDashedStroke (dashed, edge, dashes, 2);
+        g.setColour (colours::uiPurple);
+        g.fillPath (dashed);
+    }
+
+    if (dropCaption.isEmpty())
+        return;
+
+    const auto textFont = font (Weight::regular, 13.0f);
+    const auto width = (float) juce::GlyphArrangement::getStringWidth (textFont, dropCaption) + 24.0f;
+    auto box = juce::Rectangle<float> (width, 28.0f).withCentre (dropPoint.toFloat());
+    box = box.constrainedWithin (getLocalBounds().toFloat().reduced (6.0f));
+
+    g.setColour (colours::menuPanel);
+    g.fillRoundedRectangle (box, 4.0f);
+    g.setColour (colours::menuBorder);
+    g.drawRoundedRectangle (box.reduced (0.5f), 4.0f, 1.0f);
+    g.setColour (colours::menuText);
+    g.setFont (textFont);
+    g.drawText (dropCaption, box, juce::Justification::centred, false);
 }
 
 // ChainStrip ------------------------------------------------------------------

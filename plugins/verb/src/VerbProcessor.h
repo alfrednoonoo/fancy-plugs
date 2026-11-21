@@ -62,6 +62,26 @@ public:
     juce::File getIrFolder();
     void setIrFolder (const juce::File& folder);
 
+    // Phase 4 Wave 1 (docs/verb.md) ----------------------------------------------------------
+
+    // Equal loudness, kept on the chain so it travels with projects and presets.
+    bool getEqualLoudness();
+    void setEqualLoudness (bool on);
+
+    // Writes the last built IR, after trim, as a 24-bit WAV at the session rate; true stereo as
+    // four channels in a four-channel file's order. False when there's nothing built yet or the
+    // file can't be written.
+    bool exportIr (const juce::File& file);
+
+    // A dropped file: replaces a File module's file when uid names one, or else becomes a new
+    // File module at the end of the chain. False, with nothing changed, for a file that isn't audio.
+    bool dropFile (const juce::File& file, int uid = 0);
+
+    // Library favourites, as "Category/Name". In the user's settings file, never in projects.
+    juce::StringArray getFavourites();
+    bool isFavourite (const juce::String& key);
+    void setFavourite (const juce::String& key, bool favourite);
+
     // Waits for the worker, for offline renders and tests.
     bool waitForBuild (int timeoutMs);
 
@@ -94,6 +114,7 @@ private:
     bool buildPending();
     void buildNow();
     juce::File settingsFile() const;
+    void saveSettings();
 
     VerbDsp dsp;
     verb::IrResolver resolver;
@@ -103,6 +124,11 @@ private:
     verb::IrPreview preview;
     std::vector<int> missing;
     juce::File irFolder;
+    juce::StringArray favourites;
+
+    // Phase 4 Wave 1: the finished IR in file order, for Export IR, and the rate it was built at.
+    std::shared_ptr<const juce::AudioBuffer<float>> exportable;
+    double exportableRate = 48000.0;
 
     std::atomic<double> buildRate { 48000.0 };
     std::atomic<double> irSeconds { 0.0 };

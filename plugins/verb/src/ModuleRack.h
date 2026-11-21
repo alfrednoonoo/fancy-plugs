@@ -79,6 +79,7 @@ private:
     void addSettingKnobs();
     void addFileControls();
     void placeKnobs();
+    void paintEqCurve (juce::Graphics&, float dim) const; // Phase 4 Wave 1
 
 public:
     void showFileMenu();
@@ -117,10 +118,27 @@ private:
 };
 
 // The scrolling row of cards, and the panel that adds a module.
-class ModuleRack final : public juce::Component
+class ModuleRack final : public juce::Component, public juce::FileDragAndDropTarget, private juce::Timer
 {
 public:
     explicit ModuleRack (VerbProcessor& processor);
+    ~ModuleRack() override;
+
+    // Phase 4 Wave 1 (docs/verb.md section 3): asks where to save, then writes the finished IR.
+    void exportIr();
+
+    // Phase 4 Wave 1: an audio file dropped on the rack adds a File module at the end, or
+    // replaces the file of the File card it lands on. Anything else is refused with a message.
+    bool isInterestedInFileDrag (const juce::StringArray& files) override;
+    void fileDragEnter (const juce::StringArray& files, int x, int y) override;
+    void fileDragMove (const juce::StringArray& files, int x, int y) override;
+    void fileDragExit (const juce::StringArray& files) override;
+    void filesDropped (const juce::StringArray& files, int x, int y) override;
+    void paintOverChildren (juce::Graphics&) override;
+
+    // The caption the drop shows, for tests and the screenshots.
+    const juce::String& getDropCaption() const noexcept { return dropCaption; }
+    void showDropPreview (const juce::String& fileName);
 
     void rebuild();
     void refresh();
@@ -147,6 +165,9 @@ public:
     const std::vector<std::unique_ptr<ModuleCard>>& getCards() const noexcept { return cards; }
 
     std::function<void()> onLayoutChanged;
+
+    // A short message for the user, shown by the editor as a tip (Phase 4 Wave 1).
+    std::function<void (const juce::String&)> onMessage;
 
 private:
     class AddButton final : public juce::Component
@@ -182,6 +203,13 @@ private:
 
     void layoutContent();
     int indexOf (const ModuleCard& card) const;
+    ModuleCard* fileCardAt (int x, int y) const;
+    void timerCallback() override;
+
+    std::unique_ptr<juce::FileChooser> exportChooser;
+    juce::String dropCaption;
+    juce::Point<int> dropPoint;
+    bool dragging = false;
 
     VerbProcessor& processor;
     juce::Viewport viewport;

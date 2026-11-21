@@ -7,9 +7,11 @@ target_sources(verb-library PRIVATE
     "${CMAKE_SOURCE_DIR}/tools/verb-library/Main.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/VerbChain.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/IrBuilder.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/VerbLibrary.cpp")
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/VerbLibrary.cpp"
+    "${CMAKE_SOURCE_DIR}/fancy-core/src/MatchedFilters.cpp")
 
-target_include_directories(verb-library PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+# Phase 4 Wave 1: the IR builder's EQ module uses fancy-core's matched filters.
+target_include_directories(verb-library PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/fancy-core/include")
 
 target_compile_definitions(verb-library PRIVATE
     JUCE_WEB_BROWSER=0
@@ -105,6 +107,7 @@ fancy_add_plugin(FancyVerb
         src/VerbProcessor.cpp
         src/IrDisplay.cpp
         src/ModuleRack.cpp
+        src/LibraryPicker.cpp
         src/VerbEditor.cpp
     ENTRY src/PluginEntry.cpp)
 
