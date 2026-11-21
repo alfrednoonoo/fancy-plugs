@@ -54,8 +54,8 @@ Re-select **Fancy Plugs (Stage B preview)** under Options > Themes so REAPER rel
 
 - [x] Main toolbar: lighter grey buttons with bold icons, each in its own colour; toggles (metronome, grid, snap, ripple, crossfades, lock…) filled with that colour when on, grey when off. 📷 the toolbar.
 - [x] Beside FX on the track panel: a small switch, teal dot with FX on, grey ring with the chain bypassed.
-- [ ] The input FX button (next to IN on an armed track) is a rounded "FX", teal when it has input FX.
-- [ ] The record input box on an armed track is a dark grey rounded box; its text and arrow are readable. 📷
+- [x] The input FX button (next to IN on an armed track) is a rounded "FX", teal when it has input FX.
+- [ ] The record input box on an armed track is a dark grey rounded box; its text and arrow are readable. 📷 Not in the built-in layout, which draws its own box over the meter: moved to Stage C.
 - [x] The folder button on a normal track is an outlined folder.
 - [x] The Rate slider at the bottom is a thin dark track with a black cap.
 - [x] Play turns teal while playing. 📷 the transport while playing.
