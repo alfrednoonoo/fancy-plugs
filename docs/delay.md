@@ -217,3 +217,31 @@ Built in one push, with the DSP and UI together, since the user was away. What d
 - **CPU target restated (the user's decision, 15 November 2026)** as the cost the Q2.3 features add over the options from before them, under 2 %, as for Comp Q2.5. The old options alone measure 1.62 %, which left 0.38 % under the original "under 2 % in all"; the new features add 1.73 % (`docs/measurements/delay-q23.txt`). Met.
 - **Saturate curve** is a hidden, non-automatable parameter `satCurve` (Exact, Fast), with `valueForMissingParameter` giving Exact to states saved before Q2.3.
 - **Layout.** Tone | Motion sits at x 400 in the tab row, which narrows the title row to x 396. In the drawer, Output moves to x 236, Swing sits below the multiplier, and Ducking's three knobs are on the right.
+
+## Phase 4 Wave 1: Freeze and output ceiling
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2 and 5 of section 6.
+
+### 1. Freeze
+
+`freeze` (off): the input stops entering the taps and every tap's feedback is held at exactly 100 %, with the loop's filters and saturation bypassed while frozen so the loop neither dies nor grows. The frozen loop keeps playing until Freeze goes off, when the taps' own feedback takes over again (a 30 ms crossfade, as toggles do today). A parameter, so it can be automated for build-ups; a checkbox in the footer.
+
+### 2. Feedback pan per tap: drop it
+
+Each tap already has **Ping-pong** and **Pan** (section "Ping-pong"), which give straight, crossing and placed repeats. A continuous cross amount (Timeless's feedback cross) would add one more knob per tap for a small difference.
+
+- **Decision 1.**
+  - **A (R).** Drop item 2 from Phase 4; the backlog says why.
+  - **B.** Keep it: `tNcross` 0 to 100 % per tap, 100 % meaning today's Ping-pong, on the Motion page.
+
+### 3. Output ceiling
+
+`ceiling` Off or −12 to 0 dBTP, default Off, in the drawer: the shared `TruePeakLimiter` after Output, so feedback at 100 to 110 % can't clip the bus. Latency reported when on.
+
+### 4. Tests
+
+1. Legacy: v1.6.0's Delay against the new one, every tap mode, Character on and off: identical.
+2. Freeze: a burst into a 250 ms tap at 50 % feedback, then Freeze: the loop's level after 10 s is within 0.5 dB of its level at freeze time; new input isn't heard.
+3. Ceiling: feedback 110 % for 10 s never exceeds the ceiling in true peak.
+
+Mockup: to follow (`reference/phase4/38__delay_w1_mockup.png`): Freeze in the footer, the drawer's Ceiling.

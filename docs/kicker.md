@@ -56,3 +56,54 @@ XML with a `stateVersion` attribute (currently 1) plus `uiScale` and `presetName
 Base window is 392 × 472, the Figma Kicker frame without its 22 px host title bar, and all positions come from that frame. In and Out are each a stereo pair of bars with one readout per pair.
 
 The EDIT drawer opens over the left panel, so the window and main layout don't change.
+
+## Phase 4 Wave 1: sub length, make-room, polarity, sub meter, auto gain and ceiling
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2, 3, 4 and 6 of section 1. Kicker's sidechain Duck (item 7) is its own Phase 4 item, after the tempo-synced trigger.
+
+### 1. Sub length
+
+Sub mode's generated sub lasts as long as the detector hears the kick. **Sub length** (`subLen`, 20 to 2000 ms, with **Off** at the top, the default) ends it earlier with a smooth fade, so a long 808 tail doesn't run into the next kick, without touching Sensitivity. Off is today's.
+
+### 2. Make-room
+
+`roomCut` (off) and `roomFreq` (20 to 200 Hz, default 60): a 12 dB/oct high-pass with a small resonance on the **source** kick, so the generated sub has the low end to itself (the Dropkick idea). Sub mode only; the generated sub isn't filtered.
+
+### 3. Sub polarity
+
+`subPolarity` (off): inverts the generated sub, for kicks whose own low end cancels it. The detector's delay compensation is unchanged.
+
+### 4. Sub meter
+
+A thin meter beside the Out meter showing only the generated sub's level, in Kicker's red, so you can see how much the sub adds. Sub mode only; no parameter.
+
+### 5. Auto gain and ceiling
+
+- `autoGain` (off): trims the output by what Boost or Sub adds to the kick, measured as Exciter's is (a background copy of the path on a reference kick), smoothed over 200 ms.
+- `ceiling` Off or −12 to 0 dBTP (default Off): the shared `TruePeakLimiter` after Soft clip.
+
+### 6. Where the controls go
+
+All five settings in the EDIT drawer (Sub length, Make-room and Polarity in a Sub group, dimmed in Boost mode); the sub meter on the main window beside the Out meter. **Decision 1:** the sub meter's place.
+- **A (R).** A 6 px bar inside the Out meter's column, left of it. Nothing else moves.
+- **B.** No meter; the drawer shows the sub's level as a number.
+
+### 7. Parameters
+
+| ID | Name | Range | Default |
+|---|---|---|---|
+| `subLen` | Sub length | 20 to 2000 ms, Off | Off |
+| `roomCut`, `roomFreq` | Make-room | off/on; 20 to 200 Hz | off; 60 Hz |
+| `subPolarity` | Sub polarity | off/on | off |
+| `autoGain` | Auto gain | off/on | off |
+| `ceiling` | Ceiling | Off, −12 to 0 dBTP | Off |
+
+### 8. Tests
+
+1. Legacy: v1.6.0's Kicker against the new one, Boost and Sub, one and two octaves: identical.
+2. Sub length 150 ms on a kick with a 1 s tail: the sub is 60 dB down by 150 ms + 20 ms.
+3. Make-room at 60 Hz: the source's 30 Hz is 12 dB down; the generated sub's isn't.
+4. Polarity: the sub with Polarity on sums with it off to under −90 dBFS.
+5. Ceiling and auto gain, as Exciter's tests.
+
+Mockup: to follow (`reference/phase4/40__kicker_w1_mockup.png`).

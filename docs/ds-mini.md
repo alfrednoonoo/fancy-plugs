@@ -161,3 +161,24 @@ Also, as for every plugin:
 - the CI screenshot compared with the mockup and with Kicker, the other compact plugin
 
 Manual `docs/ds-mini-manual.md`, checklist `docs/ds-mini-checklist.md`.
+
+## Phase 4 Wave 1: Auto Amount
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog item 1 of section 12. DS-Mini is one knob by design, so this adds one switch and nothing else.
+
+### 1. Auto Amount
+
+With Auto on, Amount rides itself: the more sibilant the voice (the profile band's level against the whole voice's, over the last 2 s), the more it de-esses, within the range around the knob's setting. The knob still sets the centre; Auto moves the working value up to ±30 % around it, and the knob's ring shows the working value as a thin second arc.
+
+- **Decision 1: how far it may move.**
+  - **A (R).** ±30 % of the knob's travel around its setting, so the knob stays in charge.
+  - **B.** Anywhere from 0 to 100 %, the knob only setting the sensitivity.
+- `autoAmount` (off), a small "Auto" pill under the Amount knob. Off is today's DS-Mini, bit for bit.
+
+### 2. Tests
+
+1. Legacy: identical with Auto off, every profile.
+2. Auto: the same voice with its "s" sounds 6 dB louder gets more reduction (at least 2 dB more) with Auto on; with Auto off, the same.
+3. The working value never leaves the ±30 % window.
+
+Mockup: to follow (`reference/phase4/34__dsmini_w1_mockup.png`): the Auto pill and the second arc.

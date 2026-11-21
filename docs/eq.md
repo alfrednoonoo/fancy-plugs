@@ -251,3 +251,61 @@ The spectra, the card's settings and that memory are saved through a new `FancyP
 **Compatibility.** There are no `tests/data` fixtures: section 1 and test 1 assumed some. A test covers it instead: a state stripped of every Q2.4 ID and marked version 3, loaded into an instance whose new parameters have been moved, comes up with every band Stereo, bands 17 to 24 unused and the analyzer on Mid, and renders bit-identically to the instance that saved it. The v1.3.0 project check in REAPER is on the checklist.
 
 **CPU (section 0.4)** is in `docs/measurements/eq-q24.txt`.
+
+## Phase 4 Wave 1: band solo, auto gain, dynamic reach and analyzer freeze
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2, 3 and 5 of section 4.
+
+### 1. Band solo
+
+Hear only what one band works on, to find a resonance before cutting it. A temporary listen (§0.3): not a parameter, never saved, off when the window closes.
+
+- **Decision 1: what a solo plays.**
+  - **A (R).** The input through a band-pass at the band's Freq and Q (for shelves and cuts, a band-pass at the corner with Q 0.7), as Pro-Q does. Audible even for a 2 dB move.
+  - **B.** What the band changes: the output with the band minus the output without it. Exact, but a 2 dB bell is nearly silent.
+- **Decision 2: the gesture.**
+  - **A (R).** Hold **Alt** while dragging a handle, or Alt-click and hold a band tab: the solo lasts while the mouse is down, so it can't be left on by accident.
+  - **B.** Double-click a band tab to toggle the solo, and again to stop.
+- Through `setListening` with a listen target per band (Comp's Wave 1 mechanism). In linear phase the solo is delayed to match the latency. The title strip shows LISTENING while it plays.
+
+### 2. Auto gain
+
+Keeps the output as loud as the input whatever the curve does, so A/B comparisons aren't fooled by level.
+
+- **Decision 3: how the trim is worked out.**
+  - **A (R).** From the static curve: the power average of the total response over 20 Hz to 20 kHz, weighted like pink noise, applied as an output trim smoothed over 200 ms. Deterministic: renders always match. Dynamic bands are counted at their static gain.
+  - **B.** Measured: input and output loudness compared live, as Compare does. Follows dynamic bands, but pumps on transients and makes renders depend on where playback started.
+- `autoGain`, off by default, on the Output page beside Gain. The applied trim shows under the Gain knob ("auto −1.8 dB").
+
+### 3. Dynamic reach
+
+Today a dynamic band moves its full Range over the 12 dB past Threshold: the slope depends on Range, so a classic ratio can't reproduce today's sound at any default.
+
+- **Decision 4: the control.**
+  - **A (R).** **Reach** per band, 1 to 48 dB, default 12: how far past Threshold the full Range is reached. 12 is today's curve, bit for bit; 3 is a hard, compressor-like move; 48 a gentle one.
+  - **B.** A ratio (0.5:1 to ∞) with an extra "Auto" position at the bottom that keeps today's Range/12 slope. Familiar, but two models in one knob.
+- 24 parameters `bNreach`, on the DYN half of the band editor after Range (a small knob, the band colour).
+
+### 4. Analyzer freeze and pre and post together
+
+- **Pre + Post** appended to the Analyzer choice: post as now, pre as a dimmer line under it. Saved values keep their meaning.
+- **Freeze:** a button at the graph's top right while the analyzer is on, and the F key. It holds the current spectrum, drawn dimmer, under the live one, so a change can be compared with the moment before. A view action, not saved.
+
+### 5. Parameters
+
+| ID | Name | Range | Default |
+|---|---|---|---|
+| `autoGain` | Auto gain | off/on | off |
+| `bNreach` (24) | Band N Reach | 1 to 48 dB | 12 |
+
+Plus "Pre + Post" at the end of `analyzer`.
+
+### 6. Tests
+
+1. Legacy: v1.6.0's EQ against the new one, linear and minimum phase, with 8 dynamic bands: identical.
+2. Solo: a band at 1 kHz, Q 4: a 1 kHz tone passes within 0.5 dB, 4 kHz is 20 dB down; the solo ends when the editor closes.
+3. Auto gain: a +6 dB high shelf at 2 kHz on pink noise: the output's RMS within 0.5 dB of the input's.
+4. Reach: at Reach 12 the change matches today's formula exactly; at Reach 3 the full Range is reached 3 dB past Threshold (±0.2 dB).
+5. Freeze and Pre + Post draw (screenshot `eq-freeze`).
+
+Mockup: to follow (`reference/phase4/30__eq_w1_mockup.png`): the Freeze button, the auto-trim read-out, the Reach knob in the DYN row.

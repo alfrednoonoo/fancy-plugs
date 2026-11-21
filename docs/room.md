@@ -220,3 +220,52 @@ Everything passed: 439 test cases, pluginval, Steinberg's validator, the host ha
 - **Offline renders are bit-identical** to real time and to random blocks, through Size, Decay, Pre-delay, Freeze, Quality and Low cut changes.
 - **CPU:** Normal 1.95 %, Eco 1.55 %, High 2.59 %, Normal with Freeze and Ducking 2.20 %, against Comp's 0.40 % in the same run. All are under the 3 % target, but Normal is 50 % over the budget's 1.3 % estimate, and Eco saves only a fifth: the parts that don't scale with the line count (32 interpolated reflection reads, eight interpolated all-passes, per-sample smoothers) cost more than counted. For the next budget: count an interpolated read from a large buffer as about 3 operations' worth more than a plain one.
 - **The first push failed to compile** on one missing include (`fancy::levelToGain` without `ParamHelpers.h` in the editor); everything else compiled. The pre-push checker now checks that every `fancy::` function a changed file calls comes from a header it includes.
+
+## Phase 4 Wave 1: mod rate, reverb EQ, gate and auto gain
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 3, 6 and 7 of section 14.
+
+### 1. Mod Rate
+
+Today **Mod** sets only the depth of the delay-line modulation; each line has its own fixed rate. **Mod rate** (0.25× to 4×, default 1×, so today's sound) scales all of them together: slow for a lush chorus, fast for shimmer-like wobble. Mod keeps its name and meaning (the backlog's "Mod Depth" is Mod itself), so nothing is split and no saved value changes meaning.
+
+### 2. Reverb EQ
+
+Three bands on the wet signal after the network, after today's Low cut and High cut: a low shelf, a bell and a high shelf (Freq and Gain, Q on the bell; `fancy::dsp::matched`). A band at 0 dB is skipped, so the default is today's path.
+
+### 3. Gate
+
+A gate on the tail, for gated drum reverbs: when the **input** has been under `gateThr` for the hold time, the wet signal fades out over `gateDecay`. Reading the input, not the tail, gives the classic 80s sound: the reverb stops dead when the drum does.
+
+- `gate` (off), `gateThr` (−60 to 0 dB, −30), `gateHold` (10 to 500 ms, 80), `gateDecay` (5 to 500 ms, 40).
+
+### 4. Auto gain
+
+`autoGain` (off): as Size and Decay change, the wet level is trimmed by the expected change in the tail's energy (from the network's decay formula), so turning Decay from 1 to 6 s doesn't make the reverb 8 dB louder. Deterministic; the trim is smoothed over 50 ms.
+
+### 5. Where the controls go
+
+- **Decision 1.**
+  - **A (R).** In the EDIT drawer: a **Tone** group (the EQ, three bands of small knobs), a **Gate** group (switch and three small knobs), Mod rate and Auto gain. The main layout doesn't change.
+  - **B.** EQ and Gate on the main window's Tone card, as the backlog first placed them. Faster to reach, but the card has no room without growing the window.
+
+### 6. Parameters
+
+| ID | Name | Range | Default |
+|---|---|---|---|
+| `modRate` | Mod rate | 0.25× to 4× | 1× |
+| `eqLowFreq`, `eqLowGain` | EQ low | 20 Hz to 1 kHz; ±12 dB | 200 Hz; 0 |
+| `eqMidFreq`, `eqMidGain`, `eqMidQ` | EQ mid | 200 Hz to 8 kHz; ±12 dB; 0.3 to 8 | 1 kHz; 0; 1 |
+| `eqHighFreq`, `eqHighGain` | EQ high | 1 to 20 kHz; ±12 dB | 6 kHz; 0 |
+| `gate`, `gateThr`, `gateHold`, `gateDecay` | Gate | as above | off |
+| `autoGain` | Auto gain | off/on | off |
+
+### 7. Tests
+
+1. Legacy: v1.6.0's Room against the new one, both qualities, Freeze and Ducking on and off: identical.
+2. Mod rate 2×: the modulation's measured period halves (± 5 %).
+3. EQ: a +6 dB bell at 2 kHz raises the wet response there by 6 ± 0.5 dB.
+4. Gate: a drum hit then silence: the wet signal is 60 dB down within hold + decay + 10 ms.
+5. Auto gain: Decay 1 s against 6 s on the same pink-noise burst: wet RMS within 1.5 dB with Auto gain on.
+
+Mockup: to follow (`reference/phase4/37__room_w1_mockup.png`), for Decision 1 A: the drawer's Tone and Gate groups.

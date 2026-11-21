@@ -232,3 +232,27 @@ One push: lookahead, channel, Fast/Exact with the legacy copy, the chip, the dra
 - **Lookahead:** a ring per band of up to 10 ms at the session rate, used only when Lookahead is above 0; the bypass path waits the crossover's latency plus the lookahead.
 - **Legacy copy:** `tests/LegacyMultiCompDsp.*` is the DSP before Q2.6.
 - **Lookahead tests:** a ±0.9 square-wave step (1 kHz) through ∞:1 with a 2 ms attack: the first 10 ms are within 1 dB of the peaks 20 to 40 ms later with 10 ms of lookahead, and over 6 dB louder without. (A sine with RMS 0 makes the detector climb over tens of ms, as it reaches each peak only briefly.) Alignment compares the render with 5 ms of lookahead against the one without, 240 samples later, since an LR crossover's bands sum to an all-pass rather than the input.
+
+## Phase 4 Wave 1: learn crossovers and band mute
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 4 and 7 of section 7. MultiComp wasn't in the Wave 1 plugin order (`docs/enhancements.md`); these are its two Wave 1 items, placed after DS-Mini unless the user moves them.
+
+### 1. Learn crossovers
+
+A **Learn** button on the graph: over 5 s of playback, the spectrum is averaged and the crossovers are placed where the material's energy splits evenly between the bands (in pink-weighted energy, so the lows don't take every band). An action, one undo step; it moves only the crossover parameters.
+
+- **Decision 1: the split.**
+  - **A (R).** Equal energy per band, pink-weighted: each band works on a similar share of the music.
+  - **B.** Fixed musical defaults scaled to the material's own range (where its energy starts and ends). Predictable, less adaptive.
+
+### 2. Band mute
+
+`bNmute` per band (8 parameters), off by default: a muted band is taken out of the sum entirely (Active off keeps it in the mix, unprocessed). An M button beside the band's Solo.
+
+### 3. Tests
+
+1. Legacy: identical with no band muted.
+2. Mute: a muted band's frequencies drop by over 60 dB at its centre; the rest stays flat within 0.1 dB of the crossover sum.
+3. Learn: pink noise gives crossovers near today's defaults; a bass-heavy test moves the lowest crossover down.
+
+Mockup: to follow (`reference/phase4/35__multicomp_w1_mockup.png`): the Learn button and the M buttons.

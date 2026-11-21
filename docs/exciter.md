@@ -69,3 +69,41 @@ The same format as the Kicker: XML with `stateVersion` 1, `uiScale` and `presetN
 Base window is 392 × 432, the Figma Exciter frame without its 22 px host title bar. The meter uses that frame's own scale, which is shorter than the Kicker's.
 
 The EDIT drawer holds Character, Output and an Oversampling dropdown.
+
+## Phase 4 Wave 1: listen to added harmonics, THD read-out, ceiling and auto gain
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2 and 7 of section 2.
+
+### 1. Listen to added harmonics
+
+A temporary listen (§0.3), a footer checkbox in the accent: plays only what Exciter adds (the output minus the latency-aligned input, before Output), so Harmonics and Clip Boost can be set by ear.
+
+### 2. THD read-out
+
+Like Sature's harmonics card, but as one line under the meters: a background thread runs a private copy of Exciter's path (Freq, Clip Boost, Harmonics, Mix Back, Character, oversampling) on a test tone whenever one of those changes, and the read-out says "THD 2.4 %".
+
+- **Decision 1: the test tone.**
+  - **A (R).** One octave above Freq, at −12 dBFS: always inside the band Exciter works on, so the figure moves with every knob.
+  - **B.** A fixed 1 kHz, as Sature: comparable between settings, but it reads 0 % whenever Freq is above 1 kHz.
+
+### 3. Ceiling and auto gain
+
+- `ceiling` Off or −12 to 0 dBTP (default Off), in the drawer: the shared `TruePeakLimiter`, so Clip Boost 24 dB can't pass 0 dBFS.
+- `autoGain` (off), in the drawer: the same background thread measures what the path adds to pink noise at −18 dBFS RMS and trims the output by that much, smoothed over 200 ms. Deterministic.
+
+### 4. Parameters
+
+| ID | Name | Range | Default |
+|---|---|---|---|
+| `ceiling` | Ceiling | Off, −12 to 0 dBTP | Off |
+| `autoGain` | Auto gain | off/on | off |
+
+### 5. Tests
+
+1. Legacy: v1.6.0's Exciter against the new one at every oversampling: identical.
+2. Listen: the listen output plus the latency-aligned input equals the normal output within −100 dBFS.
+3. THD: the read-out matches an offline measurement of the same settings within 10 % of its value.
+4. Ceiling: Clip Boost 24 dB on a full-scale signal stays under the ceiling in true peak.
+5. Auto gain: on pink noise, output RMS within 0.5 dB of input RMS at Harmonics 100 %.
+
+Mockup: to follow (`reference/phase4/39__exciter_w1_mockup.png`): the footer's listen, the THD line, the drawer.

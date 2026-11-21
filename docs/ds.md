@@ -160,3 +160,40 @@ Also, as for every plugin:
 - Registered like Limit: `ds` in `FANCY_ALL_PLUGINS`, the workflow's choice, the screenshots, the shared tests and the host harness's latency list (Lookahead).
 - Bundle ID `com.fancyplugs.ds`, product name "Fancy DS", plugin code `FDes`.
 - Manual `docs/ds-manual.md`, checklist `docs/ds-checklist.md`, measurements `docs/measurements/ds.txt`.
+
+## Phase 4 Wave 1: auto threshold, filter slope and output ceiling
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 3 and 5 of section 11.
+
+### 1. Auto threshold
+
+A **Learn** button in the footer: over 2 s of playback, measures the sibilance band's level (Relative or absolute, as set) and sets Threshold so the loudest 10 % of it gets reduced.
+
+- **Decision 1: the target.**
+  - **A (R).** Threshold at the 90th percentile of the band level: only the peaks, the "s" sounds, are touched.
+  - **B.** At the 75th: more de-essing, risks dulling the voice.
+- An action, one undo step, with a progress ring; the history shows the learned threshold line.
+
+### 2. Detection filter slope
+
+`slope` 12, 24 or 48 dB/oct, default 12 (today's one SVF). 24 and 48 cascade two or four SVFs at the same frequency with Butterworth Qs, so the split sharpens without moving. In the drawer (Detection settings).
+
+### 3. Output ceiling
+
+`ceiling` Off or −12 to 0 dBTP, default Off: the shared `TruePeakLimiter` after the output gain, its latency reported. In the drawer.
+
+### 4. Parameters
+
+| ID | Name | Range | Default |
+|---|---|---|---|
+| `slope` | Filter slope | 12, 24, 48 dB/oct | 12 |
+| `ceiling` | Ceiling | Off, −12 to 0 dBTP | Off |
+
+### 5. Tests
+
+1. Legacy: v1.6.0's DS against the new one in Band and Split, every detector mode: identical.
+2. Learn: a vocal-like test (pink noise with 6 kHz bursts 12 dB up): Threshold lands within 2 dB of the bursts' 90th percentile.
+3. Slope: at 24 dB/oct the detector filter is 12 dB further down one octave out than at 12 (± 1 dB); the frequency doesn't move.
+4. Ceiling: a full-scale 0 dBFS square with Output +6 dB stays under the ceiling in true peak; latency reported matches.
+
+Mockup: to follow (`reference/phase4/33__ds_w1_mockup.png`): the footer's Learn and the drawer's two settings. DS-Mini's item is in `docs/ds-mini.md`.

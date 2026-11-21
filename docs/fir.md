@@ -266,4 +266,31 @@ Released in v1.6.0, run 43742763641 (commit `ff534e3`), 516 test cases.
 - **Linked test:** the first version compared the cross-spectrum gain of two different signals and failed by 0.16 dB (run 43741706340), because a gain that moves over time is weighted differently on each. It now checks exactly: a half-level copy in the right channel comes out at exactly half, and swapping the channels swaps the outputs bit for bit.
 - **Compatibility:** there's no legacy copy of the engine, since the five old modes' code didn't change. The test removes the six new parameters from a saved state (a v1.5.0 state), checks the mode loads unchanged and the new parameters take their defaults, and checks an old mode renders bit-identically whatever the new parameters are set to.
 - **Range readouts** use whole Hz and one decimal of kHz ("100 Hz", "1.5 kHz", "20 kHz"), Fancy EQ's knob format; the mockup drew "20.0 kHz".
-- **CPU** (`docs/measurements/fir-q27.txt`): Resonance 1.84 %, 1.04 x Compressor mode (targets 3 % and 1.3 x). Paced at time-critical priority, no block in any mode was preempted, the 99th-percentile block was 11 to 19 % of its time and the worst 26 %. The clock and the thread's own cycles agree within 0.02 % on the mean. The old flat-out benchmark, in the same run, had its worst block at 57 % of its time, against 1878 % in the run recorded in `fir.txt`, on code that is the same for those modes. That fits section 5's explanation (the runner preempting the thread), but one quiet run doesn't prove it; the paced benchmark counts preempted blocks from now on, so a noisy run will show it. The stability target (two runs within 20 % on each mode's median) was checked on run 43773992670: every mode's ratio to Fancy Comp came out 13 to 18 % lower (EQ 1.99 to 1.68, Gate 2.43 to 2.00, Compressor 2.32 to 1.93, Subtract 1.84 to 1.55, Convolve 0.91 to 0.79, Resonance 2.42 to 2.09), within 20 %, again with no preempted block. Absolute figures moved more between runners (Gate 23 %, Resonance 20 %), which is why �0.4 compares ratios. Resonance was 1.08 x Compressor mode.
+- **CPU** (`docs/measurements/fir-q27.txt`): Resonance 1.84 %, 1.04 x Compressor mode (targets 3 % and 1.3 x). Paced at time-critical priority, no block in any mode was preempted, the 99th-percentile block was 11 to 19 % of its time and the worst 26 %. The clock and the thread's own cycles agree within 0.02 % on the mean. The old flat-out benchmark, in the same run, had its worst block at 57 % of its time, against 1878 % in the run recorded in `fir.txt`, on code that is the same for those modes. That fits section 5's explanation (the runner preempting the thread), but one quiet run doesn't prove it; the paced benchmark counts preempted blocks from now on, so a noisy run will show it. The stability target (two runs within 20 % on each mode's median) was checked on run 43773992670: every mode's ratio to Fancy Comp came out 13 to 18 % lower (EQ 1.99 to 1.68, Gate 2.43 to 2.00, Compressor 2.32 to 1.93, Subtract 1.84 to 1.55, Convolve 0.91 to 0.79, Resonance 2.42 to 2.09), within 20 %, again with no preempted block. Absolute figures moved more between runners (Gate 23 %, Resonance 20 %), which is why §0.4 compares ratios. Resonance was 1.08 x Compressor mode.
+
+## Phase 4 Wave 1: resonance tilt and learned curves
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1 and 3 of section 8.
+
+### 1. Resonance tilt
+
+`resTilt` −100 to +100 %, default 0 (today): Resonance mode's Depth leans towards the highs (positive) or the lows (negative). At +100 % the depth doubles at 16 kHz and halves at 62 Hz, log-linear about 1 kHz; between Low and High only, as Depth is. A small knob beside Depth.
+
+### 2. Learn for the Gate and Compressor curves
+
+A **Learn** button on the left card in Gate and Compressor modes: over 3 s of playback, every bin's level is measured, and the curve's points are placed on the result.
+
+- **Gate:** the threshold curve at each bin's 20th percentile + 6 dB, so steady noise is under it and the music over it.
+- **Compressor:** the threshold curve at each bin's 80th percentile, so only the loud parts of each band are compressed.
+- **Decision 1: smoothing.**
+  - **A (R).** The learned curve is smoothed across a third of an octave and thinned to the curve editor's points, so it's editable afterwards.
+  - **B.** Every bin kept as measured: exact, but a curve no one can edit by hand.
+- An action, one undo step. FIR's existing noise learning (Adaptive, "Learned") is separate and unchanged.
+
+### 3. Tests
+
+1. Legacy: v1.6.0's FIR against the new one in every mode: identical.
+2. Tilt +100 %: depth at 16 kHz is twice that at 1 kHz (± 10 %).
+3. Learn, Gate: white noise at −50 dBFS plus a tone: the learned curve sits 6 ± 1 dB over the noise and under the tone.
+
+Mockup: to follow (`reference/phase4/41__fir_w1_mockup.png`).

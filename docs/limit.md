@@ -226,3 +226,49 @@ Also, from §7 of the spec and Phase 2.1:
 - `limit` is added to `FANCY_ALL_PLUGINS`, the workflow's plugin choice, the screenshot tool, the host harness, and FancyBench's smoke list. `scripts\get-latest.ps1` copies every bundle in the artifact, so it needs no change.
 - Bundle ID `com.fancyplugs.limit`, product name "Fancy Limit".
 - Manual `docs/limit-manual.md`, REAPER checklist `docs/limit-checklist.md` and measurements `docs/measurements/limit.txt`.
+
+## Phase 4 Wave 1: Gain Lock, Auto to Target, DC filter, release shape and peak statistics
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2, 4 and 5 of section 10.
+
+### 1. Gain Lock
+
+Lower the Threshold and Limit gets louder; with Gain Lock on, the output is turned down by the same amount, so you hear what the limiting does rather than "louder is better".
+
+- **Decision 1: the compensation.**
+  - **A (R).** Static: when Gain Lock is switched on, the current Threshold is remembered; the output then gets `Threshold − remembered` dB (always ≤ 0 when you push harder). Deterministic, and it's what Pro-L 2's Unity Gain does.
+  - **B.** Measured: hold the output's short-term LUFS where it was. Closer to "same loudness", but it drifts with the music and renders differ.
+- `gainLock` (off) and `gainLockRef` (the remembered Threshold, hidden from the UI, saved), a checkbox in the footer after Listen to removed.
+
+### 2. Auto to Target
+
+A button in the loudness panel: measures the integrated loudness for 10 s of playback (a progress ring in the button), then moves Threshold by `target − measured`, once. An action, not a parameter: one undo step. With Gain Lock on, it's greyed out (the two contradict).
+
+### 3. DC filter and release shape
+
+- `dcFilter` (off): a 5 Hz first-order high-pass before the limiter, in the drawer.
+- `releaseCurve` (Exponential, Linear), Comp's code and wording, in the drawer. Exponential is today's.
+
+### 4. Peak statistics
+
+The loudness panel's true-peak read-out gets a held maximum since the last reset, and a count of overs (samples above the ceiling before the final clamp, which should stay 0). A click on either resets both. No parameter; it resets when playback starts from stopped (as the LUFS integration does today).
+
+### 5. Parameters
+
+| ID | Name | Range | Default |
+|---|---|---|---|
+| `gainLock` | Gain lock | off/on | off |
+| `gainLockRef` | Gain lock reference | −30 to 0 dB | 0 |
+| `dcFilter` | DC filter | off/on | off |
+| `releaseCurve` | Release curve | Exponential, Linear | Exponential |
+
+### 6. Tests
+
+1. Legacy: v1.6.0's Limit against the new one in every style and oversampling: identical.
+2. Gain Lock: at Threshold −6 dB with the reference at 0, the output of a 1 kHz sine at −20 dBFS is −6 dB from Gain Lock off, within 0.01 dB.
+3. Auto to Target: pink noise at −24 LUFS, target −14: after the action, integrated loudness −14 ± 0.5 LU.
+4. DC filter: a 0.2 DC offset is gone (under −80 dBFS) after 1 s; 20 Hz loses under 0.1 dB.
+5. Release curve: linear falls at a constant dB rate (Comp's test).
+6. Peak statistics: the held maximum equals the largest true peak measured offline within 0.1 dB.
+
+Mockup: to follow (`reference/phase4/31__limit_w1_mockup.png`): the footer's Gain lock, the Auto to Target button and the peak statistics in the loudness panel, the drawer's two settings.

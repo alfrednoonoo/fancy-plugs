@@ -253,3 +253,67 @@ The user chose this note's rule on 7 November 2026 ("Keep the physical rule"). F
 | Pre-open 49 ms, window 2 ms | On time, which can't be done: the window isn't over until 1 ms after the note is due | 1 ms late |
 
 This note's rule is never later than the brief's, and is on time for every Pre-open up to 48 ms with the default window. Test (2) checks Pre-open at 2, 5, 25 and 48 ms with the default window.
+
+## Phase 4 Wave 1: MIDI trigger, ratio, auto threshold, Mid/Side sources and de-bleed
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2, 3, 5 and 8 of section 9.
+
+### 1. MIDI trigger
+
+Play the gate from a MIDI part: note-on opens it, note-off closes it (through Hold and Release as now), and the detector is ignored. For rhythmic gating of pads.
+
+- Gate gains a MIDI input. Its AU is already a music effect; the VST3 gets an event input bus (`NEEDS_MIDI_INPUT`). **Risk:** a changed bus layout can make a host rescan the plugin. Projects should still load (REAPER keys plugins by class ID), and the host-compatibility checks (H) run again before release.
+- `midiIn` (off), a checkbox in the footer. The existing MIDI *output* (trigger notes) is unchanged; both can be on.
+- **Decision 1: velocity.**
+  - **A (R).** Ignored: the gate opens fully on any note.
+  - **B.** Sets how far it opens (velocity 127 = fully open, 1 = Range).
+
+### 2. Ratio
+
+With Ratio below ∞, Gate becomes an expander: below Threshold the level falls by `(Threshold − level) × (ratio − 1)` dB, never more than Range. ∞ is today's gate, bit for bit, and the open/hold/close state machine is untouched there.
+
+- `ratio` 1.1:1 to ∞, default ∞, a small knob on the Envelope card after Range.
+
+### 3. Auto threshold
+
+A **Learn** button in the footer: listens for 3 s of playback and sets Threshold between the noise floor (the 10th percentile of the detector level) and the hits (the 95th percentile).
+
+- **Decision 2: where between them.**
+  - **A (R).** A third of the way up from the floor, in dB: opens reliably on soft hits, still shuts on bleed.
+  - **B.** Halfway: safer against bleed, but misses ghost notes.
+- An action, one undo step. While learning, the button shows a progress ring and the Threshold meter draws the floor and peak marks.
+
+### 4. Mid and Side detector sources
+
+"Mid" and "Side" appended to the Detector input list, as Comp has them. Saved indices keep their meaning.
+
+### 5. De-bleed
+
+A snare mic hears the kick too; de-bleed makes the gate ignore loud sound outside the detector's band.
+
+- `deBleed` 0 to 100 %, default 0 (today). The detector compares its filtered level with the level outside the band (input minus filtered); the effective Threshold rises by `deBleed × max (0, outside − inside)` dB, so out-of-band thumps can't open the gate.
+- **Decision 3: keep it in Wave 1?**
+  - **A (R).** Yes, as above: a small knob on the Detector card. It needs Highpass and Lowpass set to mean anything, which the manual says.
+  - **B.** Move it to Wave 2 with the detector modes (item 4), where a band-split detector would do it better.
+
+### 6. Parameters
+
+| ID | Name | Range | Default |
+|---|---|---|---|
+| `midiIn` | MIDI trigger | off/on | off |
+| `ratio` | Ratio | 1.1:1 to ∞ | ∞ |
+| `deBleed` | De-bleed | 0 to 100 % | 0 |
+
+Plus "Mid" and "Side" at the end of `detector`.
+
+### 7. Tests
+
+1. Legacy: v1.6.0's Gate against the new one, Gate and Duck modes, lookahead on and off: identical.
+2. MIDI: a note-on at sample 1000 opens the gate there (± attack), a note-off closes it after Hold and Release, with the input silent of hits.
+3. Ratio: 2:1, Threshold −30, a tone at −40 dBFS comes out at −50 (± 0.3 dB); never below Range.
+4. Learn: hits at −10 dBFS over noise at −60: Threshold lands at −43 ± 2 dB (Decision 2 A).
+5. Mid/Side: a side-only signal opens the gate with Side and not with Mid.
+6. De-bleed 100 %: with Highpass 200 Hz, a 60 Hz burst 20 dB over Threshold doesn't open the gate; a 1 kHz one does.
+7. Host checks (H) with the new MIDI input.
+
+Mockup: to follow (`reference/phase4/32__gate_w1_mockup.png`): footer (MIDI trigger, Learn), Ratio on the Envelope card, De-bleed on the Detector card.

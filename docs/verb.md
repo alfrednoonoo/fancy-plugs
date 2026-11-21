@@ -327,3 +327,40 @@ Three pushes, as planned. The models are `docs/research/verb-q28-model.py`.
 - **Reverb card:** Stereo spread's label is "Spread" on the card, to fit the small knob.
 - **Add module (user, 15 November 2026; mockup `reference/phase3/25__verb_add_module_mockup.png`):** the cards' + is gone. A dashed box after the last card (203 × 352, the panel's size) opens the add panel at the end of the chain; the panel's eight buttons are 28 px at 34 px spacing, with Cancel under them. Esc closes the panel (the editor handles it, so the rack still never takes the keyboard focus), and so does a click on the rack's empty space.
 - **Accuracy test:** the true-stereo convolver is checked against direct convolution with the existing test's tolerance; section 8's -100 dB is tighter than the single-precision convolver reaches.
+
+## Phase 4 Wave 1: equal loudness, Post-EQ module and the IR browser
+
+Items from `docs/enhancements.md` (Wave 1 of the Phase 4 order). **Draft, waiting for the user's approval; no code before it.** Every new parameter is appended, with a default that keeps saved projects bit-identical, checked against the v1.6.0 DSP in a legacy test as Comp's Wave 1 does. Items were checked in the code on 21 November 2026 before this note was written. Backlog items 1, 2 and 3 of section 5. As with every module setting, nothing here is a host parameter (section "Parameters"): it's chain state, saved in the plugin state.
+
+### 1. Equal loudness
+
+A SETUP drawer option, **Equal loudness** (off): when the IR is rebuilt (a new file, preset or module change), the wet gain is set so pink noise through the IR has the same RMS as through a reference (a 2 s exponential tail), and the change is faded over the existing 64 ms crossfade. So swapping a small room for a cathedral doesn't jump 12 dB.
+
+- **Decision 1: what it measures.**
+  - **A (R).** The IR's energy, pink-weighted (deterministic, computed by the builder on its worker thread, no audio analysis).
+  - **B.** The wet output's loudness over a few seconds. Fits the music, but the level then changes after you've stopped touching anything.
+- Off keeps today's wet level to the bit. The applied trim shows in the drawer ("−8.4 dB").
+
+### 2. Post-EQ module
+
+A new module type, **EQ**, in the add panel: three bands (low shelf, bell, high shelf, each Freq and Gain; Q on the bell) applied to the IR at its place in the chain, like LP/HP. The card shows a small response curve. A band at 0 dB does nothing.
+
+- Built with `fancy::dsp::matched` (EQ's filters), on the IR, offline, so it costs no CPU while playing.
+- **State:** a new module type; an older Verb drops it (as it drops Modulate) and plays the IR without it.
+
+### 3. IR browser
+
+- **Drag and drop:** drop an audio file on the rack: it becomes a new File module at the end of the chain (or replaces the selected File module's file, if one is selected). Formats as the File module reads them.
+- **Export IR:** in the File card's menu (and the IR display's right-click menu): writes the finished IR, after trim, as a 24-bit WAV at the session rate, true stereo as four channels.
+- **Library search and favourites:** the library list gets a search field at its top (filters by name and category as you type) and a star on each row. Favourites are kept in the user's settings file, not in projects, and a "Favourites" category lists them first.
+
+### 4. Tests
+
+1. Legacy: every factory preset and a File-module state render identically with Equal loudness off and no EQ module.
+2. Equal loudness: two library IRs whose wet RMS differs by 10 dB come out within 1 dB of each other.
+3. EQ module: a +6 dB bell at 2 kHz raises the IR's response there by 6 ± 0.3 dB; 0 dB leaves the IR bit-identical.
+4. Export: the written WAV equals the built IR to 24-bit precision, at the right length and channel count.
+5. Drop: a dropped WAV adds a File module with that file; a non-audio file is refused with a message.
+6. Favourites survive a restart and don't appear in the saved state.
+
+Mockup: to follow (`reference/phase4/36__verb_w1_mockup.png`): the EQ card, the library's search and stars, the drawer option.
