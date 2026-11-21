@@ -73,6 +73,14 @@ Tell me "Exciter OK", or list which items failed and what you saw. Once it's OK,
 - [ ] Play a loop and pick **≈ Compare (level-matched)**: you hear the input at about the same loudness as the plugin's output. Pick it again to go back. No clicks either way.
 - [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
 
+## Listen, THD, ceiling and Auto gain (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Exciter: it loads and sounds as before, with every new setting off or at its default.
+- [ ] Listen to added harmonics plays only the added part; closing the window turns it off.
+- [ ] THD rises as Harmonics goes up.
+- [ ] Auto gain on: bypass-switching sounds about equally loud.
+- [ ] Ceiling -1 dBTP with Clip Boost high: the output stays under it.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

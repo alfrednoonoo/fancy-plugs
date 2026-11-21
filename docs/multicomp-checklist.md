@@ -117,6 +117,12 @@
 - [ ] Solo a band, then Mute one: they work as in LR 24, with a short smooth switch and no click.
 - [ ] A Mid band on a wide stereo mix: only the centre is compressed.
 
+## Learn crossovers and band mute (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy MultiComp: it loads and sounds as before, with every new setting off or at its default.
+- [ ] Learn on a full mix: after 5 s the crossovers spread sensibly; on a bass-heavy track the lowest one moves down. Undo puts them back.
+- [ ] M on a band: that band disappears from the mix; the others are unchanged.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

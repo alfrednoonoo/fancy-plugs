@@ -94,6 +94,11 @@ The `EDIT` link in the footer holds the note multiplier for the selected tap, Ou
 
 None.
 
+## Phase 4 additions
+
+- **Freeze** (tap graph): the repeats hold for as long as it's on and new input isn't heard, for pads and transitions. It fades in and out over 30 ms and can be automated.
+- **Ceiling** (drawer): holds the output's true peak under this level, so feedback at 100 % and over can't clip the bus. Off at the bottom.
+
 ## Memory
 
 Each instance reserves about 67 MB at 48 kHz, and about 540 MB at 384 kHz, so that adding a tap never allocates while audio runs.

@@ -78,6 +78,14 @@ Turning MIDI off, or changing Lookahead, ends a sounding note.
 | Drum trigger to MIDI | Notes with velocity from each hit |
 | Gentle expander | -12 dB of downward expansion |
 
+## Phase 4 additions (EDIT drawer)
+
+- **MIDI trigger:** play the gate from MIDI. A note-on opens it and its note-off closes it; the detector is ignored. Route a MIDI track to Fancy Gate in your host.
+- **Learn:** play the track and click it; after 3 s Threshold sits a third of the way up from the bleed to the hits.
+- **Ratio:** at inf:1 the gate closes as before. Lower, it's an expander: the level falls this many dB for each dB under Threshold, never deeper than Range.
+- **De-bleed:** raises Threshold while the sound outside Highpass and Lowpass is louder than inside, so a loud cymbal can't open a tom's gate. Set Highpass and Lowpass first; without them it has nothing to compare.
+- **Detector input** now also offers **Mid** and **Side**.
+
 ## Latency
 
 0 samples with Lookahead off. 50 ms with it on, at every sample rate.

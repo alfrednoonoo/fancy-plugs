@@ -182,3 +182,9 @@ With Auto on, Amount rides itself: the more sibilant the voice (the profile band
 3. The working value never leaves the ±30 % window.
 
 Mockup: `reference/phase4/34__dsmini_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the Auto pill and the second arc.
+
+### 3. As built
+
+One push (`a430630`), with every recommended option; `tests/DsMiniW1Tests.cpp`.
+
+- **Auto Amount:** `autoAmount` (off). While on, Amount rides up to 3 either side of the knob with the sibilance ratio (sibilance band against the whole voice); an Auto pill beside the knob, and the knob's arc shows the working value.

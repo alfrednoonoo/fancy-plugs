@@ -48,6 +48,13 @@
 - [ ] Render the track (File > Render): it sounds the same as playback.
 - [ ] Drag the window's corner to make it bigger and smaller: everything scales together, nothing overlaps.
 
+## Learn, filter slope and ceiling (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy DS: it loads and sounds as before, with every new setting off or at its default.
+- [ ] Learn on a vocal: after 3 s only the sibilants are reduced.
+- [ ] Slope 48 dB/oct ignores a bright guitar near the band that 12 dB/oct reacts to.
+- [ ] Ceiling at -1 dBTP holds the output under it; Off is the old path.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

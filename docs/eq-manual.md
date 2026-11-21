@@ -173,6 +173,13 @@ Changing Phase, FIR length or Oversampling gives one short dropout while the new
 
 Drag the window's edge in REAPER. The graph takes the extra room. The smallest size is 724 x 464; below 781 wide, MATCH in the header is its icon alone. Parameter > UI size still scales everything.
 
+## Phase 4 additions
+
+- **Band solo:** Ctrl-drag a band's handle (Cmd-drag on a Mac) to hear only the part of the sound that band works on, for as long as you hold the mouse. Nothing is saved.
+- **Auto gain** (settings row): keeps the output as loud as the input whatever the curve does, worked out from the curve itself. The trim shows at the graph's bottom right ("auto -2.3").
+- **Reach** (a dynamic band's settings): how far past Threshold the band reaches its full Range, 1 to 48 dB. 12 dB is the classic curve; lower is harder and more compressor-like, higher gentler.
+- **Analyzer > Pre + Post:** the input's spectrum, dimmer, under the output's. **Freeze** (top right of the graph) holds the current spectrum under the live one, to compare a change with the moment before; click again to let go.
+
 ## Presets
 
 Default, Low Cut, Vocal Presence, Smile, Air, Telephone and Linear Master. **+ New** saves your own.

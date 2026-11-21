@@ -245,3 +245,10 @@ Each tap already has **Ping-pong** and **Pan** (section "Ping-pong"), which give
 3. Ceiling: feedback 110 % for 10 s never exceeds the ceiling in true peak.
 
 Mockup: `reference/phase4/38__delay_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): Freeze on the tap graph, frozen and not, and the drawer's Ceiling after Ducking.
+
+### 5. As built
+
+One push (`f276ab4`), with every recommended option; `tests/DelayW1Tests.cpp`. Item 2 (feedback pan per tap) dropped, as decided.
+
+- **Freeze:** `freeze`, a toggle on the tap graph. The repeats hold (every tap's feedback at 1, filters and character bypassed in the loop) and the input is gated out, both over a 30 ms crossfade; automatable. **Fixed after run 44935591606:** the engine read a `current` that didn't exist; Freeze is now a stored flag set with the other targets and snapped with the other smoothers.
+- **Ceiling:** `ceiling`, Off (at the bottom) or -12 to 0 dBTP, in the drawer, on the shared `fancy::dsp::OutputCeiling`, out of the path while Off.

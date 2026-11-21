@@ -158,6 +158,14 @@ Tell me "EQ OK", or list which items failed and what you saw. Once it's OK, I'll
 - [ ] Match doesn't change the sound while it learns: toggle Learn during playback and listen.
 - [ ] Compact mode with the card open: the card takes the band card's place, and the band card returns when it closes.
 
+## Band solo, Auto gain, Reach and analyzer (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy EQ: it loads and sounds as before, with every new setting off or at its default.
+- [ ] Ctrl-drag a bell's handle: only that region plays while the mouse is down, and the full sound returns on release.
+- [ ] Auto gain on: a +6 dB high shelf doesn't make the track louder; the trim shows at the bottom right.
+- [ ] A dynamic band with Reach 3 acts hard and fast; 48 gently; 12 as before.
+- [ ] Analyzer Pre + Post shows both spectra; Freeze holds one under the live one.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

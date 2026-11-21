@@ -58,6 +58,10 @@ The file goes in `%APPDATA%\Fancy Plugs\Fancy DS\Presets\From DS-Mini\`.
 | Instruments | Acoustic guitar | Acoustic guitar, 5 |
 | Instruments | Strings | Bowed strings, 4 |
 
+## Auto Amount (Phase 4)
+
+Click **Auto** beside the Amount knob and DS-Mini rides Amount with how sibilant the voice is: up to 3 more on harsh passages, up to 3 less on soft ones, around where you set the knob. The knob's arc shows the amount in use.
+
 ## Latency and CPU
 
 None by default; 2 ms with Lookahead. The CPU is the same as Fancy DS's at the same settings, about 0.5 % of one core at 48 kHz in the CI measurements, and briefly twice that during a profile change.

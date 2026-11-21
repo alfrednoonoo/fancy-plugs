@@ -325,3 +325,14 @@ Plus "Mid" and "Side" at the end of `detector`.
 7. Host checks (H) with the new MIDI input.
 
 Mockup: `reference/phase4/32__gate_w1_mockup.png`: the EDIT link, the Detector menu with Mid and Side, and the drawer.
+
+### 9. As built
+
+One push (`b89a7bc`), with every recommended option; `tests/GateW1Tests.cpp`.
+
+- **EDIT drawer** (Decision 4): an EDIT link in the top row opens a drawer over the knob cards with MIDI trigger, Learn, Ratio and De-bleed. The threshold meter, graph and faders stay visible.
+- **MIDI trigger:** `midiIn`; Gate takes MIDI input, a note-on opens it (velocity ignored), its note-off closes it, and the detector is ignored.
+- **Ratio:** `ratio`, 1.1:1 to inf (inf is the old fade, to the bit); below inf the gate is an expander, never deeper than Range.
+- **Learn:** listens for 3 s and sets Threshold a third of the way up from the floor to the peaks, in dB.
+- **Mid and Side** are appended to the Detector input choice, in a "Mid/side" section.
+- **De-bleed:** `deBleed`, 0 to 100 %, raises the threshold while the sound outside Highpass and Lowpass is louder than inside.

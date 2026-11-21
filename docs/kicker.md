@@ -107,3 +107,12 @@ All five settings in the EDIT drawer (Sub length, Make-room and Polarity in a Su
 5. Ceiling and auto gain, as Exciter's tests.
 
 Mockup: `reference/phase4/40__kicker_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`).
+
+### 9. As built
+
+One push (`22b0e05`), with every recommended option; `tests/KickerW1Tests.cpp`.
+
+- **Sub length:** `subLen`, 20 to 2000 ms, Off at the top; a new hit is the generator starting or its level jumping over its recent average, and the sub then fades over 20 ms (60 dB). **Fixed after run 44942993322:** ripple on the decaying tail, about 49 dB down, restarted the sub; a rise now counts only within 12 dB of the current hit's peak.
+- **Make-room:** `roomCut` and `roomFreq` (20 to 200 Hz, 60), a high-pass on the source kick in Sub mode. **Invert sub:** `subPolarity`.
+- **Sub meter:** a 6 px bar between the In and Out meters.
+- **Auto gain** (`autoGain`) and **Ceiling** (`ceiling`, Off or -12 to 0 dBTP) in the drawer. `KickerDsp`'s sub peak is a copyable atomic, so the tests can build an engine by value (fixed after run 44935591606).

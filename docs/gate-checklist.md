@@ -71,6 +71,16 @@
 - [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
 - [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
 
+## MIDI trigger, Ratio, Learn, Mid/Side and De-bleed (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Gate: it loads and sounds as before, with every new setting off or at its default.
+- [ ] EDIT opens the drawer over the knobs; the meter and faders stay visible.
+- [ ] MIDI trigger: a MIDI track routed to Gate opens it on each note and closes it at note-off.
+- [ ] Learn on a tom track: Threshold lands between the bleed and the hits.
+- [ ] Ratio 2:1 gives a gentle expander; inf:1 sounds as before.
+- [ ] De-bleed with Highpass and Lowpass around the tom: cymbal hits no longer open it.
+- [ ] Detector input Mid and Side work.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

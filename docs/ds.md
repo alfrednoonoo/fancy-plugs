@@ -197,3 +197,11 @@ A **Learn** button in the footer: over 2 s of playback, measures the sibilance b
 4. Ceiling: a full-scale 0 dBFS square with Output +6 dB stays under the ceiling in true peak; latency reported matches.
 
 Mockup: `reference/phase4/33__ds_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the footer's Learn and the drawer's two settings. DS-Mini's item is in `docs/ds-mini.md`.
+
+### 6. As built
+
+One push (`365a133`), with every recommended option; `tests/DsW1Tests.cpp`.
+
+- **Learn:** a button in the footer after Link channels; it listens for 3 s and sets Threshold at the 90th percentile of the sibilance band's level.
+- **Filter slope:** `slope`, 12, 24 or 48 dB/oct, in the drawer; the shared de-esser engine runs 1, 2 or 4 stages, 1 by default, which is the old detector.
+- **Ceiling:** `ceiling`, Off (at the bottom) or -12 to 0 dBTP, in the drawer; DS was moved onto the shared `fancy::dsp::OutputCeiling` (Delay's commit, `f276ab4`), out of the path while Off.

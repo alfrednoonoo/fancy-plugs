@@ -72,6 +72,15 @@ Tell me "Kicker OK", or list which boxes failed. Once it's OK, I'll start the Ex
 - [ ] The preset browser's **Kick** category has **Sub: Deep 808**, **Sub: Tight Punch** and **Sub: Tom Drop**.
 - [ ] Automate Mode between Boost and Sub and render: no clicks, and the render matches playback. The plugin reports no latency in either mode.
 
+## Sub length, Make-room, Invert sub, sub meter, Auto gain and ceiling (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Kicker: it loads and sounds as before, with every new setting off or at its default.
+- [ ] Sub length 150 ms on long 808-style kicks: the sub stops cleanly before the next hit, with no click and no late restart.
+- [ ] Make-room at 60 Hz: the source kick's lowest end goes, the sub fills it.
+- [ ] Invert sub: on a kick that thinned out with the sub, it fills back in.
+- [ ] The sub meter moves with the sub.
+- [ ] Auto gain keeps the level steady as Boost changes; Ceiling holds the output under it.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

@@ -272,3 +272,12 @@ The loudness panel's true-peak read-out gets a held maximum since the last reset
 6. Peak statistics: the held maximum equals the largest true peak measured offline within 0.1 dB.
 
 Mockup: `reference/phase4/31__limit_w1_mockup.png`: Gain lock in the footer, **Auto to target** in the top row left of the Target menu (not in the loudness panel, which has no room), the peak statistics beside True peak, and the drawer's two rows.
+
+### 7. As built
+
+One push (`3816ef6`), with every recommended option; `tests/LimitW1Tests.cpp`.
+
+- **Gain lock:** `gainLock` and the hidden `gainLockRef`, a checkbox in the footer; switching it on stores the current Threshold, and the output then gets Threshold minus that.
+- **Auto to target:** a button in the top row, left of the Target menu, reading "Listening..." with a progress ring for 10 s, then one move of Threshold; greyed while Gain lock is on. Clicking while it listens stops it.
+- **DC filter** (`dcFilter`, "5 Hz high-pass") and **Release curve** (`releaseCurve`, Exponential or Linear) are in the drawer; the linear release is the shared limiter's, off by default.
+- **Peak statistics:** the loudness panel shows the overs count (red when above 0) under the held true peak; a click resets both.

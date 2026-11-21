@@ -107,3 +107,11 @@ Like Sature's harmonics card, but as one line under the meters: a background thr
 5. Auto gain: on pink noise, output RMS within 0.5 dB of input RMS at Harmonics 100 %.
 
 Mockup: `reference/phase4/39__exciter_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the footer's listen, the THD line, the drawer.
+
+### 6. As built
+
+One push (`ff59906`), with every recommended option; `tests/ExciterW1Tests.cpp`.
+
+- **Listen to added harmonics:** a temporary listen (`ListenCheckbox`), never saved; it plays the output minus the dry signal.
+- **THD read-out:** at the bottom of the body, for a tone one octave above Freq at -12 dBFS through the current settings, worked out on a background thread (synchronously in an offline render).
+- **Ceiling:** `ceiling`, Off or -12 to 0 dBTP, in the drawer; **Auto gain:** `autoGain`, turns the output down by the level the harmonics add, from the same background analysis, smoothed.

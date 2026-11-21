@@ -76,6 +76,14 @@ A song that only reaches the target with a lot of reduction will sound squashed.
 | Mixing | Transparent peak guard | Clean, Threshold 0, Ceiling -0.3 |
 | Utility | 16-bit bounce | Ceiling -0.3, Dither 16-bit shaped |
 
+## Phase 4 additions
+
+- **Gain lock** (footer): turns the output down by as much as Threshold pushes it up, so you hear what the limiting does rather than the extra level.
+- **Auto to target** (top row): play the track and click it. It listens for 10 s and moves Threshold once, so the integrated loudness meets the Target. Greyed while Gain lock is on.
+- **5 Hz high-pass** (drawer): removes DC offset before the limiter, so it can't use up headroom.
+- **Release curve** (drawer): Exponential recovers fast and then gently, as before; Linear recovers at a constant rate in dB.
+- **Overs:** under the true-peak read-out, the number of samples that would have passed Ceiling before the final clip. It should stay 0. Click to reset.
+
 ## Latency
 
 The latency is fixed by the oversampling setting, never by Lookahead: 5 ms of lookahead room plus 1 ms for the final true-peak stage, plus the oversampling filters. At 48 kHz that's 312 samples with oversampling off and 318 at the default 4x, minimum phase (about 6.6 ms); linear phase adds more. Hosts with delay compensation, REAPER included, line everything up for you. Some hosts only read a new latency when playback stops and starts, so change Oversampling while stopped.

@@ -52,6 +52,13 @@ Use the dropdown to load a preset and **+** to save your own. User presets are s
 
 **Prm** lists the parameters, sets the UI size (100, 125, 150 or 200 %) and has the About box.
 
+## Phase 4 additions
+
+- **Listen to added harmonics:** plays only what Exciter adds. It turns off when you close the window and is never saved.
+- **THD** (bottom of the window): the harmonics these settings add to a tone an octave above Freq, so you can compare settings by number.
+- **Auto gain** (drawer): turns the output down by as much as the harmonics add, so you hear the colour, not the level.
+- **Ceiling** (drawer): holds the output's true peak under this level, so Clip Boost can't pass it. Off at the bottom.
+
 ## Using it in other hosts
 
 ### Latency

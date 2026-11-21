@@ -89,6 +89,14 @@ In **⚙ EDIT** (Sub):
 
 Switching mode while playing crossfades over 20 ms. Presets **Sub: Deep 808**, **Sub: Tight Punch** and **Sub: Tom Drop** are in the Kick category.
 
+## Phase 4 additions
+
+- **Sub length:** ends the sub this long after each hit, with a short fade, so a long tail doesn't run into the next kick. Off at the top.
+- **Make-room:** cuts the source kick's lowest end below its frequency (60 Hz by default), so the sub has it to itself.
+- **Invert sub:** flips the sub, for kicks whose own low end cancels it.
+- **Sub meter:** the thin bar between In and Out shows the sub's level.
+- **Auto gain** (drawer): turns the output down by as much as Boost or Sub adds, so you hear the shape, not the level. **Ceiling** (drawer): holds the output's true peak under this level; Off at the bottom.
+
 ## Credits
 
 UI design based on "ReaPlugs (vst GUI)" by Eugene Reznik, CC BY 4.0 — https://www.figma.com/community/file/967866927752067729. Modified from the original.

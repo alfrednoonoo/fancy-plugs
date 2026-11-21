@@ -44,6 +44,15 @@
 - [ ] The ON pill switches cleanly, and with it off the sound is the untouched mix, in time.
 - [ ] Drag the window's corner to make it bigger and smaller: everything scales together, nothing overlaps.
 
+## Gain lock, Auto to target, DC filter, release curve and overs (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Limit: it loads and sounds as before, with every new setting off or at its default.
+- [ ] Gain lock on, then lower Threshold: the limiting increases but the level doesn't.
+- [ ] Auto to target with Target -14 LUFS: after 10 s Threshold moves and the integrated loudness lands near -14.
+- [ ] 5 Hz high-pass on a track with DC offset: the offset goes, the bass stays.
+- [ ] Release curve Linear sounds steadier on sustained material; Exponential is the old sound.
+- [ ] Overs stays 0 in normal use; a click resets it.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

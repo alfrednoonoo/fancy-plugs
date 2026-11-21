@@ -309,3 +309,13 @@ Plus "Pre + Post" at the end of `analyzer`.
 5. Freeze and Pre + Post draw (screenshot `eq-freeze`).
 
 Mockup: `reference/phase4/30__eq_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the solo, Reach, the auto-trim read-out, Freeze, the drawer's Auto gain and Pre + Post.
+
+### 7. As built
+
+One push (`d7fd3e8`), with every recommended option. `tests/LegacyEqDsp.*` is EqDsp at v1.6.0; `tests/EqW1Tests.cpp` holds the tests.
+
+- **Band solo:** a band-pass at the band's Freq and Q (Q 0.7 at a shelf's or cut's corner), as Decision 1 A. **Changed from Decision 2:** the gesture is **Ctrl-drag** (Cmd on a Mac) on a handle, not Alt, because Alt-drag already sets Q. It lasts while the mouse is down, as decided, and it's a temporary listen (listen target band + 1, only while the editor is open), never saved.
+- **Auto gain:** `autoGain`, a checkbox in the settings row; the trim is the pink-weighted power average of the static curve (dynamic bands at their static gain), smoothed over 200 ms, and shows as "auto -2.3" at the graph's bottom right while on.
+- **Reach:** `bNreach` per band, 1 to 48 dB (12 is the old curve, to the bit), typed in a value field in the dynamic section of the band editor. `fancy::dsp::matched::DynamicSpec` carries it.
+- **Analyzer:** "Pre + Post" appended to `analyzer`, the pre spectrum dimmer under the post one; **Freeze** is a button at the graph's top right while the analyzer is on. **Changed from section 4:** no F key, as a key in a plugin window competes with the host's shortcuts.
+- **Test fix (run 44942993322):** EqTests' pre-Q2.4 state test now counts the eight new Reach parameters of bands 17 to 24.

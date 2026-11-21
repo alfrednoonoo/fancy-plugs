@@ -33,6 +33,11 @@
 - [ ] The ON pill switches cleanly. Render the track: it sounds the same as playback.
 - [ ] Drag the window's corner: everything scales together.
 
+## Auto Amount (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy DS-Mini: it loads and sounds as before, with every new setting off or at its default.
+- [ ] Auto on: harsh passages get more reduction and soft ones less, never more than 3 from the knob; the arc moves.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

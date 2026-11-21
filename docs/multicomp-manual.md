@@ -121,6 +121,11 @@ The `EDIT` link at the bottom right holds Attack = 90 % rise, Log-scale automate
 
 The chip on the band row, left of **S**, picks what the band compresses: **ST** (both channels, as before), **L**, **R**, **M** (mid, the sum) or **S** (side, the difference). A one-channel band leaves the other channel of its frequency range as it is: a Mid band on the lows tightens the centre without touching the width, and a Side band on the highs tames harsh stereo edges. The band's detector reads the same channel, from the sidechain too. The band's handle on the graph shows the letter. On a mono track the chip is greyed.
 
+## Phase 4 additions
+
+- **Learn** (graph, top right): play the track and click it. After 5 s the crossovers move so each band carries a similar share of the music's energy, weighted like pink noise, so the lows don't take every band. One undo step.
+- **M** (band row): mutes the band, taking it out of the mix entirely. The power button still keeps a band in the mix, unprocessed.
+
 ## Latency
 
 | Crossover | Limit output off | Limit output on |

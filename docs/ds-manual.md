@@ -71,6 +71,12 @@ The presets are good starting points: **Bright female vocal** and **Deep male vo
 | Mix | Harsh cymbals | Split, Shelf at 8 kHz, Range -6, Release 120 ms |
 | Mix | Bus taming | Wide, Shelf at 6 kHz, Threshold -30, Range -4 |
 
+## Phase 4 additions
+
+- **Learn** (footer): play the vocal and click it; after 3 s Threshold sits where only the "s" sounds go over it.
+- **Filter slope** (drawer): how sharply the detector picks out the band. Steeper ignores more of the voice around it. 12 dB/oct is the old sound.
+- **Ceiling** (drawer): holds the output's true peak under this level. Off at the bottom; it adds a little latency while on.
+
 ## Latency
 
 None by default. Lookahead adds 1, 2 or 5 ms (48, 96 or 240 samples at 48 kHz). The linear-phase split adds 2559 samples at 48 kHz (53.3 ms); it keeps about the same time at other rates. Hosts with delay compensation, REAPER included, line everything up for you. Change these while stopped, because some hosts only read a new latency when playback starts.

@@ -257,6 +257,13 @@ A **Learn** button on the graph: over 5 s of playback, the spectrum is averaged 
 
 Mockup: `reference/phase4/35__multicomp_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the Learn button and the M buttons.
 
+### 4. As built
+
+One push (`98b143e`), with every recommended option; `tests/MultiCompW1Tests.cpp`.
+
+- **Learn crossovers:** a button at the graph's top right; over 5 s of playback it averages the spectrum in third octaves and places the crossovers where the pink-weighted energy splits equally between the bands. One undo step; only the crossover parameters move.
+- **Band mute:** `bNmute` per band, an M button in the band row lit in the band colour; a muted band is out of the sum entirely.
+
 ## Phase 4 Wave 2: dynamic-phase crossover
 
 **Approved by the user on 21 November 2026 with every recommended option (A).** Backlog item 1 of `docs/enhancements.md` section 7, the first item of Wave 2. A fourth Crossover choice, **Dynamic phase**: with no latency, the signal is untouched while the bands aren't changing it, and phase shift appears only where neighbouring bands' gains differ and only while they do (the behaviour of Pro-MB's mode of the same name). There's no published method, so it was modelled first: `docs/research/multicomp-dynphase-model.py` (three bands, crossovers at 200 Hz and 2 kHz, analogue responses, against today's compensated LR 24).

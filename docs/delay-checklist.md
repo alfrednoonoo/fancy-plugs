@@ -95,6 +95,12 @@
 - [ ] Play a loop and click **≈ Compare**: you hear the input at about the same loudness as the output, and the button shows the matching gain. Click again to go back. No clicks either way.
 - [ ] Write some automation and play it back with the window open: Undo doesn't pick it up.
 
+## Freeze and ceiling (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Delay: it loads and sounds as before, with every new setting off or at its default.
+- [ ] Freeze while repeats play: they hold without fading and new input isn't heard; off, they decay as normal. No clicks either way.
+- [ ] Feedback 110 % with Ceiling -1 dBTP: the output stays under it.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
