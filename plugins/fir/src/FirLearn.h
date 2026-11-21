@@ -22,7 +22,7 @@ class CurveLearner
 public:
     static constexpr int numBands = 31;     // 20 Hz to 20 kHz
     static constexpr double seconds = 3.0;
-    static constexpr int pointsPerBand = 8;
+    static constexpr int pointsPerBand = 32; // enough to average most of a band's bins
 
     static double bandHz (int band) noexcept { return 20.0 * std::pow (2.0, (double) band / 3.0); }
 
