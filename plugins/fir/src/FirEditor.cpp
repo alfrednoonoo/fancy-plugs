@@ -319,8 +319,6 @@ FirEditor::FirEditor (FirProcessor& processor)
 
     // Phase 4 Wave 1: Learn between the Mode switch and Edit, in Gate and Compressor modes.
     curveLearnButton.setBounds (455, 10, 48, 25);
-    curveLearnButton.setTooltip ("Listens to 3 s of playback and places the curve: the Gate's just over the steady noise in each band, "
-                                 "the Compressor's at the loud parts. Click again to stop.");
     curveLearnButton.onClick = [this]
     {
         if (graph.isLearningCurve())

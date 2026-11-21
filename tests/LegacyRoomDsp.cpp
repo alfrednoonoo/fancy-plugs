@@ -59,7 +59,7 @@ LegacyRoomDsp::Tap LegacyRoomDsp::reflection (int channel, int index) noexcept
     return { ms, 0.9 * (1.0 - 0.75 * ms / 80.0) * polarity * 0.35 };
 }
 
-LegacyRoomDsp::RoomDsp()
+LegacyRoomDsp::LegacyRoomDsp()
 {
     for (int ch = 0; ch < 2; ++ch)
         for (int k = 0; k < erTaps; ++k)
