@@ -34,3 +34,16 @@ For the user, in REAPER 7.86 at 125 %. Install as in `theme/README.md`. Send a s
 
 - [ ] FX browser and media explorer lists: grey, with a dark teal selection.
 - [ ] MIDI editor: dark grey background, light white keys, teal for the pressed key and the selected notes' area. 📷
+
+# Stage B preview (images)
+
+Pick **Fancy Plugs (Stage B preview)** under Options > Themes. Stage A stays installed as **Fancy Plugs**, so switching back is one click.
+
+- [ ] It loads without an error, and the colours are Stage A's. 📷 the whole window with the mixer open.
+- [ ] Track panel and mixer buttons are the suite's rounded grey buttons: record arm (red dot when armed), M (orange when on), S (yellow when on), phase, monitor (speaker), envelope, FX (teal when the track has FX), IO (dots for sends and receives), IN/OUT/OFF. 📷 a track armed, muted and soloed.
+- [ ] Hovering lightens a button; pressing darkens it.
+- [ ] Faders and pan: thin dark tracks with rounded ends, black caps with a white line. 📷 the track panel and a mixer strip.
+- [ ] The track name field is a dark rounded well.
+- [ ] Transport: rounded buttons; play and repeat teal when on, record red when recording. 📷 while playing with repeat on.
+- [ ] Everything is sharp at 125 % (it should use the 150 % images).
+- [ ] Note anything cut off, stretched, misaligned or missing.

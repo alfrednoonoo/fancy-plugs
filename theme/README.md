@@ -20,6 +20,10 @@ Stage A: colours and fonts in the Fancy Plugs look, over REAPER's built-in image
 
 The design (`docs/reaper-theme.md`) tints each track's panel lightly in its colour and colours its items. In Stage A, REAPER's own settings decide how strongly: Preferences > Appearance, the track colour options (tint the track panels, colour the items). Stage C moves these into the theme's own settings.
 
+## Stage B preview
+
+`python tools/theme/build.py --stage-b` also writes `theme/build/Fancy Plugs (Stage B preview).ReaperThemeZip`: Stage A's colours plus our own buttons, faders and transport, at 100, 150 and 200 %. Copy it into `ColorThemes` and pick it under Options > Themes; Stage A stays available beside it. It needs Pillow (`pip install -r tools/theme/requirements.txt`).
+
 ## Rebuild
 
 `python tools/theme/build.py` writes `Fancy Plugs.ReaperTheme` from the values in that script. Edit the script, not the generated file.

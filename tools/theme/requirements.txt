@@ -1,0 +1,2 @@
+# For tools/theme only (the REAPER theme generator): approved by the user on 21 November 2026.
+Pillow>=10

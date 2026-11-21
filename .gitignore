@@ -30,3 +30,6 @@ content-src/video/*/compositions/
 content-src/video/*/assets/screens/
 content-src/video/*/assets/fonts/
 content-src/video/*/.hyperframes/
+
+# The REAPER theme generator writes its images and zips here (tools/theme/build.py).
+theme/build/
