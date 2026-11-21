@@ -93,6 +93,35 @@ def fir():
 
 
 # ---------------------------------------------------------------------------------------------
+@plugin("comp", 43)
+def comp():
+    W, H = 934, 547
+    teal = "#00A985"
+    # The Options page from CI run 44930852915 (Wave 1), saved beside this script.
+    image = "../../design/phase4-mockup-src/img/comp-options-w1.png"
+    detector = ('<div class="cover" style="left:129px;top:86px;width:131px;height:24px;--bg:#262626"></div>'
+                '<div class="o new dd" style="left:129px;top:86px;width:131px;height:24px">Host sync</div>')
+    group = (
+        '<div class="o new" style="left:236px;top:366px;width:250px;height:110px"></div>'
+        '<div class="o cap" style="left:240px;top:370px;font-size:10px;letter-spacing:.06em">HOST SYNC</div>'
+        '<div class="o lbl" style="left:240px;top:390px;line-height:24px">Rate</div>'
+        '<div class="o dd" style="left:284px;top:390px;width:100px;height:24px">1/4</div>'
+        + w1.tight(410, 372, "Shape", "25 %", teal, 0.2) +
+        '<div class="o cap" style="left:240px;top:422px;width:160px;white-space:normal;line-height:1.35">'
+        'A hit on every step of the host&rsquo;s grid. Release shapes the duck most.</div>'
+    )
+    return w1.page("Fancy Comp: Phase 4 Wave 2 mockup", "docs/comp.md, Phase 4 Wave 2: tempo-synced trigger, Decision 3 A. New things in dashed yellow, on the plugin's real screenshot (1x coordinates).", [
+        ("Host sync on the Options page",
+         "Host sync is appended to the Detector input menu (here chosen). While it's chosen, the Options page shows a HOST SYNC group in the free space under the checkboxes: "
+         "Rate (1/1 to 1/16, each also dotted and triplet; 1/4 by default) and Shape (5 to 100 % of the step, 25 % by default), a small knob. "
+         "The detector then hears a virtual kick on the host's grid, so Threshold, Ratio, Attack, Release, Hold and Range shape the duck as they would with a real kick.",
+         w1.shot(image, W, H, detector + group,
+                 "With another Detector input the group is hidden and the page is as now. Without host tempo the caption reads \"No host tempo: 120 BPM\". "
+                 "The History page's beat lines line up with the hits.")),
+    ])
+
+
+# ---------------------------------------------------------------------------------------------
 def render(key):
     number, fn = PLUGINS[key]
     html = w1.SRC / f"w2-{key}.html"

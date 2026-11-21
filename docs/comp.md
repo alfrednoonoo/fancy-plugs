@@ -379,7 +379,7 @@ Push 1 (`2991726`) holds the whole item. The model is `docs/research/comp-w1-mod
 
 ## Phase 4 Wave 2: tempo-synced trigger
 
-**Draft, for approval.** Backlog item 9 of `docs/enhancements.md` section 3, next in the Wave 2 order (Gate's follows it and Kicker's Duck will use the same trigger). Comp ducks on the host's beat grid with no sidechain kick, as Pro-C 3's Host Sync does. Modelled first: `docs/research/comp-sync-model.py`.
+**Approved by the user on 21 November 2026 with every recommended option (A).** Backlog item 9 of `docs/enhancements.md` section 3, next in the Wave 2 order (Gate's follows it and Kicker's Duck will use the same trigger). Comp ducks on the host's beat grid with no sidechain kick, as Pro-C 3's Host Sync does. Modelled first: `docs/research/comp-sync-model.py`.
 
 ### 1. What it does
 
