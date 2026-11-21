@@ -1,0 +1,37 @@
+name: reaper-theme
+
+# Builds the Fancy Plugs theme for REAPER (docs/reaper-theme.md) and uploads it with its install
+# notes, palette action and fonts as reaper-theme-<sha>. Separate from the plugin build, which
+# ignores these paths; the theme isn't part of the plugin release zips.
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'theme/**'
+      - 'tools/theme/**'
+      - '.github/workflows/theme.yml'
+  workflow_dispatch:
+
+jobs:
+  theme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Build the theme
+        run: |
+          pip install -r tools/theme/requirements.txt
+          python tools/theme/build.py
+      - name: Gather the files
+        run: |
+          mkdir -p out/fonts
+          cp "theme/build/Fancy Plugs.ReaperThemeZip" out/
+          cp "theme/Fancy Plugs - Colour tracks.lua" theme/README.md out/
+          cp theme/fonts/* out/fonts/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: reaper-theme-${{ github.sha }}
+          path: out/

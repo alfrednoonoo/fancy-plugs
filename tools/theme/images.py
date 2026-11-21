@@ -690,6 +690,16 @@ def tcp_vu(scale):
     return img
 
 
+# FX list slots in the mixer (and the track panel, when the user shows FX there): a dark rounded
+# well per FX, as in the mockup; dimmer when bypassed, dark red when offline, faint when empty.
+FXLIST = {
+    "norm": WELL, "byp": "#1C1C1C", "off": "#2E1715", "empty": (0, 0, 0, 48),
+}
+for _panel in ("mcp", "tcp"):
+    for _state, _fill in FXLIST.items():
+        IMAGES[f"{_panel}_fxlist_{_state}"] = rounded_bg(_fill)
+
+
 METERS = {"mcp_vu": mcp_vu, "mcp_master_vu": mcp_master_vu, "tcp_vu": tcp_vu}
 IMAGES.update(METERS)
 ONLY_100 = set(METERS)

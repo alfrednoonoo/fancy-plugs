@@ -1,4 +1,13 @@
-# REAPER theme: checklist (Stage A)
+# REAPER theme: checklist
+
+The stages were checked as separate previews; since 21 November 2026 they are one theme, **Fancy Plugs** (`Fancy Plugs.ReaperThemeZip`). The sections below keep the stage-by-stage checks as they were done.
+
+## The main theme
+
+- [ ] Pick **Fancy Plugs** under Options > Themes: everything looks as in the Stage C preview (track panel, mixer, master, transport, meters, toolbar, Compact layouts).
+- [ ] With the mixer tall enough, the FX list shows each FX on a dark rounded slot; a bypassed FX's slot is dimmer, empty slots faint. 📷
+
+## Stage A
 
 For the user, in REAPER 7.86 at 125 %. Install as in `theme/README.md`. Send a screenshot for each item marked 📷, and note anything that looks wrong.
 

@@ -14,6 +14,7 @@ on:
       - 'theme/**'
       - 'tools/theme/**'
       - '.github/workflows/pages.yml'
+      - '.github/workflows/theme.yml'
   workflow_dispatch:
     inputs:
       plugin:
