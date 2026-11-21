@@ -63,8 +63,17 @@ struct Ballistics
         linearRelease = linearReleaseOn;
     }
 
+    // Fancy Comp's Hold (docs/comp.md, Phase 4 Wave 1): the release waits this many samples
+    // after the last one where the target was at or above the envelope. 0, the default, leaves
+    // the follower exactly as it was, so the plugins that never set it are unchanged.
+    void setHold (double holdMs, double sampleRate) noexcept
+    {
+        hold = holdMs > 0.0 ? std::max (1, (int) std::lround (holdMs * 0.001 * sampleRate)) : 0;
+    }
+
     double attack = 1.0, release = 1.0, fastRelease = 1.0, linearStep = 1.0;
     bool autoRelease = false, linearRelease = false;
+    int hold = 0;
 };
 
 // Attack towards a higher target, release towards a lower one. Auto release runs at a tenth
@@ -74,10 +83,25 @@ struct EnvelopeFollower
     void reset() noexcept
     {
         envelope = slowEnvelope = 0.0;
+        holdCount = 0;
     }
 
     double follow (const Ballistics& times, double target) noexcept
     {
+        if (times.hold > 0)
+        {
+            // Hold: both release stages wait while the countdown runs.
+            if (target >= envelope)
+            {
+                holdCount = times.hold;
+            }
+            else if (holdCount > 0)
+            {
+                --holdCount;
+                return envelope;
+            }
+        }
+
         if (target > envelope)
             envelope += times.attack * (target - envelope);
         else if (times.autoRelease)
@@ -94,6 +118,7 @@ struct EnvelopeFollower
     }
 
     double envelope = 0.0, slowEnvelope = 0.0;
+    int holdCount = 0;
 };
 
 } // namespace fancy::dsp

@@ -127,6 +127,11 @@ public:
     void setListening (bool shouldListen) noexcept { listening.store (shouldListen, std::memory_order_relaxed); }
     bool isListeningSwitchOn() const noexcept { return listening.load (std::memory_order_relaxed); }
 
+    // Which listen a plugin with more than one plays (Fancy Comp: 0 Preview filter, 1 Listen to
+    // removed). Every other plugin leaves it at 0. Not saved, like the switch.
+    void setListenTarget (int target) noexcept { listenTarget.store (target, std::memory_order_relaxed); }
+    int getListenTarget() const noexcept { return listenTarget.load (std::memory_order_relaxed); }
+
     // What the audio follows: the switch, while an editor is open.
     bool isListening() const noexcept
     {
@@ -156,6 +161,7 @@ private:
     juce::String name;
     std::atomic<int> edits { 0 };
     std::atomic<bool> listening { false };
+    std::atomic<int> listenTarget { 0 };
     std::atomic<int> openEditors { 0 };
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presets;

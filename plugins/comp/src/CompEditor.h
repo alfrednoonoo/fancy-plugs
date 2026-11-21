@@ -3,6 +3,7 @@
 #include "CompGraphs.h"
 #include "CompProcessor.h"
 
+#include <fancy/ui/LevelHistory.h>
 #include <fancy/ui/Meter.h>
 #include <fancy/ui/ShellEditor.h>
 
@@ -29,6 +30,7 @@ private:
     void onTick (float seconds) override;
     void showTab (int tab);
     void updateDimming();
+    void updateHistoryCaption();
     CompParameters makeParameters();
 
     Panels panels;
@@ -44,7 +46,7 @@ private:
     fancy::ui::ParamCheckbox weirdCheckbox, classicCheckbox, autoCheckbox;
     fancy::ui::Knob preCompKnob, rmsKnob, lowpassKnob, highpassKnob;
     fancy::ui::ParamCheckbox linkCheckbox, makeupCheckbox;
-    fancy::ui::ListenCheckbox previewCheckbox;
+    fancy::ui::ListenCheckbox previewCheckbox, removedCheckbox;
     fancy::ui::ParamCheckbox limitCheckbox;
 
     fancy::ui::OutMeter outMeter;
@@ -74,6 +76,15 @@ private:
     fancy::ui::ParamCheckbox upwardCheckbox;
     fancy::ui::Knob upThresholdKnob, upRatioKnob, maxLiftKnob, floorKnob;
     UpwardCurve upwardCurve;
+
+    // Phase 4 Wave 1: Hold and Range on the Options page, and the History page.
+    fancy::ui::Knob holdKnob, rangeKnob;
+    DrawerTabs zoomSwitch;
+    fancy::ui::ToggleCheckbox gridCheckbox;
+    HistoryCaption historyCaption;
+    fancy::ui::LevelHistory levelHistory;
+    std::vector<fancy::dsp::LevelColumn> historyBuffer;
+    float shownPeak = -1.0f;
 
     std::vector<juce::Component*> tabContents[DrawerTabs::numTabs];
     juce::String graphSignature;

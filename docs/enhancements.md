@@ -104,7 +104,7 @@ The most complete plugin in the set; the gaps are the standard ones.
 | 7 | Sidechain EQ from 3 to 6 bands, with shelf and brickwall cut types | M | 2 | Detector page; three new bands |
 | 8 | Link modes Stereo / M>S / S>M beyond Link % | M | 2 | Options page; `linkMode` |
 | 9 | Tempo-synced trigger: duck on a host-tempo pattern with no sidechain kick (Pro-C 3's Host Sync) | M | 2 | Detector menu; `syncRate`, `syncShape` |
-| 10 | Optical mode: a third ballistics mode beside the default and Classic, with signal-dependent attack, a two-stage release and a memory that slows recovery after long reduction (Woodstock Audio's Waveform Compressor; added by the user on 21 November 2026, overriding the 17 November \"style models\" removal for ballistics only) | M | 2 | Options page; appended to the mode choice or a new `optical` |
+| 10 | Optical mode: a third ballistics mode beside the default and Classic, with signal-dependent attack, a two-stage release and a memory that slows recovery after long reduction (Woodstock Audio's Waveform Compressor; added by the user on 21 November 2026, overriding the 17 November "style models" removal for ballistics only) | M | 2 | Options page; appended to the mode choice or a new `optical` |
 
 ## 4. Fancy EQ
 

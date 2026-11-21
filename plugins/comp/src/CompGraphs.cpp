@@ -35,9 +35,19 @@ juce::Font smallFont (float height = 10.0f)
 
 // DrawerTabs ------------------------------------------------------------------
 
+DrawerTabs::DrawerTabs()
+    : DrawerTabs (juce::StringArray { "Detector", "Character", "Upward", "Options", "History" })
+{
+}
+
+DrawerTabs::DrawerTabs (juce::StringArray tabNames)
+    : names (std::move (tabNames))
+{
+}
+
 void DrawerTabs::setSelected (int tab)
 {
-    tab = juce::jlimit (0, numTabs - 1, tab);
+    tab = juce::jlimit (0, names.size() - 1, tab);
 
     if (tab != selected)
     {
@@ -49,20 +59,18 @@ void DrawerTabs::setSelected (int tab)
 juce::Rectangle<float> DrawerTabs::tabBounds (int index) const
 {
     const auto area = getLocalBounds().toFloat().reduced (3.0f);
-    const auto width = area.getWidth() / (float) numTabs;
+    const auto width = area.getWidth() / (float) juce::jmax (1, names.size());
     return area.withX (area.getX() + (float) index * width).withWidth (width);
 }
 
 void DrawerTabs::paint (juce::Graphics& g)
 {
-    static const char* const names[] { "Detector", "Character", "Upward", "Options" };
-
     g.setColour (colours::bgWell);
     g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);
 
     g.setFont (font (Weight::regular, 12.0f));
 
-    for (int i = 0; i < numTabs; ++i)
+    for (int i = 0; i < names.size(); ++i)
     {
         const auto area = tabBounds (i);
 
@@ -79,7 +87,7 @@ void DrawerTabs::paint (juce::Graphics& g)
 
 void DrawerTabs::mouseDown (const juce::MouseEvent& event)
 {
-    for (int i = 0; i < numTabs; ++i)
+    for (int i = 0; i < names.size(); ++i)
     {
         if (tabBounds (i).contains (event.position) && i != selected)
         {
@@ -89,6 +97,31 @@ void DrawerTabs::mouseDown (const juce::MouseEvent& event)
                 onChange (i);
         }
     }
+}
+
+// HistoryCaption --------------------------------------------------------------
+
+void HistoryCaption::setText (const juce::String& newText, bool isPaused)
+{
+    if (newText != text || isPaused != paused)
+    {
+        text = newText;
+        paused = isPaused;
+        repaint();
+    }
+}
+
+void HistoryCaption::paint (juce::Graphics& g)
+{
+    g.setFont (font (Weight::regular, 12.0f));
+    g.setColour (paused ? colours::textSecondary : juce::Colour (0xffffcf07));
+    g.drawText (text, getLocalBounds().toFloat(), juce::Justification::centredRight, false);
+}
+
+void HistoryCaption::mouseDown (const juce::MouseEvent& event)
+{
+    if (! event.mods.isPopupMenu() && onClick != nullptr)
+        onClick();
 }
 
 // CompParameters --------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 #include <fancy/dsp/Compression.h>
 #include <fancy/dsp/Detector.h>
+#include <fancy/dsp/LevelHistory.h>
 #include <fancy/dsp/MatchedFilters.h>
 #include <fancy/dsp/Saturation.h>
 #include <fancy/dsp/Smoother.h>
@@ -12,6 +13,7 @@
 
 #include <array>
 #include <atomic>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -82,6 +84,19 @@ public:
         std::array<EqBandTargets, numEqBands> eq { EqBandTargets { 100.0, 0.0, 0.70710678118654752 },
                                                    EqBandTargets { 1000.0, 0.0, 1.0 },
                                                    EqBandTargets { 8000.0, 0.0, 0.70710678118654752 } };
+
+        // Phase 4 Wave 1 (docs/comp.md). Hold 0 and Range 0 (Off) leave the path as it was.
+        double holdMs = 0.0;
+        double rangeDb = 0.0;
+        bool listenRemoved = false;
+    };
+
+    // The host's transport, for the history's beat and bar lines. Set once per block.
+    struct Transport
+    {
+        bool playing = false;
+        double ppq = 0.0, bpm = 0.0, barStartPpq = 0.0;
+        int numerator = 4, denominator = 4;
     };
 
     CompDsp();
@@ -96,6 +111,11 @@ public:
     void snapToTargets (const Targets& targets);
 
     void process (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples);
+
+    void setTransport (const Transport& newTransport) noexcept { transport = newTransport; }
+
+    // The level history's columns made since the last call (the editor's timer).
+    int popHistory (fancy::dsp::LevelColumn* destination, int maxColumns) noexcept { return history.pop (destination, maxColumns); }
 
     int getLatencySamples() const noexcept { return activeLatency; }
 
@@ -205,6 +225,7 @@ private:
     int preCompPosition = 0, dryPosition = 0;
 
     fancy::dsp::Ballistics ballistics;
+    fancy::dsp::Ballistics upBallistics; // the lift's: the same times without Hold
     double rmsCoefficient = 1.0;
     double maxDetectorCoefficient = 1.0;
 
@@ -228,6 +249,17 @@ private:
     double longTermPower = 0.0, gatePower = 0.0;
     double longTermCoefficient = 0.0, gateCoefficient = 0.0;
     int autoCountdown = 0;
+
+    // Phase 4 Wave 1.
+    std::uint8_t markFor (double blockSample) noexcept;
+
+    fancy::dsp::Smoother rangeLimit, removedAmount, removedMix;
+    bool rangeOn = false;
+    fancy::dsp::LevelHistoryRecorder history;
+    Transport transport;
+    int chunkOffset = 0;
+    std::int64_t lastBeat = 0;
+    bool haveLastBeat = false;
 
     std::array<std::atomic<float>, 2> gainReduction {};
     std::atomic<float> autoOffsetDisplay { 0.0f }, levelDisplay { -100.0f }, liftDisplay { 0.0f };

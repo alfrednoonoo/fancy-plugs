@@ -10,12 +10,15 @@
 // The EDIT drawer's view switch and its three small graphs (Phase 3 Q2.5, docs/comp.md
 // section 6, reference/phase3/23__comp_q25_mockup.png).
 
-// Detector | Character | Upward | Options. Styled as ParamSegments, but a view switch, not a
-// parameter.
+// Detector | Character | Upward | Options | History. Styled as ParamSegments, but a view switch,
+// not a parameter. Other names make other view switches, such as the history's zoom.
 class DrawerTabs final : public juce::Component
 {
 public:
-    enum Tab { detector, character, upward, options, numTabs };
+    enum Tab { detector, character, upward, options, history, numTabs };
+
+    DrawerTabs();
+    explicit DrawerTabs (juce::StringArray names);
 
     void setSelected (int tab);
     int getSelected() const noexcept { return selected; }
@@ -28,7 +31,24 @@ public:
 private:
     juce::Rectangle<float> tabBounds (int index) const;
 
+    juce::StringArray names;
     int selected = detector;
+};
+
+// The history page's read-out (docs/comp.md, Phase 4 Wave 1, section 5): the largest reduction
+// in view, in the GR meter's yellow, or "paused" while the history is. A click calls onClick.
+class HistoryCaption final : public juce::Component
+{
+public:
+    void setText (const juce::String& newText, bool isPaused);
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+    std::function<void()> onClick;
+
+private:
+    juce::String text;
+    bool paused = false;
 };
 
 // Reads parameter values in their own units.

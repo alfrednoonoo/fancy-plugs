@@ -197,7 +197,7 @@ bool renderEq (const juce::File& outputDir)
 #endif
 
 #if FANCY_HAS_COMP
-// Phase 3 Q2.5: the EDIT drawer's four tabs, with the mockup's values.
+// Phase 3 Q2.5 and Phase 4 Wave 1: the EDIT drawer's five tabs, with the mockups' values.
 bool renderCompDrawer (const juce::File& outputDir)
 {
     CompProcessor processor;
@@ -208,7 +208,7 @@ bool renderCompDrawer (const juce::File& outputDir)
         return false;
 
     auto ok = true;
-    const char* const names[] { "comp-detector", "comp-character", "comp-upward", "comp-options" };
+    const char* const names[] { "comp-detector", "comp-character", "comp-upward", "comp-options", "comp-history" };
 
     for (int tab = 0; tab < DrawerTabs::numTabs; ++tab)
     {

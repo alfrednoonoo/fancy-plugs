@@ -26,8 +26,12 @@ public:
     float getDisplayLevel() const noexcept { return dsp.getDisplayLevel(); }
     float getDisplayLift() const noexcept { return dsp.getDisplayLift(); }
 
+    // Phase 4 Wave 1: the level history's new columns.
+    int popHistory (fancy::dsp::LevelColumn* destination, int maxColumns) noexcept { return dsp.popHistory (destination, maxColumns); }
+
 private:
     CompDsp::Targets readTargets();
+    CompDsp::Transport readTransport();
     float read (const char* id);
     bool isOn (const char* id);
 

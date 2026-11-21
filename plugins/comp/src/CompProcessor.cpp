@@ -7,6 +7,9 @@ namespace
 {
 constexpr float mixFloorDb = -60.0f;
 
+// Range's top position, shown and typed as "Off": no cap (docs/comp.md, Phase 4 Wave 1).
+constexpr float rangeOffDb = 41.0f;
+
 juce::NormalisableRange<float> skewedRange (float high, float interval, float centre)
 {
     juce::NormalisableRange<float> range (0.0f, high, interval);
@@ -162,6 +165,16 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (hzParameter ("scHighFreq", "SC high freq", 1000.0f, 20000.0f, 8000.0f));
     layout.add (gainParameter ("scHighGain", "SC high gain", -18.0f, 18.0f, 0.0f));
 
+    // Phase 4 Wave 1, appended (docs/comp.md). Hold 0 and Range Off leave the sound as it was.
+    layout.add (timeParameter ("hold", "Hold", 500.0f, 50.0f, 0.0f));
+    layout.add (fancy::floatParameter (
+        "range", "Range", juce::NormalisableRange<float> (1.0f, rangeOffDb, 0.1f), rangeOffDb,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("dB")
+            .withStringFromValueFunction ([] (float value, int) { return value >= rangeOffDb - 0.05f ? juce::String ("Off") : fancy::formatFixed (value, 1) + " dB"; })
+            .withValueFromStringFunction ([] (const juce::String& text)
+                                          { return text.trim().equalsIgnoreCase ("off") ? rangeOffDb : juce::jlimit (1.0f, rangeOffDb, std::abs (fancy::parseNumber (text))); })));
+
     return layout;
 }
 
@@ -247,7 +260,10 @@ CompDsp::Targets CompProcessor::readTargets()
     targets.linkChannels = isOn ("link");
     targets.feedback = isOn ("feedback");
     targets.autoMakeup = isOn ("makeup");
-    targets.previewFilter = isListening();
+    // Two listens share the switch (Phase 4 Wave 1): 0 Preview filter, 1 Listen to removed.
+    const auto listening = isListening();
+    targets.previewFilter = listening && getListenTarget() == 0;
+    targets.listenRemoved = listening && getListenTarget() == 1;
     targets.limitOutput = isOn ("limit");
     targets.bypass = isOn ("bypass");
 
@@ -271,6 +287,10 @@ CompDsp::Targets CompProcessor::readTargets()
     }
 
     targets.eq[(size_t) CompDsp::bell].q = (double) read ("scMidQ");
+
+    targets.holdMs = (double) read ("hold");
+    const auto range = read ("range");
+    targets.rangeDb = range >= rangeOffDb - 0.05f ? 0.0 : (double) range;
     return targets;
 }
 
@@ -326,12 +346,46 @@ void CompProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBu
     sidechainWatch.update (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples, getSampleRate(), sidechainChosen);
 
     dsp.setTargets (targets);
+    dsp.setTransport (readTransport());
     dsp.process (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples);
 
     outputMeter.push (main, numChannels, numSamples);
 
     if (getLatencySamples() != dsp.getLatencySamples())
         setLatencySamples (dsp.getLatencySamples());
+}
+
+// The host's position, for the history's beat and bar lines. Stopped or unknown, none.
+CompDsp::Transport CompProcessor::readTransport()
+{
+    CompDsp::Transport transport;
+
+    if (auto* playHead = getPlayHead())
+    {
+        if (const auto position = playHead->getPosition())
+        {
+            transport.playing = position->getIsPlaying();
+
+            if (const auto ppq = position->getPpqPosition())
+                transport.ppq = *ppq;
+            else
+                transport.playing = false;
+
+            if (const auto bpm = position->getBpm())
+                transport.bpm = *bpm;
+
+            if (const auto barStart = position->getPpqPositionOfLastBarStart())
+                transport.barStartPpq = *barStart;
+
+            if (const auto signature = position->getTimeSignature())
+            {
+                transport.numerator = signature->numerator;
+                transport.denominator = signature->denominator;
+            }
+        }
+    }
+
+    return transport;
 }
 
 juce::AudioProcessorEditor* CompProcessor::createEditor()

@@ -318,7 +318,9 @@ private:
 class ListenCheckbox final : public juce::Component, public juce::SettableTooltipClient, private juce::Timer
 {
 public:
-    ListenCheckbox (FancyProcessor& processor, const juce::String& label, juce::Colour accent = colours::uiTeal);
+    // With more than one listen (FancyProcessor::setListenTarget), each checkbox has its own
+    // target: it shows on only while its target plays, and switching it on switches the others off.
+    ListenCheckbox (FancyProcessor& processor, const juce::String& label, juce::Colour accent = colours::uiTeal, int target = 0);
 
     void setLabelHeight (float height);
     bool isOn() const noexcept;
@@ -334,8 +336,30 @@ private:
     FancyProcessor& processor;
     juce::String labelText;
     juce::Colour accentColour;
+    int listenTarget = 0;
     float labelHeight = 14.0f;
     bool shownOn = false;
+};
+
+// A checkbox that isn't a parameter, drawn as ParamCheckbox is: a view setting such as the
+// level history's Grid.
+class ToggleCheckbox final : public juce::Component
+{
+public:
+    ToggleCheckbox (const juce::String& label, juce::Colour accent = colours::uiTeal);
+
+    void setOn (bool shouldBeOn);
+    bool isOn() const noexcept { return on; }
+
+    std::function<void (bool)> onChange;
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+private:
+    juce::String labelText;
+    juce::Colour accentColour;
+    bool on = false;
 };
 
 // Adds a line to a control's tooltip for settings that change the plugin's latency, because

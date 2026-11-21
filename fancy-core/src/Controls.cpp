@@ -935,9 +935,10 @@ void ParamCheckbox::paint (juce::Graphics& g)
 
 // ListenCheckbox --------------------------------------------------------------
 
-ListenCheckbox::ListenCheckbox (FancyProcessor& owner, const juce::String& label, juce::Colour accent)
-    : processor (owner), labelText (label), accentColour (accent), shownOn (owner.isListeningSwitchOn())
+ListenCheckbox::ListenCheckbox (FancyProcessor& owner, const juce::String& label, juce::Colour accent, int target)
+    : processor (owner), labelText (label), accentColour (accent), listenTarget (target)
 {
+    shownOn = isOn();
     startTimerHz (10);
 }
 
@@ -949,12 +950,21 @@ void ListenCheckbox::setLabelHeight (float height)
 
 bool ListenCheckbox::isOn() const noexcept
 {
-    return processor.isListeningSwitchOn();
+    return processor.isListeningSwitchOn() && processor.getListenTarget() == listenTarget;
 }
 
 void ListenCheckbox::click()
 {
-    processor.setListening (! isOn());
+    if (isOn())
+    {
+        processor.setListening (false);
+    }
+    else
+    {
+        processor.setListenTarget (listenTarget);
+        processor.setListening (true);
+    }
+
     timerCallback();
 }
 
@@ -978,6 +988,40 @@ void ListenCheckbox::paint (juce::Graphics& g)
     const auto bounds = getLocalBounds().toFloat();
     paintCheckboxBox (g, bounds, isOn(), accentColour);
     paintCheckboxLabel (g, bounds, labelText, labelHeight);
+}
+
+// ToggleCheckbox --------------------------------------------------------------
+
+ToggleCheckbox::ToggleCheckbox (const juce::String& label, juce::Colour accent)
+    : labelText (label), accentColour (accent)
+{
+}
+
+void ToggleCheckbox::setOn (bool shouldBeOn)
+{
+    if (on != shouldBeOn)
+    {
+        on = shouldBeOn;
+        repaint();
+    }
+}
+
+void ToggleCheckbox::mouseDown (const juce::MouseEvent& event)
+{
+    if (event.mods.isPopupMenu())
+        return;
+
+    setOn (! on);
+
+    if (onChange != nullptr)
+        onChange (on);
+}
+
+void ToggleCheckbox::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    paintCheckboxBox (g, bounds, on, accentColour);
+    paintCheckboxLabel (g, bounds, labelText, 13.0f);
 }
 
 // PowerPill -------------------------------------------------------------------

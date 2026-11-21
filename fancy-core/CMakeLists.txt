@@ -30,6 +30,7 @@ target_sources(fancy_ui INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}/src/MatchedFilters.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/DeEsser.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/DeEsserHistory.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/LevelHistory.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/SwitchedOversampler.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ShellEditor.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/WorkflowControls.cpp")

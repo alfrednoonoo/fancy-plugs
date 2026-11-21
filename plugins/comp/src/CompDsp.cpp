@@ -29,6 +29,9 @@ constexpr double autoOffsetMs = 50.0;
 constexpr int autoUpdateSamples = 16;
 constexpr int eqUpdateSamples = 16;
 
+// Phase 4 Wave 1 (docs/comp.md).
+constexpr double listenFadeMs = 10.0;
+
 using fancy::dsp::timeCoefficient;
 
 double dbToGain (double db) noexcept
@@ -217,6 +220,7 @@ void CompDsp::prepare (double newSampleRate)
     bypass.setTime (10.0, sampleRate);
     limiterAmount.setTime (10.0, sampleRate);
     switchGain.setTime (switchFadeMs, sampleRate);
+    removedMix.setTime (listenFadeMs, sampleRate);
 
     reset();
 }
@@ -231,6 +235,8 @@ void CompDsp::setNewSmootherTimes() noexcept
             smoother->setTime (parameterMs, internalRate);
 
     characterAmount.setTime (characterFadeMs, internalRate);
+    rangeLimit.setTime (parameterMs, internalRate);
+    removedAmount.setTime (listenFadeMs, internalRate);
     autoOffset.setTime (autoOffsetMs, internalRate);
 
     longTermCoefficient = timeCoefficient (autoAverageMs, internalRate);
@@ -254,6 +260,20 @@ void CompDsp::setNewTargets (const Targets& targets) noexcept
 
     if (! targets.autoThreshold)
         autoOffset.setTarget (0.0);
+
+    // Range: a cap on the reduction. Switching it on starts at its value; moves are smoothed.
+    const auto wantRange = targets.rangeDb > 0.0;
+
+    if (wantRange && ! rangeOn)
+        rangeLimit.snapTo (targets.rangeDb);
+
+    rangeOn = wantRange;
+
+    if (wantRange)
+        rangeLimit.setTarget (targets.rangeDb);
+
+    removedAmount.setTarget (targets.listenRemoved ? 1.0 : 0.0);
+    removedMix.setTarget (targets.listenRemoved ? 1.0 : 0.0);
 
     // Character: a change of Type or Position fades the stage out, switches, and fades in.
     const auto wanted = targets.character;
@@ -360,6 +380,9 @@ void CompDsp::resetCore()
     autoOffset.snapTo (0.0);
     autoOffsetDisplay.store (0.0f, std::memory_order_relaxed);
 
+    history.restart();
+    haveLastBeat = false;
+
     limiter.reset();
     dryPosition = 0;
     preCompPosition = 0;
@@ -373,6 +396,11 @@ void CompDsp::reset()
 void CompDsp::updateBallistics() noexcept
 {
     ballistics.set (current.attackMs, current.releaseMs, current.attack90, current.autoRelease, current.linearRelease, internalRate);
+
+    // Hold is the reduction's only: the lift keeps the same times without it.
+    upBallistics = ballistics;
+    upBallistics.hold = 0;
+    ballistics.setHold (current.holdMs, internalRate);
 }
 
 void CompDsp::setTargets (const Targets& targets)
@@ -382,7 +410,13 @@ void CompDsp::setTargets (const Targets& targets)
     threshold.setTarget (targets.thresholdDb);
     slope.setTarget (slopeFor (targets.ratio));
     knee.setTarget (targets.kneeDb);
-    makeup.setTarget (targets.autoMakeup ? 0.5 * slopeFor (targets.ratio) * -targets.thresholdDb : 0.0);
+    // Auto make-up with Range on counts only what Range lets Comp take off (Decision 1 A).
+    if (! targets.autoMakeup)
+        makeup.setTarget (0.0);
+    else if (targets.rangeDb > 0.0)
+        makeup.setTarget (0.5 * std::min (targets.rangeDb, slopeFor (targets.ratio) * -targets.thresholdDb));
+    else
+        makeup.setTarget (0.5 * slopeFor (targets.ratio) * -targets.thresholdDb);
     rms.setTarget (targets.rmsMs);
     previewAmount.setTarget (targets.previewFilter ? 1.0 : 0.0);
 
@@ -418,6 +452,7 @@ void CompDsp::applyConfig (const Config& config)
     maxDetectorCoefficient = config.oversampling == off ? 1.0 : timeCoefficient (minDetectorAverageMs, internalRate);
 
     setNewSmootherTimes();
+    history.prepare (internalRate);
     resetCore();
     setTargets (current);
 
@@ -448,7 +483,8 @@ void CompDsp::snapToTargets (const Targets& targets)
 
     for (auto* smoother : { &threshold, &slope, &knee, &makeup, &rms, &previewAmount, &lowPassAmount, &highPassAmount, &logLowPass, &logHighPass,
                             &wet, &dry, &output, &bypass, &limiterAmount,
-                            &upThreshold, &upSlope, &maxLift, &upFloor, &drive, &characterAmount })
+                            &upThreshold, &upSlope, &maxLift, &upFloor, &drive, &characterAmount,
+                            &rangeLimit, &removedAmount, &removedMix })
         smoother->snapToTarget();
 
     for (auto& band : eqSmoothers)
@@ -513,6 +549,8 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
 
     double peakReduction[2] { 0.0, 0.0 };
     auto peakLift = 0.0;
+    auto historyIn = 0.0, historyOut = 0.0;
+    double historyReduction[2] { 0.0, 0.0 };
     auto lastLevel = -100.0;
 
     for (int i = 0; i < numSamples; ++i)
@@ -649,6 +687,10 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             }
         }
 
+        // Phase 4 Wave 1: Range's cap and the Listen to removed fade.
+        const auto rangeDbNow = rangeOn ? rangeLimit.next() : 0.0;
+        const auto removedNow = removedAmount.next();
+
         const auto offsetDb = autoOffset.next();
         const auto effectiveThreshold = offsetDb == 0.0 ? thresholdDb : thresholdDb + offsetDb;
 
@@ -670,10 +712,18 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
                 const auto smoothed = state.follower.follow (ballistics, std::max (level[ch], kneeFloorDb) - kneeFloorDb) + kneeFloorDb;
 
                 reduction = computeReduction (smoothed, effectiveThreshold, slopeNow, kneeDb, current.weirdKnee);
+
+                if (rangeOn)
+                    reduction = std::min (reduction, rangeDbNow);
             }
             else
             {
-                reduction = state.follower.follow (ballistics, computeReduction (level[ch], effectiveThreshold, slopeNow, kneeDb, current.weirdKnee));
+                auto target = computeReduction (level[ch], effectiveThreshold, slopeNow, kneeDb, current.weirdKnee);
+
+                if (rangeOn)
+                    target = std::min (target, rangeDbNow);
+
+                reduction = state.follower.follow (ballistics, target);
             }
 
             peakReduction[ch] = std::max (peakReduction[ch], reduction);
@@ -691,7 +741,7 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
                         level[ch], effectiveThreshold,
                         { upThresholdDb + offsetDb, fancy::dsp::upward::ratioFromSlope (upSlopeNow), maxLiftDb, floorDb });
 
-                lift = state.upFollower.follow (ballistics, liftTarget);
+                lift = state.upFollower.follow (upBallistics, liftTarget);
 
                 if (! current.upward && lift < 1.0e-6)
                     lift = state.upFollower.envelope = 0.0;
@@ -702,16 +752,36 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             state.preCompDelay[(size_t) writePosition] = signal[ch][i];
             const auto delayed = (double) state.preCompDelay[(size_t) readPosition];
 
-            const auto gain = lift == 0.0 ? std::pow (10.0, -reduction / 20.0) * makeupGain
-                                          : std::pow (10.0, (lift - reduction) / 20.0) * makeupGain;
+            const auto reductionGain = std::pow (10.0, -reduction / 20.0);
+            const auto unityGain = lift == 0.0 ? reductionGain : std::pow (10.0, (lift - reduction) / 20.0);
+            const auto gain = unityGain * makeupGain;
             auto compressed = delayed * gain;
 
             if (characterOn && activeCharacterPost)
                 compressed = state.character.process (compressed, driveGain, characterMix);
 
             state.previousOutput = compressed;
-            signal[ch][i] = (float) (compressed + (filtered[ch] - compressed) * preview);
+
+            auto out = compressed + (filtered[ch] - compressed) * preview;
+
+            // Listen to removed: what the downward compression took off, before make-up, lift
+            // and Character (Decision 2 A).
+            if (removedNow != 0.0)
+                out += (delayed * (1.0 - reductionGain) - out) * removedNow;
+
+            signal[ch][i] = (float) out;
+
+            // The history: the delayed input against it after the gain, before make-up.
+            historyIn = std::max (historyIn, std::abs (delayed));
+            historyOut = std::max (historyOut, std::abs (delayed * unityGain));
+            historyReduction[ch] = reduction;
         }
+
+        history.add ((float) historyIn, (float) historyOut, (float) historyReduction[0], (float) historyReduction[1], (float) effectiveThreshold);
+        historyIn = historyOut = 0.0;
+
+        if (history.columnDue())
+            history.finishColumn (markFor ((double) chunkOffset + (double) i / (double) factor));
     }
 
     preCompPosition = (preCompPosition + numSamples) % preCompLength;
@@ -745,6 +815,7 @@ void CompDsp::process (float* const* main, int numMain, const float* const* side
 void CompDsp::processChunk (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int offset, int numSamples)
 {
     updateConfig (numSamples);
+    chunkOffset = offset;
 
     const auto dryDelayLength = activeLatency - (activeConfig.limiter ? limiter.getLatencySamples() : 0);
 
@@ -805,6 +876,7 @@ void CompDsp::processChunk (float* const* main, int numMain, const float* const*
         const auto bypassAmount = bypass.next();
         const auto limit = limiterAmount.next();
         const auto fade = switchGain.next();
+        const auto removedBlend = removedMix.next();
         const auto readPosition = (dryPosition + i + dryLength - dryDelayLength) % dryLength;
 
         double out[2];
@@ -812,7 +884,11 @@ void CompDsp::processChunk (float* const* main, int numMain, const float* const*
         for (int ch = 0; ch < 2; ++ch)
         {
             const auto delayedDry = (double) channels[(size_t) ch].dryDelay[(size_t) readPosition];
-            const auto mixed = ((double) mainBuffer.getSample (ch, i) * wetGain + delayedDry * dryGain) * outputGain;
+            auto mixed = ((double) mainBuffer.getSample (ch, i) * wetGain + delayedDry * dryGain) * outputGain;
+
+            // Listen to removed plays the removed part alone: Wet, Dry and Output don't apply.
+            if (removedBlend != 0.0)
+                mixed += ((double) mainBuffer.getSample (ch, i) - mixed) * removedBlend;
 
             out[ch] = bypassAmount >= 1.0 ? delayedDry : mixed + (delayedDry - mixed) * bypassAmount;
         }
@@ -825,4 +901,29 @@ void CompDsp::processChunk (float* const* main, int numMain, const float* const*
     }
 
     dryPosition = (dryPosition + numSamples) % dryLength;
+}
+
+// The history's beat and bar marks: the host position at a column's end, against the last.
+std::uint8_t CompDsp::markFor (double blockSample) noexcept
+{
+    if (! transport.playing || transport.bpm <= 0.0 || transport.denominator <= 0 || transport.numerator <= 0)
+    {
+        haveLastBeat = false;
+        return fancy::dsp::LevelColumn::none;
+    }
+
+    const auto ppq = transport.ppq + blockSample / sampleRate * transport.bpm / 60.0;
+    const auto beatLength = 4.0 / (double) transport.denominator;
+    const auto beat = (std::int64_t) std::floor ((ppq - transport.barStartPpq) / beatLength + 1.0e-9);
+
+    if (! haveLastBeat || beat == lastBeat)
+    {
+        haveLastBeat = true;
+        lastBeat = beat;
+        return fancy::dsp::LevelColumn::none;
+    }
+
+    lastBeat = beat;
+    const auto inBar = ((beat % transport.numerator) + transport.numerator) % transport.numerator;
+    return inBar == 0 ? fancy::dsp::LevelColumn::bar : fancy::dsp::LevelColumn::beat;
 }
