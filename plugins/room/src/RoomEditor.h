@@ -70,6 +70,13 @@ private:
     fancy::ui::ParamDropdown qualityDropdown, stereoDropdown;
     fancy::ui::Knob duckingKnob, erKnob;
 
+    // Phase 4 Wave 1 (reference/phase4/37__room_w1_mockup.png): the Reverb EQ and Mod rate, the
+    // gate and Auto gain, all in the drawer.
+    juce::Label eqTitle, gateTitle, autoGainNote;
+    fancy::ui::Knob eqLowKnob, eqLowGainKnob, eqMidKnob, eqMidGainKnob, eqQKnob, eqHighKnob, eqHighGainKnob, modRateKnob;
+    fancy::ui::ParamCheckbox gateCheckbox, autoGainCheckbox;
+    fancy::ui::Knob gateThresholdKnob, gateHoldKnob, gateDecayKnob;
+
     bool lastCapped = false;
     juce::String lastNoteTip;
 

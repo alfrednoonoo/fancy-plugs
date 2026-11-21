@@ -112,6 +112,37 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (fancy::levelParameter ("output", "Output", -24.0f, 12.0f, 0.0f, -100.0f));
     layout.add (toggle ("bypass", "Bypass", false));
 
+    // Phase 4 Wave 1 (docs/room.md), appended. Every default is today's sound.
+    layout.add (fancy::floatParameter ("modRate", "Mod rate", fancy::logRange (0.25f, 4.0f, 0.01f), 1.0f,
+                                       Attributes {}
+                                           .withLabel ("x")
+                                           .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2) + juce::String (juce::CharPointer_UTF8 ("\xc3\x97")); })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    layout.add (frequency ("eqLowFreq", "EQ low freq", 20.0f, 1000.0f, 200.0f));
+    layout.add (fancy::levelParameter ("eqLowGain", "EQ low gain", -12.0f, 12.0f, 0.0f, -100.0f));
+    layout.add (frequency ("eqMidFreq", "EQ mid freq", 200.0f, 8000.0f, 1000.0f));
+    layout.add (fancy::levelParameter ("eqMidGain", "EQ mid gain", -12.0f, 12.0f, 0.0f, -100.0f));
+    layout.add (fancy::floatParameter ("eqMidQ", "EQ mid Q", fancy::logRange (0.3f, 8.0f, 0.01f), 1.0f,
+                                       Attributes {}
+                                           .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2); })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    layout.add (frequency ("eqHighFreq", "EQ high freq", 1000.0f, 20000.0f, 6000.0f));
+    layout.add (fancy::levelParameter ("eqHighGain", "EQ high gain", -12.0f, 12.0f, 0.0f, -100.0f));
+    layout.add (toggle ("gate", "Gate", false));
+    layout.add (fancy::levelParameter ("gateThr", "Gate threshold", -60.0f, 0.0f, -30.0f, -100.0f));
+
+    const auto milliseconds = [] (const char* id, const char* name, float low, float high, float defaultMs)
+    {
+        return fancy::floatParameter (id, name, fancy::logRange (low, high, 1.0f), defaultMs,
+                                      juce::AudioParameterFloatAttributes {}
+                                          .withLabel ("ms")
+                                          .withStringFromValueFunction ([] (float value, int) { return msText (value); })
+                                          .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); }));
+    };
+
+    layout.add (milliseconds ("gateHold", "Gate hold", 10.0f, 500.0f, 80.0f));
+    layout.add (milliseconds ("gateDecay", "Gate decay", 5.0f, 500.0f, 40.0f));
+    layout.add (toggle ("autoGain", "Auto gain", false));
     return layout;
 }
 
@@ -228,6 +259,20 @@ RoomDsp::Targets RoomProcessor::readTargets() const
     targets.outputGain = fancy::dbToGain ((double) read ("output"));
     targets.bypass = isOn ("bypass");
 
+    // Phase 4 Wave 1.
+    targets.modRate = (double) read ("modRate");
+    targets.eqLowHz = (double) read ("eqLowFreq");
+    targets.eqLowDb = (double) read ("eqLowGain");
+    targets.eqMidHz = (double) read ("eqMidFreq");
+    targets.eqMidDb = (double) read ("eqMidGain");
+    targets.eqMidQ = (double) read ("eqMidQ");
+    targets.eqHighHz = (double) read ("eqHighFreq");
+    targets.eqHighDb = (double) read ("eqHighGain");
+    targets.gate = isOn ("gate");
+    targets.gateThresholdDb = (double) read ("gateThr");
+    targets.gateHoldMs = (double) read ("gateHold");
+    targets.gateDecayMs = (double) read ("gateDecay");
+    targets.autoGain = isOn ("autoGain");
     return targets;
 }
 

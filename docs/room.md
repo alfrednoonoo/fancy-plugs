@@ -269,3 +269,14 @@ A gate on the tail, for gated drum reverbs: when the **input** has been under `g
 5. Auto gain: Decay 1 s against 6 s on the same pink-noise burst: wet RMS within 1.5 dB with Auto gain on.
 
 Mockup: `reference/phase4/37__room_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`), for Decision 1 A: the drawer's Tone and Gate groups.
+
+### 8. As built
+
+One push holds the whole item, with Decision 1 A: everything in the EDIT drawer, laid out as the mockup measures it (the Reverb EQ and Mod rate in the right half, the gate and Auto gain along the bottom, 32 px knobs). Parameters appended as section 6 lists, with no state migration (missing parameters take their defaults, which are today's sound). `tests/LegacyRoomDsp.*` is `RoomDsp` at v1.6.0.
+
+- **Mod rate:** each line's sine is `sin (phase + rate x modRate x n + offset)`. A new Mod rate (smoothed over 30 ms) takes effect at the next 16-sample knot, and the offset moves so every sine carries on from where it was: no jump in the delay times. At 1x with no move the offset is 0 and the expression is the old one to the bit.
+- **Reverb EQ:** three `fancy::dsp::matched` sections per channel after Low cut and High cut, before Width. Frequency (in log), gain and Q are smoothed over 30 ms and the coefficients recomputed at each knot when they move. A band whose gain has settled at 0 dB is out of the path, with its state cleared.
+- **Gate:** reads the input (as Ducking does), opens in 1 ms, holds, then fades linearly over Decay. Switched off, it opens and leaves the path.
+- **Auto gain:** **changed from section 4's wording:** the trim comes from each line's exact energy, 1 / (1 - g^2) with g = 10^(-3 d / T), averaged over the 16 lines, against Size 55 % and Decay 1.8 s (0 dB at the defaults). The first-order form, Decay / line length, is a dB out at short decays. Smoothed over 50 ms.
+- **Changed from section 7, test 2:** the modulation isn't exposed, so the test checks that Mod rate changes the output, does nothing with Mod at 0, and moves without a click, instead of measuring the period.
+- **Tests:** `tests/RoomW1Tests.cpp`.

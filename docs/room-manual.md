@@ -42,6 +42,12 @@ The tail's level over 0 to 3 s, longer when Decay needs it, from 0 to −60 dB: 
 | Stereo input | Stereo, Mono-sum | Stereo | Mono-sum feeds the reverb the sum of both channels |
 | Ducking | 0 to 100 % | 0 % | Turns the reverb down while the dry signal plays: at 100 %, by 24 dB once the input is above −20 dBFS, and not at all below −50 dBFS. It comes back over about 300 ms |
 | Early reflections | −inf to +6 dB | 0 dB | The level of the first echoes |
+| Reverb EQ: Low | 20 Hz to 1 kHz, ±12 dB | 200 Hz, 0 dB | A low shelf on the reverb, after Low cut and High cut. A band at 0 dB is out of the path |
+| Reverb EQ: Mid | 200 Hz to 8 kHz, ±12 dB, Q 0.3 to 8 | 1 kHz, 0 dB, 1.00 | A bell |
+| Reverb EQ: High | 1 to 20 kHz, ±12 dB | 6 kHz, 0 dB | A high shelf |
+| Mod rate | 0.25× to 4× | 1.00× | Scales the speed of every line's modulation: slow for a lush chorus, fast for shimmer. Mod still sets the depth |
+| Gate the tail | on, off | off | When the input stays under Threshold (−60 to 0 dB, −30) for Hold (10 to 500 ms, 80), the reverb fades out over Decay (5 to 500 ms, 40): the gated drum sound |
+| Auto gain | on, off | off | Trims the wet level as Size and Decay change, so a longer decay doesn't make the reverb louder. 0 dB at Size 55 % and Decay 1.8 s |
 
 CPU at 48 kHz is in `docs/measurements/room.txt`.
 

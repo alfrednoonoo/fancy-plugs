@@ -29,6 +29,10 @@ constexpr double duckDepthDb = 24.0, duckFullDb = -20.0, duckNoneDb = -50.0;
 constexpr double lowestCutHz = 10.0;
 constexpr double twoPi = 2.0 * std::numbers::pi;
 
+// Phase 4 Wave 1.
+constexpr double autoGainSize = 0.55, autoGainDecay = 1.8; // where Auto gain trims 0 dB
+constexpr double autoTrimMs = 50.0, gateOpenMs = 1.0;
+
 double frac (double x) noexcept
 {
     return x - std::floor (x);
@@ -77,6 +81,25 @@ double RoomDsp::longestReflectionSeconds (double sizeValue) noexcept
     return longest * sizeScale (std::clamp (sizeValue, 0.0, 1.0)) * 0.001;
 }
 
+// A line of length d seconds keeps g = 10^(-3 d / T) per pass, so an impulse in it gives
+// 1 / (1 - g^2) of energy; the tail's energy is the average over the lines.
+double RoomDsp::autoGainDb (double sizeValue, double decaySeconds) noexcept
+{
+    const auto energy = [] (double sizeNow, double decayNow)
+    {
+        const auto scale = sizeScale (std::clamp (sizeNow, 0.0, 1.0)) * 0.001;
+        const auto t = std::clamp (decayNow, 0.1, 20.0);
+        auto sum = 0.0;
+
+        for (const auto ms : lineMsTable)
+            sum += 1.0 / (1.0 - std::pow (10.0, -6.0 * ms * scale / t));
+
+        return sum;
+    };
+
+    return -10.0 * std::log10 (energy (sizeValue, decaySeconds) / energy (autoGainSize, autoGainDecay));
+}
+
 double RoomDsp::tailSeconds (double predelayMs, double sizeValue, double decaySeconds) noexcept
 {
     return std::clamp (predelayMs, 0.0, maxPredelayMs) * 0.001 + longestReflectionSeconds (sizeValue) + 1.5 * decaySeconds;
@@ -116,6 +139,13 @@ void RoomDsp::prepare (double newSampleRate)
     predelay.setTime (predelayGlideMs, sampleRate);
     bypass.setTime (bypassMs, sampleRate);
 
+    // Phase 4 Wave 1.
+    for (auto* smoother : { &modRate, &eqLogHz[0], &eqLogHz[1], &eqLogHz[2], &eqGain[0], &eqGain[1], &eqGain[2], &eqQ })
+        smoother->setTime (smoothingMs, sampleRate);
+
+    autoTrim.setTime (autoTrimMs, sampleRate);
+    gateOpenStep = 1.0 / std::max (1.0, gateOpenMs * 0.001 * sampleRate);
+
     freezeRampSamples = std::max (1, (int) (freezeRampSeconds * sampleRate));
     freezeStep = 1.0 / freezeRampSamples;
     duckAttack = smoothingCoefficient (duckAttackMs, sampleRate);
@@ -141,6 +171,7 @@ void RoomDsp::configure (Network& network, int quality)
         network.sign[index] = (i / 2) % 2 == 0 ? 1.0 : -1.0;
     }
 
+    network.modOffset.fill (0.0);
     network.inGain = 1.0 / std::sqrt (network.numLines / 2.0);
     network.outGain = network.inGain;
     network.hScale = 1.0 / std::sqrt ((double) network.numLines);
@@ -185,6 +216,18 @@ void RoomDsp::reset()
     duckEnvelope = 0.0;
     duckPeak = 0.0;
 
+    // Phase 4 Wave 1: the sines start from the rate as it is, and the EQ and gate start clean.
+    modRateNow = modRate.getCurrent();
+
+    for (auto& band : eqBands)
+        for (int ch = 0; ch < 2; ++ch)
+            band.s1[ch] = band.s2[ch] = 0.0;
+
+    eqLastQ = -1.0;
+    updateEq();
+    gateGain = 1.0;
+    gateHoldCount = 0;
+
     updateLengths (size.isSettled(), predelay.isSettled());
     lastSize = size.getCurrent();
     lastPredelay = predelay.getCurrent();
@@ -223,6 +266,17 @@ void RoomDsp::setTargets (const Targets& newTargets)
     output.setTarget (targets.outputGain);
     bypass.setTarget (targets.bypass ? 1.0 : 0.0);
 
+    // Phase 4 Wave 1.
+    modRate.setTarget (std::clamp (targets.modRate, 0.25, 4.0));
+    eqLogHz[0].setTarget (std::log (std::clamp (targets.eqLowHz, 20.0, nyquistLimit)));
+    eqLogHz[1].setTarget (std::log (std::clamp (targets.eqMidHz, 20.0, nyquistLimit)));
+    eqLogHz[2].setTarget (std::log (std::clamp (targets.eqHighHz, 20.0, nyquistLimit)));
+    eqGain[0].setTarget (std::clamp (targets.eqLowDb, -12.0, 12.0));
+    eqGain[1].setTarget (std::clamp (targets.eqMidDb, -12.0, 12.0));
+    eqGain[2].setTarget (std::clamp (targets.eqHighDb, -12.0, 12.0));
+    eqQ.setTarget (std::clamp (targets.eqMidQ, 0.3, 8.0));
+    autoTrim.setTarget (targets.autoGain ? std::pow (10.0, autoGainDb (targets.size, targets.decay) / 20.0) : 1.0);
+
     const auto quality = std::clamp (targets.quality, (int) eco, (int) high);
 
     if (prepared && quality != networks[(size_t) activeNetwork].quality)
@@ -238,7 +292,8 @@ void RoomDsp::snapToTargets (const Targets& newTargets)
     damping.setTarget (std::clamp (targets.damping, 0.0, 1.0));
 
     for (auto* smoother : { &predelay, &size, &decay, &diffusion, &mod, &width, &damping, &logLowCut, &logHighCut,
-                            &erGain, &ducking, &wet, &dry, &output, &bypass })
+                            &erGain, &ducking, &wet, &dry, &output, &bypass,
+                            &modRate, &eqLogHz[0], &eqLogHz[1], &eqLogHz[2], &eqGain[0], &eqGain[1], &eqGain[2], &eqQ, &autoTrim })
         smoother->snapToTarget();
 
     if (prepared)
@@ -331,8 +386,9 @@ void RoomDsp::updateModulation (Network& network, int64_t knot) noexcept
     for (int i = 0; i < network.numLines; ++i)
     {
         const auto index = (size_t) i;
-        network.m0[index] = std::sin (network.phase[index] + network.rate[index] * (double) knot);
-        network.m1[index] = std::sin (network.phase[index] + network.rate[index] * (double) (knot + modStep));
+        const auto rate = network.rate[index] * modRateNow;
+        network.m0[index] = std::sin (network.phase[index] + rate * (double) knot + network.modOffset[index]);
+        network.m1[index] = std::sin (network.phase[index] + rate * (double) (knot + modStep) + network.modOffset[index]);
     }
 }
 
@@ -348,9 +404,74 @@ void RoomDsp::updateFilters() noexcept
         filter.setButterworthLowPass (std::exp (lastHighLog), sampleRate);
 }
 
+// Phase 4 Wave 1: a new Mod rate takes effect at a knot, with each line's offset moved so its
+// sine carries on from where it was.
+void RoomDsp::applyModRate() noexcept
+{
+    const auto next = modRate.getCurrent();
+
+    if (next == modRateNow)
+        return;
+
+    for (auto& network : networks)
+        for (int i = 0; i < network.numLines; ++i)
+            network.modOffset[(size_t) i] += network.rate[(size_t) i] * (modRateNow - next) * (double) knotStart;
+
+    modRateNow = next;
+}
+
+// Phase 4 Wave 1: the reverb EQ's coefficients, when a band's settings have moved. A band whose
+// gain has settled at 0 drops out of the path, with its state cleared.
+void RoomDsp::updateEq() noexcept
+{
+    namespace matched = fancy::dsp::matched;
+
+    const matched::BandType types[] { matched::BandType::lowShelf, matched::BandType::band, matched::BandType::highShelf };
+    const auto q = eqQ.getCurrent();
+
+    for (size_t b = 0; b < 3; ++b)
+    {
+        auto& band = eqBands[b];
+        const auto gain = eqGain[b].getCurrent();
+        const auto hz = std::exp (eqLogHz[b].getCurrent());
+        const auto active = ! (gain == 0.0 && eqGain[b].isSettled());
+
+        if (! active)
+        {
+            if (band.active)
+                for (int ch = 0; ch < 2; ++ch)
+                    band.s1[ch] = band.s2[ch] = 0.0;
+
+            band.active = false;
+            continue;
+        }
+
+        if (band.active && hz == eqLastHz[b] && gain == eqLastGain[b] && (b != 1 || q == eqLastQ))
+            continue;
+
+        matched::BandSpec spec;
+        spec.type = types[b];
+        spec.frequencyHz = hz;
+        spec.gainDb = gain;
+        spec.q = b == 1 ? q : matched::butterworthQ;
+        spec.order = 2;
+        spec.on = true;
+
+        const auto filter = matched::design (spec, sampleRate);
+        band.coefficients = filter.numSections > 0 ? filter.sections[0] : matched::Section {};
+        band.active = true;
+        eqLastHz[b] = hz;
+        eqLastGain[b] = gain;
+    }
+
+    eqLastQ = q;
+}
+
 void RoomDsp::runKnot() noexcept
 {
     knotStart = sampleCount;
+    applyModRate();
+    updateEq();
 
     const auto gainsChanged = decay.getCurrent() != lastDecay || damping.getCurrent() != lastDamping || size.getCurrent() != gainsForScale;
 
@@ -505,6 +626,18 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples) 
         const auto outputNow = output.next();
         const auto bypassNow = bypass.next();
 
+        // Phase 4 Wave 1.
+        modRate.next();
+        eqQ.next();
+
+        for (size_t b = 0; b < 3; ++b)
+        {
+            eqLogHz[b].next();
+            eqGain[b].next();
+        }
+
+        const auto autoTrimNow = autoTrim.next();
+
         freezeAmount = targets.freeze ? std::min (1.0, freezeAmount + freezeStep) : std::max (0.0, freezeAmount - freezeStep);
 
         if (sampleCount % modStep == 0)
@@ -597,6 +730,25 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples) 
         wetL = highCut[0].process (lowCut[0].process (wetL));
         wetR = highCut[1].process (lowCut[1].process (wetR));
 
+        // Phase 4 Wave 1: the reverb EQ, each band only while it's in use.
+        for (auto& band : eqBands)
+        {
+            if (! band.active)
+                continue;
+
+            const auto& c = band.coefficients;
+            double* values[2] { &wetL, &wetR };
+
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                const auto x = *values[ch];
+                const auto y = c.b0 * x + band.s1[ch];
+                band.s1[ch] = c.b1 * x - c.a1 * y + band.s2[ch];
+                band.s2[ch] = c.b2 * x - c.a2 * y;
+                *values[ch] = y;
+            }
+        }
+
         // Width: mid/side on the wet signal only (decision 6).
         const auto mid = 0.5 * (wetL + wetR), side = 0.5 * (wetL - wetR);
         wetL = mid + widthNow * side;
@@ -622,7 +774,35 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples) 
             duckGain = std::pow (10.0, -duckEnvelope / 20.0);
         }
 
-        const auto wetGain = wetNow * duckGain;
+        auto wetGain = wetNow * duckGain;
+
+        // Phase 4 Wave 1: the gate reads the input, so the reverb stops when the drum does.
+        if (targets.gate || gateGain < 1.0)
+        {
+            const auto holdSamples = (int) (std::clamp (targets.gateHoldMs, 10.0, 500.0) * 0.001 * sampleRate);
+            const auto closeStep = 1.0 / std::max (1.0, std::clamp (targets.gateDecayMs, 5.0, 500.0) * 0.001 * sampleRate);
+            const auto open = ! targets.gate || 20.0 * std::log10 (std::max (level, 1.0e-9)) > targets.gateThresholdDb;
+
+            if (open)
+            {
+                gateHoldCount = holdSamples;
+                gateGain = std::min (1.0, gateGain + gateOpenStep);
+            }
+            else if (gateHoldCount > 0)
+            {
+                --gateHoldCount;
+                gateGain = std::min (1.0, gateGain + gateOpenStep);
+            }
+            else
+            {
+                gateGain = std::max (0.0, gateGain - closeStep);
+            }
+
+            wetGain *= gateGain;
+        }
+
+        if (targets.autoGain || ! autoTrim.isSettled() || autoTrimNow != 1.0)
+            wetGain *= autoTrimNow;
 
         if (stereo)
         {

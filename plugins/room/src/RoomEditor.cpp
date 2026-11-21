@@ -15,6 +15,9 @@ constexpr int bodyHeight = 392;
 constexpr int baseHeight = ShellEditor::headerHeight + bodyHeight;
 constexpr int rightColumnX = 656;
 
+// Phase 4 Wave 1: the drawer's small knobs, 66 tall with their label and value.
+constexpr fancy::ui::Knob::Style drawerKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
+
 constexpr int leftX = 13, contentRight = 646;
 constexpr int displayX = leftX, displayY = 10, displayWidth = 610, displayHeight = 198;
 constexpr int cardY = 216, cardHeight = 127;
@@ -334,7 +337,20 @@ RoomEditor::RoomEditor (RoomProcessor& processor)
       qualityDropdown (parameter ("quality")),
       stereoDropdown (parameter ("stereoin")),
       duckingKnob (parameter ("ducking"), "Ducking", purple, Knob::smallStyle),
-      erKnob (parameter ("erlevel"), "Early reflections", purple, Knob::smallStyle)
+      erKnob (parameter ("erlevel"), "Early reflections", purple, Knob::smallStyle),
+      eqLowKnob (parameter ("eqLowFreq"), "Low", colours::uiBlue, drawerKnobStyle),
+      eqLowGainKnob (parameter ("eqLowGain"), "Gain", colours::uiBlue, drawerKnobStyle, true),
+      eqMidKnob (parameter ("eqMidFreq"), "Mid", colours::uiBlue, drawerKnobStyle),
+      eqMidGainKnob (parameter ("eqMidGain"), "Gain", colours::uiBlue, drawerKnobStyle, true),
+      eqQKnob (parameter ("eqMidQ"), "Q", colours::uiBlue, drawerKnobStyle),
+      eqHighKnob (parameter ("eqHighFreq"), "High", colours::uiBlue, drawerKnobStyle),
+      eqHighGainKnob (parameter ("eqHighGain"), "Gain", colours::uiBlue, drawerKnobStyle, true),
+      modRateKnob (parameter ("modRate"), "Mod rate", purple, drawerKnobStyle),
+      gateCheckbox (parameter ("gate"), "Gate the tail", purple),
+      autoGainCheckbox (parameter ("autoGain"), "Auto gain", purple),
+      gateThresholdKnob (parameter ("gateThr"), "Threshold", purple, drawerKnobStyle),
+      gateHoldKnob (parameter ("gateHold"), "Hold", purple, drawerKnobStyle),
+      gateDecayKnob (parameter ("gateDecay"), "Decay", purple, drawerKnobStyle)
 {
     auto& body = getBody();
 
@@ -419,6 +435,40 @@ RoomEditor::RoomEditor (RoomProcessor& processor)
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &qualityLabel, &qualityDropdown, &stereoLabel, &stereoDropdown, &duckingKnob, &erKnob })
+        drawer.addAndMakeVisible (item);
+
+    // Phase 4 Wave 1 (reference/phase4/37__room_w1_mockup.png): the Reverb EQ and Mod rate in the
+    // drawer's right half, the gate and Auto gain along the bottom. Knob centres as measured.
+    setUpLabel (eqTitle, "REVERB EQ", juce::Justification::centredLeft, 10.0f, colours::textSecondary);
+    setUpLabel (gateTitle, "GATE", juce::Justification::centredLeft, 10.0f, colours::textSecondary);
+    setUpLabel (autoGainNote, "Keeps the level steady as Size and Decay change", juce::Justification::topLeft, 11.0f, colours::textSecondary);
+    eqTitle.setBounds (398, 46, 120, 12);
+    gateTitle.setBounds (24, 256, 120, 12);
+    autoGainNote.setBounds (440, 312, 200, 30);
+
+    const auto placeKnob = [] (fancy::ui::Knob& knob, int centreX, int top) { knob.setBounds (centreX - 30, top, 60, 66); };
+    placeKnob (eqLowKnob, 423, 64);
+    placeKnob (eqLowGainKnob, 474, 64);
+    placeKnob (eqMidKnob, 524, 64);
+    placeKnob (eqMidGainKnob, 574, 64);
+    placeKnob (eqQKnob, 624, 64);
+    placeKnob (eqHighKnob, 423, 151);
+    placeKnob (eqHighGainKnob, 474, 151);
+    placeKnob (modRateKnob, 560, 151);
+    placeKnob (gateThresholdKnob, 199, 267);
+    placeKnob (gateHoldKnob, 270, 267);
+    placeKnob (gateDecayKnob, 339, 267);
+    gateCheckbox.setBounds (26, 284, 140, 20);
+    autoGainCheckbox.setBounds (421, 284, 160, 20);
+
+    modRateKnob.setTooltip ("Scales the speed of every line's modulation together: slow for a lush chorus, fast for shimmer. Mod sets the depth.");
+    gateCheckbox.setTooltip ("Gates the reverb from the input: when the input stays under Threshold for Hold, the reverb fades out over Decay. "
+                             "The classic gated drum sound.");
+    autoGainCheckbox.setTooltip ("Trims the wet level as Size and Decay change, so a longer decay doesn't make the reverb louder.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> {
+             &eqTitle, &gateTitle, &autoGainNote, &eqLowKnob, &eqLowGainKnob, &eqMidKnob, &eqMidGainKnob, &eqQKnob, &eqHighKnob,
+             &eqHighGainKnob, &modRateKnob, &gateCheckbox, &autoGainCheckbox, &gateThresholdKnob, &gateHoldKnob, &gateDecayKnob })
         drawer.addAndMakeVisible (item);
 
     body.addChildComponent (drawer);

@@ -36,6 +36,14 @@
 - [ ] The ON pill switches cleanly. Render the track: it sounds the same as playback.
 - [ ] Drag the window's corner: everything scales together.
 
+## Reverb EQ, Mod rate, gate and Auto gain (Phase 4 Wave 1)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Room: it sounds as before, and the new EDIT controls are flat, 1.00×, gate and Auto gain off.
+- [ ] Reverb EQ: Mid +6 dB at 2 kHz brightens the reverb only (Dry unchanged); the shelves cut the tail's lows and highs. Moving the knobs while playing: no zipper or clicks.
+- [ ] Mod rate: with Mod at 50 %, 0.25× is a slow chorus, 4× a fast shimmer. Turning it while a long tail rings: no clicks or pitch jumps.
+- [ ] Gate the tail on a snare, Decay 3 s: the reverb stops dead when the snare does; Threshold, Hold and Decay act as labelled.
+- [ ] Auto gain on: turning Decay from 1 to 6 s and Size up and down keeps the reverb at about the same level. Off: back to the old behaviour.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fancy/dsp/Biquad.h>
+#include <fancy/dsp/MatchedFilters.h>
 #include <fancy/dsp/Smoother.h>
 
 #include <array>
@@ -43,7 +44,24 @@ public:
         double dryGain = 0.0;
         double outputGain = 1.0;
         bool bypass = false;
+
+        // Phase 4 Wave 1 (docs/room.md). At these defaults the output is today's, to the bit.
+        double modRate = 1.0;                               // 0.25 to 4, on every line's rate
+        double eqLowHz = 200.0, eqLowDb = 0.0;              // the reverb EQ, after Low and High cut
+        double eqMidHz = 1000.0, eqMidDb = 0.0, eqMidQ = 1.0;
+        double eqHighHz = 6000.0, eqHighDb = 0.0;
+        bool gate = false;                                  // gates the wet signal from the input
+        double gateThresholdDb = -30.0, gateHoldMs = 80.0, gateDecayMs = 40.0;
+        bool autoGain = false;                              // trims Wet as Size and Decay change
     };
+
+    // Phase 4 Wave 1: the wet trim Auto gain applies, in dB, for a Size and Decay. 0 at the
+    // defaults (Size 55 %, Decay 1.8 s). From the network's decay: each line's energy is
+    // 1 / (1 - g^2), about fs T / (6 ln 10 d), so the tail's energy goes as Decay / line length.
+    static double autoGainDb (double size, double decay) noexcept;
+
+    // The gate's gain now, for the display and tests (1 open, 0 closed).
+    double getGateGain() const noexcept { return gateGain; }
 
     static constexpr int maxLines = 16;
     static constexpr int erTaps = 16;
@@ -97,6 +115,9 @@ private:
 
         std::array<std::vector<float>, maxLines> lines;
         std::array<double, maxLines> lineMs {}, length {}, rate {}, phase {}, sign {}, g {}, bco {}, lp {}, v {}, m0 {}, m1 {};
+
+        // Phase 4 Wave 1: keeps each line's sine continuous when Mod rate changes. 0 until it does.
+        std::array<double, maxLines> modOffset {};
     };
 
     void configure (Network& network, int quality);
@@ -108,6 +129,8 @@ private:
     void runKnot() noexcept;
     double runNetwork (Network& network, const double* diffused, double f, double t, double depth, double& lateRight) noexcept;
     void switchQuality (int quality);
+    void updateEq() noexcept;    // Phase 4 Wave 1
+    void applyModRate() noexcept;
 
     double sampleRate = 48000.0;
     bool prepared = false;
@@ -144,4 +167,31 @@ private:
 
     fancy::dsp::Smoother predelay, size, decay, diffusion, mod, width, damping, logLowCut, logHighCut,
         erGain, ducking, wet, dry, output, bypass;
+
+    // Phase 4 Wave 1 ----------------------------------------------------------------------------
+
+    // Mod rate: the multiplier the sines use now, moved to the smoothed value at each knot.
+    fancy::dsp::Smoother modRate;
+    double modRateNow = 1.0;
+
+    // The reverb EQ: three bands per channel, each run only while its gain isn't settled at 0.
+    struct EqBand
+    {
+        fancy::dsp::matched::Section coefficients;
+        double s1[2] {}, s2[2] {};
+        bool active = false;
+    };
+
+    std::array<EqBand, 3> eqBands;
+    fancy::dsp::Smoother eqLogHz[3], eqGain[3], eqQ;
+    std::array<double, 3> eqLastHz {}, eqLastGain {};
+    double eqLastQ = -1.0;
+
+    // The gate: open while the input is over the threshold, then after Hold, a linear fade over
+    // Decay. It opens in 1 ms, and when switched off it opens and stays out of the path.
+    double gateGain = 1.0, gateOpenStep = 1.0;
+    int gateHoldCount = 0;
+
+    // Auto gain's trim, as a gain, smoothed over 50 ms.
+    fancy::dsp::Smoother autoTrim;
 };
