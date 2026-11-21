@@ -375,3 +375,53 @@ One push (Verb Phase 4 Wave 1 commit) holds the whole item.
 - **Drag and drop:** `ModuleRack` is the drop target. **Changed from section 3:** the rack has no selected card, so a file dropped on a File card replaces that card's file, and anywhere else adds a File module at the end. The rack tints purple with a dashed edge and says what the drop will do; a file Fancy Verb can't read is refused with a message for 3 s.
 - **Library search and favourites:** `LibraryPicker` replaces the File dropdown's menu: a search field (every typed word must appear in the category or name), FAVOURITES first, then each category, then the IR folder's files and the file actions (pair, remove pair, Export IR...), which hide while searching. Arrow keys, Enter (the first match while searching) and Esc work. Favourites live in the user's `settings.xml` beside the IR folder, never in projects.
 - **Tests:** `tests/VerbW1Tests.cpp`. Screenshots `verb-eq`, `verb-picker` and `verb-drop`.
+
+## Phase 4 Wave 2: decay module
+
+**Draft, for approval.** Item 7 of the Wave 2 order (`docs/enhancements.md`; backlog item 4 of section 5). A module that makes the IR's decay shorter or longer per band, like Pro-R 2's decay EQ but on the IR, offline, so it costs nothing while playing. Modelled first: `docs/research/verb-decay-model.py`.
+
+### 1. What it does
+
+A new module type, **Decay**, in the add panel. At its place in the chain it splits the IR into bands, measures each band's RT60 (Schroeder backward integration, −5 to −35 dB), and reshapes each band's envelope so its RT becomes the multiplier × what it was, then sums the bands. A multiplier of 1 leaves the band as it is.
+
+- Settings (module settings, saved in the chain like every module's): **Low** and **High** crossovers (20 Hz to 1 kHz, default 250 Hz; 1 to 16 kHz, default 4 kHz) and **Low**, **Mid** and **High** multipliers (0.25 × to 4 ×, default 1 ×).
+- An older Verb drops the module and plays the IR without it, as with the EQ module.
+
+### 2. What the model found
+
+On a 4 s noise IR with RT 2 s in every band and a −100 dB noise floor (a 24-bit file's):
+
+- **Multipliers at 1:** the IR comes back to float rounding (largest change 9 × 10⁻¹⁶). The band masks are complementary and the split is zero-padded, so nothing wraps round.
+- **Low × 0.5, Mid × 1, High × 2:** measured in a third octave at each band's centre, 1.98 → 1.05 s (aim 0.99), 1.93 → 1.93 s, 2.00 → 3.96 s (aim 4.01). The first 50 ms changes by 0.3 dB.
+- **Lengthening lifts the noise floor.** Growing a band's tail by ×2 also raises the file's floor at the end of a 4 s IR from −99 dB to −41 dB under the start: audible hiss. So a band's growth stops where its envelope comes within 10 dB of its floor, and the band fades out over 100 ms from there. The floor then ends at −108 dB. The decay is lengthened as far as the IR has decay to lengthen, and no further.
+- **How it's measured matters.** A brick-wall band as narrow as a third octave at 100 Hz rings for seconds by itself and gave 6.6 s for a 2 s decay. Measuring in smooth bands, and splitting with half-octave crossfades, avoids that.
+
+### 3. Decisions
+
+- **Decision 1: how many bands.**
+  - **A (R).** Three, with two movable crossovers: enough to shorten a boomy low end or brighten a dull top, and easy to read.
+  - **B.** Six fixed bands (an octave or more each, as Pro-R 2's decay curve): finer, but six knobs in a card and mostly redundant on real IRs.
+- **Decision 2: lengthening past the IR's decay.**
+  - **A (R).** Stop at the floor, as modelled: no hiss, and the tail can't outgrow the IR. A band asked for more than it has gets as long as it can.
+  - **B.** Extend the IR when lengthening, adding decorrelated tail (Modulate's decorrelation) so ×4 really is ×4. Longer tails, but invented reverb, more build time and a longer IR to convolve.
+- **Decision 3: a band without a measurable decay** (an IR that doesn't fall 35 dB in that band: a short echo pattern, say).
+  - **A (R).** Measured from −5 to −25 dB instead; if that fails too, the band is left as it is, and the card shows "can't measure" by its knob.
+  - **B.** The band is left as it is at once, without the second try.
+
+### 4. How it's built
+
+- An STFT split (8192-point frames, ¾ overlap, a window that sums flat), so a 60 s IR at 384 kHz never needs one 46-million-point FFT. Complementary masks with half-octave raised-cosine crossovers, so the bands sum to the input exactly.
+- Runs in the IR builder on its worker thread, like the EQ module. No CPU while playing; the build takes longer by about the IR's length × 3 FFT passes.
+- The card: three knobs for the multipliers, two small knobs for the crossovers, and a small read-out of each band's measured RT before and after. A mockup follows approval.
+
+### 5. Tests
+
+1. Legacy: chains without a Decay module build as v1.6.0 (and as Wave 1).
+2. Multipliers at 1: the IR is unchanged within 1 × 10⁻⁶.
+3. RT: a generated 2 s IR with Low × 0.5 and High × 2 measures 1.0 ± 0.1 s and 4.0 ± 0.3 s at 100 Hz and 10 kHz; 1 kHz within 5 % of before.
+4. Floor: High × 4 on an IR with a −100 dB floor leaves the last 100 ms no higher than before.
+5. Short IR: a single impulse passes unchanged, and the card says "can't measure".
+
+### 6. Build order
+
+Approval, then the card mockup (`reference/phase4/47__verb_w2_decay_mockup.png`), then one push: the module in the IR builder, the card, tests, manual and checklist.
