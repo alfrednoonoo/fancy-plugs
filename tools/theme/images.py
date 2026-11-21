@@ -606,6 +606,90 @@ def render(folder):
         out = folder / sub if sub else folder
         out.mkdir(parents=True, exist_ok=True)
         for name, make in IMAGES.items():
+            if sub and name in ONLY_100:
+                continue
             make(scale).save(out / f"{name}.png", optimize=True)
             count += 1
     return count
+
+
+# ---- Meters (Stage C) ---------------------------------------------------------------------------
+# REAPER's meter images (reaper.fm/sdk/walter/images.php, "Meter images"): slices of a dim (unlit)
+# and a lit meter per channel, with a fixed 32 px clip-indicator end. The user's gradient (21
+# November 2026): red at the very top, through yellow, to green at the bottom; the clip end red.
+# Solid, without REAPER's stripes. The unlit part is the well with a faint trace of the gradient.
+# They are drawn at 100 % only: the clip end is a fixed 32 px and REAPER stretches the rest.
+
+METER_STOPS = [(0.0, "#00FF96"), (0.55, "#FFCF07"), (1.0, RED)]  # bottom (0) to top (1)
+CLIP_LIT, CLIP_DIM = RED, "#3A1E1B"
+METER_DIM_MIX = 0.13  # how much of the gradient shows in the unlit part
+
+
+def meter_colour(t, lit=True, strength=1.0):
+    """The gradient at t (0 bottom, 1 top), lit or dim, over the well."""
+    for (t0, c0), (t1, c1) in zip(METER_STOPS, METER_STOPS[1:]):
+        if t <= t1:
+            f = (t - t0) / (t1 - t0) if t1 > t0 else 0
+            a, b = rgba(c0), rgba(c1)
+            col = [a[i] + (b[i] - a[i]) * f for i in range(3)]
+            break
+    well = rgba(WELL)
+    mix = strength if lit else METER_DIM_MIX
+    return tuple(round(well[i] + (col[i] - well[i]) * mix) for i in range(3)) + (255,)
+
+
+def meter_slice_vertical(w, h, lit, strength=1.0):
+    """One vertical slice: the 32 px clip end at the top, the gradient below it."""
+    img = Image.new("RGBA", (w, h))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, w - 1, 31], fill=rgba(CLIP_LIT if lit else CLIP_DIM))
+    body = h - 32
+    for y in range(body):
+        d.line([(0, 32 + y), (w - 1, 32 + y)], fill=meter_colour(1 - y / max(1, body - 1), lit, strength))
+    return img
+
+
+def meter_slice_horizontal(w, h, lit):
+    """One horizontal slice: the gradient from green at the left, the 32 px clip end at the right."""
+    img = Image.new("RGBA", (w, h))
+    d = ImageDraw.Draw(img)
+    body = w - 32
+    for x in range(body):
+        d.line([(x, 0), (x, h - 1)], fill=meter_colour(x / max(1, body - 1), lit))
+    d.rectangle([body, 0, w - 1, h - 1], fill=rgba(CLIP_LIT if lit else CLIP_DIM))
+    return img
+
+
+def mcp_vu(scale):
+    """Mixer meter: 4 slices side by side (left dim, right dim, left lit, right lit)."""
+    sw, h = 8, 288
+    img = Image.new("RGBA", (sw * 4, h))
+    for i, lit in enumerate((False, False, True, True)):
+        img.paste(meter_slice_vertical(sw, h, lit), (i * sw, 0))
+    return img
+
+
+def mcp_master_vu(scale):
+    """Master meter: 8 slices (left RMS, left peak, right RMS, right peak; dim, then lit). RMS is a
+    little darker than peak, so the two read apart."""
+    sw, h = 8, 288
+    img = Image.new("RGBA", (sw * 8, h))
+    order = [(False, 0.75), (False, 1), (False, 0.75), (False, 1), (True, 0.75), (True, 1), (True, 0.75), (True, 1)]
+    for i, (lit, strength) in enumerate(order):
+        img.paste(meter_slice_vertical(sw, h, lit, strength), (i * sw, 0))
+    return img
+
+
+def tcp_vu(scale):
+    """Track panel meter: 8 horizontal slices stacked (left dim, right dim, left lit, right lit;
+    then the same while record armed)."""
+    w, sh = 288, 8
+    img = Image.new("RGBA", (w, sh * 8))
+    for i, lit in enumerate((False, False, True, True) * 2):
+        img.paste(meter_slice_horizontal(w, sh, lit), (0, i * sh))
+    return img
+
+
+METERS = {"mcp_vu": mcp_vu, "mcp_master_vu": mcp_master_vu, "tcp_vu": tcp_vu}
+IMAGES.update(METERS)
+ONLY_100 = set(METERS)

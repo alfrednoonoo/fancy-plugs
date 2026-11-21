@@ -11,9 +11,9 @@ A coordinate list is [x y w h left-attach top-attach right-attach bottom-attach]
 written for the baseline panel, W x H below; the attach values move or stretch an element when the
 user makes the panel wider or the track taller.
 
-Done so far: the track panel, then the mixer strip and the master strip. The transport keeps
-REAPER's built-in layout (the user's screenshot showed REAPER keeps its own for any part a theme
-leaves out).
+Laid out here: the track panel, the mixer strip, the master strip and the transport, each with
+a "Compact" layout for the track panel and mixer strip (picked per track in REAPER). REAPER keeps
+its built-in layout for any part a theme leaves out (the user's screenshot, 21 November 2026).
 """
 
 W, H = 300, 54  # the mockup's track panel at 100 %
@@ -260,5 +260,152 @@ def master_mcp():
     ]
 
 
+# ---- Meter scales: the track panel's and track strips' meters are too narrow for REAPER's dB
+# numbers, so they're hidden there (the mockup has none); the master keeps them.
+def hide_meter_scale(prefix):
+    return [f"set {prefix}.meter.scale.color.{part} [0 0 0 0 0 0 0 0]"
+            for part in ("lit.top", "lit.bottom", "unlit.top", "unlit.bottom")]
+
+
+# ---- Transport (trans), from the mockup: one row, centred. The buttons, then the time in a dark
+# well, then BPM and time signature, the play rate and the selection. Widths at 100 %; the whole
+# row stays centred as the transport is resized (left and right attach 0.5), and the rate and the
+# selection drop out when it's too narrow for them.
+TW, TH = 1200, 34
+T_GAP, T_GROUP = 4, 12
+TRANSPORT = [
+    ("trans.rew", 34), ("trans.play", 34), ("trans.pause", 34), ("trans.stop", 34), ("trans.fwd", 34),
+    ("trans.rec", 34), ("trans.repeat", 34), ("trans.automode", 34), None,
+    ("trans.status", 220), None,
+    ("trans.bpm.edit", 56), ("trans.curtimesig", 44), None,
+    ("trans.rate", 40), ("trans.rate.fader", 90), None,
+    ("trans.sel", 230),
+]
+WELL_RGBA = "20 20 20 255"
+
+
+def transport():
+    items, x = [], 0
+    for entry in TRANSPORT:
+        if entry is None:
+            x += T_GROUP - T_GAP
+            continue
+        name, w = entry
+        items.append((name, x, w))
+        x += w + T_GAP
+    total = x - T_GAP
+    left = (TW - total) // 2
+    out = [
+        "; ---- Transport (trans) ----",
+        "clear trans.*",
+        f"set trans.size [{TW} {TH}]",
+        f"set trans.size.dockedheight [{TH}]",
+        f"set trans.size.minmax [400 {TH} 4000 120]",
+    ]
+    for name, x, w in items:
+        c = [left + x, 4, w, TH - 8, 0.5, 0, 0.5, 0]
+        if name in ("trans.rate", "trans.rate.fader", "trans.sel"):
+            out.append(f"set {name} w<{total + 40} [0] {coords(c)}")
+        else:
+            out.append(f"set {name} {coords(c)}")
+    out += [
+        "; The time on the well, white; status, BPM, time signature, rate and selection the same way",
+        f"set trans.status.color [255 255 255 255 {WELL_RGBA}]",
+        "set trans.status.margin [12 0 8 0 0]",
+        f"set trans.bpm.edit.color [255 255 255 255 {WELL_RGBA}]",
+        "set trans.bpm.edit.margin [0 0 0 0 0.5]",
+        f"set trans.curtimesig.color [141 141 141 255 {WELL_RGBA}]",
+        f"set trans.rate.color [141 141 141 255 {WELL_RGBA}]",
+        "set trans.rate.margin [0 0 0 0 0.5]",
+        f"set trans.sel.color [141 141 141 255 {WELL_RGBA}]",
+        "set trans.sel.margin [8 0 8 0 0]",
+        "set trans.rate.fader.fadermode [-1]",
+    ]
+    return out
+
+
+# ---- Compact layouts, picked per track (right-click the track panel or mixer strip, Layout):
+# the track panel in one 28 px row, the mixer strip 52 px wide without the button column.
+CW, CH = 300, 28
+
+
+def tcp_compact():
+    y, h = 4, 20
+    out = [
+        'Layout "Compact"',
+        "clear tcp.*",
+        f"set tcp.size [{CW} {CH} 160 {CH}]",
+        'custom tcp.custom.strip ""',
+        f"set tcp.custom.strip [0 0 {STRIP} {CH} 0 0 0 1]",
+        "set tcp.custom.strip.color trackcolor_valid==1 [0 0 0 0 trackcolor_r trackcolor_g trackcolor_b 255] "
+        "[0 0 0 0 0 0 0 0]",
+        f"set tcp.trackidx [{IDX_X} 0 {IDX_W} {CH}]",
+        f"set tcp.trackidx.color [{GREY} 0 0 0 0]",
+        "set tcp.trackidx.margin [0 0 0 0 0.5]",
+        f"set tcp.recarm [{X0} {y} 20 {h}]",
+        f"set tcp.label [53 {y} 93 {h} 0 0 1 0]",
+        f"set tcp.label.color [{WHITE} 0 0 0 0]",
+        "set tcp.label.margin [7 0 4 0 0]",
+        "set tcp.volume.fadermode [1]",
+        "set tcp.pan.fadermode [1]",
+        f"set tcp.volume [150 {y} 20 {h} 1 0 1 0]",
+        f"set tcp.pan [174 {y} 20 {h} 1 0 1 0]",
+        "set tcp.volume.color trackcolor_valid==1 [trackcolor_r trackcolor_g trackcolor_b 255 "
+        f"trackcolor_r trackcolor_g trackcolor_b 255] [{WHITE} {WHITE}]",
+        "set tcp.pan.color tcp.volume.color",
+        f"set tcp.mute [198 {y} 20 {h} 1 0 1 0]",
+        f"set tcp.solo [222 {y} 20 {h} 1 0 1 0]",
+        f"set tcp.fx [246 {y} 24 {h} 1 0 1 0]",
+        f"set tcp.fxbyp [272 {y} 8 {h} 1 0 1 0]",
+        f"set tcp.meter [284 {y} 12 {h} 1 0 1 0]",
+        "set tcp.meter.vu.div [2]",
+        *hide_meter_scale("tcp"),
+        "EndLayout",
+    ]
+    return out
+
+
+CMW = 52
+
+
+def mcp_compact():
+    rows = BOTTOM_ROWS
+    fader_h = rows - 4 - FADER_TOP
+    return [
+        'Layout "Compact"',
+        "clear mcp.*",
+        f"set mcp.size [{CMW} {MH} 44 200]",
+        f"set mcp.extmixer.mode [-1]",
+        "set mcp.extmixer.position [0 0 0 0]",
+        "set mcp.fxlist.font [0 13]",
+        "set mcp.fxlist.margin [2 0 2 0 0]",
+        "set mcp.pan.fadermode [1]",
+        f"set mcp.pan [{CMW // 2 - 12} {TOP} 24 24]",
+        "set mcp.pan.color trackcolor_valid==1 [trackcolor_r trackcolor_g trackcolor_b 255 "
+        f"trackcolor_r trackcolor_g trackcolor_b 255] [{WHITE} {WHITE}]",
+        "set mcp.volume.fadermode [-1]",
+        f"set mcp.volume [6 {FADER_TOP} 14 {fader_h} 0 0 0 1]",
+        f"set mcp.meter [26 {FADER_TOP} 20 {fader_h} 0 0 0 1]",
+        "set mcp.meter.vu.div [2]",
+        *hide_meter_scale("mcp"),
+        "; FX and record arm above M and S",
+        f"set mcp.fx {coords(bottom(4, rows, 21, 18))}",
+        f"set mcp.recarm {coords(bottom(28, rows, 20, 18))}",
+        f"set mcp.mute {coords(bottom(4, rows + 20, 21, 18))}",
+        f"set mcp.solo {coords(bottom(28, rows + 20, 20, 18))}",
+        'custom mcp.custom.namebar ""',
+        f"set mcp.custom.namebar {coords(bottom(0, MH - 22, CMW, 22, True))}",
+        "set mcp.custom.namebar.color trackcolor_valid==1 [0 0 0 0 trackcolor_r trackcolor_g trackcolor_b 255] "
+        "[0 0 0 0 20 20 20 255]",
+        f"set mcp.label {coords(bottom(0, MH - 22, CMW, 22, True))}",
+        "set mcp.label.color trackcolor_valid==1 [20 20 20 255 0 0 0 0] [255 255 255 255 0 0 0 0]",
+        "set mcp.label.margin [2 0 2 0 0.5]",
+        "front mcp.label",
+        "EndLayout",
+    ]
+
+
 def rtconfig_walter():
-    return "\n".join(tcp() + [""] + mcp() + [""] + master_mcp()) + "\n"
+    parts = (tcp() + hide_meter_scale("tcp") + [""] + mcp() + hide_meter_scale("mcp") + [""] + master_mcp()
+             + [""] + transport() + [""] + tcp_compact() + [""] + mcp_compact())
+    return "\n".join(parts) + "\n"

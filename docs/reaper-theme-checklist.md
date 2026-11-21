@@ -84,3 +84,21 @@ Re-select **Fancy Plugs (Stage C preview)**. Same three tracks, one armed, the m
 - [ ] The master: wider meter, teal pan pointer, a menu button (three lines) in the column, M, S and mono (one ring, two rings in stereo), the name on a teal bar.
 - [x] Making the mixer taller or shorter stretches the fader and meter; the bottom rows stay at the bottom.
 - [ ] With the FX list hidden (right-click the mixer, Show FX inserts), no empty band at the top of the strips; with it shown, the list sits above the pan knob.
+
+## Stage C: transport, meters, compact layouts
+
+Re-select **Fancy Plugs (Stage C preview)**. Same three coloured tracks, one armed; play something with the mixer open.
+
+Transport 📷 (stopped, and once while playing)
+- [ ] One row, centred: start, play, pause, stop, end, record, repeat, automation; then the time on a dark well, BPM and time signature, play rate with its slider, and the selection.
+- [ ] Make the transport narrower: the row stays centred, and the rate, its slider and the selection drop out before anything overlaps.
+
+Meters 📷 (while playing)
+- [ ] Track panel, mixer and master meters are solid (no stripes): red at the top, yellow, green at the bottom; the unlit part a dark trace of the same colours; the clip end red when it clips.
+- [ ] No dB numbers on the track panel and track strip meters; the master keeps its scale.
+- [ ] The track panel's narrow vertical meter shows the colours the right way up (red at the top). Note it if it's sideways or striped.
+
+Compact layouts 📷
+- [ ] Right-click a track's panel > Layout > Compact (or the track's Layout menu): one 28 px row with strip, number, record arm, name, two knobs, M, S, FX, the switch and the meter.
+- [ ] Right-click a mixer strip > Layout > Compact: a 52 px strip with pan knob, fader and meter, FX and record arm, M and S, and the name bar.
+- [ ] Switching back to the default layout restores the full panel and strip.
