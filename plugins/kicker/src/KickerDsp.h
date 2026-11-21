@@ -71,7 +71,6 @@ public:
         polarity.snapTo (1.0);
         onsetSlowCoefficient = 1.0 - std::exp (-1.0 / (0.03 * sampleRate));
         lengthFadeSamples = std::max (1, (int) std::lround (0.02 * sampleRate));
-        hitPeakDecay = std::exp (-1.0 / (0.3 * sampleRate));
 
         for (auto& filter : subsonic)
             filter.setButterworthHighPass (15.0, sampleRate);
@@ -97,7 +96,6 @@ public:
             filter.reset();
 
         lengthCount.fill (0);
-        hitPeak.fill (0.0);
         onsetSlow.fill (0.0);
         wasRunning.fill (false);
     }
@@ -214,22 +212,8 @@ private:
         const auto running = generator.isRunning();
         auto& slow = onsetSlow[(size_t) g];
 
-        // Either start only counts as a new hit within 12 dB of the last hit's peak, which fades
-        // over 300 ms, so the generator flickering on and off far down the decaying tail can't
-        // start the sub again, and a quieter kick a beat later still does.
-        auto& peak = hitPeak[(size_t) g];
-        peak *= hitPeakDecay;
-
-        const auto loudEnough = envelope > 0.25 * peak;
-
-        if (loudEnough && ((running && ! wasRunning[(size_t) g])
-                           || (envelope > 1.6 * slow && lengthCount[(size_t) g] > lengthFadeSamples)))
-        {
+        if ((running && ! wasRunning[(size_t) g]) || (envelope > 1.6 * slow && lengthCount[(size_t) g] > lengthFadeSamples))
             lengthCount[(size_t) g] = 0;
-            peak = envelope;
-        }
-
-        peak = std::max (peak, envelope);
 
         wasRunning[(size_t) g] = running;
         slow += (envelope - slow) * onsetSlowCoefficient;
@@ -447,8 +431,6 @@ private:
     bool roomReady = false;
     int lengthSamples = 0, lengthFadeSamples = 960;
     std::array<int, 3> lengthCount {};
-    std::array<double, 3> hitPeak {};
-    double hitPeakDecay = 0.9999;
     std::array<double, 3> onsetSlow {};
     std::array<bool, 3> wasRunning {};
     double onsetSlowCoefficient = 0.001;

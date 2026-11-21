@@ -276,6 +276,11 @@ void stateRestore (const Loaded& plugin)
 
         for (int i = 0; i < a.size(); ++i)
         {
+            // The VST3 wrapper's emulated MIDI CC parameters (Gate takes MIDI since Phase 4 Wave
+            // 1) are the host's, not the plugin's state, so a host never gets them back.
+            if (a[i]->getName (64).startsWith ("MIDI CC"))
+                continue;
+
             const auto sent = a[i]->getCurrentValueAsText();
             const auto restored = b[i]->getCurrentValueAsText();
 
@@ -412,7 +417,7 @@ const LatencySetting latencySettings[] {
     { "Fancy Exciter", "Oversampling", 0.0f, 0.5f },
     { "Fancy Comp", "Oversampling", 0.0f, 0.5f },
     { "Fancy EQ", "Phase", 0.0f, 1.0f },
-    { "Fancy MultiComp", "Crossover", 0.0f, 1.0f },
+    { "Fancy MultiComp", "Crossover", 0.0f, 2.0f / 3.0f }, // Linear phase, of four since Wave 2's Dynamic phase
     { "Fancy FIR", "Low latency", 0.0f, 1.0f },
     { "Fancy Gate", "Lookahead", 0.0f, 1.0f },
     { "Fancy Limit", "Oversampling", 0.0f, 0.34f },

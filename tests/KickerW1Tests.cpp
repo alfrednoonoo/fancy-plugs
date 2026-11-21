@@ -74,7 +74,9 @@ TEST_CASE ("Sub length ends the sub before the kick's tail does", "[kicker][w1]"
     targets.subLengthMs = 150.0;
     const auto shortened = run (targets, input);
 
-    const auto after = (int) (0.2 * rate);   // 150 ms + 20 ms fade, with room
+    // 150 ms + the 20 ms fade, then 130 ms for the sub output's 15 Hz DC filter to ring out after
+    // the fade (it rings at about -56 dB 30 ms after it, CI run 44949179446).
+    const auto after = (int) (0.3 * rate);
 
     INFO ("full sub after 200 ms: " << peakDb (full, after, after + 4800) << " dB; with Sub length: " << peakDb (shortened, after, after + 4800) << " dB");
     CHECK (peakDb (full, after, after + 4800) > -40.0);

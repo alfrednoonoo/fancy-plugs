@@ -204,7 +204,7 @@ juce::String pointsToText (const std::vector<CurvePoint>& curve)
     return parts.joinIntoString (";");
 }
 
-std::vector<CurvePoint> pointsFromText (const juce::String& text)
+std::vector<CurvePoint> pointsFromText (const juce::String& text, int curve)
 {
     std::vector<CurvePoint> result;
 
@@ -214,7 +214,7 @@ std::vector<CurvePoint> pointsFromText (const juce::String& text)
         const auto db = part.fromFirstOccurrenceOf (":", false, false).getDoubleValue();
 
         if (std::isfinite (hz) && std::isfinite (db) && hz >= curveLowHz && hz <= curveHighHz && (int) result.size() < maxCurvePoints)
-            result.push_back ({ hz, std::clamp (db, -150.0, 48.0) });
+            result.push_back ({ hz, clampCurveValue (curve, db) });
     }
 
     sortPoints (result);
@@ -381,7 +381,7 @@ void FirProcessor::loadCurves (const juce::ValueTree& tree)
         if (curve < 0 || curve >= numCurves)
             continue;
 
-        points[(size_t) curve] = pointsFromText (node.getProperty (pointsProperty).toString());
+        points[(size_t) curve] = pointsFromText (node.getProperty (pointsProperty).toString(), curve);
 
         juce::MemoryBlock block;
 
