@@ -126,15 +126,17 @@ COLOURS = {
     # Items (uncoloured tracks; coloured ones take the track colour)
     # Dark, so an item tinted in its track's colour comes out as a deep shade of it with the
     # waveform bright on top, as in the mockup (user, 21 November 2026: the waveforms didn't match).
-    # REAPER tints an item at a fixed half and half with these, so near-black gives the deepest
-    # shade it allows (user, 21 November 2026: "make the item background darker"). Uncoloured items
-    # sit a little darker than the lanes.
-    "col_mi_bg": "#121212",
-    "col_mi_bg2": "#101010",
-    "col_tr1_itembgsel": "#2C2C2C",
-    "col_tr2_itembgsel": "#2C2C2C",
-    "col_tr1_peaks": "#CFCFCF",
-    "col_tr2_peaks": "#CFCFCF",
+    # REAPER tints an item at a fixed half and half with these. Dark grey: a coloured item is a
+    # deep shade of its colour, and an uncoloured one stays light enough for the dark waveform.
+    "col_mi_bg": "#262626",
+    "col_mi_bg2": "#242424",
+    "col_tr1_itembgsel": "#363636",
+    "col_tr2_itembgsel": "#363636",
+    # Dark waveforms on every item (user, 21 November 2026: "the colour of the waveform itself
+    # looks white. I want it to be dark"). Peak tinting is off (tinttcp below), so this is used as
+    # it is; tinted, REAPER would mix it with the item's colour.
+    "col_tr1_peaks": "#101010",
+    "col_tr2_peaks": "#101010",
     "col_tr1_ps2": TXT,
     "col_tr2_ps2": TXT,
     "col_peaksedge": WELL,
@@ -362,13 +364,12 @@ RTCONFIG_HEAD = """; Fancy Plugs theme for REAPER (docs/reaper-theme.md). Genera
 version 5
 use_pngs 1
 ; Track colours (decision A, the mockup): tinttcp overrides REAPER's own track colour options.
-; 1 the track name's background in the track colour; 4, 16, 128 the waveform (peaks) in the
-; track, item and take colour; 8, 32, 256 the item background tinted by the same three. (One
-; reference calls 4, 16 and 128 "off" switches; in REAPER 7.86 clear meant grey peaks, user's
-; screenshot.) Never 2: REAPER's panel tint fills the whole track panel and mixer strip with the
-; colour, which is the rejected style B (user, 21 November 2026). The panels stay grey, with the
-; colour strip and name bar from the layouts. REAPER tints an item's background at a fixed half
-; and half with col_mi_bg.
+; 1 the track name's background in the track colour; 8, 32, 256 the item background tinted by the
+; track, item and take colour; 4, 16, 128 switch tinting of the waveform OFF for the same three, so
+; the waveform keeps the theme's dark peak colour (user: dark waveforms). A tinted waveform is
+; REAPER's mix of the peak colour and the item's colour. Never 2: REAPER's panel tint fills the
+; whole track panel and mixer strip with the colour, which is the rejected style B (user, 21
+; November 2026). The panels stay grey, with the colour strip and name bar from the layouts.
 tinttcp 445
 ; The 150 % images from 120 % display scaling up (the user runs 125 %: sharper scaled down from
 ; 150 % than up from 100 %), the 200 % ones from 174 %.
