@@ -339,7 +339,7 @@ One push (`b89a7bc`), with every recommended option; `tests/GateW1Tests.cpp`.
 
 ## Phase 4 Wave 2: tempo-synced trigger
 
-**Draft, for approval.** Item 4 of the Wave 2 order (`docs/enhancements.md`; backlog item 9 of section 9), after Comp's (`docs/comp.md`, "Phase 4 Wave 2"), whose trigger it shares. Gate or duck on the host's beat grid with no sidechain: a trance gate in Gate mode, a pumping duck in Duck mode. Modelled first: `docs/research/gate-sync-model.py`.
+**Approved by the user on 21 November 2026 with every recommended option (A).** Item 4 of the Wave 2 order (`docs/enhancements.md`; backlog item 9 of section 9), after Comp's (`docs/comp.md`, "Phase 4 Wave 2"), whose trigger it shares. Gate or duck on the host's beat grid with no sidechain: a trance gate in Gate mode, a pumping duck in Duck mode. Modelled first: `docs/research/gate-sync-model.py`.
 
 ### 1. What it does
 

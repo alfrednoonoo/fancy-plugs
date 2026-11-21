@@ -112,7 +112,7 @@ Mockup: `reference/phase4/40__kicker_w1_mockup.png` (source `design/phase4-mocku
 
 One push (`22b0e05`), with every recommended option; `tests/KickerW1Tests.cpp`.
 
-- **Sub length:** `subLen`, 20 to 2000 ms, Off at the top; a new hit is the generator starting or its level jumping over its recent average, and the sub then fades over 20 ms (60 dB). **Fixed after run 44942993322:** ripple on the decaying tail, about 49 dB down, restarted the sub; either start (the generator switching on, or its level jumping) now counts only within 12 dB of the last hit's peak, which fades over 300 ms (fixed again after run 44946550458, where the generator flickering on the tail still restarted it).
+- **Sub length:** `subLen`, 20 to 2000 ms, Off at the top; a new hit is the generator starting or its level jumping over its recent average, and the sub then fades over 20 ms (60 dB). **Test corrected after runs 44942993322 to 44949179446:** the sub measured about 56 dB down 30 ms after its fade, which turned out to be the sub output's 15 Hz DC filter ringing after the fade, not a restart; two changes to the onset logic made on that wrong guess were reverted, and the test now measures from 300 ms, after the filter has rung out.
 - **Make-room:** `roomCut` and `roomFreq` (20 to 200 Hz, 60), a high-pass on the source kick in Sub mode. **Invert sub:** `subPolarity`.
 - **Sub meter:** a 6 px bar between the In and Out meters.
 - **Auto gain** (`autoGain`) and **Ceiling** (`ceiling`, Off or -12 to 0 dBTP) in the drawer. `KickerDsp`'s sub peak is a copyable atomic, so the tests can build an engine by value (fixed after run 44935591606).

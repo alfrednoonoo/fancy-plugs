@@ -378,7 +378,7 @@ One push (Verb Phase 4 Wave 1 commit) holds the whole item.
 
 ## Phase 4 Wave 2: decay module
 
-**Draft, for approval.** Item 7 of the Wave 2 order (`docs/enhancements.md`; backlog item 4 of section 5). A module that makes the IR's decay shorter or longer per band, like Pro-R 2's decay EQ but on the IR, offline, so it costs nothing while playing. Modelled first: `docs/research/verb-decay-model.py`.
+**Approved by the user on 21 November 2026 with every recommended option (A).** Item 7 of the Wave 2 order (`docs/enhancements.md`; backlog item 4 of section 5). A module that makes the IR's decay shorter or longer per band, like Pro-R 2's decay EQ but on the IR, offline, so it costs nothing while playing. Modelled first: `docs/research/verb-decay-model.py`.
 
 ### 1. What it does
 
@@ -428,7 +428,7 @@ Approval, then the card mockup (`reference/phase4/47__verb_w2_decay_mockup.png`)
 
 ## Phase 4 Wave 2: ducking and level gate
 
-**Draft, for approval.** Item 8 of the Wave 2 order (`docs/enhancements.md`; backlog items 6 and 7 of section 5). Two live stages on the wet signal after the convolver: **Ducking** turns the reverb down while the source plays and lets it bloom in the gaps, and the **Gate** stops the tail when the source stops (gated drums). Fancy Room has both (Ducking from Phase 3, the gate from Phase 4 Wave 1). Modelled first: `docs/research/verb-duck-model.py`.
+**Approved by the user on 21 November 2026 with every recommended option (A).** Item 8 of the Wave 2 order (`docs/enhancements.md`; backlog items 6 and 7 of section 5). Two live stages on the wet signal after the convolver: **Ducking** turns the reverb down while the source plays and lets it bloom in the gaps, and the **Gate** stops the tail when the source stops (gated drums). Fancy Room has both (Ducking from Phase 3, the gate from Phase 4 Wave 1). Modelled first: `docs/research/verb-duck-model.py`.
 
 ### 1. What it does
 

@@ -437,7 +437,7 @@ One push, with Decisions 1 to 3 all A.
 
 ## Phase 4 Wave 2: Optical mode
 
-**Draft, for approval.** Item 6 of the Wave 2 order (`docs/enhancements.md`; backlog item 10 of section 3, added by the user after the Waveform Compressor comparison). A third ballistics mode beside the default follower and Classic, behaving like an optical cell. Ballistics only: no tube colour or other "style model". Modelled first: `docs/research/comp-optical-model.py`.
+**Approved by the user on 21 November 2026 with every recommended option (A).** Item 6 of the Wave 2 order (`docs/enhancements.md`; backlog item 10 of section 3, added by the user after the Waveform Compressor comparison). A third ballistics mode beside the default follower and Classic, behaving like an optical cell. Ballistics only: no tube colour or other "style model". Modelled first: `docs/research/comp-optical-model.py`.
 
 ### 1. What it does
 

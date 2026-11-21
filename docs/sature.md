@@ -194,7 +194,7 @@ Other choices made while building:
 
 ## Phase 4 Wave 2: outer-band drive
 
-**Draft, for approval.** Item 5 of the Wave 2 order (`docs/enhancements.md`; backlog item 1 of section 13). Today only the band between Low and High is saturated, and below Low and above High pass clean. This gives each of those outer bands its own Drive and Mix, through the same `added` path. Modelled first: `docs/research/sature-outer-model.py`.
+**Approved by the user on 21 November 2026 with every recommended option (A).** Item 5 of the Wave 2 order (`docs/enhancements.md`; backlog item 1 of section 13). Today only the band between Low and High is saturated, and below Low and above High pass clean. This gives each of those outer bands its own Drive and Mix, through the same `added` path. Modelled first: `docs/research/sature-outer-model.py`.
 
 ### 1. What it does
 

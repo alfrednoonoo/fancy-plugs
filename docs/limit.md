@@ -284,7 +284,7 @@ One push (`3816ef6`), with every recommended option; `tests/LimitW1Tests.cpp`.
 
 ## Phase 4 Wave 2: clipper
 
-**Draft, for approval.** Item 9 of the Wave 2 order (`docs/enhancements.md`; backlog item 3 of section 10). A soft clipper before the limiter, the common clip-then-limit mastering chain: it shaves the fastest peaks (kick and snare clicks, a few ms long), so the limiter, which can only turn the whole signal down, has less to do. Modelled first: `docs/research/limit-clip-model.py`.
+**Approved by the user on 21 November 2026 with every recommended option (A).** Item 9 of the Wave 2 order (`docs/enhancements.md`; backlog item 3 of section 10). A soft clipper before the limiter, the common clip-then-limit mastering chain: it shaves the fastest peaks (kick and snare clicks, a few ms long), so the limiter, which can only turn the whole signal down, has less to do. Modelled first: `docs/research/limit-clip-model.py`.
 
 ### 1. What it does
 
