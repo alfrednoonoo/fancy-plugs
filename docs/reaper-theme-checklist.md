@@ -52,10 +52,11 @@ Pick **Fancy Plugs (Stage B preview)** under Options > Themes. Stage A stays ins
 
 Re-select **Fancy Plugs (Stage B preview)** under Options > Themes so REAPER reloads it. First round: passed in the user's screenshots on 21 November 2026, apart from what this round adds.
 
-- [ ] Main toolbar: rounded grey buttons with thin line icons; toggles (metronome, grid, snap, ripple, crossfades, lock…) teal when on, grey when off. 📷 the toolbar.
+- [ ] Main toolbar: lighter grey buttons with bold icons, each in its own colour; toggles (metronome, grid, snap, ripple, crossfades, lock…) filled with that colour when on, grey when off. 📷 the toolbar.
 - [ ] Beside FX on the track panel: a small switch, teal dot with FX on, grey ring with the chain bypassed.
 - [ ] The input FX button (next to IN on an armed track) is a rounded "FX", teal when it has input FX.
 - [ ] The record input box on an armed track is a dark grey rounded box; its text and arrow are readable. 📷
 - [ ] The folder button on a normal track is an outlined folder.
 - [ ] The Rate slider at the bottom is a thin dark track with a black cap.
 - [ ] Play turns teal while playing. 📷 the transport while playing.
+- [ ] Hover over the last two main toolbar buttons (dotted box, diagonal ruler) and note their tooltips.

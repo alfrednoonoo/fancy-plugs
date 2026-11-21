@@ -24,7 +24,9 @@ HDR, BODY, SEC, WELL = "#1E1E1E", "#303030", "#262626", "#141414"
 G5, G6, HOVER, PRESSED = "#424242", "#4C4C4C", "#383838", "#1E1E1E"
 TXT, TXT2 = "#FFFFFF", "#8D8D8D"
 TEAL, RED, ORANGE, YELLOW, BLUE = "#00A985", "#E74D3D", "#E77E23", "#F1C315", "#3598DB"
+GREEN, PURPLE = "#2DCC70", "#9A59B5"
 KNOB_TOP, KNOB_BOT = "#4F4F4F", "#454545"
+STROKE = 1.75  # toolbar icon line width at 100 %
 
 
 def rgba(c, a=255):
@@ -129,7 +131,8 @@ def button_face(c, st, on_fill=None, radius=3):
         shift = {"normal": 0, "hover": 18, "pressed": -22}[st]
         fill = tuple(max(0, min(255, v + shift)) for v in base[:3]) + (255,)
     else:
-        fill = rgba({"normal": BODY, "hover": HOVER, "pressed": PRESSED}[st])
+        # Grey-5 rather than the plugins' #303030: REAPER's panels are #2B2B2B, where #303030 vanishes.
+        fill = rgba({"normal": G5, "hover": "#4A4A4A", "pressed": PRESSED}[st])
     c.rect(0.5, 0.5, c.w - 1, c.h - 1, fill, radius)
 
 
@@ -234,7 +237,7 @@ def icon_toolbar(kind, colour):
     """The main toolbar's icons: thin line drawings about 14 px across, in a 30 px frame."""
     def draw(c):
         cx, cy = c.w / 2, c.h / 2
-        w = 1.4
+        w = STROKE
         if kind == "new":
             c.outline(cx - 5, cy - 7, 10, 14, colour, 1.5, w)
             c.line([(cx - 2.5, cy + 1), (cx + 2.5, cy + 1)], colour, w)
@@ -399,10 +402,29 @@ def rounded_bg(fill):
 name_field = rounded_bg(WELL)  # the track name's well: #141414
 
 
+# Each toolbar icon's accent (user, 21 November 2026: "A + B, but instead of only teal, use other
+# colours"): actions draw their icon in it; a toggle that is on fills its button with it.
+TOOLBAR_ACCENT = {
+    "new": BLUE, "load": BLUE, "save": BLUE, "revert": BLUE, "projprop": PURPLE, "undo": TEAL, "redo": TEAL,
+    "metro": ORANGE, "lock": ORANGE, "ripple": YELLOW, "xfade": BLUE, "group": GREEN, "envitem": TEAL,
+    "grid": PURPLE, "snap": RED, "relsnap": RED, "dock": BLUE, "filter": PURPLE,
+}
+
+
+def on_ink(fill):
+    """The icon colour on a filled button: dark on the light accents (yellow, orange, green), as
+    M and S are, white on the others."""
+    r, g, b, _ = rgba(fill)
+    return HDR if 0.299 * r + 0.587 * g + 0.114 * b > 140 else TXT
+
+
 def toolbar(kind, toggle=None):
-    """A main toolbar button, 30 x 30 frames. A toggle's icon is teal when on, grey when off."""
-    colour = {None: "#D6D6D6", "on": TEAL, "off": TXT2}[toggle]
-    return button(icon_toolbar(kind, colour), 30, 30)
+    """A main toolbar button, 30 x 30 frames: an action's icon in its accent; a toggle grey when off
+    and filled with its accent when on."""
+    accent = TOOLBAR_ACCENT[kind.split("_")[0]]
+    if toggle == "on":
+        return button(icon_toolbar(kind, on_ink(accent)), 30, 30, on_fill=accent)
+    return button(icon_toolbar(kind, TXT2 if toggle == "off" else accent), 30, 30)
 
 
 B = 20  # the track buttons' frame size at 100 %
