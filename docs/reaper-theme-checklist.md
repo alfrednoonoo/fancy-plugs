@@ -99,6 +99,6 @@ Meters 📷 (while playing)
 - [x] The track panel's narrow vertical meter shows the colours the right way up (red at the top). It keeps REAPER's stripes: the user chose upright over a solid sideways meter.
 
 Compact layouts 📷
-- [ ] Right-click a track's panel > Layout > Compact (or the track's Layout menu): one 28 px row with strip, number, record arm, name, two knobs, M, S, FX, the switch and the meter.
-- [ ] Right-click a mixer strip > Layout > Compact: a 52 px strip with pan knob, fader and meter, FX and record arm, M and S, and the name bar.
+- [x] Right-click a track's panel > Layout > Compact (or the track's Layout menu): one 28 px row with strip, number, record arm, name, two knobs, M, S, FX, the switch and the meter.
+- [x] Right-click a mixer strip > Layout > Compact: a 52 px strip with pan knob, fader and meter, FX and record arm, M and S, and the name bar.
 - [ ] Switching back to the default layout restores the full panel and strip.
