@@ -153,6 +153,8 @@ s = math.max(1, gfx.ext_retina or 1)
 if s ~= 1 then gfx.init("", W * s, H * s) end
 -- The static "Inter 18pt" family, as the theme uses: the variable font's family "Inter" drew wrong
 -- glyphs here ("Defa]lt colo]r"; user's screenshot, 21 November 2026).
-gfx.setfont(1, "Inter 18pt", math.floor(11.5 * s + 0.5))
-gfx.setfont(2, "Inter 18pt", math.floor(10.5 * s + 0.5))
+-- gfx.setfont's size is the line height, about 1.21 times Inter's font size, so the suite's
+-- 11.5 px rows (and an 11 px hint) are multiplied by 1.21 (text too small in the user's screenshot).
+gfx.setfont(1, "Inter 18pt", math.floor(11.5 * 1.21 * s + 0.5))
+gfx.setfont(2, "Inter 18pt", math.floor(11 * 1.21 * s + 0.5))
 frame()
