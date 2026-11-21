@@ -1,4 +1,7 @@
 #include "DsMiniProcessor.h"
+
+#include <algorithm>
+#include <cmath>
 #include "DsMiniEditor.h"
 
 #include <fancy/plugin/DeEsserParameters.h>
@@ -48,6 +51,9 @@ fancy::FancyProcessor::Layout createLayout()
     // Fancy DS's own Output, so a saved Fancy DS preset plays at the same level.
     layout.add (fancy::deesser::output());
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "bypass", 1 }, "Bypass", false));
+
+    // Phase 4 Wave 1 (docs/ds-mini.md), appended: off is DS-Mini as it was.
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "autoAmount", 1 }, "Auto amount", false));
 
     return layout;
 }
@@ -126,7 +132,7 @@ DsMiniProcessor::DeEsser::Targets DsMiniProcessor::targetsFor (int profile) cons
 {
     using fancy::deesser::roundAsParameter;
 
-    const auto settings = mapProfile (profile, read ("amount"));
+    const auto settings = mapProfile (profile, amountNow());
 
     // Read as Fancy DS reads its parameters: rounded floats, widened to double.
     DeEsser::Targets targets;
@@ -233,6 +239,9 @@ void DsMiniProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::Midi
 
     const auto profile = getProfile();
     const auto current = active.load (std::memory_order_relaxed);
+
+    // Phase 4 Wave 1: Auto Amount listens to the input before anything else.
+    updateAutoAmount (main, numChannels, numSamples);
 
     // One change at a time: a profile picked during a fade starts when it's done.
     if (fadeLeft == 0 && profile != engineProfiles[(size_t) current])
@@ -364,4 +373,71 @@ void DsMiniProcessor::setParameter (const juce::String& parameterId, float value
 juce::AudioProcessorEditor* DsMiniProcessor::createEditor()
 {
     return new DsMiniEditor (*this);
+}
+
+// Auto Amount (docs/ds-mini.md, Phase 4 Wave 1) -------------------------------------------
+
+float DsMiniProcessor::amountNow() const noexcept
+{
+    const auto knob = read ("amount");
+    return isOn ("autoAmount") ? workingAmount.load (std::memory_order_relaxed) : knob;
+}
+
+void DsMiniProcessor::updateAutoAmount (const float* const* main, int numChannels, int numSamples) noexcept
+{
+    constexpr double referenceDb = -18.0;   // the band's share of a typical voice
+    constexpr double dbPerStep = 2.0;
+    constexpr double averageSeconds = 2.0;
+
+    const auto knob = read ("amount");
+
+    if (! isOn ("autoAmount"))
+    {
+        autoWasOn = false;
+        workingAmount.store (knob, std::memory_order_relaxed);
+        return;
+    }
+
+    const auto rate = getSampleRate() > 0.0 ? getSampleRate() : 48000.0;
+    const auto profileIndex = getProfile();
+    const auto& profile = profiles[(size_t) profileIndex];
+
+    if (profileIndex != autoProfile || ! autoWasOn)
+    {
+        autoCoefficients.set ((double) profile.freqHz, profile.shelf ? 0.7071 : DeEsser::qForWidth ((double) profile.widthOctaves), rate);
+
+        for (auto& band : autoBands)
+            band = {};
+
+        autoProfile = profileIndex;
+        autoBandPower = autoFullPower = 0.0;
+        autoAverage = referenceDb;
+        autoWasOn = true;
+    }
+
+    const auto coefficient = 1.0 - std::exp (-1.0 / (averageSeconds * rate));
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        auto band = 0.0, full = 0.0;
+
+        for (int c = 0; c < numChannels; ++c)
+        {
+            const auto x = (double) main[c][i];
+            const auto out = autoBands[(size_t) c].tick (autoCoefficients, x);
+            const auto filtered = profile.shelf ? out.high : autoCoefficients.k * out.band;
+            band += filtered * filtered;
+            full += x * x;
+        }
+
+        autoBandPower += coefficient * (band - autoBandPower);
+        autoFullPower += coefficient * (full - autoFullPower);
+    }
+
+    // Silence holds the last value rather than drifting.
+    if (autoFullPower > 1.0e-9)
+        autoAverage = 10.0 * std::log10 (std::max (autoBandPower, 1.0e-30) / autoFullPower);
+
+    const auto offset = std::clamp ((autoAverage - referenceDb) / dbPerStep, (double) -autoReach, (double) autoReach);
+    workingAmount.store (juce::jlimit (0.0f, 10.0f, knob + (float) offset), std::memory_order_relaxed);
 }

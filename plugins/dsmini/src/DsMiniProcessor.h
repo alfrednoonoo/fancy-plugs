@@ -55,6 +55,12 @@ public:
     // Fancy DS's parameters round them, so the two plugins are bit-identical.
     DeEsser::Targets targetsFor (int profile) const;
 
+    // Phase 4 Wave 1 (docs/ds-mini.md): the Amount in use, which Auto moves around the knob.
+    float getWorkingAmount() const noexcept { return workingAmount.load (std::memory_order_relaxed); }
+
+    // How far Auto may move Amount from the knob, either way (Decision 1 A: 30 % of 0 to 10).
+    static constexpr float autoReach = 3.0f;
+
     // The engine the editor reads: the one playing the current profile.
     DeEsser& getEngine() noexcept { return engines[(size_t) active.load (std::memory_order_acquire)]; }
 
@@ -86,6 +92,18 @@ private:
     // The input, for the engine that's fading out.
     juce::AudioBuffer<float> scratch;
     static constexpr int scratchSize = 512;
+
+    // Phase 4 Wave 1: Auto Amount's measure, the profile band's level against the whole signal's
+    // over 2 s, on the input. One Amount step for every 2 dB over the reference.
+    void updateAutoAmount (const float* const* main, int numChannels, int numSamples) noexcept;
+    float amountNow() const noexcept;
+
+    fancy::dsp::SvfCoefficients autoCoefficients;
+    std::array<fancy::dsp::Svf, 2> autoBands;
+    double autoBandPower = 0.0, autoFullPower = 0.0, autoAverage = 0.0;
+    int autoProfile = -1;
+    bool autoWasOn = false;
+    std::atomic<float> workingAmount { 5.0f };
 
     // Private copies of Fancy DS's parameters, only for rounding.
     std::unique_ptr<juce::AudioParameterFloat> dsThreshold, dsFreq, dsWidth, dsRange, dsAttack, dsRelease;

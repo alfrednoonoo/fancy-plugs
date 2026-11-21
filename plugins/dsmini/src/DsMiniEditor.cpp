@@ -124,6 +124,7 @@ DsMiniEditor::DsMiniEditor (DsMiniProcessor& processor)
       profileDropdown (parameter ("profile")),
       display (processor),
       amountKnob (parameter ("amount"), "Amount", miniBlue, Knob::largeStyle),
+      autoToggle (parameter ("autoAmount"), "Auto", miniBlue),
       listenCheckbox (processor, "Listen", miniBlue),
       editLink (miniBlue),
       gainMeter (gainGeometry),
@@ -153,6 +154,17 @@ DsMiniEditor::DsMiniEditor (DsMiniProcessor& processor)
     amountKnob.setShowDefaultMark (true);
     amountKnob.setTooltip ("How much it de-esses. 0 does nothing, 5 is moderate, 10 is strong.");
 
+    // Phase 4 Wave 1.
+    workingArc.setBounds (amountKnob.getBounds());
+    workingArc.setInterceptsMouseClicks (false, false);
+    autoToggle.setBounds ((leftWidth - 40) / 2, 358, 40, 18);
+    autoToggle.setTooltip ("Auto: rides Amount with how sibilant the voice is, up to 3 either side of the knob.");
+    workingLabel.setBounds ((leftWidth + 44) / 2, 358, 70, 18);
+    workingLabel.setFont (font (Weight::regular, 11.0f));
+    workingLabel.setColour (juce::Label::textColourId, miniBlue.brighter (0.4f));
+    workingLabel.setJustificationType (juce::Justification::centredLeft);
+    workingLabel.setBorderSize ({});
+
     // Footer.
     listenCheckbox.setBounds (14, footerY, 90, 20);
     listenCheckbox.setLabelHeight (13.0f);
@@ -165,7 +177,7 @@ DsMiniEditor::DsMiniEditor (DsMiniProcessor& processor)
     outMeter.setBounds (leftWidth + 54, 14, 56, 390);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
-             &profileDropdown, &captionLabel, &display, &amountKnob, &listenCheckbox, &editLink, &gainMeter, &outMeter })
+             &profileDropdown, &captionLabel, &display, &amountKnob, &workingArc, &autoToggle, &workingLabel, &listenCheckbox, &editLink, &gainMeter, &outMeter })
         body.addAndMakeVisible (item);
 
     // EDIT drawer.
@@ -206,6 +218,21 @@ DsMiniProcessor& DsMiniEditor::miniProcessor() noexcept
 
 void DsMiniEditor::onTick (float seconds)
 {
+    // Phase 4 Wave 1: Auto's working Amount.
+    {
+        auto& mini = dynamic_cast<DsMiniProcessor&> (getFancyProcessor());
+        const auto autoOn = parameter ("autoAmount").getValue() >= 0.5f;
+        const auto working = autoOn ? mini.getWorkingAmount() : -1.0f;
+
+        if (working != workingArc.working)
+        {
+            workingArc.working = working;
+            workingArc.repaint();
+        }
+
+        workingLabel.setText (autoOn ? "now " + juce::String (working, 1) : juce::String(), juce::dontSendNotification);
+    }
+
     auto& processor = miniProcessor();
     const auto profile = processor.getProfile();
 
@@ -295,4 +322,27 @@ std::vector<ShellEditor::PopupOpener> DsMiniEditor::getPopupOpeners()
     openers.push_back ({ "tooltip-amount", [this] { showTip (amountKnob, amountKnob.getTooltip()); } });
     openers.push_back ({ "value-amount", [this] { amountKnob.openValueEditor(); } });
     return openers;
+}
+
+// The working Amount: a thin dashed arc just inside the knob's face, from the start of its
+// travel to the working value, drawn as Knob draws its own (300 degrees from 7 o'clock).
+void DsMiniEditor::WorkingArc::paint (juce::Graphics& g)
+{
+    if (working < 0.0f)
+        return;
+
+    const auto& style = Knob::largeStyle;
+    const juce::Point<float> centre ((float) getWidth() * 0.5f, style.labelHeight + style.labelGap + style.outerDiameter * 0.5f);
+    const auto radius = style.faceDiameter * 0.5f - 5.0f;
+    const auto start = -5.0f / 6.0f * juce::MathConstants<float>::pi;
+    const auto end = start + juce::jlimit (0.0f, 1.0f, working / 10.0f) * 5.0f / 3.0f * juce::MathConstants<float>::pi;
+
+    juce::Path arc;
+    arc.addCentredArc (centre.x, centre.y, radius, radius, 0.0f, start, end, true);
+
+    juce::Path dashed;
+    const float dashes[] { 3.0f, 2.0f };
+    juce::PathStrokeType (1.5f).createDashedStroke (dashed, arc, dashes, 2);
+    g.setColour (juce::Colour (0xff9fd0f5));
+    g.fillPath (dashed);
 }

@@ -60,6 +60,18 @@ private:
     Display display;
     fancy::ui::Knob amountKnob;
 
+    // Phase 4 Wave 1: the Auto pill, and Auto's working Amount as a thin arc inside the knob.
+    class WorkingArc final : public juce::Component
+    {
+    public:
+        void paint (juce::Graphics&) override;
+        float working = -1.0f;   // 0 to 10, or -1 to hide
+    };
+
+    fancy::ui::ParamTextToggle autoToggle;
+    WorkingArc workingArc;
+    juce::Label workingLabel;
+
     fancy::ui::ListenCheckbox listenCheckbox;
     fancy::ui::EditLink editLink;
 

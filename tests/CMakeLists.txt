@@ -59,7 +59,7 @@ if("FANCY_HAS_DS=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_DSMINI=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE DsMiniTests.cpp)
+    target_sources(fancy-tests PRIVATE DsMiniTests.cpp DsMiniW1Tests.cpp)
 endif()
 
 if("FANCY_HAS_SATURE=1" IN_LIST fancy_screen_defs)
