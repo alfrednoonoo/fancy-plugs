@@ -126,10 +126,13 @@ COLOURS = {
     # Items (uncoloured tracks; coloured ones take the track colour)
     # Dark, so an item tinted in its track's colour comes out as a deep shade of it with the
     # waveform bright on top, as in the mockup (user, 21 November 2026: the waveforms didn't match).
-    "col_mi_bg": "#2A2A2A",
-    "col_mi_bg2": "#262626",
-    "col_tr1_itembgsel": "#3C3C3C",
-    "col_tr2_itembgsel": "#3C3C3C",
+    # REAPER tints an item at a fixed half and half with these, so near-black gives the deepest
+    # shade it allows (user, 21 November 2026: "make the item background darker"). Uncoloured items
+    # sit a little darker than the lanes.
+    "col_mi_bg": "#121212",
+    "col_mi_bg2": "#101010",
+    "col_tr1_itembgsel": "#2C2C2C",
+    "col_tr2_itembgsel": "#2C2C2C",
     "col_tr1_peaks": "#CFCFCF",
     "col_tr2_peaks": "#CFCFCF",
     "col_tr1_ps2": TXT,
