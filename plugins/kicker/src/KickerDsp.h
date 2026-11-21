@@ -96,6 +96,7 @@ public:
             filter.reset();
 
         lengthCount.fill (0);
+        hitPeak.fill (0.0);
         onsetSlow.fill (0.0);
         wasRunning.fill (false);
     }
@@ -212,8 +213,18 @@ private:
         const auto running = generator.isRunning();
         auto& slow = onsetSlow[(size_t) g];
 
-        if ((running && ! wasRunning[(size_t) g]) || (envelope > 1.6 * slow && lengthCount[(size_t) g] > lengthFadeSamples))
+        // A rise only counts as a new hit within 12 dB of the current hit's peak, so ripple on
+        // the decaying tail, far down, can't start the sub again.
+        auto& peak = hitPeak[(size_t) g];
+
+        if ((running && ! wasRunning[(size_t) g])
+            || (envelope > 1.6 * slow && envelope > 0.25 * peak && lengthCount[(size_t) g] > lengthFadeSamples))
+        {
             lengthCount[(size_t) g] = 0;
+            peak = envelope;
+        }
+
+        peak = std::max (peak, envelope);
 
         wasRunning[(size_t) g] = running;
         slow += (envelope - slow) * onsetSlowCoefficient;
@@ -431,6 +442,7 @@ private:
     bool roomReady = false;
     int lengthSamples = 0, lengthFadeSamples = 960;
     std::array<int, 3> lengthCount {};
+    std::array<double, 3> hitPeak {};
     std::array<double, 3> onsetSlow {};
     std::array<bool, 3> wasRunning {};
     double onsetSlowCoefficient = 0.001;

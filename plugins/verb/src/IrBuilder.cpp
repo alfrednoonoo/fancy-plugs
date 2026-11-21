@@ -1059,10 +1059,10 @@ double pinkEnergy (const std::vector<double>& samples, double sampleRate)
 
 double referenceLoudnessEnergy (double sampleRate) noexcept
 {
-    // A white tail at -18 dBFS falling 60 dB in 2 s: amplitude squared, summed over every sample.
-    const auto amplitude = std::pow (10.0, -18.0 / 20.0);
-    const auto perSample = std::exp (-sixtyDbInNepers / sampleRate);
-    return amplitude * amplitude / (1.0 - perSample);
+    // Where a library IR at the default gain mode (-18 dB) lands: the library's IRs measure
+    // about 0.46 at 0 dB (CI run 44942993322), so those play with about 0 dB of trim. Scaled with
+    // the rate, as a resampled IR's energy is.
+    return 0.46 * std::pow (10.0, -18.0 / 10.0) * sampleRate / 48000.0;
 }
 
 juce::AudioBuffer<float> exportableIr (const BuiltIr& built)

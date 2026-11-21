@@ -75,8 +75,8 @@ BuiltIr buildIr (const ChainSpec& chain, double sampleRate);
 
 // Phase 4 Wave 1 (docs/verb.md): Equal loudness. The pink-weighted energy of one IR channel
 // (1/f weights from 20 Hz to 20 kHz over frames of about 1/6 s), equal to the plain energy for
-// white noise. The trim brings an IR's energy to the reference: a white exponential tail
-// starting at -18 dBFS with a 2 s RT60, about what a file at the default gain mode gives.
+// white noise. The trim brings an IR's energy to the reference: where a library IR at the
+// default gain mode (-18 dB) lands, so those get about 0 dB.
 double pinkEnergy (const std::vector<double>& samples, double sampleRate);
 double referenceLoudnessEnergy (double sampleRate) noexcept;
 inline constexpr double maxLoudnessTrimDb = 24.0;
