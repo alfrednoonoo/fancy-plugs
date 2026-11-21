@@ -90,13 +90,13 @@ Re-select **Fancy Plugs (Stage C preview)**. Same three tracks, one armed, the m
 Re-select **Fancy Plugs (Stage C preview)**. Same three coloured tracks, one armed; play something with the mixer open.
 
 Transport 📷 (stopped, and once while playing)
-- [ ] One row, centred: start, play, pause, stop, end, record, repeat, automation; then the time on a dark well, BPM and time signature, play rate with its slider, and the selection.
+- [x] One row, centred: start, play, pause, stop, end, record, repeat, automation; then the time on a dark well, BPM and time signature, play rate with its slider, and the selection.
 - [ ] Make the transport narrower: the row stays centred, and the rate, its slider and the selection drop out before anything overlaps.
 
 Meters 📷 (while playing)
-- [ ] Track panel, mixer and master meters are solid (no stripes): red at the top, yellow, green at the bottom; the unlit part a dark trace of the same colours; the clip end red when it clips.
-- [ ] No dB numbers on the track panel and track strip meters; the master keeps its scale.
-- [ ] The track panel's narrow vertical meter shows the colours the right way up (red at the top). Note it if it's sideways or striped.
+- [x] Track panel, mixer and master meters are solid (no stripes): red at the top, yellow, green at the bottom; the unlit part a dark trace of the same colours; the clip end red when it clips.
+- [x] No dB numbers on the track panel and track strip meters; the master keeps its scale.
+- [x] The track panel's narrow vertical meter shows the colours the right way up (red at the top). It keeps REAPER's stripes: the user chose upright over a solid sideways meter.
 
 Compact layouts 📷
 - [ ] Right-click a track's panel > Layout > Compact (or the track's Layout menu): one 28 px row with strip, number, record arm, name, two knobs, M, S, FX, the switch and the meter.
