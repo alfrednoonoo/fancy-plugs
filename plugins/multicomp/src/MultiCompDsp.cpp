@@ -182,7 +182,7 @@ void MultiCompDsp::setTargets (const Targets& targets) noexcept
         state.depth.setTarget (targets.depth);
         state.rms.setTarget (band.rmsMs);
         state.activeMix.setTarget (band.active ? 1.0 : 0.0);
-        state.soloGain.setTarget (! anySolo || band.solo ? 1.0 : 0.0);
+        state.soloGain.setTarget ((! anySolo || band.solo) && ! band.mute ? 1.0 : 0.0);
 
         if (band.attackMs != state.lastAttack || band.releaseMs != state.lastRelease
             || band.autoRelease != state.lastAuto || targets.attack90 != state.lastAttack90 || targets.time != state.lastTime)

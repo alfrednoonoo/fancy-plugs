@@ -190,6 +190,7 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
       sidechainCheckbox (bandParameter (processor, bandIndex, "sc"), "Sidechain"),
       channelChip (bandParameter (processor, bandIndex, "chan"), multiBandColour (bandIndex)),
       soloButton (bandParameter (processor, bandIndex, "solo"), "S", multiBandColour (bandIndex)),
+      muteButton (bandParameter (processor, bandIndex, "mute"), "M", multiBandColour (bandIndex)),
       powerIcon (bandParameter (processor, bandIndex, "on"), multiBandColour (bandIndex)),
       closeButton (IconButton::Glyph::cross),
       upThresholdKnob (bandParameter (processor, bandIndex, "uthr"), "Up thresh", multiBandColour (bandIndex), Knob::tightStyle),
@@ -268,6 +269,10 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
     channelChip.setBounds (494, tabRowY, 40, tabRowHeight);
     channelChip.setTooltip ("Channel: Stereo, Left, Right, Mid or Side. A one-channel band leaves the other channel as it is.");
     soloButton.setBounds (540, tabRowY, 23, tabRowHeight);
+
+    // Phase 4 Wave 1: mute, before the channel menu.
+    muteButton.setBounds (460, tabRowY, 26, tabRowHeight);
+    muteButton.setTooltip ("Mute: takes the band out of the mix entirely. The power button keeps it in, unprocessed.");
     powerIcon.setBounds (574, tabRowY + 5, 12, 13);
     closeButton.setBounds (607, tabRowY + 7, 8, 8);
 
@@ -275,7 +280,7 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
              &inputMeter, &thresholdLabel, &thresholdFader, &reductionMeter,
              &ratioKnob, &kneeKnob, &attackKnob, &releaseKnob, &rmsKnob, &gainKnob,
              &makeupCheckbox, &autoReleaseCheckbox, &feedbackCheckbox, &sidechainCheckbox,
-             &channelChip, &soloButton, &powerIcon, &closeButton })
+             &channelChip, &soloButton, &muteButton, &powerIcon, &closeButton })
         addAndMakeVisible (item);
 
     closeButton.onClick = [&owner] { owner.removeSelectedBand(); };
@@ -381,6 +386,15 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
     graph.setBounds (graphX, graphY, graphWidth, graphHeight);
     graph.onBandSelected = [this] (int band) { selectBand (band); };
     body.addAndMakeVisible (graph);
+
+    // Phase 4 Wave 1: Learn crossovers, at the graph's top right.
+    learnButton.setBounds (graphX + graphWidth - 82, graphY + 22, 70, 20);
+    learnButton.onClick = [this]
+    {
+        multiProcessor().startLearning();
+        learnButton.setText ("Listening...");
+    };
+    body.addAndMakeVisible (learnButton);
 
     tabs.setBounds (cardX, tabRowY, 280, tabRowHeight);
     tabs.onSelect = [this] (int band) { selectBand (band); };
@@ -563,6 +577,21 @@ void MultiCompEditor::onTick (float seconds)
     constexpr float fallDbPerSecond = 40.0f;
 
     auto& processor = multiProcessor();
+
+    // Phase 4 Wave 1: Learn's progress, and the crossovers once it has heard enough.
+    {
+        const auto progress = processor.getLearnProgress();
+
+        if (progress >= 1.0f)
+        {
+            processor.applyLearning();
+            learnButton.setText ("Learn");
+        }
+        else if (progress >= 0.0f)
+        {
+            learnButton.setText ("Listening " + juce::String (juce::roundToInt (progress * 100.0f)) + " %");
+        }
+    }
 
     updateSelection();
 

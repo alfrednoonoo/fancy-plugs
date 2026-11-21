@@ -252,7 +252,7 @@ A **Learn** button on the graph: over 5 s of playback, the spectrum is averaged 
 ### 3. Tests
 
 1. Legacy: identical with no band muted.
-2. Mute: a muted band's frequencies drop by over 60 dB at its centre; the rest stays flat within 0.1 dB of the crossover sum.
+2. Mute: a muted band's centre drops by over 30 dB (the neighbours' LR24 skirts still leak about −37 dB there, so the 60 dB first written here can't hold); the rest stays within 0.1 dB.
 3. Learn: pink noise gives crossovers near today's defaults; a bass-heavy test moves the lowest crossover down.
 
 Mockup: `reference/phase4/35__multicomp_w1_mockup.png` (source `design/phase4-mockup-src/w1_mockups.py`): the Learn button and the M buttons.

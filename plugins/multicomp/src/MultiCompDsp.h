@@ -37,6 +37,9 @@ public:
 
         // Phase 3 Q2.6: the channel the band compresses (Channel); the other one passes.
         int channel = stereo;
+
+        // Phase 4 Wave 1 (docs/multicomp.md): out of the sum entirely. Off is the band as it was.
+        bool mute = false;
     };
 
     struct Targets

@@ -76,6 +76,7 @@ private:
 
         fancy::ui::ChannelChip channelChip; // Phase 3 Q2.6
         fancy::ui::ParamTextToggle soloButton;
+        fancy::ui::ParamTextToggle muteButton; // Phase 4 Wave 1
         fancy::ui::ParamPowerIcon powerIcon;
         fancy::ui::IconButton closeButton;
 
@@ -103,6 +104,7 @@ private:
 
     Panels panels;
     BandGraph graph;
+    fancy::ui::PillButton learnButton { "Learn" }; // Phase 4 Wave 1: Learn crossovers
     fancy::ui::ColourTabs tabs;
     std::vector<std::unique_ptr<BandEditor>> bandEditors;
 

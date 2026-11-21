@@ -17,7 +17,7 @@ const char* const linkedSuffixes[] { "thr", "ratio", "att", "rel", "gain", "uthr
 
 // Every parameter of a band except its top frequency, which belongs to the crossover.
 const char* const bandSuffixes[] { "on", "solo", "thr", "ratio", "knee", "att", "rel", "rms", "gain", "mk", "ar", "fb", "sc",
-                                   "up", "uthr", "uratio", "lift", "floor", "chan" };
+                                   "up", "uthr", "uratio", "lift", "floor", "chan", "mute" };
 
 juce::NormalisableRange<float> skewedRange (float high, float interval, float centre)
 {
@@ -206,6 +206,11 @@ fancy::FancyProcessor::Layout createLayout (const fancy::SwitchableFrequencyPara
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
 
+    // Phase 4 Wave 1 (docs/multicomp.md), appended: a band's mute, off by default.
+    for (int band = 0; band < multicomp::maxBands; ++band)
+        layout.add (std::make_unique<Bool> (juce::ParameterID { MultiCompProcessor::id (band, "mute"), 1 },
+                                            "Band " + juce::String (band + 1) + " Mute", false));
+
     return layout;
 }
 
@@ -298,6 +303,7 @@ MultiCompProcessor::MultiCompProcessor (SharedFlag logScaleFlag)
 
         upwardValues[(size_t) band] = { value ("up"), value ("uthr"), value ("uratio"), value ("lift"), value ("floor") };
         channelValues[(size_t) band] = value ("chan");
+        muteValues[(size_t) band] = value ("mute");
 
         for (const auto* suffix : linkedSuffixes)
             apvts.getParameter (id (band, suffix))->addListener (this);
@@ -418,6 +424,7 @@ MultiCompDsp::BandSpec MultiCompProcessor::readBand (int band) const
     spec.gainDb = (double) load (values.gain);
     spec.active = on (values.on);
     spec.solo = on (values.solo);
+    spec.mute = muteValues[(size_t) band] != nullptr && muteValues[(size_t) band]->load (std::memory_order_relaxed) >= 0.5f;
     spec.autoMakeup = on (values.makeup);
     spec.autoRelease = on (values.autoRelease);
     spec.feedback = on (values.feedback);
@@ -569,6 +576,10 @@ void MultiCompProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::M
     if (analyzerActive.load (std::memory_order_relaxed))
         analyzerFifo.push (main, numChannels, numSamples);
 
+    // Phase 4 Wave 1: Learn listens to the input.
+    if (learnState.load (std::memory_order_relaxed) == learning)
+        learnFrom (main, numChannels, numSamples);
+
     const auto targets = readTargets();
     auto sidechainChosen = targets.detector >= MultiCompDsp::sideLR && targets.detector <= MultiCompDsp::sideR;
 
@@ -696,4 +707,142 @@ void MultiCompProcessor::setCrossover (int crossover, double hz)
 juce::AudioProcessorEditor* MultiCompProcessor::createEditor()
 {
     return new MultiCompEditor (*this);
+}
+
+// Learn crossovers (docs/multicomp.md, Phase 4 Wave 1) --------------------------------------
+
+namespace
+{
+constexpr int learnBands = 30;
+constexpr double learnLowestHz = 25.0;
+constexpr double learnSeconds = 5.0;
+constexpr double thirdOctaveQ = 4.318;
+
+double learnCentreHz (int index) noexcept
+{
+    return learnLowestHz * std::pow (2.0, (double) index / 3.0);
+}
+} // namespace
+
+void MultiCompProcessor::startLearning()
+{
+    learnEnergy.fill (0.0);
+    learnHeard = 0;
+    learnPrepared = false;
+    learnState.store (learning, std::memory_order_release);
+}
+
+// Third-octave bands sum to equal energy for pink noise, so the split is pink-weighted.
+void MultiCompProcessor::learnFrom (const float* const* main, int numChannels, int numSamples) noexcept
+{
+    const auto rate = getSampleRate() > 0.0 ? getSampleRate() : 48000.0;
+
+    if (! learnPrepared)
+    {
+        for (int b = 0; b < learnBands; ++b)
+        {
+            learnCoefficients[(size_t) b].set (std::min (learnCentreHz (b), 0.45 * rate), thirdOctaveQ, rate);
+            learnFilters[(size_t) b] = {};
+        }
+
+        learnPrepared = true;
+    }
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        auto x = 0.0;
+
+        for (int c = 0; c < numChannels; ++c)
+            x += (double) main[c][i];
+
+        x /= (double) numChannels;
+
+        // Only samples with signal count, so pauses don't shorten the listen.
+        if (std::abs (x) > 1.0e-5)
+            ++learnHeard;
+
+        for (int b = 0; b < learnBands; ++b)
+        {
+            const auto out = learnFilters[(size_t) b].tick (learnCoefficients[(size_t) b], x);
+            const auto y = learnCoefficients[(size_t) b].k * out.band;
+            learnEnergy[(size_t) b] += y * y;
+        }
+    }
+
+    if ((double) learnHeard >= learnSeconds * rate)
+        learnState.store (learned, std::memory_order_release);
+}
+
+float MultiCompProcessor::getLearnProgress() const noexcept
+{
+    const auto state = learnState.load (std::memory_order_acquire);
+
+    if (state == idle)
+        return -1.0f;
+
+    if (state == learned)
+        return 1.0f;
+
+    const auto rate = getSampleRate() > 0.0 ? getSampleRate() : 48000.0;
+    return (float) juce::jlimit (0.0, 1.0, (double) learnHeard / (learnSeconds * rate));
+}
+
+std::vector<double> MultiCompProcessor::crossoversFor (const std::array<double, 30>& energy, int numBands)
+{
+    std::vector<double> tops;
+
+    if (numBands < 2)
+        return tops;
+
+    auto total = 0.0;
+
+    for (const auto e : energy)
+        total += e;
+
+    if (total <= 0.0)
+        return tops;
+
+    // Each crossover where the cumulative energy reaches k / numBands, interpolated in log
+    // frequency across the band it falls in (third-octave edges either side of the centre).
+    auto cumulative = 0.0;
+    auto band = 0;
+
+    for (int k = 1; k < numBands; ++k)
+    {
+        const auto wanted = total * (double) k / (double) numBands;
+
+        while (band < (int) energy.size() - 1 && cumulative + energy[(size_t) band] < wanted)
+            cumulative += energy[(size_t) band++];
+
+        const auto share = energy[(size_t) band] > 0.0 ? (wanted - cumulative) / energy[(size_t) band] : 0.5;
+        const auto lowEdge = learnCentreHz (band) / std::pow (2.0, 1.0 / 6.0);
+        tops.push_back (lowEdge * std::pow (2.0, juce::jlimit (0.0, 1.0, share) / 3.0));
+    }
+
+    multicomp::sanitiseCrossovers (tops.data(), (int) tops.size());
+    return tops;
+}
+
+bool MultiCompProcessor::applyLearning()
+{
+    if (learnState.load (std::memory_order_acquire) != learned)
+        return false;
+
+    learnState.store (idle, std::memory_order_release);
+
+    const auto tops = crossoversFor (learnEnergy, getNumBands());
+
+    if (tops.empty())
+        return false;
+
+    // One undo step for all of them.
+    const UserEdit edit (*this);
+
+    for (int b = 0; b < (int) tops.size(); ++b)
+    {
+        auto& parameter = *getApvts().getParameter (id (b, "top"));
+        parameter.setValueNotifyingHost (parameter.convertTo0to1 ((float) tops[(size_t) b]));
+    }
+
+    return true;
 }

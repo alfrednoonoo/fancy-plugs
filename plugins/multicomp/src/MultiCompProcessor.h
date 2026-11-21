@@ -3,11 +3,14 @@
 #include "MultiCompDsp.h"
 
 #include <fancy/dsp/Analyzer.h>
+#include <fancy/dsp/Svf.h>
 #include <fancy/plugin/FancyProcessor.h>
 
 #include <array>
 #include <atomic>
+#include <cstdint>
 #include <memory>
+#include <vector>
 
 class MultiCompProcessor final : public fancy::FancyProcessor,
                                  private juce::AudioProcessorValueTreeState::Listener,
@@ -45,6 +48,16 @@ public:
     int splitBand (int band, double hz); // returns the new band, or -1 if there's no room
     void removeBand (int band);
     void setCrossover (int crossover, double hz);
+
+    // Phase 4 Wave 1: Learn crossovers. startLearning() listens to 5 s of input with signal;
+    // the editor polls getLearnProgress() (-1 idle, 0 to 1, 1 done) and then calls
+    // applyLearning(), which places the crossovers as one undo step.
+    void startLearning();
+    float getLearnProgress() const noexcept;
+    bool applyLearning();
+
+    // Where the crossovers go for these third-octave energies (25 Hz up): equal shares. Tests use it.
+    static std::vector<double> crossoversFor (const std::array<double, 30>& energy, int numBands);
 
     // The spectrum's feed. The editor turns it on only while it's open.
     fancy::dsp::SampleFifo analyzerFifo;
@@ -93,6 +106,17 @@ private:
     std::array<BandValues, multicomp::maxBands> bandValues {};
     std::array<UpwardValues, multicomp::maxBands> upwardValues {};
     std::array<std::atomic<float>*, multicomp::maxBands> channelValues {}; // Phase 3 Q2.6
+    std::array<std::atomic<float>*, multicomp::maxBands> muteValues {};    // Phase 4 Wave 1
+
+    // Phase 4 Wave 1: Learn crossovers.
+    void learnFrom (const float* const* main, int numChannels, int numSamples) noexcept;
+    enum LearnState { idle, learning, learned };
+    std::atomic<int> learnState { idle };
+    std::array<fancy::dsp::SvfCoefficients, 30> learnCoefficients {};
+    std::array<fancy::dsp::Svf, 30> learnFilters {};
+    std::array<double, 30> learnEnergy {};
+    std::int64_t learnHeard = 0;
+    bool learnPrepared = false;
     MultiCompDsp dsp;
     DesignThread designThread;
 
