@@ -60,10 +60,28 @@ Apple silicon runs these plugins at least as fast as the Windows runners, so the
 
 The same rules as Windows: no installer, no licence, no updater.
 
-- **Release asset:** `FancyPlugs-<version>-macos.zip` beside the Windows zip: the `.vst3` and `.component` bundles, `install.sh`, and FancyBench in `tools/`.
+- **Release asset:** `FancyPlugs-<version>-macos.zip` beside the Windows zip; its contents are set by section 6.1.
 - **`install.sh`:** copies the bundles to `~/Library/Audio/Plug-Ins/VST3` and `~/Library/Audio/Plug-Ins/Components` (the user's own folders, so no administrator password), removes the quarantine flag (Decision 2 A), and asks Logic to rescan AUs the next time it starts.
 - **`get-latest.sh`:** as `get-latest.ps1`, for the newest green build.
 - **README:** a Mac install section, and the Windows section kept as it is.
+
+### 6.1 Release zips for users (approved by the user on 21 November 2026, recommended options)
+
+The user wants the release zips to install without typing in a terminal, still without installers or signing (no `.exe`, `.msi` or `.pkg` for now). Each user downloads only their system's zip.
+
+**Windows, `FancyPlugs-<version>-win64.zip`: unzip and drag.** Windows doesn't block plugins copied out of a downloaded zip, so no script is needed.
+
+- Options: (A, recommended) drag into `C:\Program Files\Common Files\VST3`, the folder every Windows DAW scans by default; Windows asks once for administrator approval. (B) a folder of the user's choice, which each DAW then has to be told about. A asks for one click and no DAW settings; B means every user changes settings in every DAW they use.
+- Contents: a `VST3` folder holding the fourteen `.vst3` bundles, and `How to install.txt` (the path, "Continue" on the administrator prompt, rescan in the DAW, "close the DAW first when updating").
+- Left out: `install.ps1` (it installs to the developer folder `%USERPROFILE%\VST3-Dev`), FancyBench and AudioPluginHost (developer tools). They stay in the CI artifact, which `get-latest.ps1` keeps using on the user's PC. The rule against writing to `C:\Program Files` is about our own scripts and installs; a user copying plugins there by hand is the normal install.
+
+**Mac, `FancyPlugs-<version>-macos.zip`: one double-click and one approval.** Archive Utility marks everything it unzips from a download as quarantined, and macOS won't load a quarantined plugin unless it's notarised (Decision 2 B, declined for now). So drag-and-drop alone fails.
+
+- Options: (A, recommended) `Install Fancy Plugs.command`: the user double-clicks it, macOS blocks it the first time, the user clicks **Open Anyway** once in System Settings → Privacy & Security, and it installs all 28 bundles and clears their quarantine flags. (B) drag the bundles into `~/Library/Audio/Plug-Ins/VST3` and `Components` (a hidden folder: Finder → Go, hold Option → Library), then paste one Terminal line. B needs a hidden folder and Terminal, so A is the default and B is the fallback in the instructions.
+- Contents: `VST3` and `Components` folders, `Install Fancy Plugs.command` (the same script as `install.sh`, with a closing "Press Enter to close"), and `How to install.txt`, with screenshots of the Open Anyway step in the README. `install.sh` itself stays in the CI artifact for `get-latest.sh` and the CI install step. The zip is made with `ditto`, as beta.1 was, so the script keeps its executable bit.
+- Left out: FancyBench and AudioPluginHost, as on Windows.
+
+**Build:** CI assembles both user zips from the staged bundles as artifacts `release-zip-win64-<sha>` (holding `FancyPlugs-win64.zip`) and `release-zip-macos-<sha>` (holding `FancyPlugs-macos.zip`), so the release recipe renames them and uploads them as they are. Both jobs unzip their zip again and check its top level and bundle count. The Mac job also checks that the `.command` and every binary are executable and every bundle's signature, then sets the download quarantine flag on the unzipped bundles, runs the `.command` from there and checks every bundle is installed without the flag. Instructions: `scripts/release/windows-how-to-install.txt` and `macos-how-to-install.txt`. The README's and website's install sections change with the first release that ships these zips (v1.7.0), since the files they link to until then have the old layout.
 
 ## 7. Build order
 

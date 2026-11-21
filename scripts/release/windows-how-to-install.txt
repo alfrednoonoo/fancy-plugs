@@ -1,0 +1,27 @@
+Fancy Plugs for Windows 10 and 11 (64-bit), VST3
+=================================================
+
+Install
+-------
+
+1. Close your DAW.
+2. Open the VST3 folder in this zip and select everything in it (Ctrl+A), then copy it (Ctrl+C).
+3. In File Explorer, open C:\Program Files\Common Files\VST3
+   (paste that path into the address bar and press Enter).
+   If the VST3 folder isn't there, create it in C:\Program Files\Common Files.
+4. Paste (Ctrl+V). Windows asks for administrator permission: click Continue.
+   When updating, choose "Replace the files in the destination".
+5. Start your DAW and rescan its plug-ins.
+   REAPER: Options > Preferences > Plug-ins > VST > Re-scan.
+
+Every Windows DAW looks in that folder by default, so there's nothing else to set up.
+
+Uninstall
+---------
+
+Delete the "Fancy ... .vst3" folders from C:\Program Files\Common Files\VST3.
+
+More
+----
+
+Manual, guide and newer versions: https://alfrednoonoo.github.io/fancy-plugs/

@@ -1,5 +1,6 @@
 #!/bin/bash
-# Installs Fancy Plugs on a Mac (docs/mac.md, step 4): copies every .vst3 and .component bundle
+# Installs Fancy Plugs on a Mac (docs/mac.md, step 4, and section 6.1, where the release zip
+# carries this script as "Install Fancy Plugs.command" for a double-click): copies every .vst3 and .component bundle
 # found under the source folder (default: the folder this script is in) into the user's own
 # plug-in folders, so no administrator password is needed:
 #
@@ -91,3 +92,9 @@ fi
 killall -9 AudioComponentRegistrar 2>/dev/null || true
 
 echo "Installed $installed bundles. Restart your DAW, or rescan its plug-ins."
+
+# In the release zip this script is "Install Fancy Plugs.command" (docs/mac.md, section 6.1), which
+# Finder opens in a Terminal window: keep it open so the user can read the result.
+if [[ "$0" == *.command ]]; then
+    read -r -p "Press Enter to close this window." || true
+fi

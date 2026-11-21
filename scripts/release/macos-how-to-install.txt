@@ -1,0 +1,42 @@
+Fancy Plugs for macOS 11 or later (Intel and Apple silicon), VST3 and Audio Unit
+================================================================================
+
+Install
+-------
+
+1. Close your DAW.
+2. Double-click "Install Fancy Plugs.command".
+3. The first time, macOS stops it with "Apple could not verify ..." because Fancy Plugs isn't
+   signed with an Apple Developer ID. Click Done, then:
+   open System Settings > Privacy & Security, scroll down to
+   "Install Fancy Plugs.command was blocked", click Open Anyway and confirm with your password.
+   (On macOS 14 or earlier you can instead right-click the file and choose Open.)
+4. A Terminal window opens, installs the plugins and says how many it installed.
+   Press Enter to close it.
+5. Start your DAW and rescan its plug-ins.
+
+The VST3s go to ~/Library/Audio/Plug-Ins/VST3 and the Audio Units to
+~/Library/Audio/Plug-Ins/Components, your own folders, so no administrator password is needed.
+Use the VST3s in REAPER, Live, Cubase, Bitwig and Studio One, and the Audio Units in Logic Pro
+and GarageBand.
+
+Why the script: macOS won't load an unsigned plugin that came from a download until its
+quarantine flag is removed. The script copies the plugins and removes that flag.
+
+Installing by hand instead
+--------------------------
+
+Copy the contents of VST3 and Components into the folders above (in Finder: Go menu, hold
+Option, Library, then Audio > Plug-Ins). Then open Terminal, paste this line and press Return:
+
+  xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Fancy* ~/Library/Audio/Plug-Ins/Components/Fancy*
+
+Uninstall
+---------
+
+Delete the "Fancy ..." plugins from those two folders.
+
+More
+----
+
+Manual, guide and newer versions: https://alfrednoonoo.github.io/fancy-plugs/

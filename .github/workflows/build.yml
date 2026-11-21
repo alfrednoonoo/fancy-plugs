@@ -201,6 +201,41 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist/tools/examples | Out-Null
           Copy-Item tools/bench/examples/*.json dist/tools/examples/
 
+      # The zip users download (docs/mac.md, section 6.1): a VST3 folder to copy into
+      # C:\Program Files\Common Files\VST3 and the instructions, no scripts or developer tools.
+      # No top folder, because Explorer's Extract All already makes one named after the zip.
+      - name: Make the Windows release zip
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force release-win, zipcheck-win, FancyPlugs-win64.zip -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path release-win/VST3 | Out-Null
+          $bundles = @(Get-ChildItem -Path dist -Directory -Filter '*.vst3')
+          if ($bundles.Count -eq 0) { throw 'No .vst3 bundles in dist' }
+          foreach ($bundle in $bundles) { Copy-Item -Path $bundle.FullName -Destination release-win/VST3 -Recurse }
+          Copy-Item -Path scripts/release/windows-how-to-install.txt -Destination 'release-win/How to install.txt'
+          Push-Location release-win
+          7z a -tzip -mx=9 ../FancyPlugs-win64.zip VST3 'How to install.txt' | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "7z exited with $LASTEXITCODE" }
+          Pop-Location
+          7z x -y -ozipcheck-win FancyPlugs-win64.zip | Out-Null
+          $top = @(Get-ChildItem -Path zipcheck-win | ForEach-Object Name | Sort-Object) -join ', '
+          if ($top -ne 'How to install.txt, VST3') { throw "Unexpected top level in the zip: $top" }
+          $zipped = @(Get-ChildItem -Path zipcheck-win/VST3 -Directory -Filter '*.vst3')
+          if ($zipped.Count -ne $bundles.Count) { throw "The zip has $($zipped.Count) bundles, dist has $($bundles.Count)" }
+          foreach ($bundle in $zipped) {
+            if (-not (Get-ChildItem -Path $bundle.FullName -Recurse -File -Filter '*.vst3')) { throw "No binary in $($bundle.Name)" }
+          }
+          "FancyPlugs-win64.zip: $($zipped.Count) bundles, $([math]::Round((Get-Item FancyPlugs-win64.zip).Length / 1MB, 1)) MB"
+
+      - name: Upload the Windows release zip
+        uses: actions/upload-artifact@v7
+        with:
+          # Not FancyPlugs-VST3-*: get-latest.ps1 downloads every artifact matching that.
+          name: release-zip-win64-${{ env.SHORT_SHA }}
+          path: FancyPlugs-win64.zip
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Render UI screenshots
         # Even when a check above failed, so the UI can still be compared (Phase 3 Q2.1).
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -541,21 +576,48 @@ jobs:
           path: dist
           retention-days: 14
 
-      # The artifact above loses the executable bit (upload-artifact doesn't keep permissions), so
-      # releases use this zip, made with ditto, which keeps permissions and signatures intact.
+      # The zip users download (docs/mac.md, section 6.1): VST3 and Components folders, install.sh
+      # as "Install Fancy Plugs.command" for a double-click, and the instructions; no developer
+      # tools. The artifact above loses the executable bit (upload-artifact doesn't keep
+      # permissions), so this zip is made with ditto, which keeps permissions and signatures.
       - name: Make the Mac release zip
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
-          rm -rf release-mac && mkdir -p "release-mac/FancyPlugs-macos"
-          cp -R dist/. "release-mac/FancyPlugs-macos/"
-          ditto -c -k --sequesterRsrc --keepParent "release-mac/FancyPlugs-macos" FancyPlugs-macos.zip
-          rm -rf zipcheck && mkdir zipcheck && ditto -x -k FancyPlugs-macos.zip zipcheck
-          test -x zipcheck/FancyPlugs-macos/install.sh
-          for bin in zipcheck/FancyPlugs-macos/*/Contents/MacOS/* zipcheck/FancyPlugs-macos/tools/FancyBench; do
+          root="release-mac/FancyPlugs-macos"
+          rm -rf release-mac zipcheck FancyPlugs-macos.zip
+          mkdir -p "$root/VST3" "$root/Components"
+          cp -R dist/*.vst3 "$root/VST3/"
+          cp -R dist/*.component "$root/Components/"
+          cp scripts/install.sh "$root/Install Fancy Plugs.command"
+          chmod +x "$root/Install Fancy Plugs.command"
+          cp scripts/release/macos-how-to-install.txt "$root/How to install.txt"
+          ditto -c -k --sequesterRsrc --keepParent "$root" FancyPlugs-macos.zip
+          mkdir zipcheck && ditto -x -k FancyPlugs-macos.zip zipcheck
+          top=$(ls zipcheck/FancyPlugs-macos | sort | tr '\n' ',')
+          test "$top" = "Components,How to install.txt,Install Fancy Plugs.command,VST3," || { echo "unexpected top level: $top"; exit 1; }
+          check="zipcheck/FancyPlugs-macos"
+          test -x "$check/Install Fancy Plugs.command"
+          test "$(ls -d "$check"/VST3/*.vst3 | wc -l)" -eq "$(ls -d dist/*.vst3 | wc -l)"
+          test "$(ls -d "$check"/Components/*.component | wc -l)" -eq "$(ls -d dist/*.component | wc -l)"
+          for bin in "$check"/*/*/Contents/MacOS/*; do
             test -x "$bin" || { echo "not executable: $bin"; exit 1; }
           done
-          for bundle in zipcheck/FancyPlugs-macos/*.vst3 zipcheck/FancyPlugs-macos/*.component; do
+          for bundle in "$check"/VST3/*.vst3 "$check"/Components/*.component; do
             codesign --verify --deep --strict "$bundle"
+          done
+          # Install from the unzipped copy as a user's double-click would, with the downloads'
+          # quarantine flag set first, and check that every bundle arrives without it.
+          xattr -w com.apple.quarantine "0081;00000000;Safari;" "$check"/VST3/*.vst3 "$check"/Components/*.component
+          "$check/Install Fancy Plugs.command" < /dev/null
+          for bundle in "$check"/VST3/*.vst3; do
+            installed="$HOME/Library/Audio/Plug-Ins/VST3/$(basename "$bundle")"
+            test -d "$installed" || { echo "not installed: $installed"; exit 1; }
+            if xattr "$installed" | grep -q com.apple.quarantine; then echo "still quarantined: $installed"; exit 1; fi
+          done
+          for bundle in "$check"/Components/*.component; do
+            installed="$HOME/Library/Audio/Plug-Ins/Components/$(basename "$bundle")"
+            test -d "$installed" || { echo "not installed: $installed"; exit 1; }
+            if xattr "$installed" | grep -q com.apple.quarantine; then echo "still quarantined: $installed"; exit 1; fi
           done
           ls -la FancyPlugs-macos.zip
 
