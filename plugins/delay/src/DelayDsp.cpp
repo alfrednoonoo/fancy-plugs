@@ -309,6 +309,9 @@ void DelayDsp::setTargets (const Targets& targets, bool isMono) noexcept
     duckThresholdDb = targets.duckThresholdDb;
     duckRelease = 1.0 - std::exp (-1.0 / (std::max (1.0, targets.duckReleaseMs) * 0.001 * rate));
     useFastTanh = targets.fastTanh;
+
+    // Phase 4 Wave 1.
+    freezeOn = targets.freeze;
 }
 
 void DelayDsp::snapToTargets (const Targets& targets, bool isMono) noexcept
@@ -318,7 +321,7 @@ void DelayDsp::snapToTargets (const Targets& targets, bool isMono) noexcept
     for (auto& tap : taps)
         snapTap (tap);
 
-    for (auto* smoother : { &wetGain, &dryGain, &outputGain, &bypassMix, &duckAmount })
+    for (auto* smoother : { &wetGain, &dryGain, &outputGain, &bypassMix, &duckAmount, &freezeMix })
         smoother->snapToTarget();
 }
 
@@ -745,8 +748,8 @@ void DelayDsp::process (float* const* channels, int numChannels, int numSamples)
 
         // Phase 4 Wave 1: Freeze's crossfade for this chunk, or none at all while it's off.
         double frozen[chunkSize];
-        const auto freezing = current.freeze || ! freezeMix.isSettled() || freezeMix.getCurrent() > 0.0;
-        freezeMix.setTarget (current.freeze ? 1.0 : 0.0);
+        const auto freezing = freezeOn || ! freezeMix.isSettled() || freezeMix.getCurrent() > 0.0;
+        freezeMix.setTarget (freezeOn ? 1.0 : 0.0);
 
         if (freezing)
             for (int i = 0; i < count; ++i)

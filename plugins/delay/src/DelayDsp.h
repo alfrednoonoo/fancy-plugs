@@ -149,6 +149,7 @@ private:
     // Phase 3 Q2.3.
     // Phase 4 Wave 1: Freeze's crossfade, 30 ms, worked out once per chunk for every tap.
     fancy::dsp::Smoother freezeMix;
+    bool freezeOn = false;
     Smoother duckAmount;
     double duckThresholdDb = -24.0, duckEnvelope = 0.0, duckAttack = 1.0, duckRelease = 1.0;
 

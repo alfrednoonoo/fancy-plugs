@@ -44,7 +44,7 @@ public:
     };
 
     // Phase 4 Wave 1: the generated sub's peak level since the last call, for its meter.
-    float takeSubPeak() noexcept { return subPeak.exchange (0.0f, std::memory_order_relaxed); }
+    float takeSubPeak() noexcept { return subPeak.value.exchange (0.0f, std::memory_order_relaxed); }
 
     void prepare (double newSampleRate)
     {
@@ -315,9 +315,9 @@ private:
             }
         }
 
-        auto shown = subPeak.load (std::memory_order_relaxed);
+        auto shown = subPeak.value.load (std::memory_order_relaxed);
 
-        while ((float) peakHere > shown && ! subPeak.compare_exchange_weak (shown, (float) peakHere, std::memory_order_relaxed))
+        while ((float) peakHere > shown && ! subPeak.value.compare_exchange_weak (shown, (float) peakHere, std::memory_order_relaxed))
         {
         }
     }
@@ -434,5 +434,15 @@ private:
     std::array<double, 3> onsetSlow {};
     std::array<bool, 3> wasRunning {};
     double onsetSlowCoefficient = 0.001;
-    std::atomic<float> subPeak { 0.0f };
+    // The sub meter's peak for the UI. Wrapped so the engine stays copyable (the tests build
+    // one by value); a copy just takes the current reading.
+    struct PeakCell
+    {
+        std::atomic<float> value { 0.0f };
+        PeakCell() = default;
+        PeakCell (const PeakCell& other) noexcept : value (other.value.load (std::memory_order_relaxed)) {}
+        PeakCell& operator= (const PeakCell& other) noexcept { value.store (other.value.load (std::memory_order_relaxed), std::memory_order_relaxed); return *this; }
+    };
+
+    PeakCell subPeak;
 };
