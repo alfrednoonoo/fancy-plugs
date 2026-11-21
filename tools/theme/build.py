@@ -318,14 +318,15 @@ def font(face, height, weight=400):
     return raw.hex().upper()
 
 
-# Inter, as the plugins use it. "Inter", "Inter Medium" and "Inter SemiBold" are the family names
-# of the static files in assets/fonts (and of the user's installed Inter).
+# Inter, as the plugins use it, from its static "18pt" files (theme/fonts). Not the family "Inter":
+# on the user's PC that name is the variable font, which REAPER's GDI text drew with the wrong
+# glyphs some of the time ("0.00dB" as "2..22dB"; user's screenshots, 21 November 2026).
 FONTS = {
-    "lb_font": font("Inter", -11),             # track and mixer labels
-    "lb_font2": font("Inter Medium", -11),
-    "mi_font": font("Inter Medium", -11),      # item labels
-    "tl_font": font("Inter", -11),             # timeline / ruler
-    "trans_font": font("Inter SemiBold", -16), # transport clock
+    "lb_font": font("Inter 18pt", -11),             # track and mixer labels
+    "lb_font2": font("Inter 18pt Medium", -11),
+    "mi_font": font("Inter 18pt Medium", -11),      # item labels
+    "tl_font": font("Inter 18pt", -11),             # timeline / ruler
+    "trans_font": font("Inter 18pt SemiBold", -16), # transport clock
 }
 
 

@@ -4,7 +4,7 @@ Stage A: colours and fonts in the Fancy Plugs look, over REAPER's built-in image
 
 ## Install
 
-1. **Fonts.** The theme uses Inter. If it isn't installed, double-click `Inter-Regular.ttf`, `Inter-Medium.ttf` and `Inter-SemiBold.ttf` in the repo's `assets/fonts` folder and click Install.
+1. **Fonts.** The theme uses Inter's static "18pt" fonts. If `Inter 18pt` isn't installed, double-click the three files in `theme/fonts` and click Install (licence: `theme/fonts/Inter-LICENSE.txt`, SIL Open Font License). The plain family "Inter" isn't used: on Windows it can be the variable font, which REAPER drew with wrong characters.
 2. **Theme.** Copy `Fancy Plugs.ReaperTheme` into REAPER's `ColorThemes` folder (Options > Show REAPER resource path in explorer/finder, then `ColorThemes`), then pick **Fancy Plugs** under Options > Themes. Dragging the file onto REAPER's window also loads it.
 3. **Dark title bar and menus.** Preferences > General > Advanced UI/system tweaks…, set **Dark mode (experimental)** to **Forced on**, and restart REAPER. A theme can't do this itself (`docs/reaper-theme.md`, sections 8 and 9).
 

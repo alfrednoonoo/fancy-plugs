@@ -63,14 +63,17 @@ end
 -- Drawing helpers
 local s = 1
 local function set(hex, a) local r, g, b = rgb(hex); gfx.set(r / 255, g / 255, b / 255, a or 1) end
+-- A filled rounded rectangle, one pixel row at a time on whole pixels: pieces drawn at fractional
+-- positions left a light seam in each swatch (user's screenshot, 21 November 2026).
 local function fillRound(x, y, w, h, r)
-  gfx.rect(x + r, y, w - 2 * r, h, 1)
-  gfx.rect(x, y + r, r, h - 2 * r, 1)
-  gfx.rect(x + w - r, y + r, r, h - 2 * r, 1)
-  gfx.circle(x + r, y + r, r, 1, 1)
-  gfx.circle(x + w - r - 1, y + r, r, 1, 1)
-  gfx.circle(x + r, y + h - r - 1, r, 1, 1)
-  gfx.circle(x + w - r - 1, y + h - r - 1, r, 1, 1)
+  x, y, w, h = math.floor(x + 0.5), math.floor(y + 0.5), math.floor(w + 0.5), math.floor(h + 0.5)
+  r = math.min(math.floor(r + 0.5), math.floor(w / 2), math.floor(h / 2))
+  for row = 0, h - 1 do
+    local inset = 0
+    local d = (row < r) and (r - row - 0.5) or ((row >= h - r) and (row - (h - r) + 0.5) or nil)
+    if d then inset = math.floor(r - math.sqrt(math.max(0, r * r - d * d)) + 0.5) end
+    gfx.rect(x + inset, y + row, w - 2 * inset, 1, 1)
+  end
 end
 local function check(x, y, size, dark)
   if dark then gfx.set(0.08, 0.08, 0.08, 1) else gfx.set(1, 1, 1, 1) end
@@ -148,6 +151,8 @@ local mx, my = reaper.GetMousePosition()
 gfx.init("Fancy: colour tracks", W, H, 0, mx - 20, my - 20)
 s = math.max(1, gfx.ext_retina or 1)
 if s ~= 1 then gfx.init("", W * s, H * s) end
-gfx.setfont(1, "Inter", math.floor(11.5 * s + 0.5))
-gfx.setfont(2, "Inter", math.floor(10.5 * s + 0.5))
+-- The static "Inter 18pt" family, as the theme uses: the variable font's family "Inter" drew wrong
+-- glyphs here ("Defa]lt colo]r"; user's screenshot, 21 November 2026).
+gfx.setfont(1, "Inter 18pt", math.floor(11.5 * s + 0.5))
+gfx.setfont(2, "Inter 18pt", math.floor(10.5 * s + 0.5))
 frame()
