@@ -280,7 +280,7 @@ Push 1 holds the whole item: the moves into `fancy-core`, 8x, Character, Upward,
 
 ## Phase 4 Wave 1: Hold, Range, Listen to removed and GR history
 
-Items 1 to 6 of `docs/enhancements.md` section 3, the first plugin of Wave 1 in the Phase 4 order (`docs/enhancements.md`, "Phase 4 order"). On 21 November 2026 the user said to go on with Phase 4, which this note takes as the proposed order, Comp first. **Waiting for the user's approval; no code before it.** Mockup: `design/phase4-mockup-src/comp-w1.html`, rendered at 2x as `reference/phase4/29__comp_w1_mockup.png`.
+Items 1 to 6 of `docs/enhancements.md` section 3, the first plugin of Wave 1 in the Phase 4 order (`docs/enhancements.md`, "Phase 4 order"). On 21 November 2026 the user said to go on with Phase 4, which this note takes as the proposed order, Comp first. **Approved by the user on 21 November 2026 with every recommended option (A) on Decisions 1 to 4**, plus, after comparing with Woodstock Audio's Waveform Compressor, the History page's waveforms, zoom, pause and beat lines (section 5); that comparison also put an Optical mode in the Wave 2 backlog (`docs/enhancements.md`, Comp 10). Mockup: `design/phase4-mockup-src/comp-w1.html`, rendered at 2x as `reference/phase4/29__comp_w1_mockup.png`.
 
 ### 1. Two items are already there
 
@@ -323,14 +323,20 @@ A temporary listen switch (§0.3 of `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md`): 
 
 ### 5. GR history
 
-The last 3 s, oldest on the left: the detector level as a grey fill, the effective threshold as a white line (it moves with Auto threshold), and the gain reduction in yellow from the top, the GR meter's colour. Unlinked, the right channel is a lighter line over the left. A read-out shows the largest reduction in the shown 3 s; a click clears it.
+A fifth page of the EDIT drawer (Decision 4 A, approved), **History**, oldest on the left, one column per pixel (mockup, section 3):
 
-- **Shared widget:** `DeEsserHistory` becomes a general `fancy::ui::LevelHistory` in `fancy-core`, with its own column type (level, threshold, reduction left and right) rather than the de-esser's. DS and DS-Mini switch to it with their look unchanged, and their screenshots must match. MultiComp, Gate and Limit can use it in later items.
-- **Data:** the audio thread makes one column per 1/476 of 3 s (about 6.3 ms, the maximum of each value over that time) into a lock-free FIFO, as the de-esser engine does. The editor reads it on its timer. Nothing is allocated on the audio thread.
-- **Decision 4: where it goes.**
-  - **A (R).** A fifth page of the EDIT drawer, **History**, filling the page (476 × 294). No change to the main layout or the window size. While the drawer is open, the threshold meter, GR meter and faders stay visible on either side. But the main grid's knobs (Ratio, Attack, Release…) are under the drawer, so you watch the history, close the drawer, turn a knob and look again.
-  - **B.** Grow the window by a 90 px strip under the main grid, always visible (934 × 527 to about 934 × 617). Best for tuning Attack and Release by eye, but it changes the main layout, the window size and every screenshot.
-  - **C.** Leave the history out of Wave 1 and decide it together with MultiComp's, so both plugins get the same answer.
+- **Waveforms:** the input in grey and the output in teal over it, mirrored about a centre line on a linear scale. The output is drawn before make-up, so the two line up when nothing is compressed and the gap is what Comp took off.
+- **Gain reduction:** a yellow line from the top (0 to 24 dB, right scale), the GR meter's colour. Unlinked, the right channel is a lighter second line.
+- **Threshold:** the effective threshold as a dashed pair of lines at ± its level; it moves with Auto threshold.
+- **Zoom:** 1.5, 3, 6 or 12 s, a segment switch above the graph.
+- **Beat and bar lines** from the host's tempo and time signature while the transport plays (bars brighter), switched by a "Grid" checkbox. Stopped or without tempo, none.
+- **Pause:** a click on the graph freezes it, and the caption says "paused · click to go on"; another click goes on. The audio and the meters carry on.
+- **Peak read-out:** the largest reduction in the shown span; a click clears it.
+- None of these are parameters. Zoom and Grid are remembered per editor, as the drawer's page is.
+
+**Shared widget:** `DeEsserHistory` becomes a general `fancy::ui::LevelHistory` in `fancy-core`, with its own column type (input and output peaks, reduction left and right, threshold, beat and bar marks). DS and DS-Mini switch to it with their look unchanged, and their screenshots must match. MultiComp, Gate and Limit can use it in later items.
+
+**Data:** the audio thread makes one column per 1.5 s / 476 (about 3.2 ms; peaks and the largest reduction over that time) into a lock-free FIFO, as the de-esser engine does, with a beat or bar mark when the host position crosses one in that column. The editor keeps 12 s (3 808 columns) and merges 2, 4 or 8 into one pixel for the longer zooms. Nothing is allocated on the audio thread.
 
 ### 6. Parameters and state
 
@@ -352,7 +358,7 @@ Range shows and types "Off" at the top of its travel, as Dry shows −inf at the
 5. **Range:** ∞:1, Threshold −40 dB, a 0 dBFS sine. The reduction equals Range within 0.1 dB at 6, 12 and 24 dB, and is 40 dB at Off. Auto make-up follows Decision 1.
 6. **Listen to removed, null test:** at Oversampling Off, the normal output plus the removed signal equals the delayed input within −120 dBFS. At 4x, it is within −100 dBFS of the input rendered through the same oversampler at 1:1.
 7. **Two listens:** switching one on switches the other off; closing the editor turns both off; neither changes the saved state.
-8. **History:** columns arrive at 476 per 3 s at 44.1, 48 and 96 kHz and every block size; the peak read-out equals the largest reduction in the window; DS's and DS-Mini's screenshots are unchanged.
+8. **History:** columns arrive at 476 per 1.5 s at 44.1, 48 and 96 kHz and every block size; merged zooms keep each column's peaks; the peak read-out equals the largest reduction in the span; beat marks land within one column of the host's beat at 120 BPM; DS's and DS-Mini's screenshots are unchanged.
 9. **Automation and host:** the existing bit-identical automation test and H's offline-render and flood tests cover the two new parameters.
 10. **CPU (§0.4):** Comp at its defaults stays at 1.00 × itself within noise, and Hold, Range and the history together add under 0.1 % at 48 kHz/128 samples (`docs/measurements/comp-w1.txt`).
 

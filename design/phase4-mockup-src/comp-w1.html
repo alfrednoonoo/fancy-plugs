@@ -68,16 +68,30 @@ body{--a:#00A985}
  <div class="n" style="width:200px">Right, at half size: the defaults, Hold 0.0 ms and Range Off, which leave Comp as it is today, to the bit.</div>
 </div></div>
 
-<div><div class="h">3 · EDIT drawer, History page (Decision 4 A)</div><div class="n">A fifth page in the view switch. The last 3 seconds, oldest on the left, one column per pixel (about 6.5 ms each): the detector level as a grey fill (0 to −60 dB, left scale), the effective threshold as a white line (it moves with Auto threshold), and the gain reduction in yellow from the top (0 to 30 dB, right scale), the GR meter's colour. Unlinked, the left channel is the solid yellow and the right a lighter line over it; linked, the two are one. The read-out at the top right is the largest reduction in the shown 3 s; click it to clear. While the drawer is open, the threshold meter, GR meter and faders stay visible to its left and right.</div>
+<div><div class="h">3 · EDIT drawer, History page (Decision 4 A, with the user's additions of 21 November 2026)</div><div class="n">A fifth page in the view switch, oldest on the left, one column per pixel. The <b>input waveform</b> in grey and the <b>output waveform</b> in teal over it, so the gap between them is what Comp took off (before make-up, so the two line up when nothing is compressed). The <b>gain reduction</b> is the yellow line from the top (0 to 24 dB, right scale), the GR meter's colour; unlinked, the right channel is a lighter second line. The effective <b>threshold</b> is a dashed pair of lines at ± its level; it moves with Auto threshold. <b>Zoom</b>: 1.5, 3, 6 or 12 s. <b>Beat and bar lines</b> from the host's tempo while it plays (bars brighter), switched by "Grid". <b>Pause</b>: click the graph to freeze it, and again to go on. The read-out is the largest reduction in the shown span; click it to clear. None of these are parameters; zoom and Grid are remembered per editor, like the drawer's page.</div>
 <div class="row">
  <div class="drawer">
   <div class="t">EDIT</div>
   <div class="seg tabs"><span>Detector</span><span>Character</span><span>Upward</span><span>Options</span><span class="a">History</span></div>
   <div class="done">Done</div>
-  <svg id="his" class="abs" style="left:24px;top:56px;background:#141414;border-radius:6px" width="476" height="294"></svg>
+  <div class="abs seg" style="left:24px;top:56px"><span>1.5 s</span><span class="a">3 s</span><span>6 s</span><span>12 s</span></div>
+  <div class="abs" style="left:234px;top:58px"><div class="cb"><i class="x"></i>Grid</div></div>
+  <div class="abs" style="left:300px;top:56px;width:200px;height:24px;display:flex;align-items:center;justify-content:flex-end;font-size:12px;color:#FFCF07">peak 7.0 dB</div>
+  <svg id="his" class="abs" style="left:24px;top:90px;background:#141414;border-radius:6px" width="476" height="260"></svg>
  </div>
- <div class="n" style="width:300px">The drawing is the shared history widget that Fancy DS and DS-Mini use today (<code>DeEsserHistory</code>), generalised in <code>fancy-core</code> so Comp (now), and MultiComp, Gate and Limit (later items), draw history the same way. DS and DS-Mini keep their look: same scales, same colours, same caption.</div>
-</div></div>
+ <div class="drawer" style="transform:scale(.5);transform-origin:0 0;margin-right:-262px;margin-bottom:-187px">
+  <div class="t">EDIT</div>
+  <div class="seg tabs"><span>Detector</span><span>Character</span><span>Upward</span><span>Options</span><span class="a">History</span></div>
+  <div class="done">Done</div>
+  <div class="abs seg" style="left:24px;top:56px"><span>1.5 s</span><span class="a">3 s</span><span>6 s</span><span>12 s</span></div>
+  <div class="abs" style="left:234px;top:58px"><div class="cb"><i class="x"></i>Grid</div></div>
+  <div class="abs" style="left:300px;top:56px;width:200px;height:24px;display:flex;align-items:center;justify-content:flex-end;font-size:12px;color:#8D8D8D">paused · click to go on</div>
+  <svg id="his2" class="abs" style="left:24px;top:90px;background:#141414;border-radius:6px;outline:1px solid #4C4C4C" width="476" height="260"></svg>
+ </div>
+ <div class="n" style="width:200px">Right, at half size: paused. The graph keeps its last picture and the caption says so.</div>
+</div>
+<div class="n">The drawing is a shared widget in <code>fancy-core</code>, <code>LevelHistory</code>, which also replaces <code>DeEsserHistory</code> in Fancy DS and DS-Mini with their look unchanged, so MultiComp, Gate and Limit can use it later.</div>
+</div>
 
 </div>
 <script>
@@ -87,17 +101,22 @@ const el=document.getElementById(id);el.innerHTML='<div class="rc"></div>';const
 let pos=[];if(!five){[72,232,392,552].forEach((x,i)=>nodes[i].style.left=x+'px');pos=[72,232,392,552]}else{const w=nodes.map(n=>n.getBoundingClientRect().width),total=w.reduce((a,b)=>a+b,0),gap=(750-48-total)/(w.length-1);let x=24;nodes.forEach((n,i)=>{n.style.left=Math.round(x)+'px';pos.push([Math.round(x),Math.ceil(w[i])]);x+=w[i]+gap});
 document.getElementById('fpos').textContent='Measured (x, width) at 100 %: '+pos.map((p,i)=>`${items[i][0]} (${p[0]}, ${p[1]})`).join(' · ')+`. Gap ${gap.toFixed(0)} px.`}}
 foot('f4',false);foot('f5',true);
-// 3 history
-(()=>{const W=476,H=294,top=22,bot=H-10,lf=-60,yl=d=>top+(bot-top)*(d/lf),yr=g=>top+(bot-top)*(g/30);let s='';
-[-12,-24,-36,-48].forEach(d=>s+=`<line x1="0" y1="${yl(d)}" x2="${W}" y2="${yl(d)}" stroke="#202020"/><text x="4" y="${yl(d)-3}" fill="#5a5a5a" font-size="9">${d}</text>`);
-[6,12,18,24].forEach(g=>s+=`<text x="${W-4}" y="${yr(g)-3}" fill="#6b6220" font-size="9" text-anchor="end">${g}</text>`);
-let lev=[],grL=[],grR=[];let env=-60,gl=0,gr2=0;const T=-20;
-for(let x=0;x<W;x++){const t=x*6.5/1000;const beat=(t*2.2)%1;let l=beat<0.04?-10:-10-30*beat;l=Math.max(-58,l+(Math.sin(x*0.9)*1.5));lev.push(l);
-const over=Math.max(0,l-T),tgt=over*(1-1/3);gl=tgt>gl?gl+0.6*(tgt-gl):gl+0.05*(tgt-gl);grL.push(gl);const tgt2=tgt*0.8;gr2=tgt2>gr2?gr2+0.6*(tgt2-gr2):gr2+0.05*(tgt2-gr2);grR.push(gr2)}
-let p=`M0,${bot}`;lev.forEach((l,x)=>p+=`L${x},${yl(l)}`);p+=`L${W},${bot}Z`;s+=`<path d="${p}" fill="#4C4C4C" fill-opacity=".6"/>`;
-s+=`<line x1="0" y1="${yl(T)}" x2="${W}" y2="${yl(T)}" stroke="#fff" stroke-opacity=".75" stroke-width="1.5"/>`;
-let g=`M0,${top}`;grL.forEach((v,x)=>g+=`L${x},${yr(v)}`);g+=`L${W},${top}Z`;s+=`<path d="${g}" fill="#FFCF07" fill-opacity=".55"/>`;
-let g2='';grR.forEach((v,x)=>g2+=(x?'L':'M')+x+','+yr(v));s+=`<path d="${g2}" stroke="#FFE88A" stroke-width="1.2" fill="none"/>`;
-const pk=Math.max(...grL);s+=`<rect x="0" y="0" width="${W}" height="${top}" fill="#141414"/><text x="8" y="15" fill="#8D8D8D" font-size="10">3 s · level, threshold, gain reduction</text><text x="${W-8}" y="15" fill="#FFCF07" font-size="11" text-anchor="end">peak ${pk.toFixed(1)} dB</text>`;
-document.getElementById('his').innerHTML=s})();
-</script></body></html>
+// 3 history: input and output waveforms, GR line, threshold, beat grid
+function his(id){const W=476,H=260,mid=H/2,amp=(H/2-8),yr=g=>4+(H-8)*(g/24);let s='';
+const bpm=120,span=3,beat=60/bpm;
+let grid='';for(let k=0;k*beat<span;k++){const x=W*(k*beat+0.11)/span;if(x>W)break;grid+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#fff" stroke-opacity="${k%4==0?.35:.14}" stroke-width="1"/>`}
+const T=10**(-20/20);[-1,1].forEach(sg=>s+=`<line x1="0" y1="${mid-sg*amp*T*3}" x2="${W}" y2="${mid-sg*amp*T*3}" stroke="#fff" stroke-opacity=".45" stroke-dasharray="4 4"/>`);
+let inp=[],out=[],grL=[],grR=[],gl=0,g2=0;
+for(let x=0;x<W;x++){const t=x*span/W,ph=((t-0.11)/beat+10)%1;let a=ph<0.03?0.95:0.95*Math.exp(-ph*3.2);a=a*(0.8+0.2*Math.abs(Math.sin(x*1.7)))+0.03;
+const ldb=20*Math.log10(a/3),over=Math.max(0,ldb+20),tgt=over*(1-1/3);gl=tgt>gl?gl+0.7*(tgt-gl):gl+0.06*(tgt-gl);const t2=tgt*0.8;g2=t2>g2?g2+0.7*(t2-g2):g2+0.06*(t2-g2);
+inp.push(a);out.push(a*10**(-gl/20));grL.push(gl);grR.push(g2)}
+const wave=(arr,fill,op)=>{let p=`M0,${mid}`;arr.forEach((v,x)=>p+=`L${x},${mid-v*amp}`);for(let x=W-1;x>=0;x--)p+=`L${x},${mid+arr[x]*amp}`;return `<path d="${p}Z" fill="${fill}" fill-opacity="${op}"/>`};
+s+=wave(inp,'#5a5a5a',.9)+wave(out,'#00A985',.85)+grid;
+let g='';grL.forEach((v,x)=>g+=(x?'L':'M')+x+','+yr(v));s+=`<path d="${g}" stroke="#FFCF07" stroke-width="2" fill="none"/>`;
+let gg='';grR.forEach((v,x)=>gg+=(x?'L':'M')+x+','+yr(v));s+=`<path d="${gg}" stroke="#FFE88A" stroke-opacity=".7" stroke-width="1" fill="none"/>`;
+[6,12,18].forEach(d=>s+=`<text x="${W-4}" y="${yr(d)-3}" fill="#8a7a20" font-size="9" text-anchor="end">${d}</text>`);
+s+=`<text x="6" y="${H-6}" fill="#5a5a5a" font-size="9">in</text><rect x="20" y="${H-13}" width="8" height="8" fill="#5a5a5a"/><text x="34" y="${H-6}" fill="#00A985" font-size="9">out</text><rect x="54" y="${H-13}" width="8" height="8" fill="#00A985"/><text x="68" y="${H-6}" fill="#FFCF07" font-size="9">GR</text>`;
+document.getElementById(id).innerHTML=s}
+his('his');his('his2');
+</script>
+</body></html>

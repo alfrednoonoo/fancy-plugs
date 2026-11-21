@@ -104,6 +104,7 @@ The most complete plugin in the set; the gaps are the standard ones.
 | 7 | Sidechain EQ from 3 to 6 bands, with shelf and brickwall cut types | M | 2 | Detector page; three new bands |
 | 8 | Link modes Stereo / M>S / S>M beyond Link % | M | 2 | Options page; `linkMode` |
 | 9 | Tempo-synced trigger: duck on a host-tempo pattern with no sidechain kick (Pro-C 3's Host Sync) | M | 2 | Detector menu; `syncRate`, `syncShape` |
+| 10 | Optical mode: a third ballistics mode beside the default and Classic, with signal-dependent attack, a two-stage release and a memory that slows recovery after long reduction (Woodstock Audio's Waveform Compressor; added by the user on 21 November 2026, overriding the 17 November \"style models\" removal for ballistics only) | M | 2 | Options page; appended to the mode choice or a new `optical` |
 
 ## 4. Fancy EQ
 
@@ -283,7 +284,7 @@ features).
    Exciter delta and THD; Kicker sub length, make-room, polarity and auto gain; FIR resonance tilt.
 2. **Wave 2** — one design note per item, each with a Python model first, in this order:
    MultiComp dynamic-phase crossover, FIR depth nodes, Comp tempo-synced trigger (then Gate's),
-   Sature outer-band drive, Verb decay module, Verb ducking and level gate, Limit clipper, DS
+   Sature outer-band drive, Comp Optical mode, Verb decay module, Verb ducking and level gate, Limit clipper, DS
    dual-band, Gate detector modes.
 3. **Wave 3** — Limit multiband (▲), Gate multiband (▲), EQ spectral dynamics, Verb freeze and
    shimmer, Room shimmer, Delay reverse and pitch taps.
