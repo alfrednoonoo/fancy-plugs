@@ -60,3 +60,16 @@ Re-select **Fancy Plugs (Stage B preview)** under Options > Themes so REAPER rel
 - [x] The Rate slider at the bottom is a thin dark track with a black cap.
 - [x] Play turns teal while playing. 📷 the transport while playing.
 - [x] The last two main toolbar buttons, marquee selection and razor editing, show the theme's icons (a yellow dashed box with a cursor, a red razor blade), not REAPER's.
+
+# Stage C preview (layouts), first round: track panel
+
+Pick **Fancy Plugs (Stage C preview)** under Options > Themes. Have three tracks: one coloured red, one coloured blue, one with no colour; arm one of them. 📷 the window with the mixer open.
+
+- [ ] Each track panel has two rows: record arm, name, M, S, FX and a small switch; then a volume knob, its dB value, a pan knob, envelope and polarity, and IO.
+- [ ] A thin strip in the track's colour on the left edge; none on the uncoloured track.
+- [ ] The knobs are grey discs whose pointer is the track's colour (red, blue), white on the uncoloured track. Turning them works; double-click resets.
+- [ ] On the armed track, envelope and polarity give way to the input box, monitoring, record mode and input FX.
+- [ ] A thin stereo meter on the right edge moves with playback.
+- [ ] Make a track short (drag its bottom edge up): only the first row shows. Make one tall: the rows stay at the top.
+- [ ] Make the track panel wider and narrower: the name and input box stretch, the buttons stay together on the right.
+- [ ] The mixer and transport still look as in Stage B (REAPER's own layout). Note anything missing there.

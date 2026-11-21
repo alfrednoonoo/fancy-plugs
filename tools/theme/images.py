@@ -417,6 +417,29 @@ def rounded_bg(fill):
 name_field = rounded_bg(WELL)  # the track name's well: #141414
 
 
+def knob_face(size):
+    """The suite's knob face: a disc shaded #4F4F4F to #454545 with a 1 px black 20 % border.
+    REAPER draws the pointer on it, in the colour the layout gives (the track's colour)."""
+    def make(scale):
+        k = scale * SS
+        px = round(size * k)
+        grad = Image.new("RGBA", (px, px))
+        top, bot = rgba(KNOB_TOP), rgba(KNOB_BOT)
+        gd = ImageDraw.Draw(grad)
+        for y in range(px):
+            t = y / max(1, px - 1)
+            gd.line([(0, y), (px, y)], fill=tuple(round(a + (b - a) * t) for a, b in zip(top, bot)))
+        inset = round(1.5 * k)
+        mask = Image.new("L", (px, px), 0)
+        ImageDraw.Draw(mask).ellipse([inset, inset, px - 1 - inset, px - 1 - inset], fill=255)
+        out = Image.new("RGBA", (px, px), (0, 0, 0, 0))
+        out.paste(grad, (0, 0), mask)
+        ImageDraw.Draw(out).ellipse([inset, inset, px - 1 - inset, px - 1 - inset], outline=(0, 0, 0, 51),
+                                    width=max(1, round(k)))
+        return out.resize((round(size * scale), round(size * scale)), Image.LANCZOS)
+    return make
+
+
 # Each toolbar icon's accent (user, 21 November 2026: "A + B, but instead of only teal, use other
 # colours"): actions draw their icon in it; a toggle that is on fills its button with it.
 TOOLBAR_ACCENT = {
@@ -500,6 +523,10 @@ IMAGES = {
     "mcp_volthumb": thumb(False, 22, 10),
     "mcp_panbg": slider_track(True, 30, 12),
     "mcp_panthumb": thumb(True, 8, 12),
+
+    # Knob faces (Stage C's knobs; every knob falls back to these)
+    "gen_knob_bg_small": knob_face(20),
+    "gen_knob_bg_large": knob_face(32),
 
     # Name fields
     "tcp_namebg": name_field,

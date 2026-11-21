@@ -358,25 +358,45 @@ misc_dpi_translate 174 200
 """
 
 
-def build_stage_b():
+def build_preview(name, img_dir, rtconfig, stage_text):
+    """A preview .ReaperThemeZip: the colours with ui_img, our images and an rtconfig.txt."""
     import shutil
     import zipfile
     sys.path.insert(0, str(pathlib.Path(__file__).parent))
     import images
 
     build = ROOT / "theme" / "build"
-    folder = build / STAGE_B_IMG
+    folder = build / img_dir
     if folder.exists():
         shutil.rmtree(folder)
     count = images.render(folder)
-    (folder / "rtconfig.txt").write_text(RTCONFIG_B.replace("\n", "\r\n"), encoding="ascii", newline="")
-    zpath = build / f"{STAGE_B_NAME}.ReaperThemeZip"
+    (folder / "rtconfig.txt").write_text(rtconfig.replace("\n", "\r\n"), encoding="ascii", newline="")
+    zpath = build / f"{name}.ReaperThemeZip"
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr(f"{STAGE_B_NAME}.ReaperTheme", theme_text("Stage B preview: colours, fonts and images", STAGE_B_IMG))
+        z.writestr(f"{name}.ReaperTheme", theme_text(stage_text, img_dir))
         for f in sorted(folder.rglob("*")):
             if f.is_file():
                 z.write(f, f.relative_to(build).as_posix())
     print(f"{zpath.relative_to(ROOT)}: {count} images at 100, 150 and 200 %")
+
+
+def build_stage_b():
+    build_preview(STAGE_B_NAME, STAGE_B_IMG, RTCONFIG_B, "Stage B preview: colours, fonts and images")
+
+
+# Stage C: Stage B plus our own layouts (tools/theme/layout.py), as a third preview so Stage B stays
+# one click away.
+STAGE_C_NAME = "Fancy Plugs (Stage C preview)"
+STAGE_C_IMG = "FancyPlugs_C"
+
+
+def build_stage_c():
+    sys.path.insert(0, str(pathlib.Path(__file__).parent))
+    import layout
+    rtconfig = RTCONFIG_B.replace("Stage B (docs/reaper-theme.md). No layouts yet: REAPER's own.",
+                                  "Stage C preview (docs/reaper-theme.md): our layouts.")
+    rtconfig += "\n" + layout.rtconfig_walter()
+    build_preview(STAGE_C_NAME, STAGE_C_IMG, rtconfig, "Stage C preview: colours, fonts, images and layouts")
 
 
 def main():
@@ -385,6 +405,8 @@ def main():
     print(f"{OUT.relative_to(ROOT)}: {len(COLOURS)} colours, {len(FONTS)} fonts")
     if "--stage-b" in sys.argv:
         build_stage_b()
+    if "--stage-c" in sys.argv:
+        build_stage_c()
 
 
 if __name__ == "__main__":
