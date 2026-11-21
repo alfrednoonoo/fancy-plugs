@@ -425,3 +425,41 @@ On a 4 s noise IR with RT 2 s in every band and a −100 dB noise floor (a 24-bi
 ### 6. Build order
 
 Approval, then the card mockup (`reference/phase4/47__verb_w2_decay_mockup.png`), then one push: the module in the IR builder, the card, tests, manual and checklist.
+
+## Phase 4 Wave 2: ducking and level gate
+
+**Draft, for approval.** Item 8 of the Wave 2 order (`docs/enhancements.md`; backlog items 6 and 7 of section 5). Two live stages on the wet signal after the convolver: **Ducking** turns the reverb down while the source plays and lets it bloom in the gaps, and the **Gate** stops the tail when the source stops (gated drums). Fancy Room has both (Ducking from Phase 3, the gate from Phase 4 Wave 1). Modelled first: `docs/research/verb-duck-model.py`.
+
+### 1. What it does
+
+- **Ducking:** Room's detector and curve: a peak follower on the input with 10 ms attack and 300 ms release, turning the wet down by up to 24 dB × Ducking, fully above −20 dBFS and not at all below −50. Parameters `duck` (0 to 100 %, 0) and `duckSource` (Main, Sidechain; Main).
+- **Gate:** Room's Wave 1 gate: when the detector has been under Threshold for Hold, the wet fades out over Decay. Parameters `gate` (off), `gateThr` (−60 to 0 dB, −30), `gateHold` (10 to 500 ms, 80) and `gateDecay` (5 to 500 ms, 40). It reads the same source as Ducking.
+- Both are skipped at their defaults, so a saved project renders as before to the bit. The detector code moves from `RoomDsp` into `fancy-core` (`fancy::dsp::WetDucker`, `fancy::dsp::WetGate`) for both plugins, with Room held bit-identical by its legacy test.
+
+### 2. What the model found
+
+Verb's Low CPU mode reports 4096 samples of latency, and its dry path is delayed to match. A detector reading the input as it arrives acts that much ahead of the wet signal it should act on: at 48 kHz the gate would shut 85 ms early, cutting a 170 ms gated reverb in half, and the duck would let go 85 ms before the hit is heard. With the detector delayed by the reported latency, both act on the wet signal as Room's do, at 44.1, 48 and 96 kHz. Zero latency mode has no latency to delay.
+
+### 3. Decisions
+
+- **Decision 1: where they live.**
+  - **A (R).** Not in the rack: the rack builds the IR offline, and these act live on the sound after it, whatever the module order. A **Ducking** knob and a **Gate** group (checkbox, Threshold, Hold, Decay) go in the SETUP drawer's free space, with the source menu. The rack keeps one meaning.
+  - **B.** As the backlog first had them, two new module cards. They'd be the only cards whose place in the chain means nothing, and the only ones costing CPU while playing.
+- **Decision 2: the detector's timing.**
+  - **A (R).** Delayed by the reported latency, as modelled, so both act on the wet signal they're meant for.
+  - **B.** Undelayed: simpler, but early by 85 ms in Low CPU mode at 48 kHz.
+- **Decision 3: a sidechain input.**
+  - **A (R).** Add an optional stereo **sidechain** bus (off until the host routes something to it), with `duckSource` choosing Main or Sidechain, so a vocal can duck a reverb on a send. The host compatibility checks (H) run again for the new bus.
+  - **B.** No new bus: Ducking and the Gate read the main input only. On a send (Wet only) the main input is the send, which is usually right.
+
+### 4. Tests
+
+1. Legacy: Ducking 0 and Gate off render as v1.6.0 in both latency modes; Room renders as before after the detector moves.
+2. Timing: in Low CPU mode at 44.1, 48 and 96 kHz, a 50 ms hit with Gate on (Hold 80, Decay 40): the wet is 60 dB down 10 ms after 170 ms past the hit's wet arrival, not before it.
+3. Ducking 100 %: the wet is down 24 ± 0.5 dB while a −10 dBFS tone plays and back within 1 dB 1.5 s after it stops.
+4. Sidechain source: with the main input silent, a signal on the sidechain ducks the wet; with the bus off, Sidechain behaves as Main.
+5. Host checks (H): the bus layouts with and without the sidechain, mono and stereo.
+
+### 5. Build order
+
+Approval, then the SETUP drawer mockup (`reference/phase4/48__verb_w2_duck_mockup.png`), then one push: the shared detector (Room held bit-identical), Verb's stages, the bus, tests, manual and checklist.
