@@ -67,6 +67,12 @@ class Canvas:
         self.d.line([(round(x * k), round(y * k)) for x, y in pts], fill=rgba(colour), width=max(1, round(width * k)),
                     joint="curve")
 
+    def arc(self, cx, cy, r, start, end, colour, width=1.0):
+        """Angles in degrees, clockwise from 3 o'clock (Pillow's convention)."""
+        k = self.k
+        box = [round((cx - r) * k), round((cy - r) * k), round((cx + r) * k), round((cy + r) * k)]
+        self.d.arc(box, start, end, fill=rgba(colour), width=max(1, round(width * k)))
+
     def polygon(self, pts, fill):
         k = self.k
         self.d.polygon([(round(x * k), round(y * k)) for x, y in pts], fill=rgba(fill))
@@ -205,7 +211,110 @@ def icon_folder(kind):
         elif kind == "last":
             c.line([(cx - 4, cy - 4), (cx - 4, cy + 2), (cx + 4, cy + 2)], TXT2, 1.4)
         else:
-            c.polygon(shape, G6)
+            # An outline, so a normal track's button reads as a folder rather than a grey block.
+            c.line(shape + [shape[0]], TXT2, 1.2)
+    return draw
+
+
+def icon_fxbypass(state):
+    """The FX chain's on/off switch beside the FX button: teal dot on, grey ring off, faint dot
+    with no FX."""
+    def draw(c):
+        cx, cy = c.w / 2, c.h / 2
+        if state == "on":
+            c.circle(cx, cy, 2.2, fill=TEAL)
+        elif state == "off":
+            c.circle(cx, cy, 2.2, outline=TXT2, width=1.1)
+        else:
+            c.circle(cx, cy, 1.2, fill=G6)
+    return draw
+
+
+def icon_toolbar(kind, colour):
+    """The main toolbar's icons: thin line drawings about 14 px across, in a 30 px frame."""
+    def draw(c):
+        cx, cy = c.w / 2, c.h / 2
+        w = 1.4
+        if kind == "new":
+            c.outline(cx - 5, cy - 7, 10, 14, colour, 1.5, w)
+            c.line([(cx - 2.5, cy + 1), (cx + 2.5, cy + 1)], colour, w)
+            c.line([(cx, cy - 1.5), (cx, cy + 3.5)], colour, w)
+        elif kind == "load":
+            c.line([(cx - 7, cy + 5), (cx - 7, cy - 5), (cx - 3, cy - 5), (cx - 1.5, cy - 3.5), (cx + 5, cy - 3.5),
+                    (cx + 5, cy - 1)], colour, w)
+            c.line([(cx - 7, cy + 5), (cx - 4.5, cy - 1), (cx + 7.5, cy - 1), (cx + 5, cy + 5), (cx - 7, cy + 5)],
+                   colour, w)
+        elif kind == "save":
+            c.outline(cx - 6.5, cy - 6.5, 13, 13, colour, 1.5, w)
+            c.rect(cx - 3.5, cy - 6.5, 7, 4.5, colour, 0.5)
+            c.outline(cx - 3.5, cy + 1.5, 7, 5, colour, 0.5, w)
+        elif kind == "projprop":
+            for i, y in enumerate((cy - 4.5, cy, cy + 4.5)):
+                c.line([(cx - 7, y), (cx + 7, y)], colour, w)
+                c.circle(cx + (-3, 3, -1)[i], y, 1.9, fill=colour)
+        elif kind in ("undo", "redo"):
+            s = 1 if kind == "undo" else -1
+            c.arc(cx + s * 1, cy + 2, 5.5, 180, 360, colour, w)
+            c.line([(cx + s * 6.5, cy + 2), (cx + s * 6.5, cy + 5)], colour, w)
+            tip = cx - s * 4.5
+            c.polygon([(tip - 3, cy + 1), (tip + 3, cy + 1), (tip, cy + 5)], colour)
+        elif kind == "revert":
+            # Three quarters of a circle, open at the upper right, with an arrowhead at the top.
+            c.arc(cx, cy, 6, 330, 360, colour, w)
+            c.arc(cx, cy, 6, 0, 270, colour, w)
+            c.polygon([(cx - 0.5, cy - 9), (cx + 3.5, cy - 6), (cx - 0.5, cy - 3)], colour)
+        elif kind == "metro":
+            c.line([(cx - 3, cy - 7), (cx + 3, cy - 7), (cx + 6, cy + 7), (cx - 6, cy + 7), (cx - 3, cy - 7)], colour, w)
+            c.line([(cx, cy + 4), (cx + 4.5, cy - 6)], colour, w)
+            c.circle(cx + 2.4, cy - 1.4, 1.5, fill=colour)
+        elif kind == "grid":
+            for d in (-3.5, 3.5):
+                c.line([(cx + d, cy - 7), (cx + d, cy + 7)], colour, 1.2)
+                c.line([(cx - 7, cy + d), (cx + 7, cy + d)], colour, 1.2)
+        elif kind in ("snap", "relsnap"):
+            dy = -1.5 if kind == "relsnap" else 0
+            c.arc(cx, cy + 1 + dy, 5.5, 0, 180, colour, 3)
+            c.line([(cx - 5.5, cy - 6 + dy), (cx - 5.5, cy + 1 + dy)], colour, 3)
+            c.line([(cx + 5.5, cy - 6 + dy), (cx + 5.5, cy + 1 + dy)], colour, 3)
+            c.rect(cx - 7, cy - 7.5 + dy, 3, 2.5, colour)
+            c.rect(cx + 4, cy - 7.5 + dy, 3, 2.5, colour)
+            if kind == "relsnap":
+                c.line([(cx - 4, cy + 8.5), (cx + 4, cy + 8.5)], colour, 1.1)
+                c.polygon([(cx + 3, cy + 6.8), (cx + 6, cy + 8.5), (cx + 3, cy + 10.2)], colour)
+                c.polygon([(cx - 3, cy + 6.8), (cx - 6, cy + 8.5), (cx - 3, cy + 10.2)], colour)
+        elif kind in ("lock_on", "lock_off"):
+            c.rect(cx - 5.5, cy - 1, 11, 8, colour, 1.5)
+            if kind == "lock_on":
+                c.arc(cx, cy - 3.5, 3.5, 180, 360, colour, w)
+                c.line([(cx - 3.5, cy - 3.5), (cx - 3.5, cy - 1)], colour, w)
+                c.line([(cx + 3.5, cy - 3.5), (cx + 3.5, cy - 1)], colour, w)
+            else:
+                c.arc(cx + 5, cy - 4.5, 3.5, 180, 360, colour, w)
+                c.line([(cx + 1.5, cy - 4.5), (cx + 1.5, cy - 1)], colour, w)
+        elif kind.startswith("ripple"):
+            lanes = (cy - 3.5, cy + 3.5) if kind == "ripple_all" else (cy,)
+            for y in lanes:
+                c.rect(cx - 7, y - 2.2, 5, 4.4, colour, 1)
+                c.rect(cx + 2, y - 2.2, 5, 4.4, colour, 1)
+            if kind != "ripple_off":
+                y = cy - 7.5 if kind == "ripple_all" else cy - 5
+                c.line([(cx + 4, y), (cx - 3, y)], colour, 1.2)
+                c.polygon([(cx - 2, y - 2), (cx - 5, y), (cx - 2, y + 2)], colour)
+        elif kind == "xfade":
+            c.line([(cx - 7, cy + 5), (cx + 7, cy - 5)], colour, w)
+            c.line([(cx - 7, cy - 5), (cx + 7, cy + 5)], colour, w)
+        elif kind == "envitem":
+            c.outline(cx - 7, cy - 5.5, 14, 11, colour, 1.5, 1.2)
+            c.line([(cx - 5, cy + 2.5), (cx - 1.5, cy - 2.5), (cx + 1.5, cy + 1), (cx + 5, cy - 2.5)], colour, w)
+        elif kind == "group":
+            c.outline(cx - 7, cy - 6, 9, 9, colour, 1.5, w)
+            c.outline(cx - 2, cy - 3, 9, 9, colour, 1.5, w)
+        elif kind == "dock":
+            c.outline(cx - 7, cy - 6, 14, 12, colour, 1.5, w)
+            c.rect(cx - 7, cy + 1, 14, 5, colour, 1.5)
+        elif kind == "filter":
+            c.polygon([(cx - 7, cy - 6), (cx + 7, cy - 6), (cx + 1.5, cy + 0.5), (cx + 1.5, cy + 6.5),
+                       (cx - 1.5, cy + 5), (cx - 1.5, cy + 0.5)], colour)
     return draw
 
 
@@ -277,12 +386,23 @@ def thumb(horizontal_travel, w, h, accent=TXT):
     return make
 
 
-def name_field(scale):
-    """The track name's well: #141414, radius 3, corners kept unstretched."""
-    c = Canvas(9, 9, scale)
-    c.rect(0, 0, 9, 9, WELL, 3)
-    r = round(3 * scale)
-    return with_markers(c.image(), left=r, top=r, right=r, bottom=r)
+def rounded_bg(fill):
+    """A stretchable rounded box, radius 3, corners kept unstretched."""
+    def make(scale):
+        c = Canvas(9, 9, scale)
+        c.rect(0, 0, 9, 9, fill, 3)
+        r = round(3 * scale)
+        return with_markers(c.image(), left=r, top=r, right=r, bottom=r)
+    return make
+
+
+name_field = rounded_bg(WELL)  # the track name's well: #141414
+
+
+def toolbar(kind, toggle=None):
+    """A main toolbar button, 30 x 30 frames. A toggle's icon is teal when on, grey when off."""
+    colour = {None: "#D6D6D6", "on": TEAL, "off": TXT2}[toggle]
+    return button(icon_toolbar(kind, colour), 30, 30)
 
 
 B = 20  # the track buttons' frame size at 100 %
@@ -322,6 +442,17 @@ IMAGES = {
     "track_folder_off": button(icon_folder("off"), 18, 14),
     "track_folder_on": button(icon_folder("on"), 18, 14),
     "track_folder_last": button(icon_folder("last"), 18, 14),
+    "track_fx_in_norm": button(icon_fx(TEAL), 20, B),
+    "track_fx_in_empty": button(icon_fx(TXT2), 20, B),
+    "track_fxon_v": button(icon_fxbypass("on"), 8, B, radius=2),
+    "track_fxoff_v": button(icon_fxbypass("off"), 8, B, radius=2),
+    "track_fxempty_v": button(icon_fxbypass("empty"), 8, B, radius=2),
+    "track_fxon_h": button(icon_fxbypass("on"), 16, B),
+    "track_fxoff_h": button(icon_fxbypass("off"), 16, B),
+    "track_fxempty_h": button(icon_fxbypass("empty"), 16, B),
+
+    # The record input box (the mixer falls back to it). REAPER draws its text and arrow on top.
+    "tcp_recinput": rounded_bg(BODY),
 
     # Faders and pan
     "tcp_volbg": slider_track(True, 40, 14),
@@ -349,6 +480,25 @@ IMAGES = {
     "transport_repeat_on": button(icon_transport("repeat", TXT), 34, 26, on_fill=TEAL),
     "transport_home": button(icon_transport("home", "#E0E0E0"), 34, 26),
     "transport_end": button(icon_transport("end", "#E0E0E0"), 34, 26),
+    "transport_playspeedbg": slider_track(True, 40, 12),
+    "transport_playspeedthumb": thumb(True, 8, 14),
+
+    # Main toolbar
+    "toolbar_blank": button(lambda c: None, 30, 30),
+    "toolbar_new": toolbar("new"),
+    "toolbar_load": toolbar("load"),
+    "toolbar_save": toolbar("save"),
+    "toolbar_projprop": toolbar("projprop"),
+    "toolbar_undo": toolbar("undo"),
+    "toolbar_redo": toolbar("redo"),
+    "toolbar_revert": toolbar("revert"),
+    "toolbar_ripple_off": toolbar("ripple_off", "off"),
+    "toolbar_ripple_one": toolbar("ripple_one", "on"),
+    "toolbar_ripple_all": toolbar("ripple_all", "on"),
+    **{f"toolbar_{k}_{s}": toolbar(k, s) for k in ("metro", "grid", "snap", "relsnap", "xfade", "envitem",
+                                                     "group", "dock", "filter") for s in ("on", "off")},
+    "toolbar_lock_on": toolbar("lock_on", "on"),
+    "toolbar_lock_off": toolbar("lock_off", "off"),
 }
 
 SCALES = {"": 1.0, "150": 1.5, "200": 2.0}
