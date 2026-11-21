@@ -7,6 +7,9 @@ The stages were checked as separate previews; since 21 November 2026 they are on
 - [ ] Pick **Fancy Plugs** under Options > Themes: everything looks as in the Stage C preview (track panel, mixer, master, transport, meters, toolbar, Compact layouts).
 - [ ] With the mixer tall enough, the FX list shows each FX on a dark rounded slot; a bypassed FX's slot is dimmer, empty slots faint. 📷
 
+- [ ] Record or drag in a clip on a coloured track: the item is a deep shade of the track colour with the waveform bright in it; on an uncoloured track, dark grey with a light grey waveform. 📷
+- [ ] With "Draw labels above items, rather than within items" off (Preferences > Appearance), the name sits inside the item, as in the mockup.
+
 ## Stage A
 
 For the user, in REAPER 7.86 at 125 %. Install as in `theme/README.md`. Send a screenshot for each item marked 📷, and note anything that looks wrong.
