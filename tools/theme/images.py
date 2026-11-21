@@ -315,6 +315,21 @@ def icon_toolbar(kind, colour):
         elif kind == "dock":
             c.outline(cx - 7, cy - 6, 14, 12, colour, 1.5, w)
             c.rect(cx - 7, cy + 1, 14, 5, colour, 1.5)
+        elif kind == "marquee":
+            x0, y0, x1, y1 = cx - 7, cy - 6, cx + 5, cy + 3
+            for i in range(4):  # dashes along each side
+                f0, f1 = i / 4, i / 4 + 0.14
+                c.line([(x0 + (x1 - x0) * f0, y0), (x0 + (x1 - x0) * f1, y0)], colour, 1.3)
+                c.line([(x0 + (x1 - x0) * f0, y1), (x0 + (x1 - x0) * f1, y1)], colour, 1.3)
+                c.line([(x0, y0 + (y1 - y0) * f0), (x0, y0 + (y1 - y0) * f1)], colour, 1.3)
+                c.line([(x1, y0 + (y1 - y0) * f0), (x1, y0 + (y1 - y0) * f1)], colour, 1.3)
+            c.polygon([(cx + 1.5, cy), (cx + 1.5, cy + 8), (cx + 3.6, cy + 6), (cx + 5.2, cy + 8.8),
+                       (cx + 6.6, cy + 8.1), (cx + 5, cy + 5.4), (cx + 7.6, cy + 5.2)], colour)
+        elif kind == "razor":
+            # A blade lying diagonally, with its slot.
+            blade = [(cx - 8, cy + 3), (cx + 3, cy - 8), (cx + 8, cy - 3), (cx - 3, cy + 8)]
+            c.line(blade + [blade[0]], colour, w)
+            c.line([(cx - 2.5, cy + 2.5), (cx + 2.5, cy - 2.5)], colour, 2.4)
         elif kind == "filter":
             c.polygon([(cx - 7, cy - 6), (cx + 7, cy - 6), (cx + 1.5, cy + 0.5), (cx + 1.5, cy + 6.5),
                        (cx - 1.5, cy + 5), (cx - 1.5, cy + 0.5)], colour)
@@ -407,7 +422,7 @@ name_field = rounded_bg(WELL)  # the track name's well: #141414
 TOOLBAR_ACCENT = {
     "new": BLUE, "load": BLUE, "save": BLUE, "revert": BLUE, "projprop": PURPLE, "undo": TEAL, "redo": TEAL,
     "metro": ORANGE, "lock": ORANGE, "ripple": YELLOW, "xfade": BLUE, "group": GREEN, "envitem": TEAL,
-    "grid": PURPLE, "snap": RED, "relsnap": RED, "dock": BLUE, "filter": PURPLE,
+    "grid": PURPLE, "snap": RED, "relsnap": RED, "dock": BLUE, "filter": PURPLE, "marquee": YELLOW, "razor": RED,
 }
 
 
@@ -521,6 +536,12 @@ IMAGES = {
                                                      "group", "dock", "filter") for s in ("on", "off")},
     "toolbar_lock_on": toolbar("lock_on", "on"),
     "toolbar_lock_off": toolbar("lock_off", "off"),
+    # These two live in REAPER's Data/toolbar_icons rather than its theme images; the theme's copy
+    # is meant to take precedence (to be confirmed in REAPER).
+    "toolbar_marquee_cursor_selection_on": toolbar("marquee", "on"),
+    "toolbar_marquee_cursor_selection_off": toolbar("marquee", "off"),
+    "toolbar_razor_on": toolbar("razor", "on"),
+    "toolbar_razor_off": toolbar("razor", "off"),
 }
 
 SCALES = {"": 1.0, "150": 1.5, "200": 2.0}

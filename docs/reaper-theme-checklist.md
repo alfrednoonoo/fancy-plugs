@@ -59,4 +59,4 @@ Re-select **Fancy Plugs (Stage B preview)** under Options > Themes so REAPER rel
 - [ ] The folder button on a normal track is an outlined folder.
 - [ ] The Rate slider at the bottom is a thin dark track with a black cap.
 - [ ] Play turns teal while playing. 📷 the transport while playing.
-- [ ] Hover over the last two main toolbar buttons (dotted box, diagonal ruler) and note their tooltips.
+- [ ] The last two main toolbar buttons, marquee selection and razor editing, show the theme's icons (a yellow dashed box with a cursor, a red razor blade), not REAPER's.
