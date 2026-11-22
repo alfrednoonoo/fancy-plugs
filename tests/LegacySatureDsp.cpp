@@ -31,7 +31,7 @@ double dbToGain (double db) noexcept
 }
 } // namespace
 
-LegacySatureDsp::SatureDsp()
+LegacySatureDsp::LegacySatureDsp()
 {
     // 8th-order Butterworth: Q = 1 / (2 cos ((2k - 1) pi / 16)).
     for (int k = 0; k < numSections; ++k)

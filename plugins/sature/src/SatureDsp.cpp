@@ -638,3 +638,67 @@ void SatureDsp::processOversampled (int numSamples)
     matchedOversampler.processSamplesDown (matchedBlock);
     midOversampler.processSamplesDown (midBlock);
 }
+
+// Phase 4 Wave 2 (docs/sature.md): the outer bands, saturated as the mid band is, each into its
+// own `added`. The mid band's code above is left as it was, so its output can't change.
+void SatureDsp::saturateOuterBaseRate (int band, int numSamples)
+{
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        auto& state = outerStates[(size_t) band][(size_t) ch];
+        auto* x = outerBuffers[(size_t) band].getWritePointer (ch);
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            const auto& curve = chunkCurve[(size_t) i];
+            const auto in = (double) x[i];
+
+            auto y = curve.shape (outerDrive[(size_t) band][(size_t) i] * in + curve.bias) - chunkDc[(size_t) i];
+            y = state.tapeLoss.process (y, tapeCoefficient, outerTape[(size_t) band][(size_t) i]);
+            y = state.tilt.process (chunkTilt[(size_t) i], y) * outerGain[(size_t) band][(size_t) i];
+
+            x[i] = (float) (y - in);
+        }
+    }
+}
+
+void SatureDsp::saturateOuterOversampled (int band, int numSamples)
+{
+    const auto ratio = oversampling.getOversamplingRatio();
+
+    juce::dsp::AudioBlock<float> block (outerBuffers[(size_t) band]);
+    block = block.getSubBlock (0, (size_t) numSamples);
+
+    auto& oversampler = oversampling.get (2 + band);
+    auto up = oversampler.processSamplesUp (juce::dsp::AudioBlock<const float> (block));
+    const auto upSamples = (int) up.getNumSamples();
+
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        auto& state = outerStates[(size_t) band][(size_t) ch];
+        auto* s = up.getChannelPointer ((size_t) ch);
+
+        for (int j = 0; j < upSamples; ++j)
+        {
+            const auto i = std::min (numSamples - 1, j / ratio);
+            const auto& curve = chunkCurve[(size_t) i];
+            const auto in = (double) s[j];
+
+            auto y = state.adaa.process (curve, outerDrive[(size_t) band][(size_t) i] * in, chunkShapeChanged[(size_t) i] && j % ratio == 0, chunkDc[(size_t) i]);
+            y = state.tapeLoss.process (y, tapeCoefficient, outerTape[(size_t) band][(size_t) i]);
+            y = state.tilt.process (chunkTilt[(size_t) i], y) * outerGain[(size_t) band][(size_t) i];
+
+            const auto reference = 0.5 * (in + state.previousIn);
+            state.previousIn = in;
+
+            auto difference = y - reference;
+
+            for (int k = 0; k < addedDelaySamples; ++k)
+                std::swap (difference, state.addedDelay[(size_t) k]);
+
+            s[j] = (float) difference;
+        }
+    }
+
+    oversampler.processSamplesDown (block);
+}
