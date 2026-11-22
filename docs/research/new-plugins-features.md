@@ -1,10 +1,10 @@
-# Fancy Transient and Fancy Chorus: feature survey and proposed designs
+# Fancy TS and Fancy Chorus: feature survey and proposed designs
 
 Phase 4 items 3 and 4 (`docs/enhancements.md`). Researched on 22 November 2026 from vendor pages,
-manuals and 2026 round-ups (sources at the end). **Layouts and decisions 1 to 5 approved by the user on 22 November 2026, all A.** The mockups are
+manuals and 2026 round-ups (sources at the end). **Layouts and decisions 1 to 5 approved by the user on 22 November 2026, all A; Fancy Transient renamed Fancy TS (user, 22 November 2026).** The mockups are
 `reference/phase4/50__transient_mockup.png` and `51__chorus_mockup.png` (source
 `design/phase4-mockup-src/transient.html`, `chorus.html`, rendered by `new_plugins.py`). Each plugin's
-design note (`docs/transient.md`, `docs/chorus.md`: DSP, parameter ranges and skews, latency, state,
+design note (`docs/ts.md`, `docs/chorus.md`: DSP, parameter ranges and skews, latency, state,
 Python model, tests) follows the layout's approval, as Phase 3's new plugins did. Ideas only: no names,
 graphics or sounds are taken from any product.
 
@@ -12,7 +12,7 @@ graphics or sounds are taken from any product.
 
 ### Every feature found in the category
 
-| # | Feature | Where it's found | Fancy Transient |
+| # | Feature | Where it's found | Fancy TS |
 |---|---|---|---|
 | 1 | Attack, boost or cut (bipolar) | all: SPL Transient Designer, Kilohearts, NI Transient Master, Neutron, TransMod | **Main**, ATTACK card |
 | 2 | Sustain, boost or cut (bipolar) | all | **Main**, SUSTAIN card |
@@ -87,7 +87,7 @@ graphics or sounds are taken from any product.
 ## 3. Decisions for the user
 
 1. **Accents.** **A (R):** Transient orange (shared with Sature), Chorus a new pink `#E0559A` added to `fancy::ui::colours`. **B:** Chorus orange and Transient another existing accent. **C:** both orange.
-2. **Names.** **A (R):** Fancy Transient and Fancy Chorus, `com.fancyplugs.transient` and `.chorus`. **B:** other names.
+2. **Names.** **A (R):** Fancy TS and Fancy Chorus, `com.fancyplugs.ts` and `.chorus`. **B:** other names.
 3. **Transient multiband.** **A (R):** full-band now, with the detector filters; a two-band split as a later Wave item (it changes the main layout). **B:** two bands from the start, which doubles the cards.
 4. **Chorus Scatter (diffused, reverb-like voices).** **A (R):** later. **B:** a sixth mode now.
 5. **Chorus voices.** **A (R):** 1 to 6. **B:** 1 to 3, as most vintage units.

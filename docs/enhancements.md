@@ -22,7 +22,7 @@ Proposed; to be confirmed with the user before the first item, as Phase 3's orde
    Delay, Exciter, Kicker, FIR, DS-Mini.
 2. **Tempo-synced trigger** in `fancy-core`, then **Kicker's sidechain Duck** with it (Kicker 7),
    then Comp 9 and Gate 9.
-3. **Fancy Transient** (new plugin): design rules, mockup, design note.
+3. **Fancy TS** (new plugin): design rules, mockup, design note.
 4. **Fancy Chorus** (new plugin, chorus or modulation): design rules, mockup, design note.
 5. **Wave 2**, one item at a time, in the order under "Suggested order".
 6. **Wave 3**, the same way; the ▲ items need layout approval first.
