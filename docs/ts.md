@@ -107,4 +107,5 @@ First push on 22 November 2026: `plugins/ts/` (`TsDsp`, `TsProcessor`, `TsEditor
 - The engine is the model's, per sample, with a −90 dBFS floor fade on both amounts. Exactly 0 dB of gain is exactly unity, so the defaults are bit-exact.
 - Clip output uses Limit's soft curve; with Oversampling on, JUCE's polyphase IIR at 2x or 4x and then a hard safety clamp at 0 dBFS for the downsampler's overshoot. A change of Lookahead, Clip or Oversampling fades out, swaps and fades back in, and the processor reports the new latency.
 - Test 7 is written as a low thump over steady bright noise: the detector is level-independent, so filtering a lone thump only lowers it and its onset still counts. With Highpass 500 Hz the thump sits under the noise and no hit is found.
-- Not yet: the CPU measurement (§0.4) and the REAPER check.
+- Green first time in run 44980548512 (Windows and Mac), screenshots matching mockup 50. CPU in that run's workflow measurement: 0.265 % at its defaults, **0.60 x Fancy Comp** (target under 1 x, Decision 4 A); one run, so the five-run median of §0.4 is still to do, with Clip at 4x.
+- Not yet: that median and the REAPER check.
