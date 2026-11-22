@@ -4,11 +4,17 @@
 #include "TsDsp.h"
 #include "TsProcessor.h"
 
+#if FANCY_HAS_COMP
+ #include "CompProcessor.h"
+#endif
+
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
 #include <algorithm>
+#include <chrono>
+#include <cstdio>
 #include <cmath>
 #include <numbers>
 #include <random>
@@ -274,4 +280,81 @@ TEST_CASE ("TS: Listen to change plays only what changed", "[ts]")
 
     for (const auto sample : out.left)
         REQUIRE (sample == 0.0f);
+}
+
+// CPU, by §0.4 of the Phase 2.1 brief: five runs in one build, the median, and the ratio to Fancy
+// Comp at its defaults, measured the same way as the workflow test (processBlock, 48 kHz, 128
+// samples, stereo noise, 10 s). Decision 4 A: under 1 x at defaults, under 1.5 x with Clip at 4x.
+TEST_CASE ("TS CPU measurement", "[.measure]")
+{
+    constexpr double measureRate = 48000.0, seconds = 10.0;
+    constexpr int measureBlock = 128;
+
+    const auto cpu = [] (fancy::FancyProcessor& processor)
+    {
+        std::vector<double> runs;
+
+        for (int pass = 0; pass < 5; ++pass)
+        {
+            processor.setRateAndBufferSizeDetails (measureRate, measureBlock);
+            processor.prepareToPlay (measureRate, measureBlock);
+            processor.waitForBackgroundWork (20000);
+
+            juce::AudioBuffer<float> block (juce::jmax (2, processor.getTotalNumInputChannels()), measureBlock);
+            juce::MidiBuffer midi;
+            std::mt19937 random (8);
+            std::uniform_real_distribution<float> noise (-0.25f, 0.25f);
+            std::chrono::duration<double> spent {};
+
+            for (int done = 0; done < (int) (seconds * measureRate); done += measureBlock)
+            {
+                block.clear();
+
+                for (int ch = 0; ch < processor.getMainBusNumInputChannels(); ++ch)
+                    for (int i = 0; i < measureBlock; ++i)
+                        block.setSample (ch, i, noise (random));
+
+                midi.clear();
+                const auto start = std::chrono::steady_clock::now();
+                processor.processBlock (block, midi);
+                spent += std::chrono::steady_clock::now() - start;
+            }
+
+            processor.releaseResources();
+            runs.push_back (100.0 * spent.count() / seconds);
+        }
+
+        std::sort (runs.begin(), runs.end());
+        return runs[2];
+    };
+
+    const auto set = [] (TsProcessor& processor, const char* id, float value)
+    {
+        auto* parameter = processor.getApvts().getParameter (id);
+        REQUIRE (parameter != nullptr);
+        parameter->setValueNotifyingHost (parameter->convertTo0to1 (value));
+    };
+
+    double reference = 0.0;
+
+   #if FANCY_HAS_COMP
+    {
+        CompProcessor comp;
+        reference = cpu (comp);
+    }
+   #endif
+
+    TsProcessor defaults;
+    const auto plain = cpu (defaults);
+
+    TsProcessor clipped;
+    set (clipped, "clip", 1.0f);
+    set (clipped, "oversampling", (float) TsDsp::os4);
+    const auto clip4x = cpu (clipped);
+
+    const auto ratio = [reference] (double value) { return reference > 0.0 ? value / reference : 0.0; };
+
+    std::printf ("ts cpu (median of 5, 48 kHz, 128 samples, stereo): Fancy Comp default %.3f %%; TS default %.3f %% (%.2f x Comp, target < 1 x); "
+                 "Clip output at 4x %.3f %% (%.2f x Comp, target < 1.5 x)\n",
+                 reference, plain, ratio (plain), clip4x, ratio (clip4x));
 }
