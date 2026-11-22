@@ -1,0 +1,103 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../phase3-mockup-src/common.css"><link rel="stylesheet" href="../phase3-mockup-src/kit2.css"><script src="../phase3-mockup-src/lib2.js"></script>
+<style>
+.note{font-size:11px;color:#8D8D8D;line-height:1.5;width:760px;margin:0 0 10px}
+h1{font-size:15px;font-weight:700;margin-bottom:4px}
+h2{font-size:13px;font-weight:700;margin:22px 0 4px}
+.row{display:flex;gap:8px;margin-top:8px}
+.drow{display:flex;align-items:center;height:32px}
+.drow .k{width:160px;font-size:13px;color:#EDEDED}
+.dd2{background:#303030;border-radius:3px;font-size:13px;padding:0 8px;height:24px;width:150px;display:flex;align-items:center;justify-content:space-between}
+.dd2:after{content:"\2303\2304";font-size:7px;color:#8D8D8D;writing-mode:vertical-lr;line-height:5px}
+.rcol{flex:none}.left{min-width:0}.done{background:#303030;border-radius:3px;padding:4px 14px;font-size:13px}
+.row .knob{width:56px}
+</style></head><body style="--a:#E77E23">
+<h1>Fancy Transient: mockup 50 (draft for approval)</h1>
+<div class="note">Phase 2 size class, 760 × 465 with the title strip. Accent orange <b style="color:#E77E23">#E77E23</b>, shared with Sature (decision 1). New controls only through this mockup; exact styling comes from fancy-core.</div>
+
+<h2>1 · Main window</h2>
+<div class="win"><div data-chrome></div>
+ <div class="body" style="height:392px">
+  <div class="left">
+   <div style="display:flex;align-items:center;gap:8px;height:26px">
+     <span class="cap">Contour</span><div class="seg"><span>Sharp</span><span class="m">Medium</span><span>Smooth</span></div>
+     <span class="cap" style="margin-left:auto">Detector</span><div class="dd2" style="width:128px;font-size:12px">Main input L+R</div>
+   </div>
+   <svg id="hist" width="610" height="150" style="display:block;margin-top:8px;background:#141414;border-radius:6px"></svg>
+   <div class="row">
+     <div class="sec" style="padding:8px 8px 6px;width:180px">
+       <span class="title" style="margin-left:4px">Attack</span>
+       <div style="display:flex;justify-content:space-around;margin-top:2px">
+        <div class="knob" data-k data-v=".66" data-bi data-c="#E77E23" data-l="Attack" data-t="+6.0 dB"></div>
+        <div class="knob" data-k data-v=".3" data-c="#E77E23" data-l="Speed" data-t="8 ms"></div>
+       </div>
+     </div>
+     <div class="sec" style="padding:8px 8px 6px;width:250px">
+       <span class="title" style="margin-left:4px">Sustain</span>
+       <div style="display:flex;justify-content:space-around;margin-top:2px">
+        <div class="knob" data-k data-v=".38" data-bi data-c="#E77E23" data-l="Sustain" data-t="&minus;4.0 dB"></div>
+        <div class="knob" data-k data-v=".42" data-c="#E77E23" data-l="Length" data-t="180 ms"></div>
+        <div class="knob" data-k data-v="0" data-c="#E77E23" data-l="Pump" data-t="0 %"></div>
+       </div>
+     </div>
+     <div class="sec" style="padding:8px 8px 6px;flex:1">
+       <span class="title" style="margin-left:4px">Detect</span>
+       <div style="display:flex;justify-content:space-around;margin-top:2px">
+        <div class="knob" data-k data-v=".55" data-c="#E77E23" data-l="Sensitivity" data-t="60 %"></div>
+        <div class="knob" data-k data-v=".12" data-c="#3598DB" data-l="Highpass" data-t="40 Hz"></div>
+       </div>
+     </div>
+   </div>
+   <div class="foot"><div class="cb"><i class="x"></i>Clip output</div><div class="cb"><i class="x"></i>Link channels</div><div class="cb"><i></i>Listen to change</div><div class="edit">⚙ EDIT</div></div>
+  </div>
+  <div class="rcol" style="width:104px"><div data-m data-h="300" data-v=".64,.62" data-l="Out" data-t="-6.4"></div><div data-f data-h="300" data-v=".8" data-l="Wet" data-t="0.0"></div><div data-f data-h="300" data-v="0" data-l="Dry" data-t="-inf"></div></div>
+ </div>
+</div>
+
+<h2>2 · The EDIT drawer</h2>
+<div class="win"><div data-chrome></div>
+ <div class="body" style="height:392px">
+  <div class="left">
+   <div style="display:flex;align-items:center;gap:8px;height:26px">
+     <span class="cap">Contour</span><div class="seg"><span>Sharp</span><span class="m">Medium</span><span>Smooth</span></div>
+     <span class="cap" style="margin-left:auto">Detector</span><div class="dd2" style="width:128px;font-size:12px">Main input L+R</div>
+   </div>
+   <div style="position:absolute;left:0;right:0;top:44px;bottom:0;background:#262626;padding:14px 24px">
+     <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:600;letter-spacing:.06em">EDIT</span><span class="done">Done</span></div>
+     <div style="display:flex;gap:40px;margin-top:12px">
+       <div>
+         <div class="drow"><span class="k">Lookahead</span><div class="dd2">Off</div><span class="cap" style="margin-left:10px">(+0 ms)</span></div>
+         <div class="drow"><span class="k">Oversampling</span><div class="dd2">2x</div></div>
+         <div class="drow"><span class="k">Channels</span><div class="dd2">Stereo</div></div>
+       </div>
+       <div style="display:flex;gap:6px;align-items:flex-start;margin-top:2px">
+         <div class="knob" data-k data-v="1" data-c="#3598DB" data-l="Lowpass" data-t="Off"></div>
+         <div class="knob" data-k data-v=".2" data-c="#E77E23" data-l="Dead band" data-t="1.0 dB"></div>
+         <div class="knob" data-k data-v=".5" data-bi data-c="#00A985" data-l="Output" data-t="0.0 dB"></div>
+       </div>
+     </div>
+     <div class="cap" style="margin-top:6px;width:560px;line-height:1.45;font-size:11px">Lookahead (Off, 1, 2 or 5 ms) lets Attack catch the very first sample of a hit; it adds that much latency. Oversampling is for Clip output. Channels: Stereo, Mid only, Side only. Dead band ignores hits that would change the level by less than this.</div>
+   </div>
+  </div>
+  <div class="rcol" style="width:104px"><div data-m data-h="300" data-v=".64,.62" data-l="Out" data-t="-6.4"></div><div data-f data-h="300" data-v=".8" data-l="Wet" data-t="0.0"></div><div data-f data-h="300" data-v="0" data-l="Dry" data-t="-inf"></div></div>
+ </div>
+</div>
+<script>
+chrome('TRANSIENT','#E77E23','<img class="hdrimg" src="../phase3-mockup-src/header760.png">');
+(()=>{const W=610,H=150,mid=78;let s='';
+ s+=`<line x1="0" y1="${mid}" x2="${W}" y2="${mid}" stroke="#303030"/>`;
+ // hits every 152 px: grey input envelope, orange output envelope, gain trace above
+ let inp=[],out=[],gain=[];
+ for(let x=0;x<=W;x+=2){const t=((x+40)%152)/152;const env=Math.exp(-t*6)*0.9+0.06;const g=t<0.06?1.9:(t<0.5?0.62:0.75);
+   const n=0.7+0.3*Math.sin(x*1.7)*Math.sin(x*0.31);
+   inp.push([x,env*n]);out.push([x,Math.min(1,env*g)*n]);gain.push([x,t<0.06?-14:(t<0.5?8:4)]);}
+ const poly=(a,sign)=>a.map(([x,v])=>`${x},${mid-sign*v*58}`).join(' ');
+ s+=`<polygon points="0,${mid} ${poly(inp,1)} ${W},${mid}" fill="#4C4C4C"/><polygon points="0,${mid} ${poly(inp,-1)} ${W},${mid}" fill="#4C4C4C"/>`;
+ s+=`<polyline points="${poly(out,1)}" fill="none" stroke="#E77E23" stroke-width="1.4"/><polyline points="${poly(out,-1)}" fill="none" stroke="#E77E23" stroke-width="1.4"/>`;
+ s+=`<polyline points="${gain.map(([x,g])=>`${x},${20+g}`).join(' ')}" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>`;
+ s+=`<line x1="0" y1="20" x2="${W}" y2="20" stroke="#424242" stroke-dasharray="3 3"/>`;
+ s+=`<text x="${W-8}" y="${H-8}" font-size="10" fill="#8D8D8D" text-anchor="end">gain: +6 / &#8722;4 dB</text>`;
+ s+=`<text x="8" y="${H-8}" font-size="10" fill="#8D8D8D">input (grey) · output (orange) · gain (white, 0 dB dashed) · hits marked</text>`;
+ for(let x=112;x<W;x+=152) s+=`<circle cx="${x}" cy="${H-24}" r="2.5" fill="#E77E23"/>`;
+ document.getElementById('hist').innerHTML=s})();
+</script></body></html>

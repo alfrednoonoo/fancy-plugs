@@ -1,0 +1,101 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../phase3-mockup-src/common.css"><link rel="stylesheet" href="../phase3-mockup-src/kit2.css"><script src="../phase3-mockup-src/lib2.js"></script>
+<style>
+.note{font-size:11px;color:#8D8D8D;line-height:1.5;width:760px;margin:0 0 10px}
+h1{font-size:15px;font-weight:700;margin-bottom:4px}
+h2{font-size:13px;font-weight:700;margin:22px 0 4px}
+.row{display:flex;gap:8px;margin-top:8px}
+.drow{display:flex;align-items:center;height:32px}
+.drow .k{width:150px;font-size:13px;color:#EDEDED}
+.dd2{background:#303030;border-radius:3px;font-size:13px;padding:0 8px;height:24px;width:150px;display:flex;align-items:center;justify-content:space-between}
+.dd2:after{content:"\2303\2304";font-size:7px;color:#8D8D8D;writing-mode:vertical-lr;line-height:5px}
+.rcol{flex:none}.left{min-width:0}.done{background:#303030;border-radius:3px;padding:4px 14px;font-size:13px}
+.row .knob{width:56px}
+</style></head><body style="--a:#E0559A">
+<h1>Fancy Chorus: mockup 51 (draft for approval)</h1>
+<div class="note">Phase 2 size class, 760 × 465 with the title strip. Accent: a new eighth accent, pink <b style="color:#E0559A">#E0559A</b> (decision 1). Exact styling comes from fancy-core.</div>
+
+<h2>1 · Main window</h2>
+<div class="win"><div data-chrome></div>
+ <div class="body" style="height:392px">
+  <div class="left">
+   <div style="display:flex;align-items:center;gap:8px;height:26px">
+     <span class="cap">Mode</span><div class="seg"><span>Classic</span><span class="m">Ensemble</span><span>Dimension</span><span>Doubler</span><span>Flange</span></div>
+   </div>
+   <svg id="map" width="610" height="150" style="display:block;margin-top:8px;background:#141414;border-radius:6px"></svg>
+   <div class="row">
+     <div class="sec" style="padding:8px 6px 6px;width:244px">
+       <span class="title" style="margin-left:4px">Motion</span>
+       <div style="display:flex;justify-content:space-around;margin-top:2px">
+        <div class="knob" data-k data-s="40" data-v=".35" data-c="#E0559A" data-l="Rate" data-t="0.80 Hz"></div>
+        <div class="knob" data-k data-s="40" data-v=".45" data-c="#E0559A" data-l="Depth" data-t="45 %"></div>
+        <div class="knob" data-k data-s="40" data-v=".3" data-c="#E0559A" data-l="Delay" data-t="7.0 ms"></div>
+        <div class="knob" data-k data-s="40" data-v=".5" data-bi data-c="#E0559A" data-l="Feedback" data-t="0 %"></div>
+       </div>
+     </div>
+     <div class="sec" style="padding:8px 6px 6px;width:186px">
+       <span class="title" style="margin-left:4px">Voices</span>
+       <div style="display:flex;justify-content:space-around;margin-top:2px">
+        <div class="knob" data-k data-s="40" data-v=".4" data-c="#E0559A" data-l="Voices" data-t="3"></div>
+        <div class="knob" data-k data-s="40" data-v=".6" data-c="#E0559A" data-l="Spread" data-t="60 %"></div>
+        <div class="knob" data-k data-s="40" data-v=".5" data-c="#E0559A" data-l="Width" data-t="100 %"></div>
+       </div>
+     </div>
+     <div class="sec" style="padding:8px 6px 6px;flex:1">
+       <span class="title" style="margin-left:4px">Tone</span>
+       <div style="display:flex;justify-content:space-around;margin-top:2px">
+        <div class="knob" data-k data-s="40" data-v=".2" data-c="#3598DB" data-l="Low cut" data-t="150 Hz"></div>
+        <div class="knob" data-k data-s="40" data-v=".7" data-c="#3598DB" data-l="High cut" data-t="9 kHz"></div>
+        <div class="knob" data-k data-s="40" data-v=".25" data-c="#E0559A" data-l="Age" data-t="25 %"></div>
+       </div>
+     </div>
+   </div>
+   <div class="foot"><div class="cb"><i></i>Tempo sync</div><div class="cb"><i class="x"></i>Keep bass mono</div><div class="cb"><i></i>Listen to wet</div><div class="edit">⚙ EDIT</div></div>
+  </div>
+  <div class="rcol" style="width:104px"><div data-m data-h="300" data-v=".6,.63" data-l="Out" data-t="-8.2"></div><div data-f data-h="300" data-v=".72" data-l="Wet" data-t="-3.0"></div><div data-f data-h="300" data-v=".8" data-l="Dry" data-t="0.0"></div></div>
+ </div>
+</div>
+
+<h2>2 · The EDIT drawer</h2>
+<div class="win"><div data-chrome></div>
+ <div class="body" style="height:392px">
+  <div class="left">
+   <div style="display:flex;align-items:center;gap:8px;height:26px">
+     <span class="cap">Mode</span><div class="seg"><span>Classic</span><span class="m">Ensemble</span><span>Dimension</span><span>Doubler</span><span>Flange</span></div>
+   </div>
+   <div style="position:absolute;left:0;right:0;top:44px;bottom:0;background:#262626;padding:14px 24px">
+     <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:600;letter-spacing:.06em">EDIT</span><span class="done">Done</span></div>
+     <div style="display:flex;gap:36px;margin-top:12px">
+       <div>
+         <div class="drow"><span class="k">LFO shape</span><div class="dd2">Sine</div></div>
+         <div class="drow"><span class="k">Input</span><div class="dd2">Stereo</div></div>
+         <div class="drow"><span class="k">Feedback polarity</span><div class="dd2">Positive</div></div>
+         <div class="drow"><span class="k">Oversampling</span><div class="dd2">Off</div></div>
+       </div>
+       <div style="display:flex;gap:6px;align-items:flex-start;margin-top:2px">
+         <div class="knob" data-k data-v=".5" data-c="#E0559A" data-l="LFO phase" data-t="90&deg;"></div>
+         <div class="knob" data-k data-v="0" data-c="#E0559A" data-l="Ducking" data-t="0 %"></div>
+         <div class="knob" data-k data-v=".5" data-bi data-c="#00A985" data-l="Output" data-t="0.0 dB"></div>
+       </div>
+     </div>
+     <div class="cap" style="margin-top:6px;width:560px;line-height:1.45;font-size:11px">LFO shape: Sine, Triangle, Smooth random. Input: Stereo, or Mono (sums the input, for a mono source made wide). LFO phase: the right channel's LFO offset, 0 to 180&deg;. Ducking turns the wet down while the input is loud. Bass mono's frequency is the Low cut knob's.</div>
+   </div>
+  </div>
+  <div class="rcol" style="width:104px"><div data-m data-h="300" data-v=".6,.63" data-l="Out" data-t="-8.2"></div><div data-f data-h="300" data-v=".72" data-l="Wet" data-t="-3.0"></div><div data-f data-h="300" data-v=".8" data-l="Dry" data-t="0.0"></div></div>
+ </div>
+</div>
+<script>
+chrome('CHORUS','#E0559A','<img class="hdrimg" src="../phase3-mockup-src/header760.png">');
+(()=>{const W=610,H=150,L=40,R=470;let s='';
+ // left: each voice's delay over the last 2 s; right: where each voice sits in the stereo field
+ for(const d of [0,10,20]){const y=H-22-(H-44)*d/20;s+=`<line x1="${L}" y1="${y}" x2="${R}" y2="${y}" stroke="${d==0?'#424242':'#303030'}"/><text x="${L-6}" y="${y+3}" font-size="9" fill="#8D8D8D" text-anchor="end">${d} ms</text>`;}
+ const voices=[[0,1],[2.09,.75],[4.19,.5]];
+ voices.forEach(([ph,op],i)=>{let p=[];for(let x=L;x<=R;x+=3){const t=(x-L)/(R-L)*2*Math.PI*1.6;const d=7+3.2*Math.sin(t+ph);p.push(`${x},${H-22-(H-44)*d/20}`)}
+   s+=`<polyline points="${p.join(' ')}" fill="none" stroke="#E0559A" stroke-opacity="${op}" stroke-width="1.8"/>`;});
+ s+=`<line x1="${R+20}" y1="14" x2="${R+20}" y2="${H-14}" stroke="#303030"/>`;
+ const cx=(R+20+W-10)/2+8;s+=`<line x1="${R+34}" y1="${H/2}" x2="${W-12}" y2="${H/2}" stroke="#4C4C4C"/><text x="${R+34}" y="${H/2+16}" font-size="9" fill="#8D8D8D">L</text><text x="${W-16}" y="${H/2+16}" font-size="9" fill="#8D8D8D">R</text>`;
+ [[-0.9,1],[0,.75],[0.9,.5]].forEach(([p,op])=>{s+=`<circle cx="${cx+p*48}" cy="${H/2}" r="6" fill="#E0559A" fill-opacity="${op}"/>`});
+ s+=`<text x="${R+34}" y="24" font-size="10" fill="#8D8D8D">voices in stereo</text>`;
+ s+=`<text x="8" y="14" font-size="10" fill="#8D8D8D">each voice's delay, last 2 s · 3 voices · 0.80 Hz</text>`;
+ document.getElementById('map').innerHTML=s})();
+</script></body></html>
