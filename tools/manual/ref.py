@@ -1,7 +1,7 @@
 import re,os,json,glob
 T=os.environ['TEMP']+'/manual'
-notes={'Comp':['comp'],'DS-Mini':['ds-mini'],'DS':['ds'],'Delay':['delay'],'EQ':['eq','phase2_1-D'],'Exciter':['exciter'],'FIR':['fir','phase2_1-A'],'Gate':['gate'],'Kicker':['kicker','kicker-sub'],'Limit':['limit'],'MultiComp':['multicomp','phase2_1-U'],'Room':['room','BUILD_PROMPT_PHASE3_NEW_PLUGINS'],'Sature':['sature'],'Verb':['verb']}
-dirs={'Comp':'comp','DS-Mini':'dsmini','DS':'ds','Delay':'delay','EQ':'eq','Exciter':'exciter','FIR':'fir','Gate':'gate','Kicker':'kicker','Limit':'limit','MultiComp':'multicomp','Room':'room','Sature':'sature','Verb':'verb'}
+notes={'Comp':['comp'],'DS-Mini':['ds-mini'],'DS':['ds'],'Delay':['delay'],'EQ':['eq','phase2_1-D'],'Exciter':['exciter'],'FIR':['fir','phase2_1-A'],'Gate':['gate'],'Kicker':['kicker','kicker-sub'],'Limit':['limit'],'MultiComp':['multicomp','phase2_1-U'],'Room':['room','BUILD_PROMPT_PHASE3_NEW_PLUGINS'],'Sature':['sature'],'Verb':['verb'],'TS':['ts'],'Chorus':['chorus']}
+dirs={'Comp':'comp','DS-Mini':'dsmini','DS':'ds','Delay':'delay','EQ':'eq','Exciter':'exciter','FIR':'fir','Gate':'gate','Kicker':'kicker','Limit':'limit','MultiComp':'multicomp','Room':'room','Sature':'sature','Verb':'verb','TS':'ts','Chorus':'chorus'}
 strip=lambda s: re.sub(r'^(band|tap) (n|\d+) ','',s.lower())
 def fb(k):
     out=[]

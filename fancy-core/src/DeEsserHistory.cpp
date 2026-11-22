@@ -63,7 +63,8 @@ void DeEsserHistory::paint (juce::Graphics& g, float width, float height, float 
         const auto& column = columns[(size_t) ((writeIndex + i) % count)];
         level.lineTo ((float) i, yForDb (style.lowLevel ? column.lowLevelDb : column.levelDb, height, style.floorDb));
         reduction.lineTo ((float) i, 4.0f + juce::jlimit (0.0f, height, column.reductionDb * pixelsPerDb));
-        lowReduction.lineTo ((float) i, 4.0f + juce::jlimit (0.0f, height, column.lowReductionDb * pixelsPerDb));
+        // Only where Low reduces, so the history's top edge stays the High band's colour.
+        lowReduction.lineTo ((float) i, column.lowReductionDb > 0.0f ? 4.0f + juce::jlimit (0.0f, height, column.lowReductionDb * pixelsPerDb) : 0.0f);
     }
 
     level.lineTo ((float) count, height);

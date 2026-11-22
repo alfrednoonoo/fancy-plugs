@@ -1,6 +1,6 @@
 # Fancy Plugs
 
-Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and signed off by ear in REAPER. Version **1.6.0**.
+Sixteen effects for Windows 10 and 11 (x64, VST3) and macOS 11 or later (Intel and Apple silicon, VST3 and Audio Units), built for personal use and signed off by ear in REAPER. Version **1.7.0**.
 
 | Plugin | What it does |
 |---|---|
@@ -18,8 +18,29 @@ Fourteen VST3 effects for Windows 10 and 11 (x64), built for personal use and si
 | Fancy DS-Mini | New in 1.3.0: one-knob de-esser with voice and instrument profiles, on the same engine as Fancy DS |
 | Fancy Sature | New in 1.3.0: saturator with Tape, Tube, Transistor and Clip curves, even/odd Character, Tone, oversampling and auto gain |
 | Fancy Room | New in 1.3.0: algorithmic reverb from small room to long hall, with Freeze, tempo-synced pre-delay, a send mode and ducking |
+| Fancy TS | New in 1.7.0: transient shaper that turns each hit's attack and sustain up or down, whatever the level, with Pump, a sidechain and a soft clipper |
+| Fancy Chorus | New in 1.7.0: chorus with five modes (Classic, Ensemble, Dimension, Doubler, Flange), 1 to 6 voices, Tempo sync, Age and ducking |
 
-## What's new in 1.6.0
+## What's new in 1.7.0
+
+- **Mac.** Every plugin now comes for macOS 11 or later as a universal VST3 and Audio Unit (Intel and Apple silicon), in its own zip. Fancy Gate's Audio Unit is a music effect, so it can send MIDI.
+- **Two new plugins:** **Fancy TS**, a transient shaper, and **Fancy Chorus**, a chorus with five modes (table above).
+- **Something new in every plugin** (each plugin's manual has the details):
+  - **Comp:** Hold, Range, Listen to removed, a GR history, Host sync (a tempo-synced trigger) and an Optical mode.
+  - **EQ:** band solo, auto gain, dynamic reach and an analyzer freeze.
+  - **Limit:** Gain Lock, Auto to Target, a DC filter, a release shape, peak statistics and a clipper before the limiter.
+  - **Gate:** a MIDI trigger input, a ratio, auto threshold, Mid/Side sources, de-bleed and Host sync.
+  - **DS:** Learn, a detection filter slope, an output ceiling and **dual-band detection**: a second, Low band for "sh" sounds, in yellow, beside the band for "s".
+  - **DS-Mini:** Auto Amount.
+  - **Verb:** equal loudness, a Post-EQ module, an IR browser, a decay module, and ducking and a level gate.
+  - **Room:** mod rate, a reverb EQ, a gate and auto gain.
+  - **Delay:** Freeze and an output ceiling. **MultiComp:** learned crossovers, band mute and a dynamic-phase crossover. **FIR:** resonance tilt, learned curves and Resonance depth nodes.
+  - **Exciter:** listen to the added harmonics, a THD read-out, a ceiling and auto gain. **Kicker:** sub length, make-room, polarity, a sub meter, auto gain and a ceiling. **Sature:** outer-band drive.
+- **Simpler installing:** unzip and drag on Windows, one double-click on a Mac (see "Installing").
+
+Projects saved with 1.0 to 1.6 load and sound exactly as before. Every new setting defaults to the old behaviour.
+
+## What was new in 1.6.0
 
 - **Fancy FIR: Resonance mode.** A sixth mode that finds narrow peaks standing above the spectrum around them, such as a ringing snare, a boxy vocal or a room mode, and turns each one down by up to Depth only while it's there. Broadband material, plain noise included, changes by well under 0.5 dB.
 - **Depth, Sharpness, Attack, Release and Range.** Sharpness sets how narrow a peak must be to count; Range (Low and High) keeps it to part of the spectrum, and the graph dims what's outside. The cut shows in green, hanging from 0 dB.
@@ -153,32 +174,37 @@ Resonance mode, turning down resonances at 700 Hz and 3 kHz:
 
 <img src="docs/images/room.png" width="760" alt="Fancy Room">
 
+### Fancy TS
+
+<img src="docs/images/ts.png" width="760" alt="Fancy TS">
+
+### Fancy Chorus
+
+<img src="docs/images/chorus.png" width="760" alt="Fancy Chorus">
+
 ## Installing
+
+Download your system's zip from the [latest release](https://github.com/alfrednoonoo/fancy-plugs/releases/latest). Each has a `How to install.txt`.
 
 ### Windows
 
-Download the latest release's `FancyPlugs-<version>-win64.zip`. Close REAPER, unzip, and run `install.ps1`, which copies the plugins to `%USERPROFILE%\VST3-Dev`. You can also copy the `.vst3` folders to any VST3 path yourself. Then re-scan your plugins in REAPER.
+1. Close your DAW, and unzip `FancyPlugs-<version>-win64.zip`.
+2. Drag the `.vst3` folders from its `VST3` folder into `C:\Program Files\Common Files\VST3`, the folder every Windows DAW looks in. Windows asks once for administrator approval: click **Continue**.
+3. Open your DAW and rescan its plugins (REAPER: Options > Preferences > Plug-ins > VST > Re-scan).
 
-To install the newest CI build instead of a release, run this in the project folder:
-
-```powershell
-.\scripts\get-latest.ps1
-```
-
-It downloads the newest successful build of the current branch and installs it the same way. It doesn't need admin rights. If REAPER is running, it first asks you to close any project using these plugins, because Windows won't overwrite a loaded DLL.
-
-Add `%USERPROFILE%\VST3-Dev` to REAPER's VST plug-in paths once (Options > Preferences > Plug-ins > VST), and click Re-scan after each install.
+To update, close the DAW first and copy the new folders over the old ones.
 
 ### Mac (Intel and Apple silicon)
 
-Mac builds are being brought up (`docs/mac.md`). Every plugin is a universal VST3 and Audio Unit for macOS 11 or later, built and validated by CI on every push. No release has a Mac zip yet: until one does, use the newest CI build.
+1. Close your DAW, and double-click `FancyPlugs-<version>-macos.zip` to unzip it.
+2. Double-click `Install Fancy Plugs.command`. The first time, macOS blocks it, because the plugins aren't signed with an Apple Developer ID: open **System Settings > Privacy & Security**, click **Open Anyway** next to its name, and confirm with your password. A Terminal window then installs every VST3 and Audio Unit into your own Library folders (`~/Library/Audio/Plug-Ins`), clears macOS's download flag on them, and says how many it installed; press Enter to close it.
+3. Open your DAW and rescan. Use the VST3s in REAPER, Live, Cubase, Bitwig and Studio One, and the Audio Units in Logic Pro and GarageBand. On a Mac, **Cmd-click** a control to type a value.
 
-1. Download `FancyPlugs-macos-<sha>` from the newest green run on the Actions page, or run `./scripts/get-latest.sh` in the project folder (it needs the GitHub CLI, `gh`, signed in).
-2. Close your DAW, unzip, and run `./install.sh` from the unzipped folder in Terminal.
+If the script can't run, `How to install.txt` explains the manual way: drag the bundles into `~/Library/Audio/Plug-Ins/VST3` and `Components`, then run one line in Terminal.
 
-`install.sh` copies the VST3s to `~/Library/Audio/Plug-Ins/VST3` and the Audio Units to `~/Library/Audio/Plug-Ins/Components`, your own folders, so it needs no administrator password. The plugins aren't signed with an Apple Developer ID, so the script also removes the quarantine flag macOS puts on downloaded files; a plugin copied by hand without the script won't open until you run `xattr -dr com.apple.quarantine` on it.
+### The newest CI build (for development)
 
-Use the VST3s in REAPER, Live, Cubase, Bitwig and Studio One, and the Audio Units in Logic Pro and GarageBand. On a Mac, **Cmd-click** a control to type a value (Ctrl-click is a right-click there). Fancy Gate's Audio Unit is a music effect, so it can send MIDI.
+`scripts\get-latest.ps1` on Windows, or `./scripts/get-latest.sh` on a Mac (it needs the GitHub CLI, `gh`, signed in), downloads the newest successful build of the current branch and installs it: on Windows into `%USERPROFILE%\VST3-Dev`, which you add to REAPER's VST paths once; on a Mac into your own Library folders. Neither needs admin rights.
 
 ## Choosing presets
 
@@ -190,11 +216,11 @@ Click the preset name in the header to open the preset browser. It works the sam
 - The star marks a favourite without loading the preset.
 - The ‹ › arrows on the preset name step to the previous or next preset without opening the browser.
 
-**The full manual**, with every control of all fourteen plugins, quick starts and a glossary, is [`docs/manual/Fancy-Plugs-Manual-1.6.pdf`](docs/manual/Fancy-Plugs-Manual-1.6.pdf). Each plugin also has a manual and a REAPER checklist in `docs/`. `docs/PROGRESS.md` has the full history, test results and measurements.
+**The full manual**, with every control of all sixteen plugins, quick starts and a glossary, is [`docs/manual/Fancy-Plugs-Manual-1.7.pdf`](docs/manual/Fancy-Plugs-Manual-1.7.pdf). Each plugin also has a manual and a REAPER checklist in `docs/`. `docs/PROGRESS.md` has the full history, test results and measurements.
 
 ## How builds work
 
-Nothing compiles on the local PC. Each push runs `.github/workflows/build.yml` on a GitHub Windows runner. The run builds the plugins and runs the DSP tests, Steinberg's validator, pluginval and the host harness. It also renders UI screenshots, then uploads the results as artifacts. Changes that only touch `docs/`, `reference/` or Markdown files don't start a build.
+Nothing compiles on the local PC. Each push runs `.github/workflows/build.yml` on GitHub's Windows and Mac runners. The run builds the plugins and runs the DSP tests, Steinberg's validator, pluginval and the host harness. It also renders UI screenshots, then uploads the results as artifacts. Changes that only touch `docs/`, `reference/` or Markdown files don't start a build.
 
 To build a single plugin, run the workflow by hand and pick it:
 

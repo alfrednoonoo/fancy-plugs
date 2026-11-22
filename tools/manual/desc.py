@@ -1,6 +1,6 @@
 import re,os,json
 T=os.environ['TEMP']+'/manual'
-mm={'Comp':'comp','DS-Mini':'ds-mini','DS':'ds','Delay':'delay','EQ':'eq','Exciter':'exciter','FIR':'fir','Gate':'gate','Kicker':'kicker','Limit':'limit','MultiComp':'multicomp','Room':'room','Sature':'sature','Verb':'verb'}
+mm={'Comp':'comp','DS-Mini':'ds-mini','DS':'ds','Delay':'delay','EQ':'eq','Exciter':'exciter','FIR':'fir','Gate':'gate','Kicker':'kicker','Limit':'limit','MultiComp':'multicomp','Room':'room','Sature':'sature','Verb':'verb','TS':'ts','Chorus':'chorus'}
 r=json.load(open(f"{T}/ref.json",encoding='utf-8'))
 out={}
 for k,m in mm.items():

@@ -1,15 +1,15 @@
 # Hand-written content for the Fancy Plugs manual: plugin metadata, quick starts, the shared
 # chapters, and descriptions for controls the per-plugin manuals don't table.
 
-VERSION = "1.6"
+VERSION = "1.7"
 
 PARTS = [
     ("Dynamics", "Plugins that react to level: they turn things down, or up, when the sound gets louder or quieter.",
-     ["Comp", "MultiComp", "Gate", "Limit", "DS", "DS-Mini"]),
+     ["Comp", "MultiComp", "Gate", "Limit", "DS", "DS-Mini", "TS"]),
     ("Tone", "Plugins that change the colour of a sound: which frequencies are loud, and what the sound is made of.",
      ["EQ", "FIR", "Exciter", "Sature", "Kicker"]),
-    ("Space and time", "Plugins that add echoes and rooms around a sound.",
-     ["Delay", "Verb", "Room"]),
+    ("Space and time", "Plugins that add echoes, rooms and movement around a sound.",
+     ["Delay", "Verb", "Room", "Chorus"]),
 ]
 
 # Accent: the plugin's own accent (docs/DESIGN_SYSTEM.md section 2). Plugins whose accent follows a
@@ -85,6 +85,16 @@ PLUGINS = {
                  quick=["Put Fancy Room on a send, or on the track itself.",
                         "Set **Decay** for the length of the tail in seconds, and **Size** for how big the space sounds.",
                         "Balance **Wet** against **Dry**. On a send, tick **Wet only (send)**. Use **Damping** and **High cut** to make it darker."]),
+    "TS": dict(file="ts", accent="#E77E23", kind="Transient shaper",
+               images=[("ts", "Fancy TS")],
+               quick=["Put Fancy TS on a drum track, a loop or a plucked instrument.",
+                      "Turn **Attack** up for more snap at the start of each hit, or down to soften it. **Speed** sets how long the start counts.",
+                      "Turn **Sustain** down to shorten the ring after each hit (a room, a boomy kick), or up to bring it out; **Length** sets how long it works. Tick **Clip output** if raised attacks get too loud."]),
+    "Chorus": dict(file="chorus", accent="#E0559A", kind="Chorus",
+                   images=[("chorus", "Fancy Chorus")],
+                   quick=["Put Fancy Chorus on a guitar, pad, synth or vocal.",
+                          "Pick a **Mode**: Ensemble (the default) for shimmer, Classic for the familiar two-voice chorus, Dimension for steady width, Doubler for a second take, Flange for jet sweeps.",
+                          "Set **Rate** and **Depth** for how fast and how far the voices move, **Voices** and **Width** for how many and how wide, and balance **Wet** against **Dry**."]),
 }
 
 # Screens: from the release build's screens-<sha> artifact, @2x. MORE goes under "More views".
@@ -110,6 +120,8 @@ MORE = {
     "DS-Mini": [("dsmini-edit", "The EDIT drawer", "EDIT drawer"), ("dsmini-listening", "Listening to what's removed", "Controls")],
     "Sature": [("sature-edit", "The EDIT drawer", "EDIT"), ("sature-listening", "Listening to the added harmonics", "Controls")],
     "Room": [("room-edit", "The EDIT drawer", "EDIT")],
+    "TS": [("ts-edit", "The EDIT drawer", "EDIT drawer"), ("ts-listening", "Listening to the change", "The window")],
+    "Chorus": [("chorus-edit", "The EDIT drawer", "EDIT drawer"), ("chorus-listening", "Listening to the voices alone", "The window")],
 }
 
 # The cover knob's lit arc: the suite's band colours, as on EQ's bands.

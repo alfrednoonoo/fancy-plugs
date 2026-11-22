@@ -279,6 +279,9 @@ features).
 
 ## Suggested order (within the Phase 4 order above)
 
+**Releases** (user, 22 November 2026): v1.7.0 ships everything up to Wave 2 item 10 (DS dual-band),
+with the Mac build. Wave 2 items 11 to 46 go into **v1.7.1**, and Wave 3 into **v1.7.2**.
+
 1. **Wave 1** — every S item above with no new engine: EQ band solo, auto gain and analyzer freeze;
    Comp Hold, Range, delta and GR history; Limit gain lock, auto gain and DC filter; Gate
    MIDI in, ratio, auto threshold and Mid/Side sources; DS auto threshold and slope; Delay freeze and
@@ -288,7 +291,7 @@ features).
    (items 11 onwards added by the user on 21 November 2026, grouped by plugin):
    1. MultiComp dynamic-phase crossover (done), 2. FIR depth nodes (done), 3. Comp tempo-synced
    trigger (done), 4. Gate tempo-synced trigger (done), 5. Sature outer-band drive (done), 6. Comp Optical mode (done),
-   7. Verb decay module (done), 8. Verb ducking and level gate (done), 9. Limit clipper (done), 10. DS dual-band,
+   7. Verb decay module (done), 8. Verb ducking and level gate (done), 9. Limit clipper (done), 10. DS dual-band (done),
    11. Gate detector modes, 12. Gate upward expansion,
    13. Comp sidechain EQ to 6 bands, 14. Comp link modes,
    15. EQ brickwall cut slope, 16. EQ character output stage,
