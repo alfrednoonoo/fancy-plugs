@@ -319,3 +319,93 @@ One push (`d7fd3e8`), with every recommended option. `tests/LegacyEqDsp.*` is Eq
 - **Reach:** `bNreach` per band, 1 to 48 dB (12 is the old curve, to the bit), typed in a value field in the dynamic section of the band editor. `fancy::dsp::matched::DynamicSpec` carries it.
 - **Analyzer:** "Pre + Post" appended to `analyzer`, the pre spectrum dimmer under the post one; **Freeze** is a button at the graph's top right while the analyzer is on. **Changed from section 4:** no F key, as a key in a plugin window competes with the host's shortcuts.
 - **Test fix (run 44942993322):** EqTests' pre-Q2.4 state test now counts the eight new Reach parameters of bands 17 to 24.
+
+## Phase 4 Wave 2: brickwall cut slope
+
+**Draft for approval (22 November 2026).** Item 15 of the Wave 2 order (`docs/enhancements.md`; backlog item 4 of section 4), for v1.7.1. Modelled first: `docs/research/eq-brickwall-model.py`.
+
+### 1. What it adds
+
+Low cut and High cut bands go to 48 dB/oct today: order 8, four sections. A **Brickwall** slope is for jobs where everything past the corner must go and nothing before it may be touched, such as rumble under a vocal, or the top octave before a lossy encoder.
+
+- **96 dB/oct**, order 16, as eight matched Butterworth sections, appended to `bNslope`'s choices after 48 and named "Brickwall (96)" in the menus. Q works on it as on the other slopes, scaling the highest-Q section.
+- **Linear phase:** the same magnitude. EQ already builds its FIR from the magnitude response, so there's no phase shift, and the ringing is symmetric and within the FIR's length.
+- **Only cuts.** Bells and shelves don't have slopes.
+
+### 2. What the model found
+
+A high-pass at 100 Hz, minimum phase:
+
+| Slope | ⅓ octave below | An octave below | ⅓ octave above | Rings for (to −60 dB) |
+|---|---|---|---|---|
+| 24 dB/oct | −8.7 dB | −24 dB | −0.64 dB | 9.7 ms |
+| 48 dB/oct (today's steepest) | −16.2 dB | −48 dB | −0.11 dB | 15.0 ms |
+| 72 dB/oct | −24.1 dB | −72 dB | −0.02 dB | 24.0 ms |
+| **96 dB/oct** | **−32.1 dB** | **−96 dB** | **0.00 dB** | **29.4 ms** |
+
+Brickwall cuts twice as hard just past the corner and leaves what's above it untouched. In minimum phase it rings about twice as long, so a kick's low end smears a little more. The ringing scales with the corner's period: at 30 Hz it lasts about 100 ms. The manual will say to use Linear phase when ringing matters.
+
+### 3. Decisions
+
+- **Decision 1: which slopes.**
+  - **A (R).** One new choice, Brickwall (96 dB/oct).
+  - **B.** 72 and 96 dB/oct: one more step, which the model shows is halfway in every respect.
+- **Decision 2: automation of Slope.** Appending a choice changes the 0–1 position of every existing slope for a host. A project's saved Slope values load correctly, because they're stored as choices. But a host automation lane already drawn on a band's Slope would land one step off.
+  - **A (R).** Accept it, as Gate's appended Detector inputs did. Slope is rarely automated, and the manual and release notes say so.
+  - **B.** A separate `bNbrickwall` toggle per band (24 more parameters) that overrides Slope, so no existing value moves.
+
+### 4. Tests
+
+1. Legacy: every existing slope, in both phase modes, renders exactly as v1.7.0, and so does a project saved with v1.7.0.
+2. Brickwall, minimum phase: the 100 Hz high-pass is −32 ± 1 dB a third of an octave below the corner, −3 ± 0.2 dB at the corner, and flat within 0.05 dB from a third of an octave above.
+3. Linear phase: the same magnitude within 0.5 dB down to −60 dB, and the impulse response is symmetric.
+4. Changing a band from 48 to Brickwall while it plays fades as any slope change does, with no click.
+5. CPU: 24 Brickwall cuts at 48 kHz stay within §4.11's target for 24 bands.
+
+### 5. Build order
+
+Approval, then one push, with no mockup: the slope shows up in the existing Slope menus and the drawer. That covers the sections, the appended choice, tests, the manual (with a note on automation) and the checklist.
+
+## Phase 4 Wave 2: Character output stage
+
+**Draft for approval (22 November 2026).** Item 16 of the Wave 2 order (`docs/enhancements.md`; backlog item 7 of section 4), for v1.7.1. Modelled first: `docs/research/eq-character-model.py`.
+
+### 1. What it adds
+
+`character`: **Clean** (the default, today's EQ, bit for bit), **Subtle** or **Warm**, a saturation stage after the bands and before Output. It uses Sature's soft curve and ADAA (`fancy/dsp/Saturation.h`) as Comp's Character does, so no new shaper code. The stage computes `f(d·x) / d`, which has slope 1 at zero, so quiet material passes at unity and only peaks pick up harmonics.
+
+| Character | Drive | Curve | THD at −18 / −12 / −6 dBFS | Level change at −6 dBFS |
+|---|---|---|---|---|
+| Clean | none (not run) | | 0 | 0 |
+| Subtle | −9 dB | symmetric, so odd harmonics | 0.03 / 0.10 / 0.39 % | −0.10 dB |
+| Warm | −3 dB | asymmetric (negative limit 4), so the 2nd harmonic leads the 3rd by about 5 dB | 0.11 / 0.43 / 1.6 % | −0.21 dB |
+
+A 5 Hz DC blocker follows Warm, because asymmetry makes DC on loud signals. The stage runs at the oversampled rate when EQ's Oversampling is on, and at the base rate with ADAA alone when it's off.
+
+### 2. What the model found
+
+The drives were set from the model. At Comp's Warm settings the stage already gave 1.5 % THD at −12 dBFS, too much for an EQ's colour. At −9 and −3 dB of drive, Subtle stays at 0.1 % THD at −12 dBFS and Warm reaches about 1.6 % at −6, and both change the level by under 0.25 dB below −6 dBFS. Comp's asymmetry of 1.4 didn't make the 2nd harmonic lead. A negative limit of 4 does: H2 at −48.6 dB against H3 at −53.7 at −12 dBFS.
+
+### 3. Decisions
+
+- **Decision 1: fixed or variable.**
+  - **A (R).** Three fixed choices, as the backlog has them: one menu, nothing to set.
+  - **B.** The choice plus a Drive knob (−24 to +6 dB) for how hard it works.
+- **Decision 2: where it goes.**
+  - **A (R).** A **Character** dropdown in the EDIT drawer's Output settings, next to Auto gain. The header gets no badge. Only the drawer changes, so a mockup isn't needed beyond a drawer screenshot.
+  - **B.** A small Clean | Subtle | Warm switch in the header, beside the EDIT link: visible at a glance, but it changes the header.
+- **Decision 3: Auto gain with Character.**
+  - **A (R).** Auto gain keeps its formula, from the bands' response, and ignores Character. The stage changes the level by under 0.25 dB below −6 dBFS.
+  - **B.** Auto gain also measures the stage's level change on the signal.
+
+### 4. Tests
+
+1. Legacy: Clean renders exactly as v1.7.0, with the stage not run.
+2. THD and level for a 1 kHz sine at −18, −12 and −6 dBFS within 10 % of the table above, at Oversampling Off and 4x.
+3. Warm: H2 is above H3 at −12 dBFS, and the output's DC stays under −80 dBFS with a full-scale asymmetric input.
+4. Aliasing: a 10 kHz sine at −6 dBFS through Warm with Oversampling 4x has no alias above −90 dBFS under 20 kHz.
+5. Switching Character while it plays crossfades over 10 ms, with no click.
+
+### 5. Build order
+
+Approval, then one push: the stage in `EqDsp`, the parameter, the drawer row, tests, manual and checklist.
