@@ -485,7 +485,7 @@ Mockup 48 approved by the user on 22 November 2026; `tests/VerbDuckTests.cpp`.
 
 ## Phase 4 Wave 2: Attack for the Reverb generator
 
-**Draft for approval (22 November 2026).** Item 17 of the Wave 2 order (`docs/enhancements.md`; backlog item 5 of section 5), for v1.7.1. Modelled first: `docs/research/verb-attack-width-model.py` (part 1).
+**Approved by the user on 22 November 2026 with every recommended option (A).** Item 17 of the Wave 2 order (`docs/enhancements.md`; backlog item 5 of section 5), for v1.7.1. Modelled first: `docs/research/verb-attack-width-model.py` (part 1).
 
 ### 1. What it adds
 
@@ -526,7 +526,7 @@ Approval, then the Reverb card mockup (with item 18's SETUP row), then one push:
 
 ## Phase 4 Wave 2: Width to 200 %
 
-**Draft for approval (22 November 2026).** Item 18 of the Wave 2 order (`docs/enhancements.md`; backlog item 8 of section 5), for v1.7.1. Modelled first: `docs/research/verb-attack-width-model.py` (part 2).
+**Approved by the user on 22 November 2026 with every recommended option (A).** Item 18 of the Wave 2 order (`docs/enhancements.md`; backlog item 8 of section 5), for v1.7.1. Modelled first: `docs/research/verb-attack-width-model.py` (part 2).
 
 ### 1. What it adds
 
