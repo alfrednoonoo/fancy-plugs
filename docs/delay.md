@@ -252,3 +252,59 @@ One push (`f276ab4`), with every recommended option; `tests/DelayW1Tests.cpp`. I
 
 - **Freeze:** `freeze`, a toggle on the tap graph. The repeats hold (every tap's feedback at 1, filters and character bypassed in the loop) and the input is gated out, both over a 30 ms crossfade; automatable. **Fixed after run 44935591606:** the engine read a `current` that didn't exist; Freeze is now a stored flag set with the other targets and snapped with the other smoothers.
 - **Ceiling:** `ceiling`, Off (at the bottom) or -12 to 0 dBTP, in the drawer, on the shared `fancy::dsp::OutputCeiling`, out of the path while Off.
+
+## Phase 4 Wave 2: LFO shape and stereo phase
+
+**Draft for approval (22 November 2026).** Item 22 of the Wave 2 order (`docs/enhancements.md`; backlog item 6 of section 6), for v1.7.1. Modelled first: `docs/research/delay-lfo-model.py`.
+
+### 1. What it adds
+
+Each tap's modulation (Mod rate, Mod depth, Random) moves its read position with a sine, with the right channel fixed a quarter cycle (90°) ahead. Two per-tap settings change that:
+
+- **Shape** (`tNmodShape`): **Sine** (today) or **Triangle**. A triangle on the read position holds the pitch at +Depth, then at −Depth, flipping each half cycle: a steady detune with a tape-like warble at slow rates. Its corners are rounded over 10 % of the cycle so the flips don't jump. Depth still means the peak pitch deviation.
+- **Stereo** (`tNmodStereo`): how far ahead the right channel's LFO runs, 0 to 180°, default 90° (today). 0° moves both sides together (mono-like modulation); 180° moves them in opposition (widest).
+
+At their defaults the taps render as they do today, bit for bit. Random still adds its smoothed walk on top of either shape.
+
+### 2. What the model found
+
+One tap with Depth 12 cents at 0.8 Hz:
+
+| Shape | Time near the peak detune | Largest pitch step | RMS deviation |
+|---|---|---|---|
+| Sine (today) | 29 % | 0.06 cents/ms | 8.5 cents |
+| Triangle, sharp corners | 100 % | 12 cents/ms (a jump) | 12.0 cents |
+| **Triangle, corners rounded over 10 %** | **88 %** | **0.38 cents/ms** | **11.5 cents** |
+
+| Stereo | Left and right apart by up to | Correlation |
+|---|---|---|
+| 0° | 0 cents | +1.00 |
+| 45° | 9.2 cents | +0.71 |
+| 90° (today) | 17.0 cents | 0.00 |
+| 135° | 22.2 cents | −0.71 |
+| 180° | 24.0 cents | −1.00 |
+
+A sharp triangle jumps the pitch by its whole range in a millisecond at each flip, which is audible. Rounded corners keep almost all of the steady detune with no jump.
+
+### 3. Decisions
+
+- **Decision 1: per tap or global.**
+  - **A (R).** Both settings per tap, like Rate and Depth (32 appended parameters).
+  - **B.** One Shape and one Stereo for all taps (2 parameters).
+- **Decision 2: the shapes.**
+  - **A (R).** Sine and Triangle (rounded). Random already provides the irregular motion.
+  - **B.** Sine, Triangle and Square (a smoothed square on the position, which makes a pitch spike at each flip).
+- **Decision 3: where they go.**
+  - **A (R).** On the Motion page: a small **Sine | Tri** switch beside Rate, and a **Stereo** knob after Random, with the card kept at its size (the knobs narrow slightly). A mockup follows approval.
+  - **B.** In the EDIT drawer, as rows for the selected tap.
+
+### 4. Tests
+
+1. Legacy: Sine at 90° renders exactly as v1.7.0, with Depth 0 and above, Random 0 and above.
+2. Triangle, Depth 12 cents at 0.8 Hz on a 1 kHz tone: the measured pitch holds within 10 % of ±12 cents for at least 80 % of the time, and changes by under 1 cent per ms.
+3. Stereo 0°: left and right outputs are identical for a mono input. At 180° the pitches move in opposition, with correlation under −0.9.
+4. Changing Shape while playing crossfades the position over 30 ms (the existing smoothing), with no click.
+
+### 5. Build order
+
+Approval, then the Motion page mockup (`reference/phase4/57__delay_w2_mockup.png`), then one push: the shapes and stereo phase in the tap modulation, the parameters, the Motion page, tests, manual and checklist.
