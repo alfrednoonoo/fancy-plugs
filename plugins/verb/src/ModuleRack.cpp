@@ -24,6 +24,9 @@ constexpr int chipTop = 24, chipHeight = 24, chipGap = 2;
 constexpr Knob::Style eqKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
 constexpr int eqKnobHeight = 66, eqCurveTop = 46, eqCurveHeight = 48, eqRowTop = 98, eqRowStep = 82;
 
+// Phase 4 Wave 2: the Decay card's two knob rows.
+constexpr int decayKnobTop = 64, decayCrossTop = 218;
+
 juce::Colour accentOf (ModuleType type)
 {
     switch (type)
@@ -31,6 +34,7 @@ juce::Colour accentOf (ModuleType type)
         case ModuleType::file:      return colours::uiPurple;
         case ModuleType::lpHp:      return colours::uiBlue;
         case ModuleType::eq:        return colours::uiBlue;
+        case ModuleType::decay:     return colours::uiBlue; // Phase 4 Wave 2
         case ModuleType::normalize: return colours::accentGreen;
         default:                    return colours::uiTeal;
     }
@@ -165,6 +169,7 @@ int ModuleCard::widthOf (ModuleType type)
         case ModuleType::reverse:   return 163;
         case ModuleType::modulate:  return 247;
         case ModuleType::eq:        return 207; // Phase 4 Wave 1 (reference/phase4/36__verb_w1_mockup.png)
+        case ModuleType::decay:     return 207; // Phase 4 Wave 2 (reference/phase4/47__verb_w2_decay_mockup.png)
         default:                    return 356;
     }
 }
@@ -244,7 +249,7 @@ void ModuleCard::addSettingKnobs()
         });
 
         const auto colour = accent();
-        const auto& style = type == ModuleType::eq ? eqKnobStyle
+        const auto& style = type == ModuleType::eq || type == ModuleType::decay ? eqKnobStyle
                           : type == ModuleType::reverb || type == ModuleType::modulate ? Knob::tightStyle
                           : controls.size() >= 3       ? Knob::smallStyle
                                                        : Knob::mediumStyle;
@@ -348,6 +353,16 @@ void ModuleCard::placeKnobs()
         for (size_t i = 0; i < controls.size() && i < 7; ++i)
             place (i, { columns[slots[i].second], rowTops[slots[i].first] + 12, 60, eqKnobHeight });
     }
+    else if (type == ModuleType::decay)
+    {
+        // Phase 4 Wave 2 (reference/phase4/47__verb_w2_decay_mockup.png): the three multipliers
+        // with each band's RT under them, then the two crossovers.
+        for (size_t i = 0; i < controls.size() && i < 3; ++i)
+            place (i, { 8 + 64 * (int) i, decayKnobTop, 60, eqKnobHeight });
+
+        place (3, { 30, decayCrossTop, 60, eqKnobHeight });
+        place (4, { 112, decayCrossTop, 60, eqKnobHeight });
+    }
 }
 
 juce::File ModuleCard::currentFile() const
@@ -380,6 +395,10 @@ juce::String ModuleCard::breadcrumb() const
 
 void ModuleCard::refresh()
 {
+    // Phase 4 Wave 2: a rebuild brings new RT read-outs.
+    if (type == ModuleType::decay)
+        repaint();
+
     if (type != ModuleType::file)
         return;
 
@@ -656,6 +675,10 @@ void ModuleCard::paint (juce::Graphics& g)
         for (int i = 0; i < 3; ++i)
             g.drawText (names[i], 14, eqRowTop + i * eqRowStep, 120, 12, juce::Justification::centredLeft, false);
     }
+    else if (type == ModuleType::decay)
+    {
+        paintDecayReadouts (g, dim);
+    }
 
     g.setColour (colours::textSecondary);
 
@@ -669,6 +692,52 @@ void ModuleCard::paint (juce::Graphics& g)
 
     for (const auto x : { 2.0f, (float) getWidth() - 3.0f })
         g.fillRect (x, gripY, 1.0f, (float) gripHeight);
+}
+
+// Phase 4 Wave 2: the Decay card's captions, and each band's RT before and after from the last
+// build (docs/verb.md, "decay module").
+void ModuleCard::paintDecayReadouts (juce::Graphics& g, float dim) const
+{
+    g.setColour (colours::textSecondary.withMultipliedAlpha (dim));
+    g.setFont (font (Weight::medium, 10.0f));
+    g.drawText ("DECAY TIME", 14, decayKnobTop - 14, 120, 12, juce::Justification::centredLeft, false);
+    g.drawText ("CROSSOVERS", 14, decayCrossTop - 14, 120, 12, juce::Justification::centredLeft, false);
+
+    const auto preview = processor.getPreview();
+    const verb::DecayReadout* readout = nullptr;
+
+    for (const auto& candidate : preview.decays)
+        if (candidate.uid == uid)
+            readout = &candidate;
+
+    const auto seconds = [] (double value) { return fancy::formatFixed ((float) value, value < 10.0 ? 1 : 0); };
+    const char* bandNames[] { "Low", "Mid", "High" };
+    juce::String limitNote;
+
+    g.setFont (font (Weight::regular, 10.0f));
+
+    for (int b = 0; b < 3; ++b)
+    {
+        juce::String text;
+
+        if (readout == nullptr)
+            text = "-";
+        else if (! readout->measured[(size_t) b])
+            text = "can't measure";
+        else if (std::abs (readout->afterSeconds[(size_t) b] - readout->beforeSeconds[(size_t) b]) < 0.05)
+            text = seconds (readout->beforeSeconds[(size_t) b]) + " s";
+        else
+            text = seconds (readout->beforeSeconds[(size_t) b]) + juce::String::fromUTF8 (" \xe2\x86\x92 ") + seconds (readout->afterSeconds[(size_t) b]) + " s";
+
+        g.drawText (text, 2 + 64 * b, decayKnobTop + eqKnobHeight + 4, 72, 12, juce::Justification::centred, true);
+
+        if (readout != nullptr && readout->limited[(size_t) b] && limitNote.isEmpty())
+            limitNote = juce::String (bandNames[b]) + " can't grow past the IR's own tail.";
+    }
+
+    g.setFont (font (Weight::regular, 11.0f));
+    g.drawFittedText (limitNote.isNotEmpty() ? limitNote : juce::String ("RT60 per band, before and after."),
+                      14, decayKnobTop + eqKnobHeight + 22, getWidth() - 28, 28, juce::Justification::topLeft, 2);
 }
 
 // Phase 4 Wave 1: the EQ module's response, from the same matched filters the build uses.
@@ -883,13 +952,13 @@ ModuleRack::ModuleRack (VerbProcessor& processorToUse)
         };
 
         auto panelButton = std::make_unique<AddButton> (verb::menuNameOf (type), add, 14.0f);
-        panelButton->setBounds (16, y, panelButton->idealWidth(), 28);
+        panelButton->setBounds (16, y, panelButton->idealWidth(), 26);
         addPanel.addAndMakeVisible (*panelButton);
         addButtons.push_back (std::move (panelButton));
-        y += 31;
+        y += 28; // ten types since Phase 4 Wave 2's Decay
 
-        // An empty rack has nothing to modulate.
-        if (type == verb::ModuleType::modulate)
+        // An empty rack has nothing to modulate, or to reshape (Phase 4 Wave 2).
+        if (type == verb::ModuleType::modulate || type == verb::ModuleType::decay)
             continue;
 
         auto emptyButton = std::make_unique<AddButton> (verb::menuNameOf (type), add);

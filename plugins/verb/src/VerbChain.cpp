@@ -73,6 +73,16 @@ const std::vector<Setting> eqSettings {
     { "highFreq", "Freq", 1000.0f, 20000.0f, 8000.0f, 1.0f, 1.0f, 0, "Hz", true },
     { "highGain", "Gain", -18.0f, 18.0f, 0.0f, 0.1f, 1.0f, 1, "dB" },
 };
+
+// Phase 4 Wave 2: each band's decay time as a multiple of what it was, and the two crossovers.
+// Every multiplier at 1 leaves the IR as it was.
+const std::vector<Setting> decaySettings {
+    { "lowMult", "Low", 0.25f, 4.0f, 1.0f, 0.01f, 1.0f, 2, "x", true },
+    { "midMult", "Mid", 0.25f, 4.0f, 1.0f, 0.01f, 1.0f, 2, "x", true },
+    { "highMult", "High", 0.25f, 4.0f, 1.0f, 0.01f, 1.0f, 2, "x", true },
+    { "lowCross", "Low", 20.0f, 1000.0f, 250.0f, 1.0f, 1.0f, 0, "Hz", true },
+    { "highCross", "High", 1000.0f, 16000.0f, 4000.0f, 1.0f, 1.0f, 0, "Hz", true },
+};
 } // namespace
 
 const juce::StringArray& earlyTypeNames()
@@ -92,6 +102,7 @@ const std::vector<Setting>& settingsOf (ModuleType type)
         case ModuleType::reverb:    return reverbSettings;
         case ModuleType::modulate:  return modulateSettings;
         case ModuleType::eq:        return eqSettings;
+        case ModuleType::decay:     return decaySettings;
         case ModuleType::file:
         case ModuleType::reverse:
         default:                    return noSettings;
@@ -111,6 +122,7 @@ juce::String storedName (ModuleType type)
         case ModuleType::reverb:    return "reverb";
         case ModuleType::modulate:  return "modulate";
         case ModuleType::eq:        return "eq";
+        case ModuleType::decay:     return "decay";
         default:                    return {};
     }
 }
@@ -128,6 +140,7 @@ juce::String titleOf (ModuleType type)
         case ModuleType::reverb:    return "REVERB GENERATOR";
         case ModuleType::modulate:  return "MODULATE";
         case ModuleType::eq:        return "EQ";
+        case ModuleType::decay:     return "DECAY";
         default:                    return {};
     }
 }
@@ -145,6 +158,7 @@ juce::String chipOf (ModuleType type)
         case ModuleType::reverb:    return "REVERB";
         case ModuleType::modulate:  return "MODULATE";
         case ModuleType::eq:        return "EQ";
+        case ModuleType::decay:     return "DECAY";
         default:                    return {};
     }
 }
@@ -162,6 +176,7 @@ juce::String menuNameOf (ModuleType type)
         case ModuleType::reverb:    return "Reverb Generator";
         case ModuleType::modulate:  return "Modulate";
         case ModuleType::eq:        return "EQ";
+        case ModuleType::decay:     return "Decay";
         default:                    return {};
     }
 }

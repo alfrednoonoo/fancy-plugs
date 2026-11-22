@@ -1097,6 +1097,307 @@ juce::AudioBuffer<float> exportableIr (const BuiltIr& built)
     return out;
 }
 
+// Phase 4 Wave 2: the Decay module ------------------------------------------------------
+
+namespace
+{
+constexpr int decayFftOrder = 13, decayFftSize = 1 << decayFftOrder, decayHop = decayFftSize / 4;
+constexpr double minimumRtSeconds = 0.05;   // shorter is a filter's ring, not a decay
+constexpr double floorMarginDb = 10.0, floorFadeSeconds = 0.1, floorWindowSeconds = 0.2, envelopeSeconds = 0.01;
+
+// 0 below the crossover, 1 above, over half an octave (a raised cosine in log frequency).
+double crossFade (double hz, double crossHz) noexcept
+{
+    if (hz <= 0.0)
+        return 0.0;
+
+    const auto x = std::log2 (hz / crossHz) / 0.5 + 0.5;
+    return 0.5 - 0.5 * std::cos (pi * std::clamp (x, 0.0, 1.0));
+}
+
+// Splits one channel into its three bands: Hann frames at a quarter hop (they sum to 2), each
+// spectrum times the band's mask, back, overlap-added. The masks sum to 1, so the bands do too.
+class BandSplitter
+{
+public:
+    BandSplitter (double lowCrossHz, double highCrossHz, double sampleRate)
+        : fft (decayFftOrder)
+    {
+        window.resize ((size_t) decayFftSize);
+
+        for (int n = 0; n < decayFftSize; ++n)
+            window[(size_t) n] = (float) (0.5 - 0.5 * std::cos (2.0 * pi * n / decayFftSize));
+
+        for (auto& mask : masks)
+            mask.resize ((size_t) decayFftSize / 2 + 1);
+
+        for (int k = 0; k <= decayFftSize / 2; ++k)
+        {
+            const auto hz = (double) k * sampleRate / decayFftSize;
+            const auto low = crossFade (hz, lowCrossHz), high = crossFade (hz, highCrossHz);
+            masks[0][(size_t) k] = (float) (1.0 - low);
+            masks[1][(size_t) k] = (float) (low * (1.0 - high));
+            masks[2][(size_t) k] = (float) (low * high);
+        }
+
+        // Whatever the transform's own scaling: an impulse through forward and back.
+        std::vector<float> probe ((size_t) decayFftSize * 2, 0.0f);
+        probe[0] = 1.0f;
+        fft.performRealOnlyForwardTransform (probe.data(), true);
+        mirror (probe);
+        fft.performRealOnlyInverseTransform (probe.data());
+        scale = probe[0] != 0.0f ? 0.5 / (double) probe[0] : 0.0;   // 0.5: the Hann frames sum to 2
+    }
+
+    std::array<std::vector<double>, 3> split (const std::vector<double>& x)
+    {
+        const auto length = (int) x.size();
+        std::array<std::vector<double>, 3> bands;
+
+        for (auto& band : bands)
+            band.assign ((size_t) length, 0.0);
+
+        std::vector<float> spectrum ((size_t) decayFftSize * 2), frame ((size_t) decayFftSize * 2);
+
+        for (int start = decayHop - decayFftSize; start < length; start += decayHop)
+        {
+            std::fill (spectrum.begin(), spectrum.end(), 0.0f);
+
+            for (int n = 0; n < decayFftSize; ++n)
+                if (const auto index = start + n; index >= 0 && index < length)
+                    spectrum[(size_t) n] = (float) x[(size_t) index] * window[(size_t) n];
+
+            fft.performRealOnlyForwardTransform (spectrum.data(), true);
+
+            for (size_t b = 0; b < 3; ++b)
+            {
+                std::fill (frame.begin(), frame.end(), 0.0f);
+
+                for (int k = 0; k <= decayFftSize / 2; ++k)
+                {
+                    frame[(size_t) (2 * k)] = spectrum[(size_t) (2 * k)] * masks[b][(size_t) k];
+                    frame[(size_t) (2 * k + 1)] = spectrum[(size_t) (2 * k + 1)] * masks[b][(size_t) k];
+                }
+
+                mirror (frame);
+                fft.performRealOnlyInverseTransform (frame.data());
+
+                for (int n = 0; n < decayFftSize; ++n)
+                    if (const auto index = start + n; index >= 0 && index < length)
+                        bands[b][(size_t) index] += (double) frame[(size_t) n] * scale;
+            }
+        }
+
+        return bands;
+    }
+
+private:
+    // The negative frequencies as the conjugates of the positive ones, for any FFT engine.
+    static void mirror (std::vector<float>& data)
+    {
+        for (int k = decayFftSize / 2 + 1; k < decayFftSize; ++k)
+        {
+            data[(size_t) (2 * k)] = data[(size_t) (2 * (decayFftSize - k))];
+            data[(size_t) (2 * k + 1)] = -data[(size_t) (2 * (decayFftSize - k) + 1)];
+        }
+    }
+
+    juce::dsp::FFT fft;
+    std::vector<float> window;
+    std::array<std::vector<float>, 3> masks;
+    double scale = 1.0;
+};
+
+// 10 ms moving average of an energy envelope, in dB.
+std::vector<double> envelopeDb (const std::vector<double>& energy, double sampleRate)
+{
+    const auto window = std::max (1, (int) std::lround (envelopeSeconds * sampleRate));
+    const auto n = (int) energy.size();
+    std::vector<double> out ((size_t) n);
+    auto sum = 0.0;
+
+    for (int i = 0; i < n; ++i)
+    {
+        sum += energy[(size_t) i];
+
+        if (i >= window)
+            sum -= energy[(size_t) (i - window)];
+
+        out[(size_t) i] = 10.0 * std::log10 (std::max (sum / window, 1.0e-30));
+    }
+
+    return out;
+}
+
+// The gain that turns a band's RT from rt into multiplier x rt, from its envelope's peak on.
+std::vector<double> decayGain (const std::vector<double>& energy, double rt, double multiplier, double sampleRate, bool& limited)
+{
+    const auto n = energy.size();
+    std::vector<double> gain (n, 1.0);
+    const auto envelope = envelopeDb (energy, sampleRate);
+    const auto peak = (size_t) std::distance (envelope.begin(), std::max_element (envelope.begin(), envelope.end()));
+    const auto rate = sixtyDbInNepers * (1.0 / (multiplier * rt) - 1.0 / rt);
+
+    for (size_t i = peak; i < n; ++i)
+        gain[i] = std::exp (-rate * (double) (i - peak) / sampleRate);
+
+    limited = false;
+
+    if (multiplier > 1.0)
+    {
+        // The band's floor: the median of its last 200 ms.
+        const auto tail = std::min (n, (size_t) (floorWindowSeconds * sampleRate));
+        std::vector<double> last (envelope.end() - (std::ptrdiff_t) tail, envelope.end());
+
+        if (! last.empty())
+        {
+            std::nth_element (last.begin(), last.begin() + (std::ptrdiff_t) (last.size() / 2), last.end());
+            const auto floorDb = last[last.size() / 2];
+
+            for (size_t i = peak; i < n; ++i)
+            {
+                if (envelope[i] < floorDb + floorMarginDb)
+                {
+                    limited = true;
+                    const auto held = gain[i];
+                    const auto fade = std::max ((size_t) 1, (size_t) (floorFadeSeconds * sampleRate));
+
+                    for (size_t j = i; j < n; ++j)
+                    {
+                        const auto k = j - i;
+                        gain[j] = k < fade ? held * (0.5 + 0.5 * std::cos (pi * (double) k / (double) fade)) : 0.0;
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    return gain;
+}
+} // namespace
+
+double schroederRt60 (const std::vector<double>& energy, double sampleRate)
+{
+    const auto n = energy.size();
+
+    if (n < 2)
+        return 0.0;
+
+    std::vector<double> decayCurve (n);
+    auto sum = 0.0;
+
+    for (size_t i = n; i-- > 0;)
+    {
+        sum += energy[i];
+        decayCurve[i] = sum;
+    }
+
+    if (! (decayCurve[0] > 0.0))
+        return 0.0;
+
+    const auto measure = [&] (double endDb)
+    {
+        const auto startLevel = decayCurve[0] * std::pow (10.0, -0.5);
+        const auto endLevel = decayCurve[0] * std::pow (10.0, endDb / 10.0);
+        auto first = n, last = n;
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            if (first == n && decayCurve[i] <= startLevel)
+                first = i;
+
+            if (decayCurve[i] <= endLevel)
+            {
+                last = i;
+                break;
+            }
+        }
+
+        if (first >= n || last >= n || last <= first)
+            return 0.0;
+
+        return (double) (last - first) / sampleRate * 60.0 / (-endDb - 5.0);
+    };
+
+    auto rt = measure (-35.0);
+
+    if (rt <= 0.0)
+        rt = measure (-25.0);
+
+    return rt >= minimumRtSeconds ? rt : 0.0;
+}
+
+DecayReadout reshapeDecay (std::vector<std::vector<double>*>& channels, const std::array<double, 3>& multipliers,
+                           double lowCrossHz, double highCrossHz, double sampleRate)
+{
+    DecayReadout readout;
+
+    if (channels.empty() || channels.front()->empty())
+        return readout;
+
+    const auto length = channels.front()->size();
+    BandSplitter splitter (lowCrossHz, std::max (highCrossHz, lowCrossHz * 2.0), sampleRate);
+
+    // 1. Each band's energy, over every channel together.
+    std::array<std::vector<double>, 3> energy;
+
+    for (auto& e : energy)
+        e.assign (length, 0.0);
+
+    for (auto* channel : channels)
+    {
+        const auto bands = splitter.split (*channel);
+
+        for (size_t b = 0; b < 3; ++b)
+            for (size_t i = 0; i < length; ++i)
+                energy[b][i] += bands[b][i] * bands[b][i];
+    }
+
+    // 2. Each band's RT, and the gain that reshapes it.
+    std::array<std::vector<double>, 3> gains;
+    auto anyChange = false;
+
+    for (size_t b = 0; b < 3; ++b)
+    {
+        const auto rt = schroederRt60 (energy[b], sampleRate);
+        readout.measured[b] = rt > 0.0;
+        readout.beforeSeconds[b] = readout.afterSeconds[b] = rt;
+
+        if (rt <= 0.0 || multipliers[b] == 1.0)
+            continue;
+
+        bool limited = false;
+        gains[b] = decayGain (energy[b], rt, multipliers[b], sampleRate, limited);
+        readout.limited[b] = limited;
+
+        std::vector<double> after (length);
+
+        for (size_t i = 0; i < length; ++i)
+            after[i] = energy[b][i] * gains[b][i] * gains[b][i];
+
+        readout.afterSeconds[b] = schroederRt60 (after, sampleRate);
+        anyChange = true;
+    }
+
+    // 3. Each channel plus every reshaped band's change, so untouched bands add nothing.
+    if (anyChange)
+    {
+        for (auto* channel : channels)
+        {
+            const auto bands = splitter.split (*channel);
+
+            for (size_t b = 0; b < 3; ++b)
+                if (! gains[b].empty())
+                    for (size_t i = 0; i < length; ++i)
+                        (*channel)[i] += (gains[b][i] - 1.0) * bands[b][i];
+        }
+    }
+
+    return readout;
+}
+
 BuiltIr buildIr (const ChainSpec& chain, double sampleRate)
 {
     BuiltIr built;
@@ -1117,6 +1418,23 @@ BuiltIr buildIr (const ChainSpec& chain, double sampleRate)
             case ModuleType::reverse:   applyReverse (ir); break;
             case ModuleType::reverb:    addReverb (ir, module, sampleRate); break;
             case ModuleType::eq:        applyEq (ir, module, sampleRate); break;
+
+            case ModuleType::decay:
+            {
+                // Phase 4 Wave 2: every channel the IR has, so true stereo's cross paths too.
+                std::vector<std::vector<double>*> channels;
+
+                for (auto& channel : ir)
+                    if (! channel.empty())
+                        channels.push_back (&channel);
+
+                auto readout = reshapeDecay (channels, { (double) module.values[0], (double) module.values[1], (double) module.values[2] },
+                                             (double) module.values[3], (double) module.values[4], sampleRate);
+                readout.uid = module.uid;
+                built.preview.decays.push_back (readout);
+                break;
+            }
+
             default: break;
         }
     }

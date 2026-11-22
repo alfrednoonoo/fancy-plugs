@@ -426,6 +426,15 @@ On a 4 s noise IR with RT 2 s in every band and a −100 dB noise floor (a 24-bi
 
 Approval, then the card mockup (`reference/phase4/47__verb_w2_decay_mockup.png`), then one push: the module in the IR builder, the card, tests, manual and checklist.
 
+### 7. As built
+
+Mockup 47 approved by the user on 22 November 2026; `tests/VerbDecayTests.cpp`.
+
+- `ModuleType::decay` (stored "decay") with `lowMult`, `midMult`, `highMult`, `lowCross`, `highCross`. The Add panel's rows are 28 px apart to fit ten types; Decay isn't offered on an empty rack.
+- `verb::reshapeDecay`: an 8192-point STFT (Hann, quarter hop) splits each channel with the complementary half-octave masks; each band's RT60 is measured on every channel's energy together (Schroeder, -5 to -35 dB, else -5 to -25 dB; under 50 ms counts as no decay). Each changed band's gain runs from its envelope's peak; a lengthened band stops at 10 dB over its floor (the median of its last 200 ms) and fades over 100 ms. The channel then gets `(gain - 1) x band` added for each changed band only, so bands at 1x add nothing and the IR is exact when every multiplier is 1.
+- The build reports a `DecayReadout` per module (`IrPreview::decays`); the card paints each band's RT before and after, "can't measure", and a note when lengthening was stopped.
+- `tools/fix_eol.py` restores line endings after a script edit (Python's text mode on Windows writes CRLF).
+
 ## Phase 4 Wave 2: ducking and level gate
 
 **Approved by the user on 21 November 2026 with every recommended option (A).** Item 8 of the Wave 2 order (`docs/enhancements.md`; backlog items 6 and 7 of section 5). Two live stages on the wet signal after the convolver: **Ducking** turns the reverb down while the source plays and lets it bloom in the gaps, and the **Gate** stops the tail when the source stops (gated drums). Fancy Room has both (Ducking from Phase 3, the gate from Phase 4 Wave 1). Modelled first: `docs/research/verb-duck-model.py`.

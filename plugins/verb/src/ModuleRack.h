@@ -80,6 +80,7 @@ private:
     void addFileControls();
     void placeKnobs();
     void paintEqCurve (juce::Graphics&, float dim) const; // Phase 4 Wave 1
+    void paintDecayReadouts (juce::Graphics&, float dim) const; // Phase 4 Wave 2
 
 public:
     void showFileMenu();

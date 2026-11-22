@@ -2,6 +2,7 @@
 
 #include "VerbChain.h"
 
+#include <array>
 #include <utility>
 #include <vector>
 
@@ -10,6 +11,15 @@ namespace verb
 
 inline constexpr double maxIrSeconds = 60.0;
 inline constexpr int previewColumns = 1024;
+
+// Phase 4 Wave 2: what a Decay module measured, for its card. Bands are low, mid and high.
+struct DecayReadout
+{
+    int uid = 0;
+    std::array<double, 3> beforeSeconds {}, afterSeconds {};
+    std::array<bool, 3> measured {};   // false: "can't measure", and the band is left as it is
+    std::array<bool, 3> limited {};    // lengthening stopped where the band reached the IR's floor
+};
 
 struct IrPreview
 {
@@ -28,6 +38,9 @@ struct IrPreview
 
     // Phase 4 Wave 1: the gain Equal loudness applied, in dB, or 0 with it off.
     double loudnessTrimDb = 0.0;
+
+    // Phase 4 Wave 2: one per Decay module that's on, in chain order.
+    std::vector<DecayReadout> decays;
 };
 
 // Modulate (Phase 3 Q2.8): the tail after Start in two versions with the same decay, which the
@@ -69,6 +82,19 @@ std::vector<Reflection> earlyPattern (EarlyType type, double sizeMetres, int sou
 
 // Windowed-sinc rate change, in double precision. Runs off the audio thread.
 std::vector<double> resample (const double* source, int numSamples, double ratio);
+
+// Phase 4 Wave 2 (docs/verb.md, "decay module"; modelled in docs/research/verb-decay-model.py):
+// splits the channels into three bands (an 8192-point short-time FFT with complementary
+// half-octave crossfades, so the bands sum to the input), measures each band's RT60 on all
+// channels' energy together, and reshapes each band's envelope so its RT becomes the multiplier
+// times what it was. A band at 1 x, or without a measurable decay, is left untouched; a band
+// lengthened stops growing within 10 dB of its noise floor and fades out over 100 ms.
+DecayReadout reshapeDecay (std::vector<std::vector<double>*>& channels, const std::array<double, 3>& multipliers,
+                           double lowCrossHz, double highCrossHz, double sampleRate);
+
+// Schroeder RT60 of an energy envelope (per-sample energy), from -5 to -35 dB, or -5 to -25 dB
+// if it never falls 35 dB. Returns 0 if it can't be measured.
+double schroederRt60 (const std::vector<double>& energy, double sampleRate);
 
 // Runs the chain's modules in order and applies the display handles.
 BuiltIr buildIr (const ChainSpec& chain, double sampleRate);

@@ -162,3 +162,11 @@ The header has, between the I/O pill and the output knob:
 
 Changes to the module chain (adding, removing, moving or editing a module, and choosing a file) are undo steps too, and A and B each keep their own chain.
 
+## Decay module (Phase 4)
+
+**Add > Decay** reshapes the IR's decay per band, offline, so it costs nothing while playing. Place it after the modules that make the IR (FILE, the generators). It splits the IR into Low, Mid and High at the two **crossovers** (Low 20 Hz to 1 kHz, 250 Hz by default; High 1 to 16 kHz, 4 kHz), measures each band's decay time (RT60), and makes it the **multiplier** times as long: 0.25x to 4x, 1x leaving the band as it is.
+
+- Under each multiplier the card shows the band's RT before and after, from the last build.
+- Lengthening can't invent reverb: a band only grows until it reaches the IR's own noise floor, then fades out, so a 4x on a short IR gets as long as the IR allows and the card says so.
+- A band with no measurable decay (an echo pattern, a single click) is left as it is and reads "can't measure".
+- An older Verb plays the IR without the module.

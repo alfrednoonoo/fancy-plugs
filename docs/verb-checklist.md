@@ -130,3 +130,12 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] The checks above, once, with the VST3 in Ableton Live.
 - [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
 - [ ] The Audio Unit in Live: automation follows, an export matches playback, and the Set reopens as it was. (Logic too, if someone has it.)
+
+## Decay module (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Verb: it sounds as before.
+- [ ] Add > Decay after a hall IR: the card shows three RTs. Low 0.5x: the boom shortens, the read-out halves. High 2x: the air lasts longer.
+- [ ] High 4x on a short room IR: the read-out stops short of 4x and the card says High can't grow past the IR's tail; no hiss at the end.
+- [ ] Move the crossovers: the read-outs update after the rebuild.
+- [ ] A Decay module after an Echo generator on its own: "can't measure" under each knob, and the sound doesn't change.
+- [ ] Save, reopen: the module and its settings come back.

@@ -13,12 +13,14 @@
 namespace verb
 {
 
-// Modulate (Phase 3 Q2.8) and EQ (Phase 4 Wave 1) are appended, so stored types keep their meaning.
-enum class ModuleType { file, lpHp, echo, normalize, trim, reverse, reverb, modulate, eq };
+// Modulate (Phase 3 Q2.8), EQ (Phase 4 Wave 1) and Decay (Phase 4 Wave 2) are appended, so
+// stored types keep their meaning.
+enum class ModuleType { file, lpHp, echo, normalize, trim, reverse, reverb, modulate, eq, decay };
 
-inline constexpr std::array<ModuleType, 9> allModuleTypes {
+inline constexpr std::array<ModuleType, 10> allModuleTypes {
     ModuleType::file, ModuleType::lpHp, ModuleType::echo, ModuleType::normalize,
-    ModuleType::trim, ModuleType::reverse, ModuleType::reverb, ModuleType::modulate, ModuleType::eq
+    ModuleType::trim, ModuleType::reverse, ModuleType::reverb, ModuleType::modulate, ModuleType::eq,
+    ModuleType::decay
 };
 
 inline constexpr int maxModules = 16;
