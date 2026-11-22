@@ -35,6 +35,7 @@ LINE = "#262626"
 SECONDARY = "#8D8D8D"
 
 ORDER = [name for _, _, names in C.PARTS for name in names]
+NUMBER_WORDS = {14: "fourteen", 15: "fifteen", 16: "sixteen", 17: "seventeen", 18: "eighteen"}
 
 
 def slug(text):
@@ -481,7 +482,7 @@ def finish(pdf, pages):
             writer.add_outline_item(f"Fancy {name}", pages["ch:" + slug(name)] - 1, parent=parent)
     writer.add_outline_item("Glossary and credits", pages["ch:glossary"] - 1)
     writer.add_metadata({"/Title": f"Fancy Plugs {C.VERSION}: manual", "/Author": "Fancy Plugs",
-                         "/Subject": "User manual for the fourteen Fancy Plugs effects"})
+                         "/Subject": f"User manual for the {NUMBER_WORDS.get(len(ORDER), len(ORDER))} Fancy Plugs effects"})
     writer.page_mode = "/UseOutlines"
     with open(OUT, "wb") as f:
         writer.write(f)
