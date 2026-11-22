@@ -335,6 +335,46 @@
    "range": "−18 to +18",
    "unit": "dB",
    "desc": null
+  },
+  {
+   "name": "Hold",
+   "default": "0.0 ms",
+   "repeat": false,
+   "range": "0 to 500",
+   "unit": "ms",
+   "desc": "The release waits this long after the last peak. With fast settings and peak detection, the gain otherwise follows each cycle of a low note, which is distortion: a Hold a little longer than the note's period (20 ms for 50 Hz) keeps it steady. The upward lift doesn't hold"
+  },
+  {
+   "name": "Range",
+   "default": "Off",
+   "repeat": false,
+   "range": "1 to 40, top = Off",
+   "unit": "dB",
+   "desc": "The most gain reduction Comp will apply, 1 to 40 dB; Off is the top of the knob. With Auto threshold it makes a level rider that never pulls a passage down by more than Range. Auto make-up then adds back half of what Range allows, not half of what the curve would take"
+  },
+  {
+   "name": "Sync rate",
+   "default": "1/4",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Sync shape",
+   "default": "25 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Optical",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "DS-Mini": [
@@ -391,6 +431,14 @@
    "default": "Off",
    "repeat": false,
    "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Auto amount",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
    "unit": "",
    "desc": null
   }
@@ -514,6 +562,62 @@
    "repeat": false,
    "range": "off/on",
    "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Filter slope",
+   "default": "12 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Ceiling",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Dual band",
+   "default": "Off",
+   "repeat": false,
+   "range": "off, on",
+   "unit": "toggle",
+   "desc": null
+  },
+  {
+   "name": "Low freq",
+   "default": "3.50 kHz",
+   "repeat": false,
+   "range": "1000 to 8000",
+   "unit": "Hz, log",
+   "desc": null
+  },
+  {
+   "name": "Low width",
+   "default": "1.0 oct",
+   "repeat": false,
+   "range": "0.3 to 3",
+   "unit": "oct, linear",
+   "desc": null
+  },
+  {
+   "name": "Low threshold",
+   "default": "-20.0 dB",
+   "repeat": false,
+   "range": "−60 to 0",
+   "unit": "dB, linear",
+   "desc": null
+  },
+  {
+   "name": "Low range",
+   "default": "-9 dB",
+   "repeat": false,
+   "range": "−24 to 0",
+   "unit": "dB, linear",
    "desc": null
   }
  ],
@@ -789,6 +893,22 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Freeze",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Ceiling",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "EQ": [
@@ -1055,6 +1175,22 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Auto gain",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Reach",
+   "default": "12 dB",
+   "repeat": true,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "Exciter": [
@@ -1119,6 +1255,22 @@
    "default": "Off",
    "repeat": false,
    "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Ceiling",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Auto gain",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
    "unit": "",
    "desc": null
   }
@@ -1371,6 +1523,14 @@
    "range": "1000 to 20000",
    "unit": "Hz",
    "desc": null
+  },
+  {
+   "name": "Resonance tilt",
+   "default": "0 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "Gate": [
@@ -1565,6 +1725,46 @@
    "range": "off/on",
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "MIDI trigger",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Ratio",
+   "default": "inf:1",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "De-bleed",
+   "default": "0 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Sync rate",
+   "default": "1/8",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Sync shape",
+   "default": "50 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "Kicker": [
@@ -1687,6 +1887,54 @@
    "range": "off/on",
    "unit": "",
    "desc": "The same sub in both channels, from L+R. Off: each channel makes its own"
+  },
+  {
+   "name": "Sub length",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Make-room",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Make-room freq",
+   "default": "60 Hz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Invert sub",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Auto gain",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Ceiling",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "Limit": [
@@ -1823,6 +2071,54 @@
    "default": "Off",
    "repeat": false,
    "range": "off/on",
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gain lock",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gain lock reference",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "DC filter",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Release curve",
+   "default": "Exponential",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Clip before limiting",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Clip",
+   "default": "3.0 dB",
+   "repeat": false,
+   "range": null,
    "unit": "",
    "desc": null
   }
@@ -2115,6 +2411,14 @@
    "range": "0 to 10",
    "unit": "ms",
    "desc": null
+  },
+  {
+   "name": "Mute",
+   "default": "Off",
+   "repeat": true,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "Room": [
@@ -2285,6 +2589,110 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Mod rate",
+   "default": "1.00×",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Scales the speed of every line's modulation: slow for a lush chorus, fast for shimmer. Mod still sets the depth"
+  },
+  {
+   "name": "EQ low freq",
+   "default": "200 Hz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "EQ low gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "EQ mid freq",
+   "default": "1.0 kHz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "EQ mid gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "EQ mid Q",
+   "default": "1.00",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "EQ high freq",
+   "default": "6.0 kHz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "EQ high gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gate",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gate threshold",
+   "default": "-30.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gate hold",
+   "default": "80 ms",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gate decay",
+   "default": "40 ms",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "How long the tail takes to fall by 60 dB (RT60), at any Size"
+  },
+  {
+   "name": "Auto gain",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Trims the wet level as Size and Decay change, so a longer decay doesn't make the reverb louder. 0 dB at Size 55 % and Decay 1.8 s"
   }
  ],
  "Sature": [
@@ -2407,6 +2815,38 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Low drive",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Low mix",
+   "default": "100 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "High drive",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "High mix",
+   "default": "100 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "Verb": [
@@ -2489,6 +2929,394 @@
    "range": "Embed under 10 MB, Always embed, Path only",
    "unit": "",
    "desc": "Whether a project keeps its own copy of the IR"
+  },
+  {
+   "name": "Ducking",
+   "default": "0 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Ducking source",
+   "default": "Main",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gate",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gate threshold",
+   "default": "-30.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gate hold",
+   "default": "80 ms",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Gate decay",
+   "default": "40 ms",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Time to fall 60 dB"
+  }
+ ],
+ "TS": [
+  {
+   "name": "Attack",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−24 to +24",
+   "unit": "dB, linear, bipolar",
+   "desc": null
+  },
+  {
+   "name": "Speed",
+   "default": "8.0 ms",
+   "repeat": false,
+   "range": "1 to 50",
+   "unit": "ms, log",
+   "desc": null
+  },
+  {
+   "name": "Sustain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−24 to +24",
+   "unit": "dB, linear, bipolar",
+   "desc": null
+  },
+  {
+   "name": "Length",
+   "default": "180 ms",
+   "repeat": false,
+   "range": "20 to 1000",
+   "unit": "ms, log",
+   "desc": null
+  },
+  {
+   "name": "Pump",
+   "default": "0 %",
+   "repeat": false,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": null
+  },
+  {
+   "name": "Sensitivity",
+   "default": "60 %",
+   "repeat": false,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": null
+  },
+  {
+   "name": "Highpass",
+   "default": "Off",
+   "repeat": false,
+   "range": "Off, 20 to 2000",
+   "unit": "Hz, log",
+   "desc": null
+  },
+  {
+   "name": "Contour",
+   "default": "Medium",
+   "repeat": false,
+   "range": "Sharp, Medium, Smooth",
+   "unit": "choice",
+   "desc": null
+  },
+  {
+   "name": "Detector",
+   "default": "Main input L+R",
+   "repeat": false,
+   "range": "Main L+R, Sidechain, Mid, Side",
+   "unit": "choice",
+   "desc": null
+  },
+  {
+   "name": "Clip output",
+   "default": "Off",
+   "repeat": false,
+   "range": "off, on",
+   "unit": "toggle",
+   "desc": null
+  },
+  {
+   "name": "Link channels",
+   "default": "On",
+   "repeat": false,
+   "range": "off, on",
+   "unit": "toggle",
+   "desc": null
+  },
+  {
+   "name": "Wet",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Dry",
+   "default": "-inf dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Lookahead",
+   "default": "Off",
+   "repeat": false,
+   "range": "Off, 1, 2, 5 ms",
+   "unit": "choice, not automatable",
+   "desc": null
+  },
+  {
+   "name": "Oversampling",
+   "default": "2x",
+   "repeat": false,
+   "range": "Off, 2x, 4x",
+   "unit": "choice, not automatable",
+   "desc": null
+  },
+  {
+   "name": "Channels",
+   "default": "Stereo",
+   "repeat": false,
+   "range": "Stereo, Mid only, Side only",
+   "unit": "choice",
+   "desc": null
+  },
+  {
+   "name": "Lowpass",
+   "default": "Off",
+   "repeat": false,
+   "range": "200 to 20000, Off",
+   "unit": "Hz, log",
+   "desc": null
+  },
+  {
+   "name": "Dead band",
+   "default": "1.0 dB",
+   "repeat": false,
+   "range": "0 to 6",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−24 to +12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "",
+   "unit": "VST3 soft bypass",
+   "desc": null
+  }
+ ],
+ "Chorus": [
+  {
+   "name": "Mode",
+   "default": "Ensemble",
+   "repeat": false,
+   "range": "Classic, Ensemble, Dimension, Doubler, Flange",
+   "unit": "choice",
+   "desc": null
+  },
+  {
+   "name": "Rate",
+   "default": "0.80 Hz",
+   "repeat": false,
+   "range": "0.05 to 10",
+   "unit": "Hz, log",
+   "desc": null
+  },
+  {
+   "name": "Rate (synced)",
+   "default": "1/1",
+   "repeat": false,
+   "range": "4/1 to 1/32, plain, dotted, triplet",
+   "unit": "choice, shown while Tempo sync is on",
+   "desc": null
+  },
+  {
+   "name": "Depth",
+   "default": "45 %",
+   "repeat": false,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": null
+  },
+  {
+   "name": "Delay",
+   "default": "7.0 ms",
+   "repeat": false,
+   "range": "1 to 30",
+   "unit": "ms, log (Flange: 0.3 to 10)",
+   "desc": null
+  },
+  {
+   "name": "Feedback",
+   "default": "0 %",
+   "repeat": false,
+   "range": "−90 to +90",
+   "unit": "%, bipolar",
+   "desc": null
+  },
+  {
+   "name": "Voices",
+   "default": "3",
+   "repeat": false,
+   "range": "1 to 6",
+   "unit": "integer",
+   "desc": null
+  },
+  {
+   "name": "Spread",
+   "default": "60 %",
+   "repeat": false,
+   "range": "0 to 100",
+   "unit": "% (LFO phase spread)",
+   "desc": null
+  },
+  {
+   "name": "Width",
+   "default": "100 %",
+   "repeat": false,
+   "range": "0 to 100",
+   "unit": "% (pan spread)",
+   "desc": null
+  },
+  {
+   "name": "Low cut",
+   "default": "150 Hz",
+   "repeat": false,
+   "range": "Off, 20 to 1000",
+   "unit": "Hz, log",
+   "desc": null
+  },
+  {
+   "name": "High cut",
+   "default": "9.0 kHz",
+   "repeat": false,
+   "range": "1 k to 20 k, Off",
+   "unit": "Hz, log",
+   "desc": null
+  },
+  {
+   "name": "Age",
+   "default": "25 %",
+   "repeat": false,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": null
+  },
+  {
+   "name": "Tempo sync",
+   "default": "Off",
+   "repeat": false,
+   "range": "off, on",
+   "unit": "toggle",
+   "desc": null
+  },
+  {
+   "name": "Keep bass mono",
+   "default": "On",
+   "repeat": false,
+   "range": "off, on",
+   "unit": "toggle",
+   "desc": null
+  },
+  {
+   "name": "LFO shape",
+   "default": "Sine",
+   "repeat": false,
+   "range": "Sine, Triangle, Smooth random",
+   "unit": "choice",
+   "desc": null
+  },
+  {
+   "name": "Input",
+   "default": "Stereo",
+   "repeat": false,
+   "range": "Stereo, Mono",
+   "unit": "choice",
+   "desc": null
+  },
+  {
+   "name": "LFO phase",
+   "default": "90°",
+   "repeat": false,
+   "range": "0 to 180",
+   "unit": "° (right against left)",
+   "desc": null
+  },
+  {
+   "name": "Ducking",
+   "default": "0 %",
+   "repeat": false,
+   "range": "0 to 100",
+   "unit": "%",
+   "desc": null
+  },
+  {
+   "name": "Wet",
+   "default": "-3.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Dry",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Output",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": "−24 to +12",
+   "unit": "dB",
+   "desc": null
+  },
+  {
+   "name": "Bypass",
+   "default": "Off",
+   "repeat": false,
+   "range": "",
+   "unit": "VST3 soft bypass",
+   "desc": null
   }
  ]
 }

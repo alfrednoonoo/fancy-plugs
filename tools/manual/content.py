@@ -385,3 +385,172 @@ GLOSSARY = [
     ("True peak", "The real peak level between samples, which can be higher than the samples themselves and clip after conversion."),
     ("Wet", "The processed signal."),
 ]
+
+
+# Phase 4 (v1.7.0): ranges and descriptions for the controls Phase 4 added, and for Fancy TS and
+# Fancy Chorus, whose manuals don't table their controls. Each comes from the plugin's manual,
+# tooltips or design note (docs/<plugin>.md, "Phase 4").
+_SYNC_RATES = "1/1 to 1/16, plain, dotted or triplet"
+
+RANGE_P4 = {
+    "Comp": {"Sync rate": _SYNC_RATES, "Sync shape": "5–100 %", "Optical": "off/on"},
+    "DS-Mini": {"Auto amount": "off/on"},
+    "DS": {"Filter slope": "12, 24, 48 dB/oct", "Ceiling": "Off, -12 to 0 dBTP"},
+    "Delay": {"Freeze": "off/on", "Ceiling": "Off, -12 to 0 dBTP"},
+    "EQ": {"Auto gain": "off/on", "Reach": "1–48 dB"},
+    "Exciter": {"Ceiling": "Off, -12 to 0 dBTP", "Auto gain": "off/on"},
+    "FIR": {"Resonance tilt": "-100 to +100 %"},
+    "Gate": {"MIDI trigger": "off/on", "Ratio": "1.1:1 to ∞", "De-bleed": "0–100 %", "Sync rate": _SYNC_RATES, "Sync shape": "5–100 %"},
+    "Kicker": {"Sub length": "20–2000 ms, Off at the top", "Make-room": "off/on", "Make-room freq": "20–200 Hz", "Invert sub": "off/on",
+               "Auto gain": "off/on", "Ceiling": "Off, -12 to 0 dBTP"},
+    "Limit": {"Gain lock": "off/on", "Gain lock reference": "-30 to 0 dB", "DC filter": "off/on", "Release curve": "Exponential, Linear",
+              "Clip before limiting": "off/on", "Clip": "0–12 dB"},
+    "MultiComp": {"Mute": "off/on"},
+    "Room": {"Mod rate": "0.25–4 ×", "EQ low freq": "20–1000 Hz", "EQ low gain": "-12 to +12 dB", "EQ mid freq": "200–8000 Hz",
+             "EQ mid gain": "-12 to +12 dB", "EQ mid Q": "0.3–8", "EQ high freq": "1–20 kHz", "EQ high gain": "-12 to +12 dB",
+             "Gate": "off/on", "Gate threshold": "-60 to 0 dB", "Gate hold": "10–500 ms", "Gate decay": "5–500 ms", "Auto gain": "off/on"},
+    "Sature": {"Low drive": "0–36 dB", "Low mix": "0–100 %", "High drive": "0–36 dB", "High mix": "0–100 %"},
+    "Verb": {"Ducking": "0–100 %", "Ducking source": "Main, Sidechain", "Gate": "off/on", "Gate threshold": "-60 to 0 dB",
+             "Gate hold": "10–500 ms", "Gate decay": "5–500 ms"},
+    "TS": {"Wet": "-inf to +12 dB", "Dry": "-inf to +12 dB", "Bypass": "off/on"},
+    "Chorus": {"Wet": "-inf to +12 dB", "Dry": "-inf to +12 dB", "Bypass": "off/on"},
+}
+
+DESC_P4 = {
+    "Comp": {
+        "Sync rate": "With Host sync as the detector input, the note length of the virtual kick that drives the compressor.",
+        "Sync shape": "With Host sync, how long each virtual kick lasts, as a share of its note.",
+        "Optical": "Optical ballistics: the attack follows the signal, the release has two stages, and long reduction recovers more slowly.",
+    },
+    "DS-Mini": {"Auto amount": "Rides Amount from the measured balance of sibilance to voice, so quiet and loud passages are treated alike."},
+    "DS": {
+        "Filter slope": "How sharply the detector picks out the band. Steeper ignores more of the voice around it. 12 dB/oct is the old sound.",
+        "Ceiling": "Holds the output's true peak under this level. Off at the bottom; it adds a little latency while on.",
+        "Dual band": "Turns on the second, Low band, for \"sh\" and \"ch\" sounds below the High band's \"s\".",
+        "Low freq": "The centre of the Low band.",
+        "Low width": "How wide the Low band is, in octaves.",
+        "Low threshold": "How loud the Low band must get before it's turned down.",
+        "Low range": "The most the Low band turns down. 0 dB does nothing.",
+    },
+    "Delay": {
+        "Freeze": "Stops the input and holds whatever the taps are repeating, for as long as it's on.",
+        "Ceiling": "Holds the output's true peak under this level, so high feedback can't clip the bus. Off at the bottom.",
+    },
+    "EQ": {
+        "Auto gain": "Keeps the level steady as you boost and cut, from the bands' response.",
+        "Reach": "How far past its threshold a dynamic band reaches its full Range. 12 dB is the old curve; less is harder, more gentler.",
+    },
+    "Exciter": {
+        "Ceiling": "Holds the output's true peak under this level. Off at the bottom.",
+        "Auto gain": "Keeps the level steady as you add harmonics, so you hear the colour rather than more volume.",
+    },
+    "FIR": {"Resonance tilt": "Leans Resonance's depth towards the lows (negative) or the highs (positive)."},
+    "Gate": {
+        "MIDI trigger": "Plays the gate from MIDI: note-on opens it, note-off closes it, and the detector is ignored.",
+        "Ratio": "Below ∞ the gate becomes an expander: under Threshold the level falls by (Ratio − 1) dB per dB, never more than Range.",
+        "De-bleed": "Raises the threshold while loud sound sits outside the detector's band, so another drum's bleed can't open the gate.",
+        "Sync rate": "With Host sync as the detector input, the note length of each opening.",
+        "Sync shape": "With Host sync, how long each opening lasts, as a share of its note.",
+    },
+    "Kicker": {
+        "Sub length": "Ends the sub this long after each hit, with a short fade, so a long tail doesn't run into the next kick. Off at the top.",
+        "Make-room": "Cuts the source kick's lowest end below Make-room freq, so the sub has it to itself.",
+        "Make-room freq": "Where Make-room's cut starts.",
+        "Invert sub": "Flips the sub's polarity, for when it cancels the kick's own low end.",
+        "Auto gain": "Keeps the level steady as you change the sub.",
+        "Ceiling": "Holds the output's true peak under this level. Off at the bottom.",
+    },
+    "Limit": {
+        "Gain lock": "Holds the output's loudness while Threshold moves, so you hear the limiting, not the level.",
+        "Gain lock reference": "The loudness Gain lock holds, set when it's turned on.",
+        "DC filter": "Removes DC offset before limiting.",
+        "Release curve": "How the release moves: Exponential (the old sound) or Linear.",
+        "Clip before limiting": "A soft clipper ahead of the limiter, which shaves the fastest peaks so the limiter has less to do.",
+        "Clip": "How hard the clipper works: at 12 dB it clips at the ceiling, at 0 it almost never acts.",
+    },
+    "MultiComp": {"Mute": "Silences the band, to hear the others without it."},
+    "Room": {
+        "EQ low freq": "The reverb EQ's low shelf frequency.",
+        "EQ low gain": "The reverb EQ's low shelf gain, on the tail only.",
+        "EQ mid freq": "The reverb EQ's bell frequency.",
+        "EQ mid gain": "The reverb EQ's bell gain, on the tail only.",
+        "EQ mid Q": "The reverb EQ's bell width.",
+        "EQ high freq": "The reverb EQ's high shelf frequency.",
+        "EQ high gain": "The reverb EQ's high shelf gain, on the tail only.",
+        "Gate": "Cuts the tail off when the dry signal drops, for a gated drum room.",
+        "Gate threshold": "How quiet the dry signal must get before the gate closes.",
+        "Gate hold": "How long the gate stays open after the dry signal drops.",
+    },
+    "Sature": {
+        "Low drive": "Drives the band below Low as well, which otherwise passes clean. 0 dB leaves it clean.",
+        "Low mix": "How much of the low band's added harmonics you hear.",
+        "High drive": "Drives the band above High as well, which otherwise passes clean. 0 dB leaves it clean.",
+        "High mix": "How much of the high band's added harmonics you hear.",
+    },
+    "Verb": {
+        "Ducking": "Turns the reverb down while the input, or the sidechain, is loud.",
+        "Ducking source": "What Ducking and the Gate listen to: the main input or the sidechain.",
+        "Gate": "Cuts the reverb off when its source drops, for a gated sound.",
+        "Gate threshold": "How quiet the source must get before the gate closes.",
+        "Gate hold": "How long the gate stays open after the source drops.",
+    },
+    "TS": {
+        "Attack": "Turns the start of each hit up (right) or down (left), the same at any level.",
+        "Speed": "How long the start of a hit counts as the attack: short for clicks, longer for plucks.",
+        "Sustain": "Turns the ring after each hit up or down.",
+        "Length": "How long after each hit Sustain works. It never lifts the noise between hits.",
+        "Pump": "Dips the level just after each attack, for a pumping, breathing feel.",
+        "Sensitivity": "How small a jump in level counts as a hit. Higher catches softer hits.",
+        "Highpass": "Keeps low notes from triggering the detector. Off at the bottom.",
+        "Contour": "The shape of Sustain's work over Length: Sharp, Medium or Smooth.",
+        "Detector": "What finds the hits: this track, the sidechain, or this track's mid or side.",
+        "Clip output": "A soft clipper on the output, so a raised attack can't clip harshly.",
+        "Link channels": "Both channels shaped together, from the louder one.",
+        "Lookahead": "Delays the audio so Attack acts on a hit's very first sample. Adds that much latency.",
+        "Oversampling": "Runs Clip output at a higher rate so it doesn't alias, adding latency only while Clip output is on.",
+        "Channels": "Shape both channels, or only the mid or the side.",
+        "Lowpass": "Keeps highs from triggering the detector. Off at the top.",
+        "Dead band": "Hits that would change the level by less than this are left alone.",
+    },
+    "Chorus": {
+        "Mode": "Classic, Ensemble, Dimension, Doubler or Flange: how the voices move.",
+        "Rate": "How fast the voices move. Slow for width, fast for vibrato.",
+        "Rate (synced)": "With Tempo sync on, one LFO cycle as a note length.",
+        "Depth": "How far each voice's delay moves, so how much its pitch wobbles.",
+        "Delay": "Each voice's average delay. Flange mode maps it to 0.3–10 ms.",
+        "Feedback": "Sends the voices back into themselves; positive and negative give different combs.",
+        "Voices": "How many copies of the sound.",
+        "Spread": "How far apart the voices' LFOs are. 0 moves them together.",
+        "Width": "How far apart the voices sit between left and right. 0 is mono.",
+        "Low cut": "Takes lows out of the chorus. Off at the bottom. Keep bass mono uses this frequency.",
+        "High cut": "Takes highs out of the chorus. Off at the top.",
+        "Age": "An old bucket-brigade chorus's character: darker, a little saturated, with faint hiss.",
+        "Tempo sync": "Locks the LFO to the host's tempo and, while it plays, its position.",
+        "Keep bass mono": "Keeps the chorus's lows below the Low cut frequency in the centre.",
+        "LFO shape": "Sine, Triangle or Smooth random. Doubler always drifts at random.",
+        "Input": "Stereo keeps the input's stereo; Mono sums it first, for a mono source made wide.",
+        "LFO phase": "How far the right channel's motion is behind the left's. 0° moves them together.",
+        "Ducking": "Turns the chorus down by up to 24 dB while the input is loud.",
+    },
+}
+
+for _plugin, _values in RANGE_P4.items():
+    RANGE.setdefault(_plugin, {}).update(_values)
+
+for _plugin, _values in DESC_P4.items():
+    DESC.setdefault(_plugin, {}).update(_values)
+
+# Fancy TS and Fancy Chorus: every range written out, as their design notes' tables put units in a
+# column of their own.
+RANGE.setdefault("TS", {}).update({
+    "Attack": "-24 to +24 dB", "Speed": "1–50 ms", "Sustain": "-24 to +24 dB", "Length": "20–1000 ms", "Pump": "0–100 %",
+    "Sensitivity": "0–100 %", "Highpass": "Off, 20–2000 Hz", "Contour": "Sharp, Medium, Smooth",
+    "Detector": "Main input L+R, Sidechain L+R, Mid, Side", "Clip output": "off/on", "Link channels": "off/on",
+    "Lookahead": "Off, 1, 2, 5 ms", "Oversampling": "Off, 2x, 4x", "Channels": "Stereo, Mid only, Side only",
+    "Lowpass": "200–20000 Hz, Off", "Dead band": "0–6 dB", "Output": "-24 to +12 dB"})
+RANGE.setdefault("Chorus", {}).update({
+    "Mode": "Classic, Ensemble, Dimension, Doubler, Flange", "Rate": "0.05–10 Hz", "Rate (synced)": "4/1 to 1/32, plain, dotted or triplet",
+    "Depth": "0–100 %", "Delay": "1–30 ms (Flange: 0.3–10 ms)", "Feedback": "-90 to +90 %", "Voices": "1–6", "Spread": "0–100 %",
+    "Width": "0–100 %", "Low cut": "Off, 20–1000 Hz", "High cut": "1–20 kHz, Off", "Age": "0–100 %", "Tempo sync": "off/on",
+    "Keep bass mono": "off/on", "LFO shape": "Sine, Triangle, Smooth random", "Input": "Stereo, Mono", "LFO phase": "0–180°",
+    "Ducking": "0–100 %", "Output": "-24 to +12 dB"})

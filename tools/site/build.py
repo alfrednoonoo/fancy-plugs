@@ -558,7 +558,7 @@ def plugin_page(slug, manual_pages):
 </div>
 '''
     L = p["lead"]
-    details = [["Formats", "VST3 on Windows 10 and 11 (x64). VST3 and Audio Unit on macOS 11 or later (beta)."]]
+    details = [["Formats", "VST3 on Windows 10 and 11 (x64). VST3 and Audio Unit on macOS 11 or later (Intel and Apple silicon)."]]
     if not any(k == "Inputs" for k, _ in p["details"]):
         details.append(["Inputs", "Mono or stereo."])
     details += p["details"] + [["Window", f'{p["window"][0]} × {p["window"][1]} at 100 %, resizable to 200 %.']]
@@ -801,7 +801,7 @@ def main():
         render(f"plugins/{s}/", f'Fancy {p["name"]}, a free {p["kind"].lower()}: Fancy Plugs', p["lede"],
                lambda p=p, g=g: strip_html(p["name"], f'<a href="{R}{g["slug"]}/">{E(g["name"])}</a>'),
                lambda s=s: plugin_page(s, mpages), accent=p["accent"], current="plugins", og=og)
-    render("download/", "Download Fancy Plugs", f'Download Fancy Plugs {REL["version"]} for Windows, and the Mac beta. Free to download and use.',
+    render("download/", "Download Fancy Plugs", f'Download Fancy Plugs {REL["version"]} for Windows and Mac. Free to download and use.',
            lambda: strip_html("Download", f'<span>Version {E(REL["version"])}</span>'), download, og=og_default)
     render("guide/", "Guide: Fancy Plugs", "Installing Fancy Plugs, and the window every plugin shares: presets, undo, A/B, typed values, resizing and latency.",
            lambda: strip_html("Guide"), lambda: guide(mpages, n_pages, mb), current="guide", og=og_default)
