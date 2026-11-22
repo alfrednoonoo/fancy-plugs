@@ -205,3 +205,80 @@ One push (`365a133`), with every recommended option; `tests/DsW1Tests.cpp`.
 - **Learn:** a button in the footer after Link channels; it listens for 3 s and sets Threshold at the 90th percentile of the sibilance band's level.
 - **Filter slope:** `slope`, 12, 24 or 48 dB/oct, in the drawer; the shared de-esser engine runs 1, 2 or 4 stages, 1 by default, which is the old detector.
 - **Ceiling:** `ceiling`, Off (at the bottom) or -12 to 0 dBTP, in the drawer; DS was moved onto the shared `fancy::dsp::OutputCeiling` (Delay's commit, `f276ab4`), out of the path while Off.
+
+## Phase 4 Wave 2: dual-band detection
+
+**Draft for approval (22 November 2026).** Item 10 of the Wave 2 order (`docs/enhancements.md`; backlog item 2 of section 11). No code until it's approved, then a mockup. Modelled first: `docs/research/ds-dual-model.py`.
+
+### 1. Why
+
+A voice has two kinds of sibilance: "s" (and "z", "t") high up, about 5 to 10 kHz, and "sh" (and "ch", "j") lower, about 2.5 to 5 kHz. Today's one detection band treats one of them well. Tuned to "s", it barely touches "sh". Widened to catch both, it also turns down the vowels' upper harmonics around 3 kHz, which dulls the voice between the sibilants. A second, independent band lets each kind of sibilance have its own frequency, threshold and depth.
+
+### 2. What the model found
+
+A test voice (syllables of a 150 Hz tone whose harmonics fall like a vowel's), with "s" bursts 10 dB over the vowels in 5.5 to 10 kHz and "sh" bursts 8 dB over them in 2.3 to 4.8 kHz. Each figure is how far that sound is cut in its own band. "Vowels" is the 2.5 to 4.5 kHz region over 1.7 s with no burst within 200 ms, which is the collateral dulling.
+
+| Setting | "s" | "sh" | Vowels |
+|---|---|---|---|
+| A. One band at today's defaults (6.2 kHz, 1 octave, −28 dB, Range −12) | −5.0 dB | −2.9 dB | −0.4 dB |
+| B. One band widened to catch both (4.6 kHz, 2.5 octaves) | −7.2 dB | −8.0 dB | −2.9 dB |
+| C. Two bands: High as A, Low at 3.5 kHz, 1 octave, −20 dB, Range −9 | −5.6 dB | −6.6 dB | −1.0 dB |
+| C, Low's Threshold −24 | −6.0 dB | −6.8 dB | −1.2 dB |
+| C, Low's Threshold −16 | −5.2 dB | −5.9 dB | −0.7 dB |
+| C, both bands detected from the input (decision 2) | −6.0 dB | −6.8 dB | −1.3 dB |
+
+So two bands catch "sh" more than twice as well as today's band, for about a third of the dulling that the widened band causes. Low's defaults below are row C. Detecting Low from the High band's output, or from the input, makes no measurable difference.
+
+### 3. What it adds
+
+- **Dual band** (`dual`, off by default). Off, the second band isn't run, and saved projects render as before, bit for bit.
+- **High** is today's band, unchanged: Freq, Width, Band or Shelf, Threshold and Range.
+- **Low** is a second band-pass, with its own Freq (1 to 8 kHz, default 3.5 kHz), Width (0.3 to 3 octaves, default 1), Threshold (−60 to 0 dB, default −20) and Range (−24 to 0 dB, default −9). It's always a band, never a shelf.
+- **Shared by both:** Attack, Release, Detector, Mode, Relative threshold, Link channels, Lookahead, Filter slope and Listen. Listen plays what both bands remove.
+- **Split mode:** each band cuts only its own band, one after the other: `y = x + (gHigh − 1) · high(x)`, then `out = y + (gLow − 1) · low(y)`. With both gains exactly 1 the output is the input, bit for bit, as today.
+- **Wide mode:** the whole signal is turned down by the deeper of the two reductions.
+- **Fancy DS-Mini** uses the same engine with Dual band always off, so it doesn't change.
+
+### 4. Decisions
+
+- **Decision 1: where Low's controls go.**
+  - **A (R).** Band tabs **High | Low** in the top row, between Detector and Mode, with a power switch on Low that turns Dual band on. The Threshold fader and meter, the GR bar, Freq, Width and Range show the selected band. Band | Shelf dims while Low is selected. The frequency ruler shows both bars, Low's in a second shade of DS's green, and each can be dragged. The history shows the selected band's level and threshold, with both reductions. A mockup follows approval.
+  - **B.** Low in the EDIT drawer: an on switch and four small knobs (Freq, Width, Threshold, Range). The main window doesn't change, apart from Low's bar on the ruler, but Low's Threshold is then away from the meter.
+- **Decision 2: what each band listens to.**
+  - **A (R).** Both detect from the input, each independently; the cuts are applied one after the other. Each threshold then means the same as it would alone.
+  - **B.** Low detects from High's output. The model shows no measurable difference, and the thresholds would interact.
+- **Decision 3: Linear phase with two bands.**
+  - **A (R).** The shared linear crossover makes five bands instead of three (it allows up to eight). Low's upper edge is held at or below High's lower edge, so the bands never overlap. The latency doesn't change.
+  - **B.** Dual band works in Minimum phase only, and Linear phase is dimmed while it's on.
+- **Decision 4: Learn with two bands.**
+  - **A (R).** Learn sets both thresholds, each at the 90th percentile of its own band's level, in the same 3 s.
+  - **B.** Learn sets only the selected band's threshold.
+
+### 5. Parameters
+
+Appended, with defaults that keep saved projects bit-identical:
+
+| ID | Name | Range | Default | Unit, skew |
+|---|---|---|---|---|
+| `dual` | Dual band | off, on | off | toggle |
+| `lowFreq` | Low freq | 1000 to 8000 | 3500 | Hz, log |
+| `lowWidth` | Low width | 0.3 to 3 | 1.0 | oct, linear |
+| `lowThreshold` | Low threshold | −60 to 0 | −20 | dB, linear |
+| `lowRange` | Low range | −24 to 0 | −9 | dB, linear |
+
+The selected tab isn't a parameter: it's the window's state, like EQ's selected band. One new factory preset, **Vocal, s and sh** (Vocals): Dual band on, at the defaults above.
+
+### 6. Tests
+
+1. Legacy: with Dual band off, DS renders exactly as the current release in every Mode, Detector, Filter slope and Split filter. DS-Mini's tests are unchanged.
+2. Bit identity: Dual band on, both Ranges at 0 dB: the output is the input, bit for bit (Minimum phase), or the delayed input within −120 dB (Linear phase).
+3. The model's signal: two bands cut "sh" by at least 5 dB and "s" by at least 4 dB, with the vowels cut by under 2 dB. One band at the defaults cuts "sh" by under 4 dB.
+4. Independence: a 3.5 kHz burst alone moves only Low's reduction (High's stays under 1 dB), and a 7 kHz burst only High's.
+5. Wide mode: the gain is the deeper of the two bands' reductions, within 0.1 dB.
+6. Linear phase, two bands: five bands, Low's edges never above High's, and the same latency as with one band.
+7. Learn: both thresholds land within 2 dB of each band's 90th percentile on Wave 1's Learn test signal, with "sh" bursts added.
+8. CPU: Dual band on adds under 60 % to DS's CPU at its defaults (§0.4, median of five, ratio to Fancy Comp).
+
+### 7. Build order
+
+Approval of this note, then the mockup (`reference/phase4/52__ds_w2_mockup.png`), then one push: the engine's second band in `fancy::dsp::DeEsser`, the parameters, the tabs and the ruler's second bar, Learn for both bands, the preset, the tests, the manual and the checklist. Then the CPU measurement and the REAPER check.
