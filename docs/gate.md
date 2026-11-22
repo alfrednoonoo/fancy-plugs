@@ -449,3 +449,61 @@ No Level threshold works through both parts of the song. Transient at 8 dB catch
 ### 6. Build order
 
 Approval, then the mockup (`reference/phase4/53__gate_w2_transient_mockup.png`), then one push: the mode and Rise in `GateDsp`, the parameters, the Level card's switch and knob, tests, manual and checklist.
+
+## Phase 4 Wave 2: Upward mode
+
+**Draft for approval (22 November 2026).** Item 12 of the Wave 2 order (`docs/enhancements.md`; backlog item 6 of section 9), for v1.7.1. Modelled first: `docs/research/gate-upward-model.py`.
+
+### 1. What it does
+
+A third **Mode** beside Gate and Duck. Gate turns the sound down below Threshold, and Duck turns it down while the key is loud. **Upward** turns it up above Threshold: by (level − Threshold) × (Ratio − 1) dB, never more than **Boost**, and nothing below Threshold changes. Loud passages get louder than quiet ones, which puts contrast back into a flattened mix or lets a chorus lift. At Ratio ∞ it's a fixed lift of Boost whenever the level is over Threshold.
+
+### 2. What the model found
+
+An RMS detector (50 ms), Attack 10 ms, Release 200 ms.
+
+| Setting | Chorus over verse (7.6 dB before) | Verse | Chorus | Peak |
+|---|---|---|---|---|
+| Threshold −20, Ratio 1:1.5, Boost 6 | 10.5 dB | +0.00 dB | +2.9 dB | +1.2 dBFS |
+| Threshold −20, Ratio 1:2, Boost 6 | 13.2 dB | +0.00 dB | +5.5 dB | +4.0 dBFS |
+| Threshold −18, Ratio 1:2, Boost 4 | 11.2 dB | +0.00 dB | +3.5 dB | +2.0 dBFS |
+| Threshold −20, Ratio ∞, Boost 4 | 11.6 dB | +0.00 dB | +4.0 dB | +2.2 dBFS |
+
+The test song is a verse at −24 dBFS RMS and a chorus at −16, each a busy bed with drums. Below Threshold the output is untouched, to the bit.
+
+On a drum loop it adds no punch: the crest factor moves by −0.4 dB, because the hits and their decay are lifted alike. Making each hit punchier is Fancy TS's job, and the manual will say so.
+
+It raises peaks by up to Boost, so the output can pass 0 dBFS (decision 3).
+
+### 3. Decisions
+
+- **Decision 1: Ratio.**
+  - **A (R).** Upward has its own **Up ratio** (1.1:1 to 4:1, default 1.5:1). Gate's Ratio defaults to ∞, which in Upward would be a hard lift rather than a gentle expander.
+  - **B.** Share Gate's Ratio. One knob fewer, but switching to Upward with the default ∞ gives the harshest setting.
+- **Decision 2: where Boost goes.**
+  - **A (R).** **Gate | Duck | Upward** in the Mode switch (an appended choice), and **Boost** (0 to 12 dB, default 4) in Range's place while Upward is chosen, since Range has no meaning there. Up ratio sits in the drawer beside Ratio, shown in Upward. A mockup follows approval.
+  - **B.** Boost and Up ratio both in the drawer; Range dims in Upward.
+- **Decision 3: peaks over 0 dBFS.**
+  - **A (R).** An output ceiling, the shared `fancy::dsp::OutputCeiling` (DS and Delay already use it): `ceiling`, Off or −12 to 0 dBTP, default Off, in the drawer. Off, it isn't in the path. On, it reports its latency. The manual suggests it, or Output, for Upward.
+  - **B.** No ceiling. The manual says to turn Output down by about Boost.
+
+### 4. Details
+
+- The detector, its filters, De-bleed, Link, Lookahead and Pre-open work as in Gate mode. RMS size of 30 to 100 ms suits Upward best, which the manual will say. With RMS size 0 it follows peaks and acts like a fast lift.
+- Attack and Release are how fast the boost rises and falls, and Hold keeps it up for Hold ms after the level drops under Threshold. Hysteresis has no part in it, so it dims.
+- The lights show "open" while it's boosting.
+- MIDI out sends a note when the boost starts and ends, as on opening and closing.
+- With Transient (item 11), Upward lifts each detected hit by Boost for Hold.
+- In Gate and Duck mode nothing changes, bit for bit.
+
+### 5. Tests
+
+1. Legacy: Gate and Duck, every detector, Lookahead on and off, Ratio ∞ and finite, render exactly as v1.7.0.
+2. Below Threshold the output equals the input, bit for bit (Output 0 dB, Ceiling Off).
+3. A steady tone 10 dB over Threshold at Up ratio 1:1.5 is raised by 5 dB ± 0.1 (Boost 12), and at Boost 4 by 4 dB ± 0.1.
+4. The model's song: the chorus rises by 2.5 to 3.5 dB at Threshold −20, Up ratio 1:1.5, Boost 6, and the verse by under 0.05 dB.
+5. Ceiling at −1 dBTP: Upward with Boost 12 on a full-scale signal stays under it in true peak, and the reported latency matches. Off, there's no latency and nothing changes.
+
+### 6. Build order
+
+Approval, then the mockup (`reference/phase4/54__gate_w2_upward_mockup.png`, with item 11's if both are approved together), then one push: Upward in `GateDsp`, the parameters, the Mode switch, the Boost knob, the drawer's Up ratio and Ceiling, tests, manual and checklist.
