@@ -390,3 +390,62 @@ Mockup 44 approved by the user on 22 November 2026; `tests/GateW2Tests.cpp`.
 - `detector` gains "Host sync" (index 8, its own menu section); `syncRate` (default 1/8, index 9) and `syncShape` (default 50 %) are appended. The pulse skips the detector filters and De-bleed.
 - The drawer's HOST SYNC group (Rate, Shape) replaces the De-bleed note while Host sync is chosen, and dims while MIDI trigger is on. Without host tempo its caption reads "NO HOST TEMPO: 120 BPM".
 - Wave 1 fixes in the same push: the EDIT link is 60 px wide (it was clipped to "EDI" at 50), and the screens tool renders the open drawer as `gate-drawer` (`gate-edit` is the main window's second view).
+
+## Phase 4 Wave 2: Transient detector mode
+
+**Draft for approval (22 November 2026).** Item 11 of the Wave 2 order (`docs/enhancements.md`; backlog item 4 of section 9), for v1.7.1. Modelled first: `docs/research/gate-transient-model.py`.
+
+### 1. Why
+
+Gate opens on level: peak, or RMS when RMS size is above 0. That works while the bleed on a drum mic stays at one level, but not when it changes through a song. A tom mic hears the bass quietly in the verse and loudly in the chorus. A threshold low enough for the verse's soft hits stays open on the chorus's bass, and one high enough to ignore the bass misses the soft hits. A **Transient** mode opens on a sudden rise in level instead of on the level itself. Drum hits rise in about a millisecond, while a bass note, a pad or a held guitar swells in over tens of milliseconds, so they don't count however loud they are.
+
+Peak and RMS, the backlog's other two "modes", already exist as RMS size 0 and above 0, so this item adds only Transient.
+
+### 2. What the model found
+
+A tom mic with bass bleed, through Gate's Lowpass at 1 kHz as a user would set it: a verse with the bass at −40 dBFS peak and soft hits at −12, −18 and −24 dBFS, then a chorus with the bass at −20 and hits at −6 and −9. Twelve hits; "open on the bass" is the time the gate is open more than 250 ms after any hit.
+
+| Detector | Hits caught | Open on the bass |
+|---|---|---|
+| Level, Threshold −30 dB | 12 | 2.55 s |
+| Level, Threshold −22 dB | 9 | 1.67 s |
+| Level, Threshold −16 dB | 8 | 1.33 s |
+| Transient, Rise 6 dB | 12 | 0.29 s |
+| **Transient, Rise 8 dB** | **12** | **0** |
+| Transient, Rise 9 dB | 11 | 0 |
+| Transient, Rise 12 dB | 8 | 0 |
+
+No Level threshold works through both parts of the song. Transient at 8 dB catches every hit and never opens on the bass. An earlier version of the model used cymbal wash as the bleed: there Transient did no better, because noise makes the level jitter by about 5 dB, and the Lowpass filter is the right tool for cymbals. The manual will say Transient is for bleed with slow onsets (bass, pads, held notes), not for cymbals or other drums.
+
+### 3. What it adds
+
+- `detMode`: **Level** (today: peak, or RMS with RMS size) or **Transient**. Default Level, so saved projects render as before, bit for bit.
+- `rise`: 3 to 24 dB, default 8. How far the level must jump above its own recent average to count as a hit.
+- **In Transient**, the detector level (after the detector filters, De-bleed and Link) is followed with a 1 ms attack and 20 ms release, and compared with its own 50 ms average. The gate opens when the level is Rise dB above that average and above Threshold. Threshold becomes a floor, so the noise between notes can't trigger it. It closes Hold after the last rise, then fades over Release, whatever the level, so a held sound can't keep it open. A new hit during Hold or Release re-opens it, with no jump, as now.
+- Everything after the state machine is shared with Level mode: Attack, Hold, Release, Range, Ratio, Duck mode, Lookahead with Pre-open, the MIDI out notes and velocity, and the lights.
+- MIDI trigger in and Host sync bypass the detector, as now, so `detMode` has no effect with them.
+
+### 4. Decisions
+
+- **Decision 1: the modes.**
+  - **A (R).** Two: **Level** (with RMS size picking peak or RMS, as now) and **Transient**. Saved projects need nothing new.
+  - **B.** Three: Peak, RMS and Transient, with RMS size dimmed in Peak. It matches the backlog's wording, but it says the same thing twice.
+- **Decision 2: how Transient closes.**
+  - **A (R).** Hold after the last rise, whatever the level, as modelled. Hysteresis has no part in it, so it dims in Transient.
+  - **B.** As Level mode does: below Threshold + Hysteresis, then Hold. A loud held sound would then keep the gate open, which is what Transient is for avoiding.
+- **Decision 3: where the controls go.**
+  - **A (R).** A **Level | Transient** switch in the Level card's title row (as DS's Band | Shelf), and the **Rise** knob in RMS size's place while Transient is chosen (RMS size doesn't apply to it). The main layout doesn't otherwise change. A mockup follows approval.
+  - **B.** Both in the EDIT drawer: the main window doesn't change at all, but the mode would be out of sight.
+
+### 5. Tests
+
+1. Legacy: Level mode, every Detector input, Gate and Duck, Lookahead on and off, renders exactly as v1.7.0.
+2. The model's signal: Transient at Rise 8 dB catches all 12 hits within 5 ms and is open on the bass for under 50 ms. Level at −30 dB stays open on the bass for over 1 s.
+3. A held tone far above Threshold opens Transient once, then it closes after Hold and Release, while Level stays open.
+4. A tone that swells in over 30 ms to 0 dBFS doesn't open Transient at Rise 8 dB, while a 1 ms click 10 dB above the floor does.
+5. Lookahead, Duck mode and MIDI out work in Transient as in Level: an opening is heard Pre-open ahead with Lookahead on, Duck inverts it, and MIDI out sends one note-on per hit.
+6. CPU: Transient adds under 10 % to Gate's CPU at its defaults.
+
+### 6. Build order
+
+Approval, then the mockup (`reference/phase4/53__gate_w2_transient_mockup.png`), then one push: the mode and Rise in `GateDsp`, the parameters, the Level card's switch and knob, tests, manual and checklist.
