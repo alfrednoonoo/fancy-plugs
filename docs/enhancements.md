@@ -287,8 +287,8 @@ features).
 2. **Wave 2** — one design note per item, each with a Python model first, in this order
    (items 11 onwards added by the user on 21 November 2026, grouped by plugin):
    1. MultiComp dynamic-phase crossover (done), 2. FIR depth nodes (done), 3. Comp tempo-synced
-   trigger (done), 4. Gate tempo-synced trigger, 5. Sature outer-band drive, 6. Comp Optical mode,
-   7. Verb decay module, 8. Verb ducking and level gate, 9. Limit clipper, 10. DS dual-band,
+   trigger (done), 4. Gate tempo-synced trigger (done), 5. Sature outer-band drive (done), 6. Comp Optical mode (done),
+   7. Verb decay module (done), 8. Verb ducking and level gate (done), 9. Limit clipper (done), 10. DS dual-band,
    11. Gate detector modes, 12. Gate upward expansion,
    13. Comp sidechain EQ to 6 bands, 14. Comp link modes,
    15. EQ brickwall cut slope, 16. EQ character output stage,
