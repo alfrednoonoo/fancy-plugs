@@ -123,6 +123,19 @@ def run(t, left, right, block=333, change=None):
     pfall, datt, drel = coef(30), coef(1), 24 / (0.25 * RATE)
     phase, aligned, now = 0.0, False, 0
     out_l, out_r = np.zeros(n), np.zeros(n)
+    SEG = 8
+    seg_left, seg_valid = 0, False
+    lnow = [[0.0, 0.0] for _ in range(6)]; lstep = [[0.0, 0.0] for _ in range(6)]; lend = [[0.0, 0.0] for _ in range(6)]
+
+    def lfo_at(v, ch, base, roff):
+        if mode == DOUBLER:
+            return lfo_value(RANDOM, base + (roff if ch else 0), 17 + v * 2 + ch)
+        if mode == DIMENSION:
+            return (1 if ch == 0 else -1) * lfo_value(shape, base, 101 + v)
+        l = lfo_value(shape, base + (roff if ch else 0), 101 + v)
+        if mode == ENSEMBLE:
+            l += 0.07 * math.sin(2 * math.pi * (6.7 * (base + (roff if ch else 0)) + 0.37 * v))
+        return l
     cl = ch_ = cb = None
     for start in range(0, n, block):
         if change:
@@ -133,6 +146,7 @@ def run(t, left, right, block=333, change=None):
             hp = t["ppq"] / beats
             if not aligned or abs(hp - phase) > 2 * t["bpm"] / 60 / beats / RATE + 1e-9:
                 phase = hp
+                seg_valid, seg_left = False, 0
             aligned = True
         else:
             aligned = False
@@ -158,6 +172,7 @@ def run(t, left, right, block=333, change=None):
                 if sw.settled():
                     mode, shape, sync = t["mode"], t["shape"], t["sync"]
                     aligned = False
+                    seg_valid, seg_left = False, 0
                     s["delay"].cur = s["delay"].tgt
                     sw.tgt = 1.0
             if now % 16 == 0:
@@ -170,22 +185,22 @@ def run(t, left, right, block=333, change=None):
             width, roff = s["width"].next(), s["phase"].next() / 360
             nm = norm.next()
             c, swp = centre_ms(mode, delay), sweep_ms(mode, delay, depth)
+            if seg_left == 0:
+                for v in range(6):
+                    base = phase + offs[v].cur
+                    for ch in range(2):
+                        e = lfo_at(v, ch, base + SEG * cps, roff)
+                        st = lend[v][ch] if seg_valid else lfo_at(v, ch, base, roff)
+                        lnow[v][ch], lstep[v][ch], lend[v][ch] = st, (e - st) / SEG, e
+                seg_valid, seg_left = True, SEG
             wet = [0.0, 0.0]; fsum = [0.0, 0.0]; gsum = 0.0
             for v in range(6):
                 g = gains[v].next(); p = poss[v].next() * width; off = offs[v].next()
                 if g == 0.0:
                     continue
-                vp = phase + off
                 y = [0.0, 0.0]
                 for ch in range(2):
-                    if mode == DOUBLER:
-                        l = lfo_value(RANDOM, vp + (roff if ch else 0), 17 + v * 2 + ch)
-                    elif mode == DIMENSION:
-                        l = (1 if ch == 0 else -1) * lfo_value(shape, vp, 101 + v)
-                    else:
-                        l = lfo_value(shape, vp + (roff if ch else 0), 101 + v)
-                        if mode == ENSEMBLE:
-                            l += 0.07 * math.sin(2 * math.pi * (6.7 * (vp + (roff if ch else 0)) + 0.37 * v))
+                    l = lnow[v][ch]
                     d = max(3.0, (c + swp * l) * 0.001 * RATE)
                     pos = w - d; idx = math.floor(pos); f = pos - idx
                     L = lines[ch]
@@ -198,6 +213,10 @@ def run(t, left, right, block=333, change=None):
                     a = (p + 1) * 0.25 * math.pi
                     gl, gr = math.cos(a) * math.sqrt(2), math.sin(a) * math.sqrt(2)
                 wet[0] += g * (gl * m + sd); wet[1] += g * (gr * m - sd)
+            for v in range(6):
+                for ch in range(2):
+                    lnow[v][ch] += lstep[v][ch]
+            seg_left -= 1
             for ch in range(2):
                 sm = fsum[ch] / gsum if gsum > 0 else 0.0
                 b = sm - dcin[ch] + dcc * dcout[ch]

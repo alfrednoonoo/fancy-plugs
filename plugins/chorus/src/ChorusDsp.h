@@ -100,6 +100,7 @@ private:
     void updateFilters (double lowCutHz, double highCutHz, double ageAmount) noexcept;
     double readLine (int channel, double delaySamples) const noexcept;
     double voiceLfo (int mode, int shape, double phase, int voice, int channel) const noexcept;
+    double lfoAt (int voice, int channel, double basePhase, double rightOffset) const noexcept;
     void pushHistory (const HistoryColumn& column) noexcept;
 
     double rate = 48000.0;
@@ -162,6 +163,12 @@ private:
     };
 
     MotionCache motionCache;
+
+    // The LFOs in straight lines between points lfoSegment samples apart.
+    static constexpr int lfoSegment = 8;
+    std::array<std::array<double, 2>, maxVoices> lfoNow {}, lfoStep {}, lfoEnd {};
+    int lfoSegmentLeft = 0;
+    bool lfoSegmentValid = false;
     std::array<double, 3> filterInputs { -1.0, -1.0, -1.0 };   // Low cut, High cut, Age at the last update
 
     // History.

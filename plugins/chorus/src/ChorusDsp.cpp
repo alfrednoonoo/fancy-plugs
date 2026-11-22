@@ -143,6 +143,14 @@ double ChorusDsp::voiceLfo (int mode, int shape, double phaseCycles, int voice, 
     return value;
 }
 
+double ChorusDsp::lfoAt (int voice, int channel, double basePhase, double rightOffset) const noexcept
+{
+    if (activeMode == dimension)
+        return (channel == 0 ? 1.0 : -1.0) * voiceLfo (activeMode, activeShape, basePhase, voice, 0);
+
+    return voiceLfo (activeMode, activeShape, basePhase + (channel == 0 ? 0.0 : rightOffset), voice, channel);
+}
+
 void ChorusDsp::prepare (double sampleRate)
 {
     rate = sampleRate;
@@ -195,6 +203,8 @@ void ChorusDsp::reset()
     duckPeak = duckDb = 0.0;
     noiseState = 0x1234567u;
     pans.fill ({});
+    lfoSegmentValid = false;
+    lfoSegmentLeft = 0;
     ageCache = {};
     motionCache = {};
     filterInputs = { -1.0, -1.0, -1.0 };
@@ -300,7 +310,11 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
         const auto perSample = bpm / 60.0 / syncBeats / rate;
 
         if (! aligned || std::abs (hostPhase - phase) > 2.0 * perSample + 1.0e-9)
+        {
             phase = hostPhase;
+            lfoSegmentValid = false;
+            lfoSegmentLeft = 0;
+        }
 
         aligned = true;
     }
@@ -372,6 +386,8 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
                 activeShape = wantedShape;
                 activeSync = settings.sync;
                 aligned = false;
+                lfoSegmentValid = false;
+                lfoSegmentLeft = 0;
                 delay.snapToTarget();
                 switchGain.setTarget (1.0);
             }
@@ -417,6 +433,29 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
         const auto sweep = motionCache.sweep;
         const auto msToSamples = 0.001 * rate;
 
+        // The LFOs are worked out every lfoSegment samples and followed in straight lines between,
+        // counted on the DSP's own clock so any block size gives the same output. Each segment starts
+        // where the last ended, so the delays never jump.
+        if (lfoSegmentLeft == 0)
+        {
+            for (int v = 0; v < maxVoices; ++v)
+            {
+                const auto base = phase + voiceOffsets[(size_t) v].getCurrent();
+
+                for (int ch = 0; ch < 2; ++ch)
+                {
+                    const auto end = lfoAt (v, ch, base + (double) lfoSegment * cyclesPerSample, rightOffset);
+                    const auto start = lfoSegmentValid ? lfoEnd[(size_t) v][(size_t) ch] : lfoAt (v, ch, base, rightOffset);
+                    lfoNow[(size_t) v][(size_t) ch] = start;
+                    lfoStep[(size_t) v][(size_t) ch] = (end - start) / (double) lfoSegment;
+                    lfoEnd[(size_t) v][(size_t) ch] = end;
+                }
+            }
+
+            lfoSegmentValid = true;
+            lfoSegmentLeft = lfoSegment;
+        }
+
         double wetSum[2] {}, feedbackSum[2] {};
         auto gainSum = 0.0;
 
@@ -424,24 +463,16 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
         {
             const auto gain = voiceGains[(size_t) v].next();
             const auto position = voicePositions[(size_t) v].next() * widthNow;
-            const auto offset = voiceOffsets[(size_t) v].next();
+            voiceOffsets[(size_t) v].next();   // read at each LFO segment's start
 
             if (gain == 0.0)
                 continue;
 
-            const auto voicePhase = phase + offset;
             double y[2];
 
             for (int ch = 0; ch < 2; ++ch)
             {
-                double lfo;
-
-                if (activeMode == dimension)
-                    lfo = (ch == 0 ? 1.0 : -1.0) * voiceLfo (activeMode, activeShape, voicePhase, v, 0);
-                else
-                    lfo = voiceLfo (activeMode, activeShape, voicePhase + (ch == 0 ? 0.0 : rightOffset), v, ch);
-
-                const auto ms = centre + sweep * lfo;
+                const auto ms = centre + sweep * lfoNow[(size_t) v][(size_t) ch];
                 y[ch] = readLine (ch, std::max (minDelaySamples, ms * msToSamples));
 
                 if (ch == 0)
@@ -469,6 +500,12 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
             wetSum[0] += gain * (pan.left * m + s);
             wetSum[1] += gain * (pan.right * m - s);
         }
+
+        for (int v = 0; v < maxVoices; ++v)
+            for (int ch = 0; ch < 2; ++ch)
+                lfoNow[(size_t) v][(size_t) ch] += lfoStep[(size_t) v][(size_t) ch];
+
+        --lfoSegmentLeft;
 
         // Feedback, DC-blocked, back into the lines with the input.
         for (int ch = 0; ch < 2; ++ch)
