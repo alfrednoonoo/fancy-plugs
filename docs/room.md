@@ -280,3 +280,69 @@ One push holds the whole item, with Decision 1 A: everything in the EDIT drawer,
 - **Auto gain:** **changed from section 4's wording:** the trim comes from each line's exact energy, 1 / (1 - g^2) with g = 10^(-3 d / T), averaged over the 16 lines, against Size 55 % and Decay 1.8 s (0 dB at the defaults). The first-order form, Decay / line length, is a dB out at short decays. Smoothed over 50 ms.
 - **Changed from section 7, test 2:** the modulation isn't exposed, so the test checks that Mod rate changes the output, does nothing with Mod at 0, and moves without a click, instead of measuring the period.
 - **Tests:** `tests/RoomW1Tests.cpp`.
+
+## Phase 4 Wave 2: Low decay, Attack and a sidechain for Ducking
+
+**Draft for approval (22 November 2026).** Items 19, 20 and 21 of the Wave 2 order (`docs/enhancements.md`; backlog items 2, 4 and 5 of section 14), for v1.7.1, in one note because they touch the same network and drawer. Modelled first: `docs/research/room-w2-model.py`.
+
+### 1. Low decay (item 19)
+
+**Low decay** (×0.25 to ×4, default ×1): the lows decay for Low decay × Decay. Each delay line gets a first-order low shelf at 250 Hz in its loop, with the extra gain per pass its length needs, after the line's damping one-pole. At ×1 the shelf isn't run, so Room is bit-identical. The line gains are recomputed with the others, only while a setting moves.
+
+What the model found: the decay time (RT, s) at each frequency, with Decay 2 s and Damping 45 %.
+
+| Low decay | 63 Hz | 125 | 250 | 500 | 1 k | 2 k | 4 k | 8 k |
+|---|---|---|---|---|---|---|---|---|
+| ×0.5 | 1.04 | 1.13 | 1.36 | 1.70 | 1.90 | 1.96 | 1.93 | 1.78 |
+| ×1 (today) | 2.00 | 2.00 | 2.00 | 2.00 | 2.00 | 1.98 | 1.94 | 1.78 |
+| ×2 | 3.79 | 3.36 | 2.70 | 2.23 | 2.06 | 2.00 | 1.94 | 1.79 |
+
+The lows land within 5 % of their target, and the effect fades out by 1 kHz. Damping already shortens the highs, so a High decay multiplier would do Damping's job twice (decision 1).
+
+### 2. Attack (item 20)
+
+**Attack** (0 to 500 ms, default 0). Room's network can't fade its own impulse response in, as Verb's generator can. Instead the late network's input goes through 16 taps spread over Attack ms, weighted by a rising raised cosine and scaled to keep the energy. The taps sit before the input diffusers, which smear the copies into a swell. The early reflections are left as they are. At 0 the taps aren't run.
+
+What the model found, on a late tail with Decay 1.8 s, compared with Verb's ideal fade-in:
+
+| Attack | Ideal fade-in: C80, peak, level | 16 spread taps: C80, peak, level |
+|---|---|---|
+| 50 ms | −3.3 dB, 50 ms, −1.0 dB | −4.4 dB, 50 ms, 0.0 dB |
+| 150 ms | −12.4 dB, 120 ms, −3.0 dB | −18.7 dB, 150 ms, +0.1 dB |
+| 300 ms | −20.7 dB, 210 ms, −5.9 dB | −30.7 dB, 300 ms, −0.2 dB |
+
+The taps swell in as well as a fade-in does, or more, and keep the reverb's level. On a sharp hit at long Attack, 16 copies could flam before the diffusers blur them, so the checklist listens for it at 500 ms.
+
+### 3. A sidechain for Ducking (item 21)
+
+Today Ducking follows Room's own input, so a drum reverb ducked by its own drums is down by the full amount all the time. **Duck from**: Input (today, the default) or Sidechain, on an optional stereo sidechain bus, as Verb's Wave 2 ducking has. The ducker's arithmetic is unchanged.
+
+What the model found: Ducking 100 % on a drum reverb is down 24 dB throughout when keyed by its own input. Keyed by a vocal, it's down 24 dB while the vocal sings and lets go in the gaps. The "No sidechain signal" notice shows as on Gate and DS. A temporary **Listen to ducking** switch plays what Ducking takes away (§0.3: never saved).
+
+### 4. Decisions
+
+- **Decision 1: per-band decay.**
+  - **A (R).** Low decay only; Damping stays the high-frequency control.
+  - **B.** Low and High decay multipliers, with High acting on top of Damping.
+- **Decision 2: Attack's method.**
+  - **A (R).** The 16 spread taps before the diffusers, as modelled: linear, with the level kept.
+  - **B.** An envelope on the network's output, started by onsets in the input. It's closer to Verb's fade-in, but it's non-linear and pumps on dense material.
+- **Decision 3: where the controls go.**
+  - **A (R).** The EDIT drawer: Low decay and Attack as small knobs, and Duck from with the Listen to ducking switch beside Ducking. The main layout doesn't change, and a drawer mockup follows approval.
+  - **B.** Low decay in the Tone card and Attack in the Space card, on the main window.
+- **Decision 4: the sidechain bus.**
+  - **A (R).** Add it, optional and off by default as on Verb, and run the host checks (H) again: a new bus can make a host rescan.
+  - **B.** No bus: Ducking stays on Room's own input, and item 21 is dropped.
+
+### 5. Tests
+
+1. Legacy: Low decay ×1, Attack 0 and Duck from Input render exactly as v1.7.0, at every Quality, with Freeze on and off.
+2. Low decay ×0.5 and ×2, Decay 2 s: T30 in the 125 Hz octave is 1.0 ± 0.12 s and 4.0 ± 0.4 s, and in the 1 kHz octave 2.0 ± 0.2 s.
+3. Attack 150 ms: the late tail's 10 ms energy peaks between 120 and 180 ms, and its total energy is within 1 dB of Attack 0's.
+4. Duck from Sidechain: a sidechain at −10 dBFS takes the wet down by 24 ± 1 dB at Ducking 100 %, a silent sidechain leaves it alone, and the main input doesn't move it.
+5. Listen to ducking is temporary (the shared Listen tests) and plays the wet path's removed part.
+6. The host checks with the new bus: mono main bus with no sidechain, sidechain inactive, and the validators.
+
+### 6. Build order
+
+Approval, then the drawer mockup (`reference/phase4/56__room_w2_mockup.png`), then one push: the shelf, the taps, the bus and Duck from in `RoomDsp` and `RoomProcessor`, the drawer, tests, manual and checklist.
