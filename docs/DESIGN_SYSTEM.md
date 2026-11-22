@@ -83,6 +83,7 @@ These hold in every plugin, so a new plugin keeps them:
 | DS (new) | green `#2DCC70` (`accentGreen`) |
 | DS-Mini (new) | blue `#3598DB` (`uiBlue`): an approved exception to "blue means a filter knob", because DS-Mini has no filter knobs (brief §6b.2) |
 | Sature (new) | orange `#E77E23` (`accentOrange`) |
+| TS (Phase 4) | orange `#E77E23` (`accentOrange`), shared with Sature (user, 22 November 2026) |
 
 The palette has seven accents (`accentYellow`, `accentOrange`, `accentRed`, `accentPurple`, `accentBlue`, `accentTeal`, `accentGreen`). Orange and green were the last two unused; with the new plugins all seven are taken, and two plugins may share an accent when they're the same kind of effect (Verb and Room).
 

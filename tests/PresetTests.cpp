@@ -73,6 +73,10 @@
  #include "SatureEditor.h"
  #include "SatureProcessor.h"
 #endif
+#if FANCY_HAS_TS
+ #include "TsEditor.h"
+ #include "TsProcessor.h"
+#endif
 #if FANCY_HAS_ROOM
  #include "RoomEditor.h"
  #include "RoomProcessor.h"
@@ -144,6 +148,9 @@ void forEachProcessor (const std::function<void (fancy::FancyProcessor&)>& check
 #endif
 #if FANCY_HAS_SATURE
     { SatureProcessor p; check (p); }
+#endif
+#if FANCY_HAS_TS
+    { TsProcessor p; check (p); }
 #endif
 #if FANCY_HAS_ROOM
     { RoomProcessor p; check (p); }

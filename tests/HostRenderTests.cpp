@@ -78,6 +78,9 @@
 #if FANCY_HAS_SATURE
  #include "SatureProcessor.h"
 #endif
+#if FANCY_HAS_TS
+ #include "TsProcessor.h"
+#endif
 #if FANCY_HAS_ROOM
  #include "RoomProcessor.h"
 #endif
@@ -528,6 +531,15 @@ TEST_CASE ("DS-Mini: an offline render matches playback", "[host][offline]")
     checkRenders<DsMiniProcessor> (lookahead > 0.5f ? "DS-Mini, lookahead" : "DS-Mini",
                                    { { { "lookahead", lookahead }, { "amount", 7.0f } },
                                      join ({ alternate ("profile", 0.0f, 2.0f), alternate ("amount", 3.0f, 8.0f, 888) }), {} });
+}
+#endif
+
+#if FANCY_HAS_TS
+TEST_CASE ("TS: an offline render matches playback", "[host][offline]")
+{
+    // Attack, Sustain and Pump glide; Clip output runs oversampled.
+    checkRenders<TsProcessor> ("TS", { { { "attack", 6.0f }, { "sustain", -6.0f }, { "clip", 1.0f } },
+                                       join ({ alternate ("attack", -6.0f, 9.0f), alternate ("pump", 0.0f, 60.0f, 501) }), {} });
 }
 #endif
 

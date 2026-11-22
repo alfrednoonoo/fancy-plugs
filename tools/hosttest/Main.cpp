@@ -424,6 +424,7 @@ const LatencySetting latencySettings[] {
     { "Fancy DS", "Lookahead", 0.0f, 0.67f },
     { "Fancy DS-Mini", "Lookahead", 0.0f, 1.0f },
     { "Fancy Sature", "Oversampling", 0.0f, 0.67f },
+    { "Fancy TS", "Lookahead", 0.0f, 1.0f },
     { "Fancy Verb", "Latency mode", 0.0f, 1.0f },
 };
 

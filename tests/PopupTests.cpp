@@ -71,6 +71,10 @@
  #include "SatureEditor.h"
  #include "SatureProcessor.h"
 #endif
+#if FANCY_HAS_TS
+ #include "TsEditor.h"
+ #include "TsProcessor.h"
+#endif
 #if FANCY_HAS_ROOM
  #include "RoomEditor.h"
  #include "RoomProcessor.h"
@@ -570,6 +574,9 @@ TEST_CASE ("DS-Mini: every pop-up opens on the editor", "[popups]") { checkEvery
 #endif
 #if FANCY_HAS_SATURE
 TEST_CASE ("Sature: every pop-up opens on the editor", "[popups]") { checkEveryPopup<SatureProcessor, SatureEditor> (plainPreview); }
+#endif
+#if FANCY_HAS_TS
+TEST_CASE ("TS: every pop-up opens on the editor", "[popups]") { checkEveryPopup<TsProcessor, TsEditor> (plainPreview); }
 #endif
 #if FANCY_HAS_ROOM
 TEST_CASE ("Room: every pop-up opens on the editor", "[popups]") { checkEveryPopup<RoomProcessor, RoomEditor> (plainPreview); }

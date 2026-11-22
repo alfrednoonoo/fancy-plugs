@@ -38,6 +38,10 @@
  #include "SatureEditor.h"
  #include "SatureProcessor.h"
 #endif
+#if FANCY_HAS_TS
+ #include "TsEditor.h"
+ #include "TsProcessor.h"
+#endif
 
 namespace
 {
@@ -272,6 +276,13 @@ TEST_CASE ("DS: Listen is temporary (§0.3)", "[listen][ds]")
 TEST_CASE ("DS-Mini: Listen is temporary (§0.3)", "[listen][dsmini]")
 {
     checkListenSwitch<DsMiniProcessor> ("listen", true);
+}
+#endif
+
+#if FANCY_HAS_TS
+TEST_CASE ("TS: Listen to change is temporary (§0.3)", "[listen][ts]")
+{
+    checkListenSwitch<TsProcessor> ("listen", true);
 }
 #endif
 

@@ -27,8 +27,8 @@ if(APPLE)
 endif()
 
 # "all", or one of the names in FANCY_ALL_PLUGINS. Set by the workflow_dispatch input.
-set(FANCY_PLUGINS "all" CACHE STRING "Plugin to build: all, kicker, exciter, comp, eq, verb, delay, multicomp, fir, gate, limit, ds, dsmini, sature or room")
-set(FANCY_ALL_PLUGINS kicker exciter comp eq verb delay multicomp fir gate limit ds dsmini sature room)
+set(FANCY_PLUGINS "all" CACHE STRING "Plugin to build: all, kicker, exciter, comp, eq, verb, delay, multicomp, fir, gate, limit, ds, dsmini, sature, room or ts")
+set(FANCY_ALL_PLUGINS kicker exciter comp eq verb delay multicomp fir gate limit ds dsmini sature room ts)
 
 include(cmake/Dependencies.cmake)
 include(cmake/FancyPlugin.cmake)

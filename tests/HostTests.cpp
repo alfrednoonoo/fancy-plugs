@@ -64,6 +64,9 @@
 #if FANCY_HAS_SATURE
  #include "SatureProcessor.h"
 #endif
+#if FANCY_HAS_TS
+ #include "TsProcessor.h"
+#endif
 #if FANCY_HAS_ROOM
  #include "RoomProcessor.h"
 #endif
@@ -231,6 +234,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_SATURE
     { SatureProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_TS
+    { TsProcessor p; callback (p); }
    #endif
    #if FANCY_HAS_ROOM
     { RoomProcessor p; callback (p); }
@@ -532,6 +538,9 @@ TEST_CASE ("Each latency change reaches the host once", "[host][latency]")
    #endif
    #if FANCY_HAS_DSMINI
     { DsMiniProcessor p; checkLatencyNotices (p, "lookahead", 0.0f, 1.0f); }
+   #endif
+   #if FANCY_HAS_TS
+    { TsProcessor p; checkLatencyNotices (p, "lookahead", 0.0f, 3.0f); }
    #endif
    #if FANCY_HAS_SATURE
     { SatureProcessor p; checkLatencyNotices (p, "oversampling", 0.0f, 2.0f); }
