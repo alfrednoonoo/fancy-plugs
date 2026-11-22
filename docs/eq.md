@@ -322,7 +322,7 @@ One push (`d7fd3e8`), with every recommended option. `tests/LegacyEqDsp.*` is Eq
 
 ## Phase 4 Wave 2: brickwall cut slope
 
-**Draft for approval (22 November 2026).** Item 15 of the Wave 2 order (`docs/enhancements.md`; backlog item 4 of section 4), for v1.7.1. Modelled first: `docs/research/eq-brickwall-model.py`.
+**Approved by the user on 22 November 2026 with every recommended option (A).** Item 15 of the Wave 2 order (`docs/enhancements.md`; backlog item 4 of section 4), for v1.7.1. Modelled first: `docs/research/eq-brickwall-model.py`.
 
 ### 1. What it adds
 
@@ -368,7 +368,7 @@ Approval, then one push, with no mockup: the slope shows up in the existing Slop
 
 ## Phase 4 Wave 2: Character output stage
 
-**Draft for approval (22 November 2026).** Item 16 of the Wave 2 order (`docs/enhancements.md`; backlog item 7 of section 4), for v1.7.1. Modelled first: `docs/research/eq-character-model.py`.
+**Approved by the user on 22 November 2026 with every recommended option (A).** Item 16 of the Wave 2 order (`docs/enhancements.md`; backlog item 7 of section 4), for v1.7.1. Modelled first: `docs/research/eq-character-model.py`.
 
 ### 1. What it adds
 

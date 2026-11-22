@@ -494,7 +494,7 @@ Mockup 46 approved by the user on 22 November 2026; `tests/CompOpticalTests.cpp`
 
 ## Phase 4 Wave 2: six-band sidechain EQ and steeper cuts
 
-**Draft for approval (22 November 2026).** Item 13 of the Wave 2 order (`docs/enhancements.md`; backlog item 7 of section 3), for v1.7.1. Modelled first: `docs/research/comp-sceq-model.py`.
+**Approved by the user on 22 November 2026 with every recommended option (A).** Item 13 of the Wave 2 order (`docs/enhancements.md`; backlog item 7 of section 3), for v1.7.1. Modelled first: `docs/research/comp-sceq-model.py`.
 
 ### 1. What it adds
 
@@ -544,7 +544,7 @@ Approval, then the Detector page mockup (`reference/phase4/55__comp_w2_sceq_mock
 
 ## Phase 4 Wave 2: link modes
 
-**Draft for approval (22 November 2026).** Item 14 of the Wave 2 order (`docs/enhancements.md`; backlog item 8 of section 3), for v1.7.1. Modelled first: `docs/research/comp-linkmodes-model.py`.
+**Approved by the user on 22 November 2026 with every recommended option (A).** Item 14 of the Wave 2 order (`docs/enhancements.md`; backlog item 8 of section 3), for v1.7.1. Modelled first: `docs/research/comp-linkmodes-model.py`.
 
 ### 1. What it adds
 
