@@ -81,6 +81,9 @@
 #if FANCY_HAS_TS
  #include "TsProcessor.h"
 #endif
+#if FANCY_HAS_CHORUS
+ #include "ChorusProcessor.h"
+#endif
 #if FANCY_HAS_ROOM
  #include "RoomProcessor.h"
 #endif
@@ -540,6 +543,16 @@ TEST_CASE ("TS: an offline render matches playback", "[host][offline]")
     // Attack, Sustain and Pump glide; Clip output runs oversampled.
     checkRenders<TsProcessor> ("TS", { { { "attack", 6.0f }, { "sustain", -6.0f }, { "clip", 1.0f } },
                                        join ({ alternate ("attack", -6.0f, 9.0f), alternate ("pump", 0.0f, 60.0f, 501) }), {} });
+}
+#endif
+
+#if FANCY_HAS_CHORUS
+TEST_CASE ("Chorus: an offline render matches playback", "[host][offline]")
+{
+    // Voices, Delay and Mode change while the LFOs run; Feedback and Age on.
+    checkRenders<ChorusProcessor> ("Chorus", { { { "feedback", 40.0f }, { "age", 60.0f }, { "ducking", 50.0f } },
+                                               join ({ alternate ("voices", 2.0f, 6.0f), alternate ("delay", 5.0f, 20.0f, 301),
+                                                       alternate ("mode", 0.0f, 4.0f, 701) }), {} });
 }
 #endif
 

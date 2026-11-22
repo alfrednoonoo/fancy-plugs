@@ -70,6 +70,10 @@ if("FANCY_HAS_TS=1" IN_LIST fancy_screen_defs)
     target_sources(fancy-tests PRIVATE TsTests.cpp)
 endif()
 
+if("FANCY_HAS_CHORUS=1" IN_LIST fancy_screen_defs)
+    target_sources(fancy-tests PRIVATE ChorusTests.cpp)
+endif()
+
 if("FANCY_HAS_ROOM=1" IN_LIST fancy_screen_defs)
     target_sources(fancy-tests PRIVATE RoomTests.cpp RoomW1Tests.cpp LegacyRoomDsp.cpp)
 endif()

@@ -19,7 +19,8 @@ inline const juce::Colour grey5 { 0xff424242 }, grey6 { 0xff4c4c4c };
 inline const juce::Colour textSecondary { 0xff8d8d8d }, textPrimary { 0xffffffff };
 
 inline const juce::Colour accentYellow { 0xfff1c315 }, accentOrange { 0xffe77e23 }, accentRed { 0xffe74d3d },
-    accentPurple { 0xff9a59b5 }, accentBlue { 0xff3598db }, accentTeal { 0xff1bbc9c }, accentGreen { 0xff2dcc70 };
+    accentPurple { 0xff9a59b5 }, accentBlue { 0xff3598db }, accentTeal { 0xff1bbc9c }, accentGreen { 0xff2dcc70 },
+    accentPink { 0xffe0559a };   // Fancy Chorus (docs/chorus.md), the eighth accent
 
 inline const juce::Colour uiTeal { 0xff00a985 }, uiTealBright { 0xff1bbc9c }, uiRed { 0xffe74d3d },
     uiBlue { 0xff3598db }, uiPurple { 0xff9a59b5 }, uiEqBlue { 0xff24aec6 },

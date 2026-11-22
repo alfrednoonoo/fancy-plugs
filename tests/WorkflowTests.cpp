@@ -65,6 +65,9 @@
 #if FANCY_HAS_TS
  #include "TsProcessor.h"
 #endif
+#if FANCY_HAS_CHORUS
+ #include "ChorusProcessor.h"
+#endif
 #if FANCY_HAS_ROOM
  #include "RoomProcessor.h"
 #endif
@@ -118,6 +121,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_TS
     { TsProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_CHORUS
+    { ChorusProcessor p; callback (p); }
    #endif
    #if FANCY_HAS_ROOM
     { RoomProcessor p; callback (p); }
@@ -676,6 +682,9 @@ TEST_CASE ("A/B: a version 1 state loads with B as a copy of A, and renders bit-
        #endif
        #if FANCY_HAS_TS
         FANCY_CHECK_FRESH (TsProcessor)
+       #endif
+       #if FANCY_HAS_CHORUS
+        FANCY_CHECK_FRESH (ChorusProcessor)
        #endif
        #if FANCY_HAS_ROOM
         FANCY_CHECK_FRESH (RoomProcessor)

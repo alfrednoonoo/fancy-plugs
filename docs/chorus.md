@@ -1,6 +1,6 @@
 # Fancy Chorus: design note
 
-**Approved by the user on 22 November 2026: decisions 1 to 4 all A.** Build not started (user: later). Phase 4 item 4 (`docs/enhancements.md`), a chorus and modulation plugin. Bundle ID `com.fancyplugs.chorus`. Layout approved as mockup 51 (`reference/phase4/51__chorus_mockup.png`, decisions 1 to 5 of `docs/research/new-plugins-features.md`, all A: a new pink accent, 1 to 6 voices, Scatter later). Modelled first: `docs/research/chorus-model.py`. Ideas only from the plugins surveyed; no names, graphics or sounds.
+**Approved by the user on 22 November 2026: decisions 1 to 4 all A.** Built from 22 November 2026 at the user's word; see "As built". Phase 4 item 4 (`docs/enhancements.md`), a chorus and modulation plugin. Bundle ID `com.fancyplugs.chorus`. Layout approved as mockup 51 (`reference/phase4/51__chorus_mockup.png`, decisions 1 to 5 of `docs/research/new-plugins-features.md`, all A: a new pink accent, 1 to 6 voices, Scatter later). Modelled first: `docs/research/chorus-model.py`. Ideas only from the plugins surveyed; no names, graphics or sounds.
 
 ## What it is
 
@@ -103,3 +103,17 @@ Chosen by the user on 22 November 2026: 1A, 2A, 3A, 4A, and the two follow-up po
 ## Build order
 
 Approval of this note, then one push: `fancy::ui::colours::accentPink`, `plugins/chorus/`, the display, presets, tests, the CI screenshot against mockup 51, manual and checklist, then the CPU measurement and the REAPER check.
+
+## As built
+
+First push on 22 November 2026: `fancy::ui::colours::accentPink`, `plugins/chorus/` (`ChorusDsp`, `ChorusProcessor`, `ChorusEditor`), `tests/ChorusTests.cpp` (tests 1 to 8 and the CPU measurement), the suite's shared checks (host, offline render, pop-ups, presets, Listen, workflow), screenshots `chorus` and `chorus-edit`, the manual and the checklist. Pre-push: `docs/research/chorus-prepush.py`, a per-sample port of the DSP run against tests 2, 6, 7 and 8.
+
+- One delay line per channel, sized for 30 ms plus Ensemble's full sweep at 384 kHz; every voice reads both with Hermite interpolation, never closer than 3 samples, so feedback only uses samples already written. Feedback is the voices' gain-weighted average, DC-blocked at 5 Hz, with a ±4 guard that |Feedback| ≤ 90 % never reaches.
+- Each voice's gain, stereo place and LFO offset (Spread × v / Voices) glide over 30 to 50 ms. The pre-push model found that without the offset glide a change of Voices made every voice's delay jump (a click 45 times the tone's own largest step); with it the largest step is 1.7 times.
+- Mode, LFO shape and Tempo sync fade the wet out over about 5 ms, switch, and fade back in; Delay jumps to its new value while the wet is silent.
+- Flange maps Delay's 1 to 30 ms logarithmically onto 0.3 to 10 ms and sweeps ±Depth × that delay; the knob shows the delay in use. Every mode's sweep is held under 95 % of its centre delay, so short delays sweep less rather than flatten at zero.
+- Width narrows each voice (its side × Width × (1 − |place|)) and pans it with an equal-power law, unity at the centre, so one voice at the centre is the input delayed (test 1). The voices sum with 1/√Voices.
+- Smooth random is a smoothstep between hashed values per LFO cycle, so it is the same on every playback and follows Tempo sync's position. Age is tanh saturation (drive 1 to 4), a low-pass from 18 to 5 kHz and hiss from −90 to −70 dBFS.
+- Ducking: the input's peak (30 ms release) against −24 dBFS; 1 ms attack, and a release that falls 24 dB in 250 ms, linear in dB. At 0 % the gain is exactly 1.
+- Presets as listed, with two additions: Vibrato has one voice (three would be a chorus) and Slow flange a Rate of 0.2 Hz.
+- Not yet: the first CI run, the CPU figures and the REAPER check (`docs/chorus-checklist.md`).

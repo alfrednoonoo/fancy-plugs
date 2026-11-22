@@ -83,6 +83,10 @@
  #include "TsEditor.h"
  #include "TsProcessor.h"
 #endif
+#if FANCY_HAS_CHORUS
+ #include "ChorusEditor.h"
+ #include "ChorusProcessor.h"
+#endif
 #if FANCY_HAS_ROOM
  #include "RoomEditor.h"
  #include "RoomProcessor.h"
@@ -458,6 +462,9 @@ bool renderAllHostScales (const juce::File& outputDir)
    #if FANCY_HAS_TS
     ok = renderHostScales<TsProcessor, TsEditor> ("ts", outputDir, plain) && ok;
    #endif
+   #if FANCY_HAS_CHORUS
+    ok = renderHostScales<ChorusProcessor, ChorusEditor> ("chorus", outputDir, plain) && ok;
+   #endif
    #if FANCY_HAS_ROOM
     ok = renderHostScales<RoomProcessor, RoomEditor> ("room", outputDir, plain) && ok;
    #endif
@@ -522,6 +529,9 @@ bool renderAllPopups (const juce::File& outputDir)
    #endif
    #if FANCY_HAS_TS
     ok = renderPopups<TsProcessor, TsEditor> ("ts", outputDir, plain) && ok;
+   #endif
+   #if FANCY_HAS_CHORUS
+    ok = renderPopups<ChorusProcessor, ChorusEditor> ("chorus", outputDir, plain) && ok;
    #endif
    #if FANCY_HAS_ROOM
     ok = renderPopups<RoomProcessor, RoomEditor> ("room", outputDir, plain) && ok;
@@ -708,6 +718,10 @@ int main (int argc, char** argv)
    #if FANCY_HAS_TS
     ok = renderPlugin<TsProcessor, TsEditor> ("ts", outputDir) && ok;
     ok = renderListening<TsProcessor, TsEditor> ("ts", outputDir) && ok;
+   #endif
+   #if FANCY_HAS_CHORUS
+    ok = renderPlugin<ChorusProcessor, ChorusEditor> ("chorus", outputDir) && ok;
+    ok = renderListening<ChorusProcessor, ChorusEditor> ("chorus", outputDir) && ok;
    #endif
    #if FANCY_HAS_ROOM
     ok = renderPlugin<RoomProcessor, RoomEditor> ("room", outputDir) && ok;

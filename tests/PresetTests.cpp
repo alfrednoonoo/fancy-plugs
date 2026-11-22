@@ -77,6 +77,10 @@
  #include "TsEditor.h"
  #include "TsProcessor.h"
 #endif
+#if FANCY_HAS_CHORUS
+ #include "ChorusEditor.h"
+ #include "ChorusProcessor.h"
+#endif
 #if FANCY_HAS_ROOM
  #include "RoomEditor.h"
  #include "RoomProcessor.h"
@@ -151,6 +155,9 @@ void forEachProcessor (const std::function<void (fancy::FancyProcessor&)>& check
 #endif
 #if FANCY_HAS_TS
     { TsProcessor p; check (p); }
+#endif
+#if FANCY_HAS_CHORUS
+    { ChorusProcessor p; check (p); }
 #endif
 #if FANCY_HAS_ROOM
     { RoomProcessor p; check (p); }

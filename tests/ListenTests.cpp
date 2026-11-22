@@ -42,6 +42,10 @@
  #include "TsEditor.h"
  #include "TsProcessor.h"
 #endif
+#if FANCY_HAS_CHORUS
+ #include "ChorusEditor.h"
+ #include "ChorusProcessor.h"
+#endif
 
 namespace
 {
@@ -283,6 +287,13 @@ TEST_CASE ("DS-Mini: Listen is temporary (§0.3)", "[listen][dsmini]")
 TEST_CASE ("TS: Listen to change is temporary (§0.3)", "[listen][ts]")
 {
     checkListenSwitch<TsProcessor> ("listen", true);
+}
+#endif
+
+#if FANCY_HAS_CHORUS
+TEST_CASE ("Chorus: Listen to wet is temporary (§0.3)", "[listen][chorus]")
+{
+    checkListenSwitch<ChorusProcessor> ("listen", true);
 }
 #endif
 

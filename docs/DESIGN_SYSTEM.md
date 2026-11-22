@@ -84,8 +84,9 @@ These hold in every plugin, so a new plugin keeps them:
 | DS-Mini (new) | blue `#3598DB` (`uiBlue`): an approved exception to "blue means a filter knob", because DS-Mini has no filter knobs (brief §6b.2) |
 | Sature (new) | orange `#E77E23` (`accentOrange`) |
 | TS (Phase 4) | orange `#E77E23` (`accentOrange`), shared with Sature (user, 22 November 2026) |
+| Chorus (Phase 4) | pink `#E0559A` (`accentPink`), a new eighth accent (user, 22 November 2026) |
 
-The palette has seven accents (`accentYellow`, `accentOrange`, `accentRed`, `accentPurple`, `accentBlue`, `accentTeal`, `accentGreen`). Orange and green were the last two unused; with the new plugins all seven are taken, and two plugins may share an accent when they're the same kind of effect (Verb and Room).
+The palette has eight accents (`accentYellow`, `accentOrange`, `accentRed`, `accentPurple`, `accentBlue`, `accentTeal`, `accentGreen`, and `accentPink` for Fancy Chorus). Orange and green were the last two of the first seven to be used; two plugins may share an accent when they're the same kind of effect (Verb and Room).
 
 ## 3. Header
 

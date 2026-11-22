@@ -67,6 +67,9 @@
 #if FANCY_HAS_TS
  #include "TsProcessor.h"
 #endif
+#if FANCY_HAS_CHORUS
+ #include "ChorusProcessor.h"
+#endif
 #if FANCY_HAS_ROOM
  #include "RoomProcessor.h"
 #endif
@@ -237,6 +240,9 @@ void forEachPlugin (Callback&& callback)
    #endif
    #if FANCY_HAS_TS
     { TsProcessor p; callback (p); }
+   #endif
+   #if FANCY_HAS_CHORUS
+    { ChorusProcessor p; callback (p); }
    #endif
    #if FANCY_HAS_ROOM
     { RoomProcessor p; callback (p); }
