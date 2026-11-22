@@ -393,7 +393,7 @@ Mockup 44 approved by the user on 22 November 2026; `tests/GateW2Tests.cpp`.
 
 ## Phase 4 Wave 2: Transient detector mode
 
-**Draft for approval (22 November 2026).** Item 11 of the Wave 2 order (`docs/enhancements.md`; backlog item 4 of section 9), for v1.7.1. Modelled first: `docs/research/gate-transient-model.py`.
+**Approved by the user on 22 November 2026 with every recommended option (A).** Item 11 of the Wave 2 order (`docs/enhancements.md`; backlog item 4 of section 9), for v1.7.1. Modelled first: `docs/research/gate-transient-model.py`.
 
 ### 1. Why
 
@@ -452,7 +452,7 @@ Approval, then the mockup (`reference/phase4/53__gate_w2_transient_mockup.png`),
 
 ## Phase 4 Wave 2: Upward mode
 
-**Draft for approval (22 November 2026).** Item 12 of the Wave 2 order (`docs/enhancements.md`; backlog item 6 of section 9), for v1.7.1. Modelled first: `docs/research/gate-upward-model.py`.
+**Approved by the user on 22 November 2026 with every recommended option (A).** Item 12 of the Wave 2 order (`docs/enhancements.md`; backlog item 6 of section 9), for v1.7.1. Modelled first: `docs/research/gate-upward-model.py`.
 
 ### 1. What it does
 
