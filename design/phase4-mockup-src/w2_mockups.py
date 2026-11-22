@@ -122,6 +122,62 @@ def comp():
 
 
 # ---------------------------------------------------------------------------------------------
+@plugin("gate", 44)
+def gate():
+    W, H = 740, 441
+    yellow = "#F1C315"
+    # The main window from CI run 44951967529 (Wave 1), saved beside this script. The body starts
+    # 73 px down (header and title strip); the drawer is drawn from GateEditor's as-built bounds.
+    image = "../../design/phase4-mockup-src/img/gate-w1.png"
+    by = 73
+    link = (f'<div class="cover" style="left:380px;top:{by + 9}px;width:62px;height:24px;--bg:#303030"></div>'
+            f'<div class="o" style="left:388px;top:{by + 12}px;font-size:14px;color:{yellow}">&#9881; EDIT</div>')
+    detector = (f'<div class="cover" style="left:90px;top:{by + 9}px;width:106px;height:24px;--bg:#303030"></div>'
+                f'<div class="o new dd" style="left:90px;top:{by + 9}px;width:106px;height:24px;font-size:11px;background:transparent">Host sync</div>')
+    menu = (f'<div class="o new menu" style="left:90px;top:{by + 36}px;width:150px">'
+            '<div class="cap" style="padding:3px 12px">MAIN INPUT</div><div>Main input L+R</div><div>Main L</div><div>Main R</div>'
+            '<div class="cap" style="padding:3px 12px">SIDECHAIN</div><div>Sidechain L+R</div><div>Sidechain L</div><div>Sidechain R</div>'
+            '<div class="cap" style="padding:3px 12px">MID/SIDE</div><div>Mid</div><div>Side</div>'
+            '<div class="cap" style="padding:3px 12px">HOST SYNC</div><div class="on">&#10003; Host sync</div></div>')
+
+    dx, dy = 120, by + 114
+    drawer = (
+        f'<div class="o" style="left:{dx}px;top:{dy}px;width:456px;height:204px;background:#262626">'
+        '<div class="o" style="left:18px;top:14px;font-size:14px;font-weight:600;letter-spacing:.06em">EDIT</div>'
+        '<div class="o btn" style="left:380px;top:10px;width:62px;height:24px;border-radius:12px">Done</div>'
+        f'<div class="o" style="left:18px;top:50px"><div class="cb" style="--a:{yellow};font-size:12px"><i></i>MIDI trigger</div></div>'
+        '<div class="o cap" style="left:40px;top:72px;width:190px;white-space:normal;line-height:1.4">Note-on opens, note-off closes. The detector is ignored.</div>'
+        f'<div class="o" style="left:18px;top:118px;display:flex;align-items:center;gap:8px"><span class="btn" style="width:84px;height:26px;background:{yellow};color:#141414;font-weight:600">Learn</span>'
+        '<span class="cap" style="width:130px;white-space:normal;line-height:1.4">Listens for 3 s and sets Threshold</span></div>'
+        f'<div class="o" style="left:246px;top:40px;width:90px" data-k data-v="1" data-c="{yellow}" data-s="40" data-l="Ratio" data-t="inf:1"></div>'
+        '<div class="o" style="left:346px;top:40px;width:90px" data-k data-v="0" data-c="#3598DB" data-s="40" data-l="De-bleed" data-t="0 %"></div>'
+        '</div>'
+    )
+    group = (
+        f'<div class="o new" style="left:{dx + 246}px;top:{dy + 140}px;width:196px;height:62px"></div>'
+        f'<div class="o cap" style="left:{dx + 250}px;top:{dy + 146}px;font-size:10px;letter-spacing:.06em">HOST SYNC</div>'
+        f'<div class="o lbl" style="left:{dx + 250}px;top:{dy + 166}px;line-height:24px;font-size:12px">Rate</div>'
+        f'<div class="o dd" style="left:{dx + 282}px;top:{dy + 166}px;width:88px;height:24px;font-size:12px">1/8</div>'
+        + w1.tight(dx + 380, dy + 138, "Shape", "50 %", yellow, 0.47, size=24)
+    )
+    return w1.page("Fancy Gate: Phase 4 Wave 2 mockup", "docs/gate.md, Phase 4 Wave 2: tempo-synced trigger, Decision 3 A. New things in dashed yellow, on the plugin's real screenshot (1x coordinates).", [
+        ("1 · Host sync in the Detector input menu",
+         "Host sync is appended after Side, in its own HOST SYNC section. The EDIT link is drawn at its fixed width: today's build clips it to \"EDI\", fixed in the same push.",
+         w1.shot(image, W, H, link + detector + menu,
+                 "Nothing else on the main window moves. The Lowpass and Highpass cards stay live but don't touch the pulse; "
+                 "the \"No sidechain signal\" notice never shows for Host sync.")),
+        ("2 · The EDIT drawer with Host sync chosen",
+         "Under Ratio and De-bleed, in place of the De-bleed note (De-bleed works on audio and never touches the pulse): a HOST SYNC group with Rate "
+         "(1/1 to 1/16, each also dotted and triplet; 1/8 by default) and Shape (5 to 100 % of the step, 50 % by default), a small knob. "
+         "Each step opens the gate for Shape of the step whatever Threshold is; Attack, Hold, Release, Range and Ratio shape each opening.",
+         w1.shot(image, W, H, link + drawer + group,
+                 "With another Detector input the group is hidden and the De-bleed note is back, as now. "
+                 "Without host tempo the caption reads \"NO HOST TEMPO: 120 BPM\". "
+                 "With MIDI trigger ticked, MIDI wins and the group dims (Decision 2 A).")),
+    ])
+
+
+# ---------------------------------------------------------------------------------------------
 def render(key):
     number, fn = PLUGINS[key]
     html = w1.SRC / f"w2-{key}.html"
