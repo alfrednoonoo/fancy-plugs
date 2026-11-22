@@ -1,7 +1,7 @@
 # Fancy Transient and Fancy Chorus: feature survey and proposed designs
 
 Phase 4 items 3 and 4 (`docs/enhancements.md`). Researched on 22 November 2026 from vendor pages,
-manuals and 2026 round-ups (sources at the end). **Draft for approval:** the mockups are
+manuals and 2026 round-ups (sources at the end). **Layouts and decisions 1 to 5 approved by the user on 22 November 2026, all A.** The mockups are
 `reference/phase4/50__transient_mockup.png` and `51__chorus_mockup.png` (source
 `design/phase4-mockup-src/transient.html`, `chorus.html`, rendered by `new_plugins.py`). Each plugin's
 design note (`docs/transient.md`, `docs/chorus.md`: DSP, parameter ranges and skews, latency, state,
@@ -91,6 +91,15 @@ graphics or sounds are taken from any product.
 3. **Transient multiband.** **A (R):** full-band now, with the detector filters; a two-band split as a later Wave item (it changes the main layout). **B:** two bands from the start, which doubles the cards.
 4. **Chorus Scatter (diffused, reverb-like voices).** **A (R):** later. **B:** a sixth mode now.
 5. **Chorus voices.** **A (R):** 1 to 6. **B:** 1 to 3, as most vintage units.
+
+## 4. Vocal harmony (tenor, alto, soprano)
+
+Asked by the user on 22 November 2026. Harmony voices are a **harmonizer**, not a chorus: they need pitch
+detection on the sung note, a pitch shifter with formant preservation (so a voice moved up a fifth
+doesn't sound like a cartoon), and a key and scale (or MIDI) to choose each voice's interval. A chorus
+only delays and slightly detunes copies, so none of its engine carries over, and its CPU and latency
+(a pitch detector needs about 20 to 40 ms) are of a different order. Proposed as its own plugin,
+**Fancy Harmony**, after Fancy Chorus, with the same survey, mockup and design note: waiting for the user.
 
 ## Sources
 
