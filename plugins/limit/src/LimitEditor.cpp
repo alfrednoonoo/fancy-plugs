@@ -564,7 +564,7 @@ LimitEditor::LimitEditor (LimitProcessor& processor)
 
     // Phase 4 Wave 2: Clip before limiting, beside the DC filter and Release curve rows.
     clipCheckbox.setBounds (400, 300, 160, 24);
-    clipKnob.setBounds (556, 258, 76, 92);
+    clipKnob.setBounds (556, 244, 76, 92); // its value clear of the drawer's bottom edge
     clipCheckbox.setTooltip ("A soft clipper before the limiter: it shaves the fastest peaks, so the limiter has less to do. "
                              "For dense, drum-heavy material.");
     clipKnob.setTooltip ("How hard the clipper works: its ceiling sits this much under Ceiling + 12 dB. 2 to 4 dB is the usual range.");

@@ -568,6 +568,10 @@ GateEditor::GateEditor (GateProcessor& processor)
         lookaheadCheckbox.pulse (gateYellow, 600);
     };
 
+    // The drawer was added before the cards and knobs, so it went under them (seen in the
+    // gate-drawer screenshot of run 44980548512): it belongs on top.
+    drawer.toFront (false);
+
     updateLocks();
 }
 
