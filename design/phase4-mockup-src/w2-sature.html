@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy Sature: Phase 4 Wave 2 mockup</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#121212;color:#EDEDED;font-family:Inter,sans-serif;padding:24px;width:1500px}
+h1{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px}
+.lead{font-size:11.5px;color:#8D8D8D;line-height:1.5;max-width:1400px;margin-bottom:18px}
+.sec{margin-bottom:26px}
+.h{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px}
+.n{font-size:11px;color:#8D8D8D;line-height:1.5;max-width:1400px;margin-bottom:8px}
+.row{display:flex;gap:24px;align-items:flex-start}
+.shot{position:relative;flex:none;overflow:hidden;border:1px solid #2a2a2a}
+.shot img{display:block}
+.side{font-size:11px;color:#8D8D8D;line-height:1.55;width:330px}
+.side b{color:#ddd}
+.o{position:absolute}
+.new{outline:1.5px dashed #FFCF07;outline-offset:2px;border-radius:3px}
+.cover{position:absolute;background:var(--bg,#303030)}
+.cb{display:flex;align-items:center;gap:7px;font-size:14px;color:#fff;white-space:nowrap}
+.cb i{width:14px;height:14px;border-radius:3px;background:#1E1E1E;border:1px solid #8D8D8D;display:inline-block;position:relative;flex:none}
+.cb i.x{background:var(--a,#00A985);border-color:var(--a,#00A985)}
+.cb i.x:after{content:"";position:absolute;left:4px;top:1px;width:3.5px;height:7px;border:solid #141414;border-width:0 1.6px 1.6px 0;transform:rotate(45deg)}
+.btn{background:#303030;border-radius:3px;font-size:13px;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.pill{border-radius:12px;font-size:12px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.dd{background:#303030;border-radius:3px;font-size:13px;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;white-space:nowrap}
+.dd:after{content:"\2303\2304";font-size:7px;color:#8D8D8D;writing-mode:vertical-lr;line-height:5px}
+.lbl{font-size:14px;color:#fff;white-space:nowrap}
+.cap{font-size:11px;color:#8D8D8D;white-space:nowrap}
+.val{font-size:13px;white-space:nowrap}
+.menu{background:#262626;border:1px solid #434343;border-radius:6px;padding:4px 0;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.menu div{padding:4px 12px;white-space:nowrap}
+.menu .on{background:#383838}
+</style></head><body><h1>Fancy Sature: Phase 4 Wave 2 mockup</h1><div class="lead">docs/sature.md, Phase 4 Wave 2: outer-band drive, Decision 3 A. New things in dashed yellow, on the plugin's real screenshot (1x coordinates).</div><div class="sec"><div class="h">1 · The EDIT drawer: an OUTER BANDS group</div><div class="n">Beside Input trim and DC filter: Drive (0 to 36 dB, 0 by default) and Mix (0 to 100 %, 100 % by default) for the band below Low and the band above High, as small knobs. They share the mid band's Type, Character, Tone and Tape HF loss (Decision 1 A).</div><div class="row"><div class="shot" style="width:760px;height:465px"><div style="position:absolute;left:0px;top:0px;width:760px;height:465px"><img src="../../docs/images/../../design/phase4-mockup-src/img/sature-edit-w1.png" style="width:760px;height:465px"><div class="o new" style="left:236px;top:246px;width:390px;height:118px"></div><div class="o cap" style="left:242px;top:252px;font-size:10px;letter-spacing:.06em">OUTER BANDS</div><div class="o cap" style="left:242px;top:268px;">Below Low</div><div class="o cap" style="left:392px;top:268px;">Above High</div><div class="o" style="left:240px;top:284px;width:58px" data-k data-v="0.17" data-c="#F39C12" data-s="30" data-fs="11" data-l="Drive" data-t="+6.0 dB"></div><div class="o" style="left:306px;top:284px;width:58px" data-k data-v="1.0" data-c="#F39C12" data-s="30" data-fs="11" data-l="Mix" data-t="100 %"></div><div class="o" style="left:390px;top:284px;width:58px" data-k data-v="0.0" data-c="#F39C12" data-s="30" data-fs="11" data-l="Drive" data-t="0.0 dB"></div><div class="o" style="left:456px;top:284px;width:58px" data-k data-v="1.0" data-c="#F39C12" data-s="30" data-fs="11" data-l="Mix" data-t="100 %"></div><div class="o cap" style="left:530px;top:290px;width:92px;white-space:normal;line-height:1.4;">Type, Character, Tone and Tape HF loss are the mid band's.</div></div></div><div class="side">Both Drives at 0 (the default) don't run the outer paths: today's sound to the bit. Auto gain covers the outer bands too. With High at Off there's no band above it, so High's pair dims.</div></div></div><div class="sec"><div class="h">2 · The main window: the BAND card shades while an outer band is driven</div><div class="n">There's no band graph on the main window, so the BAND card takes a light orange tint and a one-line caption naming the driven bands while either outer Drive is up.</div><div class="row"><div class="shot" style="width:760px;height:465px"><div style="position:absolute;left:0px;top:0px;width:760px;height:465px"><img src="../../docs/images/../../design/phase4-mockup-src/img/sature-w1.png" style="width:760px;height:465px"><div class="o new" style="left:394px;top:292px;width:248px;height:118px;background:rgba(243,156,18,.07)"></div><div class="o cap" style="left:470px;top:298px;color:#F39C12">low band +6.0 dB</div></div></div><div class="side">Nothing moves; the tint and caption go when both Drives are back at 0.</div></div></div><script>
+const P=(cx,cy,r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];
+function arc(cx,cy,r,a0,a1){const[x0,y0]=P(cx,cy,r,a0),[x1,y1]=P(cx,cy,r,a1);const lg=Math.abs(a1-a0)>Math.PI?1:0;return `M${x0},${y0} A${r},${r} 0 ${lg} ${a1>a0?1:0} ${x1},${y1}`}
+document.querySelectorAll('[data-k]').forEach((el,i)=>{const v=+el.dataset.v,c=el.dataset.c||'#00A985',s=+(el.dataset.s||36),bi=el.dataset.bi!==undefined;
+const R=s/2,cx=R+5,cy=R+5,A=Math.PI*5/6,a=-A+v*2*A,a0=bi?0:-A,tip=P(cx,cy,R*.62,a);
+el.style.display='flex';el.style.flexDirection='column';el.style.alignItems='center';
+el.innerHTML=`<div class="lbl" style="font-size:${el.dataset.fs||13}px">${el.dataset.l||''}</div><svg width="${s+10}" height="${s+10}">
+<defs><linearGradient id="kg${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4F4F4F"/><stop offset="1" stop-color="#454545"/></linearGradient></defs>
+<path d="${arc(cx,cy,R+2.5,Math.min(a0,a),Math.max(a0,a)+.0001)}" stroke="${c}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<circle cx="${cx}" cy="${cy}" r="${R-2}" fill="url(#kg${i})" stroke="rgba(0,0,0,.2)"/>
+<polygon points="${tip.join(',')} ${P(cx,cy,R*.3,a-.42).join(',')} ${P(cx,cy,R*.3,a+.42).join(',')}" fill="${c}"/></svg>
+<div class="val" style="color:${c}">${el.dataset.t||''}</div>`});
+</script></body></html>

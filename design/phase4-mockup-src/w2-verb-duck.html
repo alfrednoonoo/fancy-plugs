@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy Verb: Phase 4 Wave 2 mockup (Ducking and gate)</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#121212;color:#EDEDED;font-family:Inter,sans-serif;padding:24px;width:1500px}
+h1{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px}
+.lead{font-size:11.5px;color:#8D8D8D;line-height:1.5;max-width:1400px;margin-bottom:18px}
+.sec{margin-bottom:26px}
+.h{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px}
+.n{font-size:11px;color:#8D8D8D;line-height:1.5;max-width:1400px;margin-bottom:8px}
+.row{display:flex;gap:24px;align-items:flex-start}
+.shot{position:relative;flex:none;overflow:hidden;border:1px solid #2a2a2a}
+.shot img{display:block}
+.side{font-size:11px;color:#8D8D8D;line-height:1.55;width:330px}
+.side b{color:#ddd}
+.o{position:absolute}
+.new{outline:1.5px dashed #FFCF07;outline-offset:2px;border-radius:3px}
+.cover{position:absolute;background:var(--bg,#303030)}
+.cb{display:flex;align-items:center;gap:7px;font-size:14px;color:#fff;white-space:nowrap}
+.cb i{width:14px;height:14px;border-radius:3px;background:#1E1E1E;border:1px solid #8D8D8D;display:inline-block;position:relative;flex:none}
+.cb i.x{background:var(--a,#00A985);border-color:var(--a,#00A985)}
+.cb i.x:after{content:"";position:absolute;left:4px;top:1px;width:3.5px;height:7px;border:solid #141414;border-width:0 1.6px 1.6px 0;transform:rotate(45deg)}
+.btn{background:#303030;border-radius:3px;font-size:13px;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.pill{border-radius:12px;font-size:12px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.dd{background:#303030;border-radius:3px;font-size:13px;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;white-space:nowrap}
+.dd:after{content:"\2303\2304";font-size:7px;color:#8D8D8D;writing-mode:vertical-lr;line-height:5px}
+.lbl{font-size:14px;color:#fff;white-space:nowrap}
+.cap{font-size:11px;color:#8D8D8D;white-space:nowrap}
+.val{font-size:13px;white-space:nowrap}
+.menu{background:#262626;border:1px solid #434343;border-radius:6px;padding:4px 0;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.menu div{padding:4px 12px;white-space:nowrap}
+.menu .on{background:#383838}
+</style></head><body><h1>Fancy Verb: Phase 4 Wave 2 mockup (Ducking and gate)</h1><div class="lead">docs/verb.md, Phase 4 Wave 2: ducking and level gate, Decisions 1 to 3 A. New things in dashed yellow, on the plugin's real screenshot (1x coordinates).</div><div class="sec"><div class="h">The SETUP drawer: an AFTER THE REVERB group</div><div class="n">In the drawer's free space beside the existing settings: the detector's Source (Main or Sidechain), Ducking (0 to 100 %, 0 by default) and the Gate (off by default; Threshold &minus;60 to 0 dB, Hold 10 to 500 ms, Decay 5 to 500 ms). Not modules: they act live on the wet signal after the convolver, whatever the rack's order.</div><div class="row"><div class="shot" style="width:866px;height:697px"><div style="position:absolute;left:0px;top:0px;width:866px;height:697px"><img src="../../docs/images/../../design/phase4-mockup-src/img/verb-edit-w1.png" style="width:866px;height:697px"><div class="o new" style="left:340px;top:322px;width:376px;height:220px"></div><div class="o cap" style="left:348px;top:328px;font-size:10px;letter-spacing:.06em">AFTER THE REVERB</div><div class="o lbl" style="left:348px;top:346px;line-height:24px;font-size:13px">Source</div><div class="o dd" style="left:404px;top:346px;width:110px;height:24px;font-size:13px">Main</div><div class="o cap" style="left:524px;top:350px;">Sidechain when routed (pins 3/4)</div><div class="o" style="left:348px;top:384px;width:58px" data-k data-v="0.4" data-c="#00A985" data-s="30" data-fs="11" data-l="Ducking" data-t="40 %"></div><div class="o cap" style="left:416px;top:398px;width:270px;white-space:normal;line-height:1.4;">Turns the reverb down while the source plays, up to 24 dB at 100 %.</div><div class="o" style="left:348px;top:462px"><div class="cb" style="font-size:13px"><i class="x"></i>Gate</div></div><div class="o" style="left:424px;top:454px;width:58px" data-k data-v="0.5" data-c="#00A985" data-s="26" data-fs="11" data-l="Threshold" data-t="&minus;30 dB"></div><div class="o" style="left:500px;top:454px;width:58px" data-k data-v="0.15" data-c="#00A985" data-s="26" data-fs="11" data-l="Hold" data-t="80 ms"></div><div class="o" style="left:576px;top:454px;width:58px" data-k data-v="0.07" data-c="#00A985" data-s="26" data-fs="11" data-l="Decay" data-t="40 ms"></div></div></div><div class="side">Ducking 0 and Gate off (the defaults) leave today's sound to the bit. The detector waits for the reported latency, so in Low CPU mode it still lines up with the wet. Gate's three knobs dim while Gate is off. With no sidechain routed, Sidechain acts as Main.</div></div></div><script>
+const P=(cx,cy,r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];
+function arc(cx,cy,r,a0,a1){const[x0,y0]=P(cx,cy,r,a0),[x1,y1]=P(cx,cy,r,a1);const lg=Math.abs(a1-a0)>Math.PI?1:0;return `M${x0},${y0} A${r},${r} 0 ${lg} ${a1>a0?1:0} ${x1},${y1}`}
+document.querySelectorAll('[data-k]').forEach((el,i)=>{const v=+el.dataset.v,c=el.dataset.c||'#00A985',s=+(el.dataset.s||36),bi=el.dataset.bi!==undefined;
+const R=s/2,cx=R+5,cy=R+5,A=Math.PI*5/6,a=-A+v*2*A,a0=bi?0:-A,tip=P(cx,cy,R*.62,a);
+el.style.display='flex';el.style.flexDirection='column';el.style.alignItems='center';
+el.innerHTML=`<div class="lbl" style="font-size:${el.dataset.fs||13}px">${el.dataset.l||''}</div><svg width="${s+10}" height="${s+10}">
+<defs><linearGradient id="kg${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4F4F4F"/><stop offset="1" stop-color="#454545"/></linearGradient></defs>
+<path d="${arc(cx,cy,R+2.5,Math.min(a0,a),Math.max(a0,a)+.0001)}" stroke="${c}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<circle cx="${cx}" cy="${cy}" r="${R-2}" fill="url(#kg${i})" stroke="rgba(0,0,0,.2)"/>
+<polygon points="${tip.join(',')} ${P(cx,cy,R*.3,a-.42).join(',')} ${P(cx,cy,R*.3,a+.42).join(',')}" fill="${c}"/></svg>
+<div class="val" style="color:${c}">${el.dataset.t||''}</div>`});
+</script></body></html>
