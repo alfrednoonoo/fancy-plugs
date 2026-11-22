@@ -434,6 +434,7 @@ Mockup 47 approved by the user on 22 November 2026; `tests/VerbDecayTests.cpp`.
 - `verb::reshapeDecay`: an 8192-point STFT (Hann, quarter hop) splits each channel with the complementary half-octave masks; each band's RT60 is measured on every channel's energy together (Schroeder, -5 to -35 dB, else -5 to -25 dB; under 50 ms counts as no decay). Each changed band's gain runs from its envelope's peak; a lengthened band stops at 10 dB over its floor (the median of its last 200 ms) and fades over 100 ms. The channel then gets `(gain - 1) x band` added for each changed band only, so bands at 1x add nothing and the IR is exact when every multiplier is 1.
 - The build reports a `DecayReadout` per module (`IrPreview::decays`); the card paints each band's RT before and after, "can't measure", and a note when lengthening was stopped.
 - `tools/fix_eol.py` restores line endings after a script edit (Python's text mode on Windows writes CRLF).
+- Test 3 checks each band's RT against its own before (0.5 x and 2 x, within 10 %), not the nominal 1 s and 4 s: a third octave of one noise IR measures a few percent off 2 s, differently per seed (run 44974722618 measured 0.90 s).
 
 ## Phase 4 Wave 2: ducking and level gate
 

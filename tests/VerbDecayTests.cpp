@@ -112,13 +112,17 @@ TEST_CASE ("Verb Decay shortens the low band and lengthens the high band", "[ver
 {
     auto left = noiseIr (4.0, 2.0, 3), right = noiseIr (4.0, 2.0, 4);
     const auto original = left;
-    const auto midBefore = bandRt (original, 1000.0);
+    const auto lowBefore = bandRt (original, 100.0), midBefore = bandRt (original, 1000.0), highBefore = bandRt (original, 10000.0);
 
     const auto readout = reshape (left, right, { 0.5, 1.0, 2.0 });
+    const auto lowAfter = bandRt (left, 100.0), midAfter = bandRt (left, 1000.0), highAfter = bandRt (left, 10000.0);
 
-    CHECK (bandRt (left, 100.0) == Catch::Approx (1.0).margin (0.1));
-    CHECK (bandRt (left, 10000.0) == Catch::Approx (4.0).margin (0.3));
-    CHECK (bandRt (left, 1000.0) == Catch::Approx (midBefore).epsilon (0.05));
+    // Against each band's own RT before: a third octave of one noise IR measures a few percent
+    // off its nominal 2 s, differently for each seed (CI run 44974722618: 0.90 s for a 1.0 s aim).
+    INFO ("low " << lowBefore << " -> " << lowAfter << ", mid " << midBefore << " -> " << midAfter << ", high " << highBefore << " -> " << highAfter);
+    CHECK (lowAfter / lowBefore == Catch::Approx (0.5).margin (0.05));
+    CHECK (highAfter / highBefore == Catch::Approx (2.0).margin (0.2));
+    CHECK (midAfter == Catch::Approx (midBefore).epsilon (0.05));
 
     CHECK (readout.afterSeconds[0] == Catch::Approx (readout.beforeSeconds[0] * 0.5).epsilon (0.1));
     CHECK (readout.afterSeconds[2] > readout.beforeSeconds[2] * 1.6);

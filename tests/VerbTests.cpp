@@ -841,7 +841,8 @@ TEST_CASE ("mono bus and odd block sizes work", "[verb]")
     VerbProcessor processor;
     addReverb (processor);
 
-    REQUIRE (processor.setBusesLayout ({ { juce::AudioChannelSet::mono() }, { juce::AudioChannelSet::mono() } }));
+    // Phase 4 Wave 2 added the optional sidechain bus, left off here.
+    REQUIRE (processor.setBusesLayout ({ { juce::AudioChannelSet::mono(), juce::AudioChannelSet::disabled() }, { juce::AudioChannelSet::mono() } }));
 
     prepareOffline (processor, 44100.0);
 

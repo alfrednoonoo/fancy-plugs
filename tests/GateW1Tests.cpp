@@ -228,9 +228,10 @@ TEST_CASE ("The Detector input choice keeps its indices and adds Mid and Side", 
     GateProcessor processor;
     auto* choice = dynamic_cast<juce::AudioParameterChoice*> (processor.getApvts().getParameter ("detector"));
     REQUIRE (choice != nullptr);
-    CHECK (choice->choices.size() == 8);
+    CHECK (choice->choices.size() == 9); // Phase 4 Wave 2 appended Host sync
     CHECK (choice->choices[6] == "Mid");
     CHECK (choice->choices[7] == "Side");
+    CHECK (choice->choices[8] == "Host sync");
     CHECK (processor.acceptsMidi());
 }
 
