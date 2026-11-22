@@ -280,7 +280,8 @@ features).
 ## Suggested order (within the Phase 4 order above)
 
 **Releases** (user, 22 November 2026): v1.7.0 ships everything up to Wave 2 item 10 (DS dual-band),
-with the Mac build. Wave 2 items 11 to 46 go into **v1.7.1**, and Wave 3 into **v1.7.2**.
+with the Mac build. Wave 2 items 11 to 46 and **Kicker's sidechain Duck** (Phase 4 order, step 2; not built
+yet) go into **v1.7.1**, and Wave 3 into **v1.7.2**.
 
 1. **Wave 1** — every S item above with no new engine: EQ band solo, auto gain and analyzer freeze;
    Comp Hold, Range, delta and GR history; Limit gain lock, auto gain and DC filter; Gate
