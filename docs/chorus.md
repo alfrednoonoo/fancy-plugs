@@ -1,6 +1,6 @@
 # Fancy Chorus: design note
 
-**Draft, for approval.** Phase 4 item 4 (`docs/enhancements.md`), a chorus and modulation plugin. Bundle ID `com.fancyplugs.chorus`. Layout approved as mockup 51 (`reference/phase4/51__chorus_mockup.png`, decisions 1 to 5 of `docs/research/new-plugins-features.md`, all A: a new pink accent, 1 to 6 voices, Scatter later). Modelled first: `docs/research/chorus-model.py`. Ideas only from the plugins surveyed; no names, graphics or sounds.
+**Approved by the user on 22 November 2026: decisions 1 to 4 all A.** Build not started (user: later). Phase 4 item 4 (`docs/enhancements.md`), a chorus and modulation plugin. Bundle ID `com.fancyplugs.chorus`. Layout approved as mockup 51 (`reference/phase4/51__chorus_mockup.png`, decisions 1 to 5 of `docs/research/new-plugins-features.md`, all A: a new pink accent, 1 to 6 voices, Scatter later). Modelled first: `docs/research/chorus-model.py`. Ideas only from the plugins surveyed; no names, graphics or sounds.
 
 ## What it is
 
@@ -71,6 +71,8 @@ Each voice's delay over the last 2 s as a line in the accent at falling opacity,
 Default; Classic chorus; Wide pad (Ensemble, 5 voices); Dimension width (Dimension, Depth 25 %); Vocal double (Doubler); Slow flange (Flange, Feedback +60 %); Vibrato (Classic, Rate 5 Hz, Wet 0, Dry −inf); Lo-fi wobble (Classic, Age 80 %, Rate 0.3 Hz). Categories Mix, Vocals, Instruments, Creative.
 
 ## Decisions
+
+Chosen by the user on 22 November 2026: 1A, 2A, 3A, 4A. Still open, to settle before coding: what Ducking listens to and ducks (proposed: the wet dips while the input is loud, as in Delay), and whether 3A's switch to 2 voices on a mode change should only apply in presets.
 
 - **Decision 1: Feedback polarity.** Mockup 51 drew a polarity dropdown in the drawer as well as a bipolar Feedback knob.
   - **A (R).** The bipolar knob alone (−90 to +90 %); the drawer's slot shows nothing new. One control for one job.
