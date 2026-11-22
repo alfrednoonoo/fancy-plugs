@@ -294,4 +294,4 @@ Mockup 52 approved by the user on 22 November 2026, with yellow (`accentYellow`,
 - One new factory preset, **Vocal, s and sh** (Vocals).
 - Test 4 uses tones and absolute thresholds (-16 dB) so each band's filter skirt stays under the other's threshold; test 7 (Learn) is the editor's and is in the checklist.
 - CPU (§0.4, median of five): run 45064371266 measured Dual band 61 % over DS at its defaults (target under 60 %); Low's displayed reduction now comes from its followers instead of two `log10` a sample, and run 45068210426 (commit `0dae4f9`) measured **58 %** (DS 0.480 %, Dual band 0.760 %, 1.67 x Comp). Green on Windows and Mac. The history's top edge keeps High's green where Low isn't reducing (fixed with the v1.7.0 push).
-- Not yet: the REAPER check (`docs/ds-checklist.md`, Dual band section).
+- REAPER check passed by the user on 22 November 2026.
