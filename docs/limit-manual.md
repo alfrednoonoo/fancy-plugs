@@ -101,3 +101,11 @@ Offline renders and exports sound the same as playback, dither included: its noi
 The preset browser, menus, tooltips, typed values and dialogs work as in the other Fancy plugins (see `docs/gate-manual.md`, "Menus and dialogs" and "Undo, A/B and Compare"). Typed values take their unit or not: `80`, `80 ms` and `0.08 s` all mean 80 ms.
 
 **≈ Compare** is especially useful here: it plays the input at the output's loudness, so you hear what the limiting does without the extra loudness fooling you.
+
+## Clip before limiting (Phase 4)
+
+**EDIT > Clip before limiting** puts a soft clipper in front of the limiter, the usual clip-then-limit mastering chain. It shaves the fastest peaks (kick and snare clicks, a few ms long), so the limiter, which can only turn the whole signal down, has less to do: at the same push you get up to about 1 dB more loudness and gentler limiting, for a little distortion hidden inside the transients.
+
+- **Clip** (0 to 12 dB, 3 by default): how hard it works. Its ceiling sits 12 dB minus Clip over Ceiling, so 12 clips right at Ceiling and 0 almost never touches anything. 2 to 4 dB is the usual range, for dense, drum-heavy material.
+- The curve is linear up to 6 dB under its ceiling, then bends smoothly into it, which gives fewer harsh harmonics than a hard clip. It runs at Limit's oversampled rate, so at 2x and up its harmonics fold back far less.
+- The history shows what the clipper takes in orange over the limiter's red. True peak and the final clip at Ceiling work as before.

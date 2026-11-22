@@ -99,6 +99,10 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (std::make_unique<Choice> (juce::ParameterID { "releaseCurve", 1 }, "Release curve",
                                           juce::StringArray { "Exponential", "Linear" }, 0));
 
+    // Phase 4 Wave 2, appended (docs/limit.md): the clipper before the limiter.
+    layout.add (toggle ("clip", "Clip before limiting", false));
+    layout.add (dbParameter ("clipAmount", "Clip", 0.0f, 12.0f, 3.0f));
+
     return layout;
 }
 
@@ -171,6 +175,8 @@ LimitDsp::Targets LimitProcessor::readTargets() const
     targets.gainLockRefDb = (double) read ("gainLockRef");
     targets.dcFilter = isOn ("dcFilter");
     targets.linearRelease = isOn ("releaseCurve");
+    targets.clip = isOn ("clip");                          // Phase 4 Wave 2
+    targets.clipAmountDb = (double) read ("clipAmount");
 
     return targets;
 }

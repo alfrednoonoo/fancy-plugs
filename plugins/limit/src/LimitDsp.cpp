@@ -113,7 +113,7 @@ void LimitDsp::prepare (double sampleRate)
 
     loudness.prepare (sampleRate);
 
-    for (auto* smoother : { &inputGain, &ceilingGain, &outputGain, &bypassMix })
+    for (auto* smoother : { &inputGain, &ceilingGain, &outputGain, &bypassMix, &clipCeiling })
         smoother->setTime (smoothingMs, sampleRate);
 
     switchGain.setTime (switchFadeMs / 5.0, sampleRate);
@@ -185,6 +185,7 @@ void LimitDsp::snapToTargets (const Targets& targets) noexcept
     outputGain.snapTo (outputTargetFor (targets));
     bypassMix.snapTo (targets.bypass ? 1.0 : 0.0);
     switchGain.snapTo (1.0);
+    clipCeiling.snapTo (dbToGain (12.0 - std::clamp (targets.clipAmountDb, 0.0, 12.0)));
 
     const auto factor = 1 << active.oversampling;
     limiterFor (active).setSettings (limiterSettings (targets, rate * factor, factor, rate));
@@ -273,10 +274,13 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
     ceilingGain.setTarget (dbToGain (settings.ceilingDb) * margin);
     outputGain.setTarget (outputTargetFor (settings));
     bypassMix.setTarget (settings.bypass ? 1.0 : 0.0);
+    clipCeiling.setTarget (dbToGain (12.0 - std::clamp (settings.clipAmountDb, 0.0, 12.0)));
 
     // 1. Into the limiter's scale: the signal pushed up by -Threshold, over the ceiling's gain.
     std::array<double, maxChunk> ceilings {}, inputs {};
     std::array<float, maxChunk> reductions {};
+    std::array<double, maxChunk> clipCeilings {};   // Phase 4 Wave 2
+    std::array<float, maxChunk> clipped {};
     auto* a = scratch[0].data();
     auto* b = scratch[1].data();
 
@@ -322,6 +326,8 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
         a[i] = (float) (l / ceiling);
         b[i] = (float) (r / ceiling);
         reductions[(size_t) i] = 1.0f;
+        clipCeilings[(size_t) i] = clipCeiling.next();
+        clipped[(size_t) i] = 0.0f;
     }
 
     // 2. The limiter, at the oversampled rate. Listen keeps what it takes away instead.
@@ -329,6 +335,20 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
     {
         double x = l, y = r;
         double delayed[2];
+
+        // Phase 4 Wave 2: the soft clipper, at the limiter's rate, before it.
+        if (settings.clip)
+        {
+            const auto clipAt = clipCeilings[(size_t) baseIndex];
+            const auto before = std::max (std::abs (x), std::abs (y));
+            x = softClip (x, clipAt);
+            y = softClip (y, clipAt);
+            const auto after = std::max (std::abs (x), std::abs (y));
+
+            if (before > after && after > 0.0)
+                clipped[(size_t) baseIndex] = std::max (clipped[(size_t) baseIndex], (float) (20.0 * std::log10 (before / after)));
+        }
+
         limiter.process (x, y, 1.0, delayed);
 
         if (settings.listen)
@@ -402,12 +422,14 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
         columnInput = std::max (columnInput, peakDb (inputs[(size_t) i]));
         columnOutput = std::max (columnOutput, peakDb (output));
         columnReduction = std::max (columnReduction, -peakDb (reductions[(size_t) i]));
+        columnClip = std::max (columnClip, clipped[(size_t) i]);
 
         if (++columnFill >= std::max (1, (int) (historySeconds * rate / historyColumns.load (std::memory_order_relaxed))))
         {
-            pushHistory (columnInput, columnOutput, columnReduction);
+            pushHistory (columnInput, columnOutput, columnReduction, columnClip);
             columnInput = columnOutput = -200.0f;
             columnReduction = 0.0f;
+            columnClip = 0.0f;
             columnFill = 0;
         }
     }
@@ -456,10 +478,23 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
 
 }
 
-void LimitDsp::pushHistory (float inputDb, float outputDb, float reductionDb) noexcept
+double LimitDsp::softClip (double x, double ceiling) noexcept
+{
+    const auto knee = ceiling * 0.5011872336272722;   // 6 dB under
+    const auto a = std::abs (x);
+
+    if (a <= knee)
+        return x;
+
+    const auto span = 2.0 * (ceiling - knee);
+    const auto y = a < knee + span ? a - (a - knee) * (a - knee) / (2.0 * span) : ceiling;
+    return x < 0.0 ? -y : y;
+}
+
+void LimitDsp::pushHistory (float inputDb, float outputDb, float reductionDb, float clipDb) noexcept
 {
     const auto write = historyWrite.load (std::memory_order_relaxed);
-    history[(size_t) write] = { inputDb, outputDb, reductionDb };
+    history[(size_t) write] = { inputDb, outputDb, reductionDb, clipDb };
     historyWrite.store ((write + 1) % historyCapacity, std::memory_order_release);
 }
 

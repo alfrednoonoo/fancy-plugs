@@ -41,7 +41,16 @@ public:
         double gainLockRefDb = 0.0;
         bool dcFilter = false;
         bool linearRelease = false;
+
+        // Phase 4 Wave 2 (docs/limit.md): a soft clipper before the limiter, its ceiling
+        // 12 - clipAmountDb above Ceiling. Off, it isn't run.
+        bool clip = false;
+        double clipAmountDb = 3.0;
     };
+
+    // The clip curve, in the limiter's scale: linear to 6 dB under the ceiling, then a knee that
+    // meets the ceiling flat (docs/research/limit-clip-model.py).
+    static double softClip (double x, double ceiling) noexcept;
 
     // Allocates. Blocks of any length are processed in pieces of 256 samples.
     void prepare (double sampleRate);
@@ -69,6 +78,7 @@ public:
     struct HistoryColumn
     {
         float inputDb, outputDb, reductionDb;
+        float clipDb = 0.0f;   // Phase 4 Wave 2: the most the clipper took, in dB
     };
 
     static constexpr double historySeconds = 4.0;
@@ -100,7 +110,7 @@ private:
 
     void processChunk (float* const* channels, int numChannels, int numSamples) noexcept;
     double ditherSample (int channel, double x) noexcept;
-    void pushHistory (float inputDb, float outputDb, float reductionDb) noexcept;
+    void pushHistory (float inputDb, float outputDb, float reductionDb, float clipDb) noexcept;
 
     double rate = 48000.0;
     Targets current;
@@ -122,6 +132,7 @@ private:
     std::array<std::vector<float>, 2> scratch;
 
     fancy::dsp::Smoother inputGain, ceilingGain, outputGain, bypassMix, switchGain;
+    fancy::dsp::Smoother clipCeiling; // Phase 4 Wave 2, in the limiter's scale
     int holdOffSamples = 0;
 
     // Dither: a seeded generator, so renders repeat exactly.
@@ -131,7 +142,7 @@ private:
     // History.
     std::atomic<int> historyColumns { 340 };
     int columnFill = 0;
-    float columnInput = -200.0f, columnOutput = -200.0f, columnReduction = 0.0f;
+    float columnInput = -200.0f, columnOutput = -200.0f, columnReduction = 0.0f, columnClip = 0.0f;
     std::vector<HistoryColumn> history = std::vector<HistoryColumn> ((size_t) historyCapacity);
     std::atomic<int> historyWrite { 0 }, historyRead { 0 };
 

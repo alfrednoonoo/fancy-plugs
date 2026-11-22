@@ -126,5 +126,9 @@ private:
     fancy::ui::ParamDropdown releaseCurveDropdown;
     fancy::ui::ParamCheckbox dcCheckbox;
 
+    // Phase 4 Wave 2 (reference/phase4/49__limit_w2_mockup.png): the clipper.
+    fancy::ui::ParamCheckbox clipCheckbox;
+    fancy::ui::Knob clipKnob;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LimitEditor)
 };

@@ -328,3 +328,12 @@ So clipping trades a little distortion, all inside the transients, for up to abo
 ### 5. Build order
 
 Approval, then the drawer mockup (`reference/phase4/49__limit_w2_mockup.png`), then one push: the clipper in the limiter path, parameters, drawer, the GR history's second colour, tests, manual and checklist.
+
+### 6. As built
+
+Mockup 49 approved by the user on 22 November 2026; `tests/LimitW2Tests.cpp`.
+
+- `clip` and `clipAmount` appended. `LimitDsp::softClip` is the model's curve; it runs inside the limiter lambda at the oversampled rate, on the signal in the limiter's scale, with the clipper's ceiling (12 - Clip dB) smoothed at the base rate. Off, nothing of it runs.
+- `HistoryColumn` gains `clipDb` (the most the clipper took in a column); the display fills it in orange over the red reduction and adds "clipped (orange)" to the legend while the clipper is on or has clipped.
+- The drawer's Clip before limiting checkbox and Clip knob sit beside the DC filter and Release curve rows.
+- Tests 3 and 4 are looser than section 4: the loudness gain is checked between 0.1 and 1.5 dB (the model's 0.2 to 0.8 came from a simplified limiter, not Limit's), and aliasing as 4x at least 20 dB cleaner than Off and under -60 dBFS, because the true-peak guard and final clip run at the base rate after the clipper.

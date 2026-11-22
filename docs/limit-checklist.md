@@ -61,3 +61,11 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] The checks above, once, with the VST3 in Ableton Live.
 - [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
 - [ ] The Audio Unit in Live: automation follows, an export matches playback, and the Set reopens as it was. (Logic too, if someone has it.)
+
+## Clip before limiting (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Limit: it sounds as before, Clip off.
+- [ ] A drum bus pushed 8 dB, Clip before limiting on, Clip 3 dB: louder at the same Ceiling, the limiter's red reduction shallower, the clipped peaks orange in the history and named in the legend.
+- [ ] Clip 0 and 12: barely any orange, then a lot; the Clip knob dims while the checkbox is off.
+- [ ] The output never passes Ceiling (dBTP with True peak) with the clipper on.
+- [ ] Render offline twice: the renders match.

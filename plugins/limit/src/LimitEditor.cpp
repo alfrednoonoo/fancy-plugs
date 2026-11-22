@@ -164,12 +164,14 @@ void LimitEditor::Display::paint (juce::Graphics& g)
     // History: oldest on the left.
     if (! columns.empty())
     {
-        juce::Path input, output, reductionPath;
+        juce::Path input, output, reductionPath, clipPath;
+        auto anyClipped = false;
         const auto bottom = bounds.getBottom();
         const auto count = (int) columns.size();
 
         input.startNewSubPath (0.0f, bottom);
         reductionPath.startNewSubPath (0.0f, 0.0f);
+        clipPath.startNewSubPath (0.0f, 0.0f);
 
         for (int i = 0; i < count; ++i)
         {
@@ -178,6 +180,8 @@ void LimitEditor::Display::paint (juce::Graphics& g)
 
             input.lineTo (x, yForDb (column.inputDb));
             reductionPath.lineTo (x, juce::jlimit (0.0f, bottom, column.reductionDb * ((float) getHeight() - 20.0f) / displayRangeDb));
+            clipPath.lineTo (x, juce::jlimit (0.0f, bottom, column.clipDb * ((float) getHeight() - 20.0f) / displayRangeDb));
+            anyClipped = anyClipped || column.clipDb > 0.0f;
 
             if (i == 0)
                 output.startNewSubPath (x, yForDb (column.outputDb));
@@ -189,6 +193,8 @@ void LimitEditor::Display::paint (juce::Graphics& g)
         input.closeSubPath();
         reductionPath.lineTo (historyWidth, 0.0f);
         reductionPath.closeSubPath();
+        clipPath.lineTo (historyWidth, 0.0f);
+        clipPath.closeSubPath();
 
         g.saveState();
         g.reduceClipRegion (juce::Rectangle<float> (0.0f, 0.0f, historyWidth, bounds.getHeight()).toNearestInt());
@@ -202,6 +208,15 @@ void LimitEditor::Display::paint (juce::Graphics& g)
         g.setColour (limitRed.withAlpha (0.75f));
         g.fillPath (reductionPath);
 
+        // Phase 4 Wave 2: what the clipper took, in orange over the limiter's red.
+        const auto clipping = anyClipped || limitProcessor.readTargets().clip;
+
+        if (anyClipped)
+        {
+            g.setColour (colours::accentOrange);
+            g.fillPath (clipPath);
+        }
+
         // The ceiling, dashed.
         const auto y = yForDb (ceilingDb);
         g.setColour (limitRed);
@@ -211,7 +226,8 @@ void LimitEditor::Display::paint (juce::Graphics& g)
 
         g.setColour (colours::textSecondary);
         g.setFont (font (Weight::regular, 10.0f));
-        g.drawText (juce::String::fromUTF8 ("input (grey) \xc2\xb7 output (white) \xc2\xb7 reduction (red) \xc2\xb7 ceiling"),
+        g.drawText (juce::String::fromUTF8 (clipping ? "input (grey) \xc2\xb7 output (white) \xc2\xb7 reduction (red) \xc2\xb7 clipped (orange) \xc2\xb7 ceiling"
+                                                     : "input (grey) \xc2\xb7 output (white) \xc2\xb7 reduction (red) \xc2\xb7 ceiling"),
                     juce::Rectangle<float> (8.0f, bounds.getBottom() - 22.0f, historyWidth - 16.0f, 16.0f), juce::Justification::centredLeft, false);
 
         g.restoreState();
@@ -391,7 +407,9 @@ LimitEditor::LimitEditor (LimitProcessor& processor)
       ditherDropdown (parameter ("dither")),
       ballisticsDropdown (parameter ("ballistics")),
       releaseCurveDropdown (parameter ("releaseCurve")),
-      dcCheckbox (parameter ("dcFilter"), "5 Hz high-pass", limitRed)
+      dcCheckbox (parameter ("dcFilter"), "5 Hz high-pass", limitRed),
+      clipCheckbox (parameter ("clip"), "Clip before limiting", limitRed),
+      clipKnob (parameter ("clipAmount"), "Clip", limitRed, Knob::tightStyle)
 {
     auto& body = getBody();
 
@@ -543,6 +561,15 @@ LimitEditor::LimitEditor (LimitProcessor& processor)
     releaseCurveDropdown.setTooltip ("Exponential recovers fast and then gently. Linear recovers at a constant rate in dB.");
     dcCheckbox.setTooltip ("Removes DC offset before the limiter, so it can't use up headroom.");
     resetButton.onClick = [&processor] { processor.resetLoudness(); };
+
+    // Phase 4 Wave 2: Clip before limiting, beside the DC filter and Release curve rows.
+    clipCheckbox.setBounds (400, 300, 160, 24);
+    clipKnob.setBounds (556, 258, 76, 92);
+    clipCheckbox.setTooltip ("A soft clipper before the limiter: it shaves the fastest peaks, so the limiter has less to do. "
+                             "For dense, drum-heavy material.");
+    clipKnob.setTooltip ("How hard the clipper works: its ceiling sits this much under Ceiling + 12 dB. 2 to 4 dB is the usual range.");
+    drawer.addAndMakeVisible (clipCheckbox);
+    drawer.addAndMakeVisible (clipKnob);
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
