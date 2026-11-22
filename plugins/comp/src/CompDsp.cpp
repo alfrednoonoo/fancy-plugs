@@ -367,6 +367,7 @@ void CompDsp::resetCore()
     {
         state.detector.reset();
         state.follower.reset();
+        state.optical.reset();
         state.previousOutput = 0.0;
         std::fill (state.dryDelay.begin(), state.dryDelay.end(), 0.0f);
         std::fill (state.preCompDelay.begin(), state.preCompDelay.end(), 0.0f);
@@ -404,6 +405,9 @@ void CompDsp::updateBallistics() noexcept
     upBallistics = ballistics;
     upBallistics.hold = 0;
     ballistics.setHold (current.holdMs, internalRate);
+
+    // Phase 4 Wave 2: Optical's times, copied into each channel's follower as it runs.
+    opticalTimes.set (current.attackMs, current.releaseMs, current.attack90, current.holdMs, internalRate);
 }
 
 void CompDsp::setTargets (const Targets& targets)
@@ -718,7 +722,7 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
 
             double reduction;
 
-            if (current.classic)
+            if (current.classic && ! current.optical)
             {
                 // The smoothed level feeds the gain computer. Levels are measured from the
                 // bottom of the knee, because smoothing in dB from silence would add a long
@@ -738,7 +742,28 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
                 if (rangeOn)
                     target = std::min (target, rangeDbNow);
 
-                reduction = state.follower.follow (ballistics, target);
+                if (current.optical)
+                {
+                    // Phase 4 Wave 2: Optical's own attack, two-stage release and memory.
+                    auto& optical = state.optical;
+                    optical.attackSamples = opticalTimes.attackSamples;
+                    optical.releaseSamples = opticalTimes.releaseSamples;
+                    optical.fastRelease = opticalTimes.fastRelease;
+                    optical.charge = opticalTimes.charge;
+                    optical.drain = opticalTimes.drain;
+                    optical.hold = opticalTimes.hold;
+                    reduction = optical.follow (target);
+
+                    // So switching Optical off carries on from here, without a jump.
+                    state.follower.envelope = reduction;
+                }
+                else
+                {
+                    reduction = state.follower.follow (ballistics, target);
+
+                    // And switching it on (only Optical's own state; the output is untouched).
+                    state.optical.fast = state.optical.slow = 0.5 * reduction;
+                }
             }
 
             peakReduction[ch] = std::max (peakReduction[ch], reduction);

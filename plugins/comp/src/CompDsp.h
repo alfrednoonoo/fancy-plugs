@@ -65,6 +65,7 @@ public:
         bool autoRelease = false;
         bool linearRelease = false;
         bool attack90 = false;
+        bool optical = false;   // Phase 4 Wave 2: the optical follower, in place of the default and Classic
         bool minimumPhase = false;
         bool linkChannels = true;
         bool feedback = false;
@@ -186,6 +187,7 @@ private:
         fancy::dsp::DetectorFilter detector;
         std::vector<float> dryDelay, preCompDelay;
         fancy::dsp::EnvelopeFollower follower, upFollower;
+        fancy::dsp::OpticalFollower optical; // Phase 4 Wave 2
         double previousOutput = 0.0;
         CharacterStage character;
         std::array<EqState, numEqBands> eq {};
@@ -235,6 +237,7 @@ private:
     int preCompPosition = 0, dryPosition = 0;
 
     fancy::dsp::Ballistics ballistics;
+    fancy::dsp::OpticalFollower opticalTimes; // Phase 4 Wave 2: its times (each channel keeps its own state)
     fancy::dsp::Ballistics upBallistics; // the lift's: the same times without Hold
     double rmsCoefficient = 1.0;
     double maxDetectorCoefficient = 1.0;

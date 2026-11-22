@@ -185,3 +185,14 @@ The header has, between the I/O pill and the output knob:
 ## Credits
 
 UI design based on "ReaPlugs (vst GUI)" by Eugene Reznik, CC BY 4.0 — https://www.figma.com/community/file/967866927752067729. Modified from the original.
+
+## Optical (Phase 4)
+
+**EDIT > Options > Optical** gives Comp the ballistics of an optical cell, in place of its usual follower and Classic:
+
+- **Attack follows the overshoot:** the further over the threshold, the faster it closes. Attack is the time at about 12 dB over; a gentle 3 dB over takes about twice as long, so peaks are caught quickly and gentle overs gently.
+- **Two-stage release:** half the reduction lets go at a tenth of Release, the rest at Release.
+- **Memory:** after long, heavy compression (more than 3 dB for seconds) the slow stage recovers up to four times more slowly, as a cell does, and the effect fades over a few seconds.
+
+While it's on, Classic and Auto release dim and don't apply. Weird knee, Hold and Range still work.
+

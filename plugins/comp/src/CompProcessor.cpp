@@ -184,6 +184,9 @@ fancy::FancyProcessor::Layout createLayout()
                                            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
                                            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
+    // Phase 4 Wave 2, appended (docs/comp.md): Optical mode.
+    layout.add (toggle ("optical", "Optical", false));
+
     return layout;
 }
 
@@ -265,6 +268,7 @@ CompDsp::Targets CompProcessor::readTargets()
     targets.autoRelease = isOn ("auto");
     targets.linearRelease = isOn ("releaseCurve");
     targets.attack90 = isOn ("attack90");
+    targets.optical = isOn ("optical"); // Phase 4 Wave 2
     targets.minimumPhase = isOn ("osPhase");
     targets.linkChannels = isOn ("link");
     targets.feedback = isOn ("feedback");

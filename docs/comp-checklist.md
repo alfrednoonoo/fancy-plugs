@@ -136,3 +136,13 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] The checks above, once, with the VST3 in Ableton Live.
 - [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
 - [ ] The Audio Unit in Live: automation follows, an export matches playback, and the Set reopens as it was. (Logic too, if someone has it.)
+
+## Optical (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Comp: it sounds as before, Optical off.
+- [ ] EDIT > Options > Optical on a vocal, Ratio 4, about 6 dB of reduction: smoother, slower-breathing compression than with it off at the same knobs; Classic and Auto dim on the main window.
+- [ ] Drum loop, heavy reduction for 10 s, then a quiet passage: the gain comes back noticeably more slowly than after a short burst.
+- [ ] Hold and Range still change the sound with Optical on; Classic and Auto don't.
+- [ ] With Host sync chosen, the Host sync group sits under the Optical checkbox without overlapping it.
+- [ ] Render offline twice: the renders match.
+

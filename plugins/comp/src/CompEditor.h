@@ -60,7 +60,8 @@ private:
     fancy::ui::EditDrawer drawer;
     juce::Label oversamplingLabel, phaseLabel, releaseCurveLabel;
     fancy::ui::ParamDropdown oversamplingDropdown, phaseDropdown, releaseCurveDropdown;
-    fancy::ui::ParamCheckbox feedbackCheckbox, attack90Checkbox;
+    fancy::ui::ParamCheckbox feedbackCheckbox, attack90Checkbox, opticalCheckbox; // Optical: Phase 4 Wave 2
+    juce::Label opticalNote;
     fancy::ui::Knob linkAmountKnob, drawerOutputKnob;
 
     // Phase 3 Q2.5: the drawer's tabs.

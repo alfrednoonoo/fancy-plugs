@@ -72,6 +72,7 @@ CompEditor::CompEditor (CompProcessor& processor)
       releaseCurveDropdown (parameter ("releaseCurve")),
       feedbackCheckbox (parameter ("feedback"), "Feedback detection"),
       attack90Checkbox (parameter ("attack90"), "Attack = 90 % rise"),
+      opticalCheckbox (parameter ("optical"), "Optical"),
       linkAmountKnob (parameter ("linkAmount"), "Link amount", colours::uiTeal, Knob::smallStyle),
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
       detectorCurve (makeParameters()),
@@ -172,6 +173,20 @@ CompEditor::CompEditor (CompProcessor& processor)
     releaseCurveDropdown.setBounds (160, 132, 110, 24);
     feedbackCheckbox.setBounds (24, 180, 200, 20);
     attack90Checkbox.setBounds (24, 212, 200, 20);
+
+    // Phase 4 Wave 2 (reference/phase4/46__comp_w2_optical_mockup.png): Optical, under Attack = 90 %.
+    // Its note shows while Host sync's group (below it) doesn't.
+    opticalCheckbox.setBounds (24, 244, 200, 20);
+    opticalCheckbox.setTooltip ("An optical cell's ballistics: attack slows as it closes in, release has a fast and a slow stage, "
+                                "and a long squash recovers slowly. Attack is the time at about 12 dB over. Classic and Auto release don't apply.");
+    opticalNote.setText ("Attack slows as it closes in, release has a fast and a slow stage, and a long squash recovers slowly. "
+                         "Classic and Auto release don't apply while it's on.", juce::dontSendNotification);
+    opticalNote.setFont (font (Weight::regular, 11.0f));
+    opticalNote.setColour (juce::Label::textColourId, colours::textSecondary);
+    opticalNote.setJustificationType (juce::Justification::topLeft);
+    opticalNote.setBorderSize ({});
+    opticalNote.setBounds (46, 268, 236, 64);
+    drawer.addChildComponent (opticalNote);
     linkAmountKnob.setBounds (306, 60, 90, 99);
     drawerOutputKnob.setBounds (412, 60, 90, 99);
 
@@ -268,11 +283,12 @@ CompEditor::CompEditor (CompProcessor& processor)
     setUpLabel (syncRateLabel, "Rate", 14.0f, colours::textPrimary);
     setUpLabel (syncNote, {}, 11.0f, colours::textSecondary);
     syncRateLabel.setJustificationType (juce::Justification::centredLeft);
-    syncCaption.setBounds (28, 237, 120, 12);
-    syncRateLabel.setBounds (28, 257, 40, 24);
-    syncRateDropdown.setBounds (72, 257, 100, 24);
-    syncShapeKnob.setBounds (196, 237, 60, 66);
-    syncNote.setBounds (28, 289, 170, 44);
+    // Moved down 37 px in Phase 4 Wave 2 for the Optical checkbox above it.
+    syncCaption.setBounds (28, 274, 120, 12);
+    syncRateLabel.setBounds (28, 294, 40, 24);
+    syncRateDropdown.setBounds (72, 294, 100, 24);
+    syncShapeKnob.setBounds (196, 274, 60, 66);
+    syncNote.setBounds (28, 326, 170, 44);
     syncRateDropdown.setTooltip ("The grid Host sync hits on: a virtual kick on every step at the host's tempo.");
     syncShapeKnob.setTooltip ("How long each virtual kick lasts, as a share of the step. Release shapes the duck most; Shape matters with short Releases.");
 
@@ -280,7 +296,7 @@ CompEditor::CompEditor (CompProcessor& processor)
         drawer.addChildComponent (item);
 
     tabContents[DrawerTabs::options] = { &oversamplingLabel, &oversamplingDropdown, &phaseLabel, &phaseDropdown, &releaseCurveLabel, &releaseCurveDropdown,
-                                         &feedbackCheckbox, &attack90Checkbox, &linkAmountKnob, &drawerOutputKnob, &holdKnob, &rangeKnob };
+                                         &feedbackCheckbox, &attack90Checkbox, &opticalCheckbox, &linkAmountKnob, &drawerOutputKnob, &holdKnob, &rangeKnob };
 
     // History page.
     zoomSwitch.setBounds (24, 56, 200, 24);
@@ -365,6 +381,9 @@ void CompEditor::updateSyncGroup()
     for (juce::Component* item : std::initializer_list<juce::Component*> { &syncCaption, &syncRateLabel, &syncRateDropdown, &syncShapeKnob, &syncNote })
         item->setVisible (shown);
 
+    // Phase 4 Wave 2: Optical's note where Host sync's group would be.
+    opticalNote.setVisible (! sync && shownTab == DrawerTabs::options);
+
     if (shown)
     {
         const auto hostTempo = dynamic_cast<CompProcessor&> (getFancyProcessor()).syncHasHostTempo();
@@ -408,6 +427,14 @@ void CompEditor::onTick (float seconds)
     auto& processor = dynamic_cast<CompProcessor&> (getFancyProcessor());
 
     updateSyncGroup(); // Phase 4 Wave 2
+
+    // Phase 4 Wave 2: Optical has its own release, so Classic and Auto dim while it's on.
+    {
+        const auto optical = parameter ("optical").getValue() >= 0.5f;
+
+        for (juce::Component* item : std::initializer_list<juce::Component*> { &classicCheckbox, &autoCheckbox })
+            item->setAlpha (optical ? 0.4f : 1.0f);
+    }
 
     const auto left = processor.takeGainReduction (0);
     const auto right = processor.takeGainReduction (1);

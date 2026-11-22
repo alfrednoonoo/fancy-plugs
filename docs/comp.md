@@ -484,3 +484,10 @@ So peaks are caught faster and gentle overs more gently, and a long squash recov
 ### 5. Build order
 
 Approval, then the Options page mockup (`reference/phase4/46__comp_w2_optical_mockup.png`), then one push: the follower in `fancy-core`, Comp's `optical`, tests, manual and checklist.
+
+### 6. As built
+
+Mockup 46 approved by the user on 22 November 2026; `tests/CompOpticalTests.cpp`.
+
+- `fancy::dsp::OpticalFollower` (`Compression.h`) is the model's follower, with Attack = 90 % rise and Hold as the default follower has them. Comp keeps one per channel; with `optical` (appended, off) the non-Classic branch uses it and Classic is skipped. Each follower's state tracks the other's reduction, so switching Optical on or off doesn't jump.
+- The Options page's Optical checkbox sits under Attack = 90 % rise, with its note below while Host sync isn't the Detector input. Host sync's group (mockup 43) moved down 37 px to make room. Classic and Auto dim on the main window while Optical is on.
