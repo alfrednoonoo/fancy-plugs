@@ -70,6 +70,7 @@ void SatureDsp::prepare (double newSampleRate)
     sampleRate = newSampleRate;
 
     oversampling.prepare (sampleRate, maxChunk, 4, true); // copies 2 and 3: the outer bands
+    prepared = true;
     matchedBuffer.setSize (2, maxChunk);
     midBuffer.setSize (2, maxChunk);
 
@@ -138,7 +139,7 @@ void SatureDsp::resetOuter (int band)
         state.addedDelay.fill (0.0);
     }
 
-    if (oversampling.getFactor() != off)
+    if (prepared && oversampling.getFactor() != off)
         oversampling.get (2 + band).reset();
 }
 

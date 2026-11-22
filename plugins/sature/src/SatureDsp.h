@@ -133,6 +133,7 @@ private:
     std::array<std::array<double, maxChunk>, 2> outerDrive {}, outerGain {}, outerTape {};
     std::array<bool, 2> outerWanted { false, false }, outerRunning { false, false };
     double lastT = 1.0, lastCharacter = 0.0, lastTone = 0.0, lastAuto = 1.0;
+    bool prepared = false;   // the oversamplers exist (setTargets can come before prepare)
 
     std::array<fancy::dsp::SvfCoefficients, numSections> lowCoefficients, highCoefficients;
     std::array<double, numSections> sectionQ {};
