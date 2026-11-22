@@ -261,13 +261,13 @@ FIRST_STEPS = r"""
 
 A plugin is an effect that runs inside your recording software, which is called a **host** or **DAW** (digital audio workstation): REAPER, Logic Pro, Ableton Live, Cubase and so on. You put a plugin on a track, the track's sound goes through it, and you hear the result. Nothing is changed permanently: switch the plugin off and the track sounds as it did.
 
-Fancy Plugs is a set of fourteen plugins that share one design, so once you know one, the others feel familiar.
+Fancy Plugs is a set of sixteen plugins that share one design, so once you know one, the others feel familiar.
 
 ## Installing
 
-**Windows.** Download `FancyPlugs-<version>-win64.zip` from the release page, close your DAW, unzip it, and run `install.ps1` (right-click, *Run with PowerShell*). It copies the plugins to `%USERPROFILE%\VST3-Dev` and needs no administrator rights. In REAPER, add that folder once under *Options > Preferences > Plug-ins > VST*, then click *Re-scan*.
+**Windows.** Download `FancyPlugs-<version>-win64.zip` from the release page, close your DAW and unzip it. Drag the `.vst3` folders from its `VST3` folder into `C:\Program Files\Common Files\VST3`, the folder every Windows DAW looks in; Windows asks once for administrator approval. Then rescan your plugins (in REAPER, *Options > Preferences > Plug-ins > VST > Re-scan*).
 
-**Mac** (Intel and Apple silicon, macOS 11 or later). Unzip the Mac download, open Terminal in the unzipped folder and run `./install.sh`. It installs the VST3s to `~/Library/Audio/Plug-Ins/VST3` and the Audio Units to `~/Library/Audio/Plug-Ins/Components`, and clears the quarantine flag macOS puts on downloaded files, which would otherwise stop them loading. Use the VST3s in REAPER, Live, Cubase, Bitwig and Studio One, and the Audio Units in Logic Pro and GarageBand.
+**Mac** (Intel and Apple silicon, macOS 11 or later). Unzip `FancyPlugs-<version>-macos.zip` and double-click `Install Fancy Plugs.command`. The first time, macOS blocks it because the plugins aren't signed with an Apple Developer ID: click *Open Anyway* in *System Settings > Privacy & Security* and confirm. It installs the VST3s to `~/Library/Audio/Plug-Ins/VST3` and the Audio Units to `~/Library/Audio/Plug-Ins/Components`, and clears the flag macOS puts on downloaded files, which would otherwise stop them loading. Use the VST3s in REAPER, Live, Cubase, Bitwig and Studio One, and the Audio Units in Logic Pro and GarageBand.
 
 ## Putting a plugin on a track
 

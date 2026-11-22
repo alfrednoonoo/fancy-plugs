@@ -132,11 +132,13 @@ section { padding-top: var(--s7); }
 .tiles.five { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .tiles.five .wide { grid-column: span 2; grid-row: span 2; }
 .tiles.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tiles.seven { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tiles.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .tile { display: block; text-decoration: none; }
 .tile .stage { height: 190px; padding: var(--s3); border: 1px solid transparent; transition: border-color var(--t-quick), transform var(--t-move) var(--ease-out); }
 .tile .stage img { max-height: 100%; width: auto; }
 .tiles.five .wide .stage { height: calc(380px + var(--s4) + 74px); }
-.tiles.three .stage { height: 250px; }
+.tiles.three .stage, .tiles.four .stage { height: 250px; }
 a.tile:hover .stage { border-color: var(--line); transform: translateY(-4px); }
 .tile h3 { margin-top: var(--s3); display: flex; align-items: center; gap: 8px; }
 .tile h3 i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--c); border-bottom-color: transparent; flex: none; }
@@ -277,7 +279,7 @@ dialog.sheet[open] { animation: sheet var(--t-move) var(--ease-out); }
   .hero h1 { font-size: 44px; }
   .group-head { gap: var(--s2); }
   .hero figure { min-height: 0; }
-  .tiles.six, .tiles.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tiles.six, .tiles.three, .tiles.seven, .tiles.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tiles.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tiles.five .wide { grid-row: auto; }
   .tiles.five .wide .stage { height: 260px; }
@@ -300,9 +302,9 @@ dialog.sheet[open] { animation: sheet var(--t-move) var(--ease-out); }
   .page-head h1 { font-size: 32px; }
   .lede { font-size: 16px; }
   h2 { font-size: 22px; }
-  .tiles.six, .tiles.three, .tiles.five, .shared-list { grid-template-columns: minmax(0, 1fr); }
+  .tiles.six, .tiles.three, .tiles.five, .tiles.seven, .tiles.four, .shared-list { grid-template-columns: minmax(0, 1fr); }
   .tiles.five .wide { grid-column: auto; }
-  .tile .stage, .tiles.three .stage, .tiles.five .wide .stage { height: 200px; }
+  .tile .stage, .tiles.three .stage, .tiles.four .stage, .tiles.five .wide .stage { height: 200px; }
   .stage { padding: var(--s3); }
   .row-plugin .stage { min-height: 0; }
   .explorer { padding: var(--s3); margin-left: -8px; margin-right: -8px; }

@@ -11,9 +11,10 @@
         "gate",
         "limit",
         "ds",
-        "ds-mini"
+        "ds-mini",
+        "ts"
       ],
-      "shape": "six",
+      "shape": "seven",
       "which": [
         [
           "Even out a vocal, bass or drum bus",
@@ -44,6 +45,11 @@
           "Soften “s” sounds, quickly",
           "ds-mini",
           "One Amount knob on the same engine."
+        ],
+        [
+          "Shape the attack and ring of drums",
+          "ts",
+          "It turns each hit’s start and tail up or down, the same on quiet hits as on loud ones."
         ]
       ]
     },
@@ -94,9 +100,10 @@
       "plugins": [
         "delay",
         "verb",
-        "room"
+        "room",
+        "chorus"
       ],
-      "shape": "three",
+      "shape": "four",
       "which": [
         [
           "Add echoes in time with the song",
@@ -112,6 +119,11 @@
           "Add a room or hall you can shape",
           "room",
           "Size, decay and damping move freely, and the tail can freeze."
+        ],
+        [
+          "Add width and shimmer",
+          "chorus",
+          "Copies of the sound, gently moving in pitch and spread across the stereo field."
         ]
       ]
     }
@@ -1450,6 +1462,169 @@
         [
           "comp",
           "Compress the vocal, then de-ess what the compression brings up."
+        ]
+      ]
+    },
+    "ts": {
+      "name": "TS",
+      "kind": "Transient shaper",
+      "accent": "#E77E23",
+      "line": "More or less snap and ring on every hit.",
+      "lede": "A transient shaper: it turns the start of each hit up or down (Attack) and the ring after it (Sustain), the same on quiet hits as on loud ones. Use it to make drums snap or sit back, tighten a loop, tame a room or bring out a pluck.",
+      "hub": [
+        "For drums, loops and plucked instruments.",
+        [
+          "Add snap to a snare",
+          "Shorten a boomy room",
+          "Shape from a sidechain"
+        ]
+      ],
+      "views": [
+        {
+          "id": "main",
+          "label": "Main view",
+          "image": "ts",
+          "alt": "Fancy TS’s main view",
+          "points": [
+            [
+              36.6,
+              20.6,
+              "Contour",
+              "The shape of Sustain’s work after each hit: Sharp, Medium or Smooth."
+            ],
+            [
+              82.2,
+              20.6,
+              "Detector",
+              "What finds the hits: this track, the sidechain, or its mid or side."
+            ],
+            [
+              43.4,
+              41.3,
+              "History",
+              "The input, the output and the gain over the last 3 s, with each hit marked."
+            ],
+            [
+              12.5,
+              62.2,
+              "Attack and Speed",
+              "Turn the start of each hit up or down, and set how long the start counts."
+            ],
+            [
+              38.2,
+              62.2,
+              "Sustain, Length and Pump",
+              "Turn the ring after each hit up or down, set how long, and add a pumping dip."
+            ],
+            [
+              72.1,
+              62.2,
+              "Sensitivity and Highpass",
+              "How small a jump counts as a hit, and keep low notes from triggering it."
+            ],
+            [
+              32.1,
+              95.7,
+              "Footer",
+              "Clip output, Link channels, and Listen to change, which plays only what’s changed."
+            ],
+            [
+              95.1,
+              54.4,
+              "Wet and Dry",
+              "Blend the shaped signal with the original, for parallel shaping."
+            ]
+          ]
+        },
+        {
+          "id": "edit",
+          "label": "EDIT drawer",
+          "image": "ts-edit",
+          "alt": "Fancy TS’s EDIT drawer",
+          "points": [
+            [
+              32.2,
+              39.8,
+              "Lookahead",
+              "Catch a hit’s very first sample. Adds 1, 2 or 5 ms of latency."
+            ],
+            [
+              32.2,
+              48.4,
+              "Oversampling",
+              "Runs Clip output at a higher rate, so it doesn’t alias."
+            ],
+            [
+              32.2,
+              57.0,
+              "Channels",
+              "Shape both channels, or only the mid or the side."
+            ],
+            [
+              68.2,
+              55.7,
+              "Lowpass, Dead band and Output",
+              "Keep highs out of the detector, leave tiny changes alone, and set the output level."
+            ]
+          ]
+        }
+      ],
+      "lead": {
+        "title": "See every hit it shapes.",
+        "text": "The display draws the input, the output and the gain Fancy TS applies over the last 3 s, with a dot on each hit it finds, so you can watch Attack and Sustain at work.",
+        "image": "ts",
+        "box": [
+          0,
+          24.3,
+          86,
+          58.3
+        ],
+        "alt": "Fancy TS’s history display"
+      },
+      "can": [
+        [
+          "The same at any level",
+          "A quiet hit and a loud one are shaped alike."
+        ],
+        [
+          "Attack and Speed",
+          "Turn each hit’s start up or down, short for clicks, longer for plucks."
+        ],
+        [
+          "Sustain and Length",
+          "Lengthen or shorten the ring, without lifting the noise between hits."
+        ],
+        [
+          "Pump",
+          "Dip the level just after each attack, for a breathing feel."
+        ],
+        [
+          "Sidechain detector",
+          "Let another track decide where the hits are."
+        ],
+        [
+          "Clip output",
+          "A soft clipper, so raised attacks round off instead of clipping."
+        ]
+      ],
+      "details": [
+        [
+          "Latency",
+          "None by default. Lookahead adds 1, 2 or 5 ms, and Clip output with Oversampling adds a little."
+        ]
+      ],
+      "window": [
+        760,
+        465
+      ],
+      "pairs": [
+        [
+          "comp",
+          "Even out the level after shaping."
+        ],
+        [
+          "gate",
+          "Cut the noise between hits."
         ]
       ]
     },
@@ -3406,6 +3581,163 @@
         [
           "delay",
           "Echoes before the room."
+        ]
+      ]
+    },
+    "chorus": {
+      "name": "Chorus",
+      "kind": "Chorus",
+      "accent": "#E0559A",
+      "line": "Width, shimmer and a second take.",
+      "lede": "A chorus: copies of the sound, each slightly delayed and slowly moving in pitch, spread across the stereo field. Five modes cover the classic uses, from a shimmering ensemble to a doubled vocal and a flanger’s jet sweep.",
+      "hub": [
+        "For guitars, pads, synths and vocals.",
+        [
+          "Widen a guitar or pad",
+          "Double a vocal",
+          "Sweep a flanger in time"
+        ]
+      ],
+      "views": [
+        {
+          "id": "main",
+          "label": "Main view",
+          "image": "chorus",
+          "alt": "Fancy Chorus’s main view",
+          "points": [
+            [
+              50.7,
+              20.6,
+              "Mode",
+              "Classic, Ensemble, Dimension, Doubler or Flange."
+            ],
+            [
+              43.4,
+              41.3,
+              "Voice display",
+              "Each voice’s delay over the last 2 s, and where each one sits between left and right."
+            ],
+            [
+              13.8,
+              62.2,
+              "Rate, Depth, Delay and Feedback",
+              "How fast and how far the voices move, how far behind they sit, and how much they feed back."
+            ],
+            [
+              43.4,
+              62.2,
+              "Voices, Spread and Width",
+              "How many voices, how their motion is staggered, and how widely they’re spread."
+            ],
+            [
+              67.1,
+              62.2,
+              "Low cut, High cut and Age",
+              "Filter the chorus, and give it an old analogue chorus’s character."
+            ],
+            [
+              35.3,
+              95.7,
+              "Footer",
+              "Tempo sync, Keep bass mono, and Listen to wet, which plays the voices alone."
+            ],
+            [
+              95.1,
+              54.4,
+              "Wet and Dry",
+              "Balance the chorus against the original."
+            ]
+          ]
+        },
+        {
+          "id": "edit",
+          "label": "EDIT drawer",
+          "image": "chorus-edit",
+          "alt": "Fancy Chorus’s EDIT drawer",
+          "points": [
+            [
+              32.2,
+              39.8,
+              "LFO shape",
+              "Sine, Triangle or Smooth random."
+            ],
+            [
+              32.2,
+              48.4,
+              "Input",
+              "Keep the input’s stereo, or sum it to mono first."
+            ],
+            [
+              57.6,
+              47.1,
+              "LFO phase",
+              "How far the right channel’s motion is behind the left’s."
+            ],
+            [
+              68.2,
+              47.1,
+              "Ducking",
+              "Turn the chorus down while the input is loud."
+            ]
+          ]
+        }
+      ],
+      "lead": {
+        "title": "See each voice move.",
+        "text": "The display draws each voice’s delay over the last 2 s and where each one sits between left and right, so Rate, Depth, Voices, Spread and Width read as a picture.",
+        "image": "chorus",
+        "box": [
+          0,
+          24.3,
+          86,
+          58.3
+        ],
+        "alt": "Fancy Chorus’s voice display"
+      },
+      "can": [
+        [
+          "Five modes",
+          "Classic, Ensemble, Dimension, Doubler and Flange."
+        ],
+        [
+          "1 to 6 voices",
+          "Spread across the stereo field by Width."
+        ],
+        [
+          "Tempo sync",
+          "Lock the motion to the host’s tempo and position."
+        ],
+        [
+          "Keep bass mono",
+          "Keep the chorus’s lows in the centre."
+        ],
+        [
+          "Age",
+          "An old bucket-brigade chorus’s darker, slightly saturated sound."
+        ],
+        [
+          "Ducking",
+          "Turn the chorus down while the input is loud."
+        ]
+      ],
+      "details": [
+        [
+          "Latency",
+          "None."
+        ]
+      ],
+      "window": [
+        760,
+        465
+      ],
+      "pairs": [
+        [
+          "delay",
+          "Echoes with their own motion."
+        ],
+        [
+          "room",
+          "A room around the widened sound."
         ]
       ]
     }

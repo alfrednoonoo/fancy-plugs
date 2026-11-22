@@ -348,11 +348,11 @@ def band():
     return f'''<div class="wrap"><div class="band">
   <div>
     <h2>Download Fancy Plugs {E(REL["version"])}</h2>
-    <p>All fourteen plugins in one zip, free to download and use. VST3 for Windows 10 and 11 (x64). On a Mac: VST3 and Audio Unit for macOS 11 or later, Intel and Apple silicon, as a beta. The installer copies them to your own folders and needs no administrator password.</p>
+    <p>All sixteen plugins, free to download and use. VST3 for Windows 10 and 11 (x64); VST3 and Audio Unit for macOS 11 or later, Intel and Apple silicon.</p>
   </div>
   <div class="actions">
     <a class="btn btn-main" href="{w["url"]}">Windows <small>{E(REL["version"])} · {w["size_mb"]} MB zip</small></a>
-    <a class="btn btn-2" href="{R}download/#mac">Mac <span class="tag">Beta</span></a>
+    <a class="btn btn-2" href="{m["url"]}">Mac <small>{E(REL["version"])} · {m["size_mb"]} MB zip</small></a>
   </div>
 </div></div>'''
 
@@ -426,8 +426,8 @@ def home():
   <div class="hero">
     <div>
       <h1>Free effects for the whole mix: dynamics, tone and space.</h1>
-      <p class="lede">Fourteen plugins for Windows and Mac that all work the same way. Learn one window and you know them all.</p>
-      <div class="actions"><a class="btn btn-main" href="{R}download/">Download {E(REL["version"])}</a><a class="link" href="#plugins">See all fourteen</a></div>
+      <p class="lede">Sixteen plugins for Windows and Mac that all work the same way. Learn one window and you know them all.</p>
+      <div class="actions"><a class="btn btn-main" href="{R}download/">Download {E(REL["version"])}</a><a class="link" href="#plugins">See all sixteen</a></div>
     </div>
     <figure>
       <span class="hero-shot">{img("comp", "Fancy Comp, compressor", "(max-width: 1040px) 100vw, 620px", cls="window", lazy=False)}{demo("comp") or '<video class="demo" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>'}</span>
@@ -441,7 +441,7 @@ def home():
 {groups}</div>
 
 <section class="wrap shared">
-  <h2><a href="{R}guide/#the-window">One window, fourteen times</a></h2>
+  <h2><a href="{R}guide/#the-window">One window, sixteen times</a></h2>
   <p class="lede">Every plugin opens with the same strip and header, so what you learn in one works in the rest.</p>
   <div class="spots">
     {img("header", "The header of Fancy Comp: preset name, New, Parameter, input and output count, undo, redo, A and B, Compare, the output knob and the ON switch", "(max-width: 1168px) 100vw, 1120px", cls="window", extra=' style="width: 100%"')}
@@ -612,11 +612,11 @@ def plugin_page(slug, manual_pages):
 
 def download():
     w, m = REL["windows"], REL["mac"]
-    xattr = "xattr -dr com.apple.quarantine "
+    xattr = "xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Fancy*.vst3 ~/Library/Audio/Plug-Ins/Components/Fancy*.component"
     return f'''<div class="wrap">
   <div class="page-head"><div>
     <h1>Download</h1>
-    <p class="lede">All fourteen plugins in one zip, free to download and use. Each install copies them to your own folders, so it needs no administrator password.</p>
+    <p class="lede">All sixteen plugins, free to download and use, in one zip for Windows and one for Mac. Each zip has a <code>How to install.txt</code>.</p>
   </div></div>
   <div class="dl">
     <div id="windows">
@@ -627,26 +627,27 @@ def download():
         <p>VST3 for Windows 10 and 11 (x64).</p>
         <ol>
           <li>Close your DAW, and unzip the download.</li>
-          <li>Right-click <code>install.ps1</code> and choose <em>Run with PowerShell</em>. It copies the plugins to <code>%USERPROFILE%\\VST3-Dev</code>.</li>
-          <li>In REAPER, add that folder once under <em>Options &gt; Preferences &gt; Plug-ins &gt; VST</em>, then click <em>Re-scan</em>. Other hosts have a similar list of plug-in folders.</li>
+          <li>Drag the <code>.vst3</code> folders from its <code>VST3</code> folder into <code>C:\\Program Files\\Common Files\\VST3</code>, the folder every Windows DAW looks in. Windows asks once for administrator approval: click <em>Continue</em>.</li>
+          <li>Open your DAW and rescan its plugins (REAPER: <em>Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; Re-scan</em>).</li>
         </ol>
-        <p>You can also copy the <code>.vst3</code> folders to any VST3 folder yourself. <a href="{w["page"]}">Release page on GitHub</a></p>
+        <p>To update, close the DAW first and copy the new folders over the old ones. <a href="{w["page"]}">Release page on GitHub</a></p>
       </div>
     </div>
     <div id="mac">
-      <h2>Mac <span class="tag">Beta</span></h2>
-      <p class="file">{E(m["file"])} · {m["size_mb"]} MB · pre-release, {date(m["date"])}</p>
-      <a class="btn btn-2" href="{m["url"]}">Download the Mac beta</a>
+      <h2>Mac</h2>
+      <p class="file">{E(m["file"])} · {m["size_mb"]} MB · version {E(REL["version"])}, {date(REL["date"])}</p>
+      <a class="btn btn-2" href="{m["url"]}">Download for Mac</a>
       <div class="prose">
-        <p>VST3 and Audio Unit for macOS 11 or later, Intel and Apple silicon. It’s a test build: the first release with a Mac zip comes after it’s been checked by ear.</p>
+        <p>VST3 and Audio Unit for macOS 11 or later, Intel and Apple silicon.</p>
         <ol>
-          <li>Close your DAW, and unzip the download.</li>
-          <li>Open Terminal in the unzipped folder and run <code>./install.sh</code>. It copies the VST3s to <code>~/Library/Audio/Plug-Ins/VST3</code> and the Audio Units to <code>~/Library/Audio/Plug-Ins/Components</code>.</li>
+          <li>Close your DAW, and double-click the download to unzip it.</li>
+          <li>Double-click <code>Install Fancy Plugs.command</code>. The first time, macOS blocks it, because the plugins aren’t signed with an Apple Developer ID: open <em>System Settings &gt; Privacy &amp; Security</em>, click <em>Open Anyway</em> next to its name, and confirm with your password.</li>
+          <li>A Terminal window installs the VST3s to <code>~/Library/Audio/Plug-Ins/VST3</code> and the Audio Units to <code>~/Library/Audio/Plug-Ins/Components</code>, your own folders, and says how many it installed. Press Enter to close it, then open your DAW and rescan.</li>
         </ol>
-        <p>The plugins aren’t signed with an Apple Developer ID, so the script also removes the quarantine flag macOS puts on downloaded files. If you copy a plugin by hand instead, it won’t open until you clear that flag: copy this into Terminal, drag the plugin from Finder after it, and press Return.</p>
+        <p>If you copy the plugins into those folders by hand instead, macOS won’t load them until you clear the flag it puts on downloaded files: paste this into Terminal and press Return.</p>
       </div>
-      <div class="cmd"><code>{E(xattr)}<em>plugin</em></code><button class="btn btn-2" type="button" data-copy="{E(xattr)}">Copy</button></div>
-      <div class="prose"><p>On a Mac, <strong>Cmd-click</strong> a control to type a value. <a href="{m["page"]}">Pre-release page on GitHub</a></p></div>
+      <div class="cmd"><code>{E(xattr)}</code><button class="btn btn-2" type="button" data-copy="{E(xattr)}">Copy</button></div>
+      <div class="prose"><p>On a Mac, <strong>Cmd-click</strong> a control to type a value. <a href="{m["page"]}">Release page on GitHub</a></p></div>
     </div>
   </div>
   <section class="hosts">
@@ -658,7 +659,7 @@ def download():
   </section>
   <section>
     <h2>Next</h2>
-    <p class="lede">The <a class="link" href="{R}guide/">guide</a> shows the window all fourteen share, and the <a class="link" href="{R}manual.pdf">manual</a> explains every control. Projects saved with any earlier version load and sound exactly as before.</p>
+    <p class="lede">The <a class="link" href="{R}guide/">guide</a> shows the window all sixteen share, and the <a class="link" href="{R}manual.pdf">manual</a> explains every control. Projects saved with any earlier version load and sound exactly as before.</p>
   </section>
 </div>'''
 
@@ -683,13 +684,13 @@ def guide(manual_pages, n_pages, mb):
     return f'''<div class="wrap">
   <div class="page-head"><div>
     <h1>Guide</h1>
-    <p class="lede">Everything the fourteen plugins share, from installing them to the header every window has. Each plugin’s own controls are on its page, and every one of them is in the manual.</p>
+    <p class="lede">Everything the sixteen plugins share, from installing them to the header every window has. Each plugin’s own controls are on its page, and every one of them is in the manual.</p>
   </div></div>
   <div class="guide">
     <aside class="toc" aria-label="On this page"><p>On this page</p><nav>{nav}</nav></aside>
     <div class="prose">{h}
       <a class="manual-link" href="{R}manual.pdf"><svg width="44" height="56" viewBox="0 0 44 56" aria-hidden="true"><rect x="1" y="1" width="42" height="54" rx="4" fill="#141414" stroke="#434343" stroke-width="2"/><path d="M10 14h24M10 22h24M10 30h16" stroke="#8D8D8D" stroke-width="2.4" stroke-linecap="round"/></svg>
-        <div><b>The Fancy Plugs manual</b><span>Version {E(MANUAL.VERSION)} · {n_pages} pages · PDF, {mb} MB. A quick start, every control of all fourteen plugins with its range and default, and a glossary.</span></div></a>
+        <div><b>The Fancy Plugs manual</b><span>Version {E(MANUAL.VERSION)} · {n_pages} pages · PDF, {mb} MB. A quick start, every control of all sixteen plugins with its range and default, and a glossary.</span></div></a>
     </div>
   </div>
 </div>'''
@@ -738,7 +739,7 @@ def about():
     return f'''<div class="wrap">
   <div class="page-head"><div>
     <h1>About</h1>
-    <p class="lede">Fourteen original effects with one shared design, built for personal use and given away free. There are no accounts, licence keys, automatic updates or tracking, and this site sets no cookies.</p>
+    <p class="lede">Sixteen original effects with one shared design, built for personal use and given away free. There are no accounts, licence keys, automatic updates or tracking, and this site sets no cookies.</p>
   </div></div>
   <div class="about-grid">
     <section>
@@ -787,7 +788,7 @@ def main():
     og_default = og_image("fancy-plugs", "Fancy Plugs", "Free effects for the whole mix: dynamics, tone and space.", "#00A985", "comp")
     # The strip and body need R, which render() sets first, so pages pass callables.
     render("", "Fancy Plugs: free effects for the whole mix",
-           "Fourteen free VST3 and Audio Unit effects for Windows and Mac: compressors, EQs, reverbs, a delay and more, all with the same window.",
+           "Sixteen free VST3 and Audio Unit effects for Windows and Mac: compressors, EQs, reverbs, a delay, a chorus and more, all with the same window.",
            lambda: strip_html("Plugs", f'<span>Version {E(REL["version"])}</span>'), home, og=og_default)
     for g in GROUPS:
         og = og_image(g["slug"], g["name"], dict((x[0], x[1]) for x in MANUAL.PARTS)[g["name"]], "#00A985", PLUG[g["plugins"][0]]["views"][0]["image"])
