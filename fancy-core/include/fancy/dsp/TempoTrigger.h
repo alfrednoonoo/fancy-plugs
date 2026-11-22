@@ -10,7 +10,8 @@
 //
 // Hits are found by step index: the last index fired is kept, and a hit fires only when the
 // index goes up, so rounding at a boundary can't fire twice and every block size gives the
-// same hits. The host's position is taken at each block's start; while the transport is stopped
+// same hits. Gate (docs/gate.md, Phase 4 Wave 2) uses the pulse option instead: 1.0 for Shape's
+// share of the step, then 0, so a threshold detector stays open for exactly Shape. The host's position is taken at each block's start; while the transport is stopped
 // the trigger runs on from where it was at the last tempo (Decision 2 A), and a jump (play, a
 // loop, a seek) re-aligns it. Shared, so Gate and Kicker's Duck can use it.
 namespace fancy::dsp
@@ -46,6 +47,9 @@ public:
 
     void setStep (double beats) noexcept { stepBeats = std::max (1.0e-3, beats); }
     void setShape (double fraction) noexcept { shape = std::clamp (fraction, 0.01, 1.0); }
+
+    // A flat pulse for Shape of the step in place of the decaying kick.
+    void setPulse (bool shouldPulse) noexcept { pulse = shouldPulse; }
 
     // The host's position at the start of the next block. Call once per host block.
     void setPosition (const Position& position) noexcept
@@ -86,7 +90,8 @@ public:
 
         const auto perSample = bpm / (60.0 * sampleRate);
         const auto stepSamples = stepBeats / perSample;
-        const auto decay = std::exp (-std::log (1000.0) / std::max (1.0, shape * stepSamples));
+        const auto decay = pulse ? 0.0 : std::exp (-std::log (1000.0) / std::max (1.0, shape * stepSamples));
+        const auto pulseSamples = std::max (1.0, std::round (shape * stepSamples));
 
         for (int i = 0; i < numSamples; ++i)
         {
@@ -103,6 +108,19 @@ public:
             if (sinceHit < 0)
             {
                 out[i] = 0.0f;
+                continue;
+            }
+
+            if (pulse)
+            {
+                const auto on = (double) sinceHit < pulseSamples;
+                out[i] = on ? 1.0f : 0.0f;
+
+                if (on)
+                    ++sinceHit;
+                else
+                    sinceHit = -1;
+
                 continue;
             }
 
@@ -132,7 +150,7 @@ private:
     double freePpq = 0.0, level = 0.0;
     long long lastIndex = 0;
     long long sinceHit = -1;
-    bool aligned = false, pending = false, hostTempo = false;
+    bool aligned = false, pending = false, hostTempo = false, pulse = false;
     Position next;
 };
 

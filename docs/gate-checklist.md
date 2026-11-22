@@ -89,3 +89,13 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] The checks above, once, with the VST3 in Ableton Live.
 - [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
 - [ ] The Audio Unit in Live: automation follows, an export matches playback, and the Set reopens as it was. (Logic too, if someone has it.)
+
+## Host sync (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Gate: it sounds as before, with its Detector input unchanged.
+- [ ] The EDIT link reads "EDIT" in full.
+- [ ] Detector input Host sync on a pad at 120 BPM, Range -inf: the pad chops on every eighth, exactly on the grid. Shape 25 % and 75 %: shorter and longer chops. Threshold -50 and -12: the chops don't change length.
+- [ ] Rate 1/4, 1/8 dotted, 1/16 triplet: the chops follow. Mode Duck, Range -12: it pumps instead.
+- [ ] Stop the song: it keeps chopping at the tempo; play from a bar: the chops land on the beat again. Loop a bar: no doubled or missing chop at the loop point.
+- [ ] Tick MIDI trigger: the Host sync controls dim and the pulse is ignored.
+- [ ] Render offline twice: the renders match.

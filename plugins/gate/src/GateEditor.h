@@ -19,6 +19,9 @@ public:
     // shows the sidechain warning.
     void showPreview (bool secondView);
 
+    // Phase 4 Wave 2: the EDIT drawer open, with Host sync chosen.
+    void showDrawerPreview();
+
     // The hint the locked Pre-open knob shows.
     static const char* const preOpenHint;
 
@@ -92,6 +95,7 @@ private:
 
     void onTick (float seconds) override;
     void updateLocks();
+    void updateSyncGroup();
 
     // Phase 4 Wave 1: Learn listens to 3 s of the detector level and sets Threshold a third of
     // the way from the noise floor (10th percentile) to the hits (95th), Decision 2 A.
@@ -135,6 +139,11 @@ private:
     fancy::ui::PillButton learnButton { "Learn" };
     fancy::ui::Knob ratioKnob, deBleedKnob;
     juce::Label drawerNote;
+    // Phase 4 Wave 2 (reference/phase4/44__gate_w2_mockup.png): Host sync's group, in place of
+    // the De-bleed note while Host sync is the Detector input.
+    juce::Label syncCaption, syncRateLabel;
+    fancy::ui::ParamDropdown syncRateDropdown;
+    fancy::ui::Knob syncShapeKnob;
     std::vector<float> learnedLevels;
     float learnSeconds = -1.0f;   // -1 while not learning
 

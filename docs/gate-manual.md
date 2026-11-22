@@ -145,3 +145,12 @@ The header has, between the I/O pill and the output knob:
 - **A | B** holds two complete sets of settings. Click the other letter to switch: the plugin glides to the other settings. Both sets, and which one is active, are saved with the project. Each starts as a copy of the other. **→** copies the active set into the other one. Switching and copying are undo steps.
 - **≈ Compare** plays the input instead of the output, at the volume that matches the output's loudness, so you hear what the plugin does without a change in loudness fooling you. While it's on, the button is lit and shows the matching gain, such as **+2.4 dB**. The match is measured while Compare is off, over the last 3 seconds, and holds while it's on; it stays within ±24 dB, and isn't updated while either signal is quieter than -70 LUFS. Compare isn't a parameter: it can't be automated, isn't saved and turns off when you close the window. It's separate from **ON**.
 
+
+## Host sync (Phase 4)
+
+**Detector input > Host sync** opens the gate on the song's beat with no sidechain: a trance gate in Gate mode, a pumping duck in Duck mode. The detector hears a pulse on every step of the host's grid, and each pulse holds the gate open for exactly Shape of the step, whatever Threshold is. Attack, Hold, Release, Range and Ratio shape each opening as they do with audio. In the EDIT drawer, while Host sync is chosen:
+
+- **Rate:** the grid, 1/1 to 1/16, each also dotted and triplet. 1/8 by default.
+- **Shape:** how long each opening lasts, 5 to 100 % of the step. 50 % by default.
+
+Lowpass, Highpass and De-bleed are for audio and don't touch the pulse. With Lookahead on, the audio is delayed and the pulse isn't, so each opening starts Lookahead ahead of the beat. While the song is stopped it keeps going at the last tempo and lines up with the beat again on play; with no host tempo it runs at 120 BPM and the drawer says so. With MIDI trigger ticked, MIDI wins and the Host sync controls dim.

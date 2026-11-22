@@ -13,6 +13,9 @@ namespace
 // design/phase2_0_1-mockup-src/gate.html at 100 %. The shared header is 16 px taller than the
 // mockup's, so the window is too.
 constexpr int baseWidth = 740;
+
+// Phase 4 Wave 2: Host sync's small Shape knob, 66 tall with its label and value (Comp's).
+constexpr fancy::ui::Knob::Style syncKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
 constexpr int bodyHeight = 368;
 constexpr int baseHeight = ShellEditor::headerHeight + bodyHeight;
 constexpr int rightColumnX = 590;
@@ -402,7 +405,9 @@ GateEditor::GateEditor (GateProcessor& processor)
       editLink (gateYellow),
       midiInCheckbox (parameter ("midiIn"), "MIDI trigger", gateYellow),
       ratioKnob (parameter ("ratio"), "Ratio", gateYellow, Knob::smallStyle),
-      deBleedKnob (parameter ("deBleed"), "De-bleed", colours::uiBlue, Knob::smallStyle)
+      deBleedKnob (parameter ("deBleed"), "De-bleed", colours::uiBlue, Knob::smallStyle),
+      syncRateDropdown (parameter ("syncRate")),
+      syncShapeKnob (parameter ("syncShape"), "Shape", gateYellow, syncKnobStyle)
 {
     auto& body = getBody();
 
@@ -449,6 +454,7 @@ GateEditor::GateEditor (GateProcessor& processor)
     detectorDropdown.addSection (0, "Main input");
     detectorDropdown.addSection (3, "Sidechain");
     detectorDropdown.addSection (6, "Mid/side");
+    detectorDropdown.addSection (8, "Host sync"); // Phase 4 Wave 2
 
     hysteresisKnob.setTooltip ("How far below Threshold the level must fall before the gate closes. "
                                "It stops chatter on signals that hover around the threshold.");
@@ -474,8 +480,10 @@ GateEditor::GateEditor (GateProcessor& processor)
 
     // Phase 4 Wave 1: the EDIT link in the top row, and the drawer over the knob cards, so the
     // history, meters and faders stay in view.
-    latencyLabel.setBounds (294, 9, 92, 24);
-    editLink.setBounds (388, 9, 50, 24);
+    // Wide enough for the whole word (it was clipped to "EDI" at 50 px).
+    latencyLabel.setBounds (294, 9, 86, 24);
+    editLink.setBounds (382, 9, 60, 24);
+    modeLabel.setBounds (444, 9, 36, 24);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
     body.addAndMakeVisible (editLink);
 
@@ -509,6 +517,20 @@ GateEditor::GateEditor (GateProcessor& processor)
         drawer.addAndMakeVisible (item);
 
     body.addChildComponent (drawer);
+
+    // Phase 4 Wave 2: Host sync's group under Ratio and De-bleed, shown by updateSyncGroup.
+    styleLabel (syncCaption, "HOST SYNC", colours::textSecondary, juce::Justification::topLeft, 10.0f);
+    styleLabel (syncRateLabel, "Rate", colours::textPrimary, juce::Justification::centredLeft, 12.0f);
+    syncCaption.setBounds (250, 146, 190, 12);
+    syncRateLabel.setBounds (250, 166, 32, 24);
+    syncRateDropdown.setBounds (282, 166, 88, 24);
+    syncRateDropdown.setTextHeight (12.0f);
+    syncShapeKnob.setBounds (378, 138, 60, 66);
+    syncRateDropdown.setTooltip ("The grid Host sync opens the gate on, at the host's tempo.");
+    syncShapeKnob.setTooltip ("How long each opening lasts, as a share of the step, whatever Threshold is.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &syncCaption, &syncRateLabel, &syncRateDropdown, &syncShapeKnob })
+        drawer.addChildComponent (item);
 
     history.onColumns = [this] (const GateDsp::HistoryColumn* columns, int count) { learnFrom (columns, count); };
 
@@ -573,12 +595,30 @@ void GateEditor::updateLocks()
     thresholdMeter.setCloseDb ((float) (targets.thresholdDb + targets.hysteresisDb));
 }
 
+void GateEditor::updateSyncGroup()
+{
+    const auto targets = gateProcessor().readTargets();
+    const auto sync = targets.detector == GateDsp::hostSync;
+
+    drawerNote.setVisible (! sync);
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &syncCaption, &syncRateLabel, &syncRateDropdown, &syncShapeKnob })
+    {
+        item->setVisible (sync);
+        item->setAlpha (targets.midiIn ? 0.4f : 1.0f); // MIDI trigger wins (Decision 2 A)
+    }
+
+    if (sync)
+        syncCaption.setText (gateProcessor().getDsp().syncHasHostTempo() ? "HOST SYNC" : "NO HOST TEMPO: 120 BPM", juce::dontSendNotification);
+}
+
 void GateEditor::onTick (float seconds)
 {
     auto& processor = gateProcessor();
     auto& dsp = processor.getDsp();
 
     updateLocks();
+    updateSyncGroup(); // Phase 4 Wave 2
 
     const auto reduction = juce::jmin (dsp.takeReduction(), 80.0f);
 
@@ -678,6 +718,16 @@ void GateEditor::showPreview (bool secondView)
     gainMeter.show (6.8f, 6.8f);
     light.setState (GateDsp::lightOpen);
     outMeter.show (-8.1f, -8.6f);
+}
+
+void GateEditor::showDrawerPreview()
+{
+    showPreview (false);
+    setValue (parameter ("detector"), (float) GateDsp::hostSync);
+    drawer.setVisible (true);
+    updateLocks();
+    updateSyncGroup();
+    syncCaption.setText ("HOST SYNC", juce::dontSendNotification);
 }
 
 juce::Colour GateEditor::getAccentColour()

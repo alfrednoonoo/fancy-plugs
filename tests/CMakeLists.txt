@@ -47,7 +47,7 @@ if("FANCY_HAS_FIR=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_GATE=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE GateTests.cpp GateW1Tests.cpp LegacyGateDsp.cpp)
+    target_sources(fancy-tests PRIVATE GateTests.cpp GateW1Tests.cpp GateW2Tests.cpp LegacyGateDsp.cpp)
 endif()
 
 if("FANCY_HAS_LIMIT=1" IN_LIST fancy_screen_defs)

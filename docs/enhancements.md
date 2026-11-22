@@ -29,6 +29,8 @@ Proposed; to be confirmed with the user before the first item, as Phase 3's orde
 
 The plugin names in 3 and 4 are placeholders until their design notes.
 
+**Phase 5** (user, 22 November 2026): **Fancy Harmony**, a harmonizer for tenor, alto and soprano parts from a sung line (pitch detection, formant-preserving shifting, key and scale or MIDI), with its own survey, mockup and design note. See `docs/research/new-plugins-features.md`, section 4.
+
 ## How to read the tags
 
 **Effort** — S: one short push, the pattern of an existing feature. M: a phase item, two or three

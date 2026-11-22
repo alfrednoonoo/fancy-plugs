@@ -28,9 +28,15 @@ public:
 
     static juce::String noteName (int note);
 
+    // Phase 4 Wave 2: Host sync's rates (1/1 to 1/16, plain, dotted, triplet), 1/8 by default.
+    static const juce::StringArray& syncRateNames();
+    static double syncStepBeats (int index) noexcept;
+    static constexpr int defaultSyncRate = 9;
+
 private:
     float read (const char* parameterId) const;
     bool isOn (const char* parameterId) const;
+    fancy::dsp::TempoTrigger::Position readPosition();
 
     GateDsp dsp;
 

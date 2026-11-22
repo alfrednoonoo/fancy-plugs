@@ -665,6 +665,18 @@ int main (int argc, char** argv)
    #if FANCY_HAS_GATE
     ok = renderPlugin<GateProcessor, GateEditor> ("gate", outputDir) && ok;
     ok = renderListening<GateProcessor, GateEditor> ("gate", outputDir) && ok;
+
+    // Phase 4 Wave 2: the EDIT drawer, with Host sync chosen.
+    {
+        GateProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<GateEditor*> (base.get()))
+        {
+            editor->showDrawerPreview();
+            ok = writeBothScales (*editor, "gate-drawer", outputDir) && ok;
+        }
+    }
    #endif
 
    #if FANCY_HAS_LIMIT

@@ -121,7 +121,8 @@ fancy::FancyProcessor::Layout createLayout()
 
     layout.add (std::make_unique<Choice> (
         juce::ParameterID { "detector", 1 }, "Detector input",
-        juce::StringArray { "Main input L+R", "Main L", "Main R", "Sidechain L+R", "Sidechain L", "Sidechain R", "Mid", "Side" }, 0));
+        juce::StringArray { "Main input L+R", "Main L", "Main R", "Sidechain L+R", "Sidechain L", "Sidechain R", "Mid", "Side",
+                            "Host sync" }, 0)); // Phase 4 Wave 2, appended
 
     layout.add (filterParameter ("lowpass", "Lowpass", 20.0f, (float) GateDsp::lowpassOffHz, (float) GateDsp::lowpassOffHz, true));
     layout.add (filterParameter ("highpass", "Highpass", (float) GateDsp::highpassOffHz, 5000.0f, (float) GateDsp::highpassOffHz, false));
@@ -163,6 +164,14 @@ fancy::FancyProcessor::Layout createLayout()
                                           { return value >= (float) GateDsp::infiniteRatio ? juce::String ("inf:1") : fancy::formatFixed (value, value < 10.0f ? 1 : 0) + ":1"; })
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseRatio (text, (float) GateDsp::infiniteRatio); })));
     layout.add (fancy::percentParameter ("deBleed", "De-bleed", 0.0f));
+
+    // Phase 4 Wave 2, appended (docs/gate.md): Host sync's grid and the pulse's length.
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "syncRate", 1 }, "Sync rate", GateProcessor::syncRateNames(), GateProcessor::defaultSyncRate));
+    layout.add (fancy::floatParameter ("syncShape", "Sync shape", juce::NormalisableRange<float> (5.0f, 100.0f, 1.0f), 50.0f,
+                                       juce::AudioParameterFloatAttributes {}
+                                           .withLabel ("%")
+                                           .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
     return layout;
 }
@@ -262,6 +271,10 @@ GateDsp::Targets GateProcessor::readTargets() const
     targets.ratio = (double) read ("ratio");
     targets.deBleed = (double) read ("deBleed") * 0.01;
 
+    // Phase 4 Wave 2.
+    targets.syncStepBeats = syncStepBeats (juce::roundToInt (read ("syncRate")));
+    targets.syncShape = juce::jlimit (0.05, 1.0, (double) read ("syncShape") * 0.01);
+
     return targets;
 }
 
@@ -332,6 +345,7 @@ void GateProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBu
     inputMeter.push (main, numChannels, numSamples);
 
     dsp.setTargets (readTargets());
+    dsp.setTransport (readPosition()); // Phase 4 Wave 2: Host sync's grid
     dsp.process (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples, &midi);
 
     outputMeter.push (main, numChannels, numSamples);
@@ -347,6 +361,52 @@ void GateProcessor::setParameter (const juce::String& parameterId, float value)
     parameter.beginChangeGesture();
     parameter.setValueNotifyingHost (parameter.convertTo0to1 (value));
     parameter.endChangeGesture();
+}
+
+// Phase 4 Wave 2: each of 1/1 to 1/16, then dotted, then triplet (Comp's list).
+const juce::StringArray& GateProcessor::syncRateNames()
+{
+    static const juce::StringArray names = []
+    {
+        juce::StringArray list;
+
+        for (const auto* note : { "1/1", "1/2", "1/4", "1/8", "1/16" })
+            for (const auto* feel : { "", " dotted", " triplet" })
+                list.add (juce::String (note) + feel);
+
+        return list;
+    }();
+
+    return names;
+}
+
+double GateProcessor::syncStepBeats (int index) noexcept
+{
+    const auto note = juce::jlimit (0, 14, index) / 3, feel = juce::jlimit (0, 14, index) % 3;
+    const auto beats = 4.0 / (double) (1 << note);
+    return beats * (feel == 1 ? 1.5 : feel == 2 ? 2.0 / 3.0 : 1.0);
+}
+
+// The host's position for Host sync. Without a tempo the trigger runs on at 120 BPM.
+fancy::dsp::TempoTrigger::Position GateProcessor::readPosition()
+{
+    fancy::dsp::TempoTrigger::Position result;
+
+    if (auto* playHead = getPlayHead())
+    {
+        if (const auto position = playHead->getPosition())
+        {
+            const auto ppq = position->getPpqPosition();
+            const auto bpm = position->getBpm();
+
+            result.hasTempo = bpm.hasValue() && *bpm > 0.0;
+            result.bpm = result.hasTempo ? *bpm : fancy::dsp::TempoTrigger::defaultBpm;
+            result.playing = position->getIsPlaying() && ppq.hasValue();
+            result.ppq = ppq.hasValue() ? *ppq : 0.0;
+        }
+    }
+
+    return result;
 }
 
 juce::AudioProcessorEditor* GateProcessor::createEditor()

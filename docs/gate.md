@@ -381,3 +381,12 @@ Gate's detector is a threshold and a state machine, so what counts is how long e
 ### 6. Build order
 
 Approval, then the drawer mockup (`reference/phase4/44__gate_w2_mockup.png`), then one push: the pulse option in `TempoTrigger`, Gate's Host sync, tests, manual and checklist.
+
+### 7. As built
+
+Mockup 44 approved by the user on 22 November 2026; `tests/GateW2Tests.cpp`.
+
+- `TempoTrigger::setPulse` gives 1.0 for round (Shape × step) samples after each hit, then 0. Gate calls the trigger one sample at a time inside its loop, so the grid lands to the sample whatever the block size; Comp's decaying kick is unchanged.
+- `detector` gains "Host sync" (index 8, its own menu section); `syncRate` (default 1/8, index 9) and `syncShape` (default 50 %) are appended. The pulse skips the detector filters and De-bleed.
+- The drawer's HOST SYNC group (Rate, Shape) replaces the De-bleed note while Host sync is chosen, and dims while MIDI trigger is on. Without host tempo its caption reads "NO HOST TEMPO: 120 BPM".
+- Wave 1 fixes in the same push: the EDIT link is 60 px wide (it was clipped to "EDI" at 50), and the screens tool renders the open drawer as `gate-drawer` (`gate-edit` is the main window's second view).

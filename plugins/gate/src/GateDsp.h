@@ -4,6 +4,7 @@
 #include <fancy/dsp/MeterTap.h>
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/Svf.h>
+#include <fancy/dsp/TempoTrigger.h>
 
 #include <juce_audio_basics/juce_audio_basics.h>
 
@@ -16,7 +17,8 @@
 class GateDsp
 {
 public:
-    enum Detector { mainLR, mainL, mainR, sideLR, sideL, sideR, mid, side };
+    // Host sync (Phase 4 Wave 2) is appended, so stored indices keep their meaning.
+    enum Detector { mainLR, mainL, mainR, sideLR, sideL, sideR, mid, side, hostSync };
     enum Light { lightClosed, lightOpen, lightHold };
 
     static constexpr double lookaheadMs = 50.0;
@@ -46,7 +48,16 @@ public:
         bool midiIn = false;
         double ratio = infiniteRatio;
         double deBleed = 0.0;   // 0 to 1
+
+        // Phase 4 Wave 2: Host sync's grid step in beats (1 is a quarter note) and the pulse's
+        // length as a share of the step.
+        double syncStepBeats = 0.5;
+        double syncShape = 0.5;
     };
+
+    // Phase 4 Wave 2: the host's position at the start of the next block, for Host sync.
+    void setTransport (const fancy::dsp::TempoTrigger::Position& position) noexcept { trigger.setPosition (position); }
+    bool syncHasHostTempo() const noexcept { return trigger.hasHostTempo(); }
 
     // The notes that arrived this block, for the MIDI trigger: sample offset and on or off.
     struct IncomingNote
@@ -133,6 +144,9 @@ private:
     int heldNotes = 0;
     double expanderDb[2] { 0.0, 0.0 };
     fancy::dsp::DetectorFilter bleedLevels[2];
+
+    // Phase 4 Wave 2: Host sync's pulse.
+    fancy::dsp::TempoTrigger trigger;
 
     int lookaheadSamples = 2400;
     bool activeLookahead = false;

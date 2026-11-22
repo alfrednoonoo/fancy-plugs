@@ -104,7 +104,7 @@ MORE = {
     "MultiComp": [("multicomp-edit", "The EDIT drawer", "EDIT")],
     "FIR": [("fir-eq", "EQ mode", "Modes"), ("fir-resonance-range", "Resonance with Range set, listening", "Resonance"),
             ("fir-edit", "The EDIT drawer", "EDIT")],
-    "Gate": [("gate-edit", "The EDIT drawer", "Controls"), ("gate-listening", "Listening to the gain-reduced part", "Controls")],
+    "Gate": [("gate-edit", "Lookahead, a sidechain detector and MIDI out", "Controls"), ("gate-drawer", "The EDIT drawer, with Host sync", "Controls"), ("gate-listening", "Listening to the gain-reduced part", "Controls")],
     "Limit": [("limit-edit", "The EDIT drawer", "EDIT drawer")],
     "DS": [("ds-edit", "The EDIT drawer", "EDIT drawer"), ("ds-listening", "Listening to what's removed", "Controls")],
     "DS-Mini": [("dsmini-edit", "The EDIT drawer", "EDIT drawer"), ("dsmini-listening", "Listening to what's removed", "Controls")],

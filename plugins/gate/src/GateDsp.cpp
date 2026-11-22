@@ -151,6 +151,8 @@ double GateDsp::noteLatenessMs (const Targets& targets) noexcept
 void GateDsp::prepare (double sampleRate)
 {
     rate = sampleRate;
+    trigger.prepare (sampleRate);
+    trigger.setPulse (true);
     lookaheadSamples = (int) std::lround (lookaheadMs * 0.001 * rate);
     ringSize = nextPowerOfTwo (lookaheadSamples + 8);
     ringMask = ringSize - 1;
@@ -195,6 +197,7 @@ void GateDsp::reset()
 {
     heldNotes = 0;
     numIncomingNotes = 0;
+    trigger.reset();
     expanderDb[0] = expanderDb[1] = 0.0;
 
     for (auto& bleed : bleedLevels)
@@ -220,6 +223,9 @@ void GateDsp::reset()
 void GateDsp::setTargets (const Targets& targets) noexcept
 {
     current = targets;
+
+    trigger.setStep (targets.syncStepBeats);
+    trigger.setShape (targets.syncShape);
 
     const auto limit = 0.45 * rate;
 
@@ -454,7 +460,8 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
     // Phase 4 Wave 1: each is skipped entirely at its default.
     const auto midSide = settings.detector == mid || settings.detector == side;
     const auto expanding = settings.ratio < infiniteRatio && ! settings.duck;
-    const auto deBleeding = settings.deBleed > 0.0;
+    const auto hostSyncing = settings.detector == hostSync;
+    const auto deBleeding = settings.deBleed > 0.0 && ! hostSyncing;
     const auto expanderSlope = settings.ratio - 1.0;
     const auto expanderFloorDb = settings.rangeDb <= rangeFloorDb ? curveFloorDb : settings.rangeDb;
     const auto expanderAttack = 1.0 - std::exp (-1.0 / attackSamples);
@@ -536,9 +543,18 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
 
         double filtered[2], level[2];
 
+        // Phase 4 Wave 2: Host sync's pulse goes straight in, past the filters (they're for audio).
+        // One sample at a time, so the grid lands to the sample whatever the block size.
+        if (hostSyncing)
+        {
+            float pulse = 0.0f;
+            trigger.process (&pulse, 1);
+            detectorIn[0] = detectorIn[1] = (double) pulse;
+        }
+
         for (int ch = 0; ch < 2; ++ch)
         {
-            filtered[ch] = detectors[ch].filter (detectorIn[ch], highpassCoefficients, lowpassCoefficients, highBlend, lowBlend);
+            filtered[ch] = hostSyncing ? detectorIn[ch] : detectors[ch].filter (detectorIn[ch], highpassCoefficients, lowpassCoefficients, highBlend, lowBlend);
             level[ch] = detectors[ch].levelDb (filtered[ch], rmsCoefficient);
         }
 
