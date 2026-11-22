@@ -483,6 +483,7 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
                 lowLevels[0] = lowLevels[1] = twoDetectors ? std::max (lowLevels[0], lowLevels[1]) : lowLevels[0];
 
             auto released = true;
+            auto mostLowDb = 0.0;
 
             for (size_t c = 0; c < 2; ++c)
             {
@@ -492,14 +493,18 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
                 const auto smoothed = lowFollowers[c].follow (ballistics, std::max (0.0, target));
                 lowGains[c][(size_t) i] = fromDb (-smoothed);
                 chunkLowReduction = std::max (chunkLowReduction, smoothed);
+                mostLowDb = std::max (mostLowDb, smoothed);
                 released = released && smoothed < 1.0e-6;
             }
 
+            // The display's values: the reduction straight from the followers (already in dB), and
+            // the meter's level converted once.
             const auto shownLow = std::max (lowLevels[0], lowLevels[1]);
-            lowLevelMeter.report (0, (float) fromDb (std::min (shownLow, 0.0)));
-            lowLevelMeter.report (1, (float) fromDb (std::min (shownLow, 0.0)));
+            const auto shownLowGain = (float) fromDb (std::min (shownLow, 0.0));
+            lowLevelMeter.report (0, shownLowGain);
+            lowLevelMeter.report (1, shownLowGain);
             columnLowLevel = std::max (columnLowLevel, (float) shownLow);
-            columnLowReduction = std::max (columnLowReduction, (float) std::max (-20.0 * std::log10 (lowGains[0][(size_t) i]), -20.0 * std::log10 (lowGains[1][(size_t) i])));
+            columnLowReduction = std::max (columnLowReduction, (float) mostLowDb);
 
             // Off and let go: exactly unity from here, and the band stops.
             if (! settings.dual && released)
