@@ -43,6 +43,11 @@ public:
         bool dcFilter = true;
         bool listen = false;
         bool bypass = false;
+
+        // Phase 4 Wave 2 (docs/sature.md): the bands below Low and above High, saturated with
+        // the mid band's Type, Character, Tape HF loss and Tone. Drive 0 runs nothing.
+        double lowDriveDb = 0.0, highDriveDb = 0.0;
+        double lowMix = 1.0, highMix = 1.0;
     };
 
     SatureDsp();
@@ -88,6 +93,23 @@ private:
         std::vector<float> dryDelay;
     };
 
+    // Phase 4 Wave 2: one outer band's saturator state, per channel.
+    struct OuterState
+    {
+        std::array<fancy::dsp::Svf, numSections> split;
+        fancy::dsp::saturation::Adaa adaa;
+        fancy::dsp::saturation::TapeLoss tapeLoss;
+        fancy::dsp::saturation::Tilt tilt;
+        double previousIn = 0.0;
+        std::array<double, 4> addedDelay {};
+    };
+
+    enum Outer { lowBand, highBand };
+
+    void resetOuter (int band);
+    void saturateOuterBaseRate (int band, int numSamples);
+    void saturateOuterOversampled (int band, int numSamples);
+
     void processChunk (float* const* channels, int numChannels, int offset, int numSamples);
     void processOversampled (int numSamples);
     void processBaseRate (int numSamples);
@@ -103,6 +125,14 @@ private:
     juce::AudioBuffer<float> matchedBuffer, midBuffer;
 
     std::array<ChannelState, 2> channelStates;
+
+    // Phase 4 Wave 2: the outer bands, [band][channel], their buffers (input, then added) and
+    // per-sample settings, and whether each runs.
+    std::array<std::array<OuterState, 2>, 2> outerStates;
+    std::array<juce::AudioBuffer<float>, 2> outerBuffers;
+    std::array<std::array<double, maxChunk>, 2> outerDrive {}, outerGain {}, outerTape {};
+    std::array<bool, 2> outerWanted { false, false }, outerRunning { false, false };
+    double lastT = 1.0, lastCharacter = 0.0, lastTone = 0.0, lastAuto = 1.0;
 
     std::array<fancy::dsp::SvfCoefficients, numSections> lowCoefficients, highCoefficients;
     std::array<double, numSections> sectionQ {};
@@ -141,4 +171,7 @@ private:
 
     fancy::dsp::Smoother trim, drive, character, tone, logLow, logHigh, lowOn, highOn, autoGain,
         wet, dry, output, bypass, listen, dcOn, typeFade;
+
+    // Phase 4 Wave 2.
+    std::array<fancy::dsp::Smoother, 2> outerDriveDb, outerMix, outerOn;
 };

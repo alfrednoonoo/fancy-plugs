@@ -43,3 +43,13 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] The checks above, once, with the VST3 in Ableton Live.
 - [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
 - [ ] The Audio Unit in Live: automation follows, an export matches playback, and the Set reopens as it was. (Logic too, if someone has it.)
+
+## Outer bands (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Sature: it sounds as before.
+- [ ] Low 200 Hz on a full mix, EDIT > Outer bands, Low drive 18 dB: the low end thickens, the mids don't change; the BAND card tints and names the low band. Low mix 0 %: back to the clean low end.
+- [ ] High 6 kHz, High drive 12 dB: the top gets grit without touching the mids.
+- [ ] Low at Off: the low pair dims and does nothing.
+- [ ] Auto gain on: turning Low drive up and down keeps the level steady within about 1 dB.
+- [ ] Listen to added harmonics plays all three bands' harmonics.
+

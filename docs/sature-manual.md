@@ -44,6 +44,15 @@ A saturator with four characters. It adds harmonics, the warmth or grit of drivi
 
 Latency at 48 kHz is in `docs/measurements/sature.txt`.
 
+## Outer bands (Phase 4)
+
+Low and High set the band Sature saturates; below Low and above High pass clean. **EDIT > Outer bands** drives those two as well:
+
+- **Drive** (below Low, and above High): 0 to 36 dB. 0 leaves the band clean, as before.
+- **Mix**: how much of that band's added harmonics you hear, 0 to 100 %.
+
+The outer bands use the same Type, Character, Tone and Tape HF loss as the main band, and Auto gain keeps each at its level. Their edges are the same steep 48 dB/oct filters, so no frequency is driven twice. An outer band exists only while its edge is set: with Low at Off, the low pair dims. While either is driven, the BAND card takes a light tint and names it. Each driven outer band costs about as much CPU again as the main band.
+
 ## Presets
 
 Default; Tape warmth and Top sparkle (Mix); Tube glow (Vocals); Transistor edge, Clip it and Parallel crush (Drums); Bass drive (Bass).

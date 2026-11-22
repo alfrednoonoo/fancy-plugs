@@ -241,3 +241,12 @@ Each outer band with Drive above 0 adds a band filter, an up- and down-sampler p
 ### 6. Build order
 
 Approval, then the drawer mockup (`reference/phase4/45__sature_w2_mockup.png`), then one push: the two outer paths, parameters, drawer, tests, manual, checklist and the CPU figures.
+
+### 7. As built
+
+Mockup 45 approved by the user on 22 November 2026; `tests/SatureW2Tests.cpp`, against `tests/LegacySatureDsp` (v1.6.0's engine).
+
+- `lowDrive`, `lowMix`, `highDrive`, `highMix` appended. Each outer band runs while its edge is set and its Drive is above 0, fading in and out over 20 ms (`outerOn`); a band that was fully off restarts its filters, saturator and oversampler. Off and settled, nothing of it runs, so the output is v1.6.0's to the bit.
+- Each outer band has its own 8th-order split (the low band the low-pass outputs of the Low edge's sections, the high band the high-pass outputs of the High edge's), ADAA, tape loss, tilt and oversampler copy (`SwitchedOversampler` now allows 4 copies). The mid band's code is untouched; the outer bands' `added` is summed into it before the DC filter, each by Mix.
+- Auto gain looks the table up with the band's own Drive and the mid band's Type, Character and Tone.
+- The drawer's OUTER BANDS group; the DC filter checkbox narrowed to make room. The BAND card tints and names the driven bands. CPU figures: from the next run's `measurements-<sha>`.

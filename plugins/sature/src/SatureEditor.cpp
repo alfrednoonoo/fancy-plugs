@@ -97,6 +97,25 @@ void SatureEditor::Panels::paint (juce::Graphics& g)
 
     paintCardTitle (g, "DRIVE", driveCardX, cardY);
     paintCardTitle (g, "BAND", bandCardX, cardY);
+
+    // Phase 4 Wave 2: a light tint and a caption while an outer band is driven.
+    if (outerText.isNotEmpty())
+    {
+        g.setColour (orange.withAlpha (0.07f));
+        g.fillRoundedRectangle ((float) bandCardX, (float) cardY, (float) bandCardWidth, (float) cardHeight, 6.0f);
+        g.setColour (orange);
+        g.setFont (font (Weight::regular, 11.0f));
+        g.drawText (outerText, bandCardX + 70, cardY + 6, bandCardWidth - 80, 24, juce::Justification::centredLeft, true);
+    }
+}
+
+void SatureEditor::Panels::setOuterText (const juce::String& text)
+{
+    if (text != outerText)
+    {
+        outerText = text;
+        repaint();
+    }
 }
 
 // TransferCurve ---------------------------------------------------------------
@@ -417,7 +436,11 @@ SatureEditor::SatureEditor (SatureProcessor& processor)
       oversamplingDropdown (parameter ("oversampling")),
       filterDropdown (parameter ("osfilter")),
       trimKnob (parameter ("trim"), "Input trim", colours::uiTeal, Knob::smallStyle, true),
-      dcCheckbox (parameter ("dcfilter"), "DC filter", orange)
+      dcCheckbox (parameter ("dcfilter"), "DC filter", orange),
+      lowDriveKnob (parameter ("lowDrive"), "Drive", orange, Knob::smallStyle),
+      lowMixKnob (parameter ("lowMix"), "Mix", orange, Knob::smallStyle),
+      highDriveKnob (parameter ("highDrive"), "Drive", orange, Knob::smallStyle),
+      highMixKnob (parameter ("highMix"), "Mix", orange, Knob::smallStyle)
 {
     auto& body = getBody();
 
@@ -500,7 +523,7 @@ SatureEditor::SatureEditor (SatureProcessor& processor)
     filterLabel.setBounds (24, 100, 170, 24);
     filterDropdown.setBounds (200, 100, 170, 24);
     trimKnob.setBounds (24, 140, 90, 99);
-    dcCheckbox.setBounds (140, 180, 120, 20);
+    dcCheckbox.setBounds (140, 180, 92, 20); // narrowed for the OUTER BANDS group (Phase 4 Wave 2)
 
     oversamplingDropdown.setTooltip ("Runs the curve at a higher rate, so its harmonics don't fold back as tones that don't belong. "
                                      "Off aliases on bright, heavily driven sounds; 8x is cleaner.");
@@ -515,6 +538,31 @@ SatureEditor::SatureEditor (SatureProcessor& processor)
              &oversamplingLabel, &oversamplingDropdown, &aliasNote, &filterLabel, &filterDropdown, &trimKnob, &dcCheckbox })
         drawer.addAndMakeVisible (item);
 
+    // Phase 4 Wave 2: the OUTER BANDS group beside Input trim and DC filter.
+    setUpLabel (outerCaption, "OUTER BANDS", juce::Justification::topLeft, 10.0f);
+    setUpLabel (belowLowLabel, "Below Low", juce::Justification::topLeft, 11.0f);
+    setUpLabel (aboveHighLabel, "Above High", juce::Justification::topLeft, 11.0f);
+    setUpLabel (outerNote, "Type, Character, Tone and Tape HF loss are the mid band's.", juce::Justification::topLeft, 11.0f);
+    outerCaption.setBounds (240, 139, 200, 12);
+    belowLowLabel.setBounds (240, 155, 140, 14);
+    aboveHighLabel.setBounds (390, 155, 140, 14);
+    lowDriveKnob.setBounds (236, 168, 70, 99);
+    lowMixKnob.setBounds (306, 168, 70, 99);
+    highDriveKnob.setBounds (386, 168, 70, 99);
+    highMixKnob.setBounds (456, 168, 70, 99);
+    outerNote.setBounds (530, 178, 104, 60);
+
+    lowDriveKnob.setTooltip ("Saturates the band below Low too, as hard as this. 0 leaves it clean.");
+    lowMixKnob.setTooltip ("How much of the low band's added harmonics you hear.");
+    highDriveKnob.setTooltip ("Saturates the band above High too, as hard as this. 0 leaves it clean.");
+    highMixKnob.setTooltip ("How much of the high band's added harmonics you hear.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &outerCaption, &belowLowLabel, &aboveHighLabel, &outerNote,
+                                                                           &lowDriveKnob, &lowMixKnob, &highDriveKnob, &highMixKnob })
+        drawer.addAndMakeVisible (item);
+
+    updateOuter();
+
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
 
@@ -528,9 +576,34 @@ SatureProcessor& SatureEditor::satureProcessor() noexcept
     return dynamic_cast<SatureProcessor&> (getFancyProcessor());
 }
 
+// Phase 4 Wave 2: an outer band exists only while its edge is set, so its pair dims otherwise;
+// the BAND card names the bands being driven.
+void SatureEditor::updateOuter()
+{
+    const auto targets = satureProcessor().readTargets();
+
+    for (auto* knob : { &lowDriveKnob, &lowMixKnob })
+        knob->setAlpha (targets.lowOn ? 1.0f : 0.4f);
+
+    for (auto* knob : { &highDriveKnob, &highMixKnob })
+        knob->setAlpha (targets.highOn ? 1.0f : 0.4f);
+
+    juce::StringArray driven;
+
+    if (targets.lowOn && targets.lowDriveDb > 0.0)
+        driven.add ("low band +" + fancy::formatFixed ((float) targets.lowDriveDb, 1) + " dB");
+
+    if (targets.highOn && targets.highDriveDb > 0.0)
+        driven.add ("high band +" + fancy::formatFixed ((float) targets.highDriveDb, 1) + " dB");
+
+    panels.setOuterText (driven.joinIntoString (juce::String::fromUTF8 (" \xc2\xb7 ")));
+}
+
 void SatureEditor::onTick (float seconds)
 {
     auto& processor = satureProcessor();
+
+    updateOuter(); // Phase 4 Wave 2
 
     transferCurve.update();
     harmonicsCard.update();
@@ -568,6 +641,7 @@ void SatureEditor::showPreview (bool drawerOpen)
     aliasNote.setText ("(+" + juce::String (latency) + " samples latency)", juce::dontSendNotification);
 
     drawer.setVisible (drawerOpen);
+    updateOuter();
 }
 
 juce::Colour SatureEditor::getAccentColour()

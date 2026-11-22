@@ -22,7 +22,7 @@ class SwitchedOversampler
 public:
     enum Factor { off, x2, x4, x8 };
     static constexpr int numFactors = 3;
-    static constexpr int maxCopies = 2;
+    static constexpr int maxCopies = 4; // Sature uses 4 (Phase 4 Wave 2: two outer bands)
 
     using Oversampler = juce::dsp::Oversampling<float>;
 

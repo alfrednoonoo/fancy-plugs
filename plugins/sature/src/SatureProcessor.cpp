@@ -100,6 +100,12 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (toggle ("dcfilter", "DC filter", true));
     layout.add (toggle ("bypass", "Bypass", false));
 
+    // Phase 4 Wave 2, appended (docs/sature.md): the outer bands. Drive 0 runs nothing.
+    layout.add (dbParameter ("lowDrive", "Low drive", 0.0f, 36.0f, 0.0f));
+    layout.add (fancy::percentParameter ("lowMix", "Low mix", 100.0f));
+    layout.add (dbParameter ("highDrive", "High drive", 0.0f, 36.0f, 0.0f));
+    layout.add (fancy::percentParameter ("highMix", "High mix", 100.0f));
+
     return layout;
 }
 
@@ -204,6 +210,12 @@ SatureDsp::Targets SatureProcessor::readTargets() const
     targets.dcFilter = isOn ("dcfilter");
     targets.listen = isListening();
     targets.bypass = isOn ("bypass");
+
+    // Phase 4 Wave 2.
+    targets.lowDriveDb = (double) read ("lowDrive");
+    targets.lowMix = (double) read ("lowMix") * 0.01;
+    targets.highDriveDb = (double) read ("highDrive");
+    targets.highMix = (double) read ("highMix") * 0.01;
 
     return targets;
 }

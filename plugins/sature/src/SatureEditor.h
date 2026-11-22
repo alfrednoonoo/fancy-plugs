@@ -37,6 +37,12 @@ private:
     {
     public:
         void paint (juce::Graphics&) override;
+
+        // Phase 4 Wave 2: names the driven outer bands on the BAND card, which tints while any is.
+        void setOuterText (const juce::String& text);
+
+    private:
+        juce::String outerText;
     };
 
     // Input to output of the current Type, Drive and Character.
@@ -80,6 +86,7 @@ private:
     };
 
     void onTick (float seconds) override;
+    void updateOuter();
 
     SatureProcessor& satureProcessor() noexcept;
 
@@ -105,6 +112,10 @@ private:
     fancy::ui::ParamDropdown oversamplingDropdown, filterDropdown;
     fancy::ui::Knob trimKnob;
     fancy::ui::ParamCheckbox dcCheckbox;
+
+    // Phase 4 Wave 2 (reference/phase4/45__sature_w2_mockup.png): the OUTER BANDS group.
+    juce::Label outerCaption, belowLowLabel, aboveHighLabel, outerNote;
+    fancy::ui::Knob lowDriveKnob, lowMixKnob, highDriveKnob, highMixKnob;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SatureEditor)
 };

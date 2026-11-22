@@ -69,9 +69,16 @@ void SatureDsp::prepare (double newSampleRate)
 {
     sampleRate = newSampleRate;
 
-    oversampling.prepare (sampleRate, maxChunk, 2, true);
+    oversampling.prepare (sampleRate, maxChunk, 4, true); // copies 2 and 3: the outer bands
     matchedBuffer.setSize (2, maxChunk);
     midBuffer.setSize (2, maxChunk);
+
+    for (auto& buffer : outerBuffers)
+        buffer.setSize (2, maxChunk);
+
+    for (int band = 0; band < 2; ++band)
+        for (auto* smoother : { &outerDriveDb[(size_t) band], &outerMix[(size_t) band], &outerOn[(size_t) band] })
+            smoother->setTime (smoothingMs, sampleRate);
 
     delayLength = oversampling.getMaxLatency() + 2 + maxChunk + 1;
 
@@ -112,6 +119,27 @@ void SatureDsp::resetCore()
     delayWritePosition = 0;
     lastCurve = sat::makeCurve (activeType, character.getCurrent());
     settingsCached = false;
+
+    for (int band = 0; band < 2; ++band)
+        resetOuter (band);
+}
+
+void SatureDsp::resetOuter (int band)
+{
+    for (auto& state : outerStates[(size_t) band])
+    {
+        for (auto& section : state.split)
+            section.reset();
+
+        state.adaa.reset();
+        state.tapeLoss.reset();
+        state.tilt.reset();
+        state.previousIn = 0.0;
+        state.addedDelay.fill (0.0);
+    }
+
+    if (oversampling.getFactor() != off)
+        oversampling.get (2 + band).reset();
 }
 
 void SatureDsp::reset()
@@ -166,6 +194,26 @@ void SatureDsp::setTargets (const Targets& newTargets)
 
     restart (targets.lowOn, lowOn, true);
     restart (targets.highOn, highOn, false);
+
+    // Phase 4 Wave 2: an outer band runs while its edge is set and its Drive is above 0; one that
+    // was fully off starts afresh as it fades in.
+    const double outerDb[] { targets.lowDriveDb, targets.highDriveDb };
+    const double outerMixes[] { targets.lowMix, targets.highMix };
+    const bool edges[] { targets.lowOn, targets.highOn };
+
+    for (int band = 0; band < 2; ++band)
+    {
+        const auto wanted = edges[band] && outerDb[band] > 0.0;
+        auto& on = outerOn[(size_t) band];
+
+        if (wanted && on.isSettled() && on.getCurrent() == 0.0)
+            resetOuter (band);
+
+        outerWanted[(size_t) band] = wanted;
+        on.setTarget (wanted ? 1.0 : 0.0);
+        outerDriveDb[(size_t) band].setTarget (std::clamp (outerDb[band], 0.0, 36.0));
+        outerMix[(size_t) band].setTarget (std::clamp (outerMixes[band], 0.0, 1.0));
+    }
     autoGain.setTarget (targets.autoGain ? 1.0 : 0.0);
     wet.setTarget (targets.wetGain);
     dry.setTarget (targets.dryGain);
@@ -203,6 +251,10 @@ void SatureDsp::snapToTargets (const Targets& newTargets)
     for (auto* smoother : { &trim, &drive, &character, &tone, &logLow, &logHigh, &lowOn, &highOn, &autoGain,
                             &wet, &dry, &output, &dcOn, &listen, &bypass })
         smoother->snapToTarget();
+
+    for (int band = 0; band < 2; ++band)
+        for (auto* smoother : { &outerDriveDb[(size_t) band], &outerMix[(size_t) band], &outerOn[(size_t) band] })
+            smoother->snapToTarget();
 
     typeFade.snapTo (1.0);
 
@@ -266,6 +318,13 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
 
     const auto latency = getLatencySamples();
 
+    // Phase 4 Wave 2: which outer bands run in this chunk. Off and settled, they're skipped
+    // entirely, so the output is the plugin's as it was, to the bit.
+    for (int band = 0; band < 2; ++band)
+        outerRunning[(size_t) band] = outerWanted[(size_t) band] || outerOn[(size_t) band].getCurrent() != 0.0;
+
+    const auto anyOuter = outerRunning[0] || outerRunning[1];
+
     // Settings for each input sample, and the band split.
     for (int i = 0; i < numSamples; ++i)
     {
@@ -322,6 +381,12 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
 
             chunkGain[(size_t) i] = gainDb == 0.0 ? 1.0 : dbToGain (gainDb);
 
+            // For the outer bands, which share these settings.
+            lastT = t;
+            lastCharacter = characterValue;
+            lastTone = toneDb;
+            lastAuto = autoAmount;
+
             // Cached only once the smoothers have landed, so it is what every later sample would compute.
             settingsCached = typeFade.isSettled() && character.isSettled() && drive.isSettled() && tone.isSettled() && autoGain.isSettled();
             cachedCurve = curve;
@@ -334,6 +399,31 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
         const auto trimGain = trim.next();
         const auto lowAmount = lowOn.next();
         const auto highAmount = highOn.next();
+
+        // Phase 4 Wave 2: each running outer band's Drive, Tape amount and auto gain, from its own
+        // Drive and the mid band's Type, Character and Tone.
+        for (int band = 0; band < 2; ++band)
+        {
+            const auto driveDb = outerDriveDb[(size_t) band].next();
+
+            if (! outerRunning[(size_t) band])
+                continue;
+
+            outerDrive[(size_t) band][(size_t) i] = dbToGain (driveDb);
+            outerTape[(size_t) band][(size_t) i] = sat::TapeLoss::amountFor (driveDb, chunkCurve[(size_t) i].tape);
+
+            auto gainDb = 0.0;
+
+            if (lastAuto > 0.0)
+            {
+                const auto table = lastT >= 1.0 ? tableGainDb (activeType, driveDb, lastCharacter)
+                                                : tableGainDb (previousType, driveDb, lastCharacter) * (1.0 - lastT)
+                                                      + tableGainDb (activeType, driveDb, lastCharacter) * lastT;
+                gainDb = lastAuto * (table + toneGainDb (lastTone));
+            }
+
+            outerGain[(size_t) band][(size_t) i] = gainDb == 0.0 ? 1.0 : dbToGain (gainDb);
+        }
         const auto writePosition = (delayWritePosition + i) % delayLength;
 
         for (int ch = 0; ch < 2; ++ch)
@@ -368,7 +458,38 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
 
             matchedBuffer.setSample (ch, i, (float) x);
             midBuffer.setSample (ch, i, (float) mid);
+
+            // Phase 4 Wave 2: the low band is a 48 dB/oct low-pass at Low and the high band a
+            // 48 dB/oct high-pass at High, power complementary with the mid band's edges.
+            if (anyOuter)
+            {
+                for (int band = 0; band < 2; ++band)
+                {
+                    if (! outerRunning[(size_t) band])
+                        continue;
+
+                    auto& outer = outerStates[(size_t) band][(size_t) ch];
+                    auto y = x;
+
+                    for (int k = 0; k < numSections; ++k)
+                        y = band == lowBand ? outer.split[(size_t) k].tick (lowCoefficients[(size_t) k], y).low
+                                            : outer.split[(size_t) k].tick (highCoefficients[(size_t) k], y).high;
+
+                    outerBuffers[(size_t) band].setSample (ch, i, (float) y);
+                }
+            }
         }
+    }
+
+    for (int band = 0; band < 2; ++band)
+    {
+        if (! outerRunning[(size_t) band])
+            continue;
+
+        if (oversampling.getFactor() == off)
+            saturateOuterBaseRate (band, numSamples);
+        else
+            saturateOuterOversampled (band, numSamples);
     }
 
     if (oversampling.getFactor() == off)
@@ -388,11 +509,22 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
         const auto fade = oversampling.nextFade();
         const auto readPosition = (delayWritePosition + i + delayLength - latency) % delayLength;
 
+        double outerAmount[2];
+
+        for (int band = 0; band < 2; ++band)
+            outerAmount[band] = outerOn[(size_t) band].next() * outerMix[(size_t) band].next();
+
         for (int ch = 0; ch < 2; ++ch)
         {
             auto& state = channelStates[(size_t) ch];
 
-            const auto added = (double) midBuffer.getSample (ch, i);
+            auto added = (double) midBuffer.getSample (ch, i);
+
+            // Phase 4 Wave 2: each outer band's own difference, by its Mix.
+            if (anyOuter)
+                for (int band = 0; band < 2; ++band)
+                    if (outerRunning[(size_t) band])
+                        added += outerAmount[band] * (double) outerBuffers[(size_t) band].getSample (ch, i);
             const auto blocked = added - state.dcIn + dcCoefficient * state.dcOut;
             state.dcIn = added;
             state.dcOut = blocked;
