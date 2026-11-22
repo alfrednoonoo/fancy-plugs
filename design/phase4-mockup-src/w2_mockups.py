@@ -323,6 +323,83 @@ def limit():
     ])
 
 
+@plugin("ds", 52)
+def ds():
+    W, H = 760, 465
+    green, light, blue = "#2DCC70", "#8FE3B4", "#3598DB"
+
+    # The frequency ruler in ds-w2.png, measured: 1 kHz at x 133, 20 kHz at x 636, log.
+    def x_of(hz):
+        return 133 + 503 * math.log(hz / 1000.0) / math.log(20.0)
+
+    def tabs(selected):
+        on = f"background:{green};color:#141414;font-weight:600"
+        off = "color:#fff"
+        power = (f'<svg width="11" height="11" viewBox="0 0 12 12" style="margin-left:5px"><path d="M4 3.2A3.8 3.8 0 1 0 8 3.2" '
+                 f'stroke="{green if selected != "low" else "#141414"}" stroke-width="1.5" fill="none" stroke-linecap="round"/>'
+                 f'<line x1="6" y1="1.2" x2="6" y2="5.6" stroke="{green if selected != "low" else "#141414"}" stroke-width="1.5" stroke-linecap="round"/></svg>')
+        return (
+            '<div class="o cap" style="left:252px;top:89px;font-size:12px">Band</div>'
+            '<div class="o new" style="left:290px;top:84px;width:128px;height:24px;background:#141414;border-radius:4px;display:flex;padding:2px;gap:2px">'
+            f'<div style="flex:1;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;{on if selected == "high" else off}">High</div>'
+            f'<div style="flex:1;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;{on if selected == "low" else off}">Low{power}</div>'
+            '</div>')
+
+    low_lo, low_hi = x_of(3500 / math.sqrt(2)), x_of(3500 * math.sqrt(2))
+    ruler = (
+        f'<div class="o" style="left:{low_lo:.0f}px;top:252px;width:{low_hi - low_lo:.0f}px;height:8px;background:{light};border-radius:3px"></div>'
+        f'<div class="o" style="left:{x_of(3500) - 3:.0f}px;top:247px;width:6px;height:16px;background:{blue};border-radius:3px;box-shadow:0 0 0 1.5px #141414"></div>'
+        f'<div class="o new" style="left:{low_lo - 2:.0f}px;top:238px;width:{low_hi - low_lo + 4:.0f}px;height:25px"></div>'
+    )
+
+    # Low's reduction on the history: notches in the light shade between High's, at the "sh" sounds.
+    notches = "".join(
+        f'<svg class="o" style="left:{x}px;top:118px" width="{w}" height="{h}"><path d="M0,0 L{w},0 L{w - 3},{h * 0.7:.0f} L{w / 2 + 2:.0f},{h} L{w / 2 - 2:.0f},{h - 2} L3,{h * 0.7:.0f} Z" fill="{light}" fill-opacity=".85"/></svg>'
+        for x, w, h in ((270, 16, 22), (392, 14, 16), (514, 16, 26)))
+    history = (
+        notches + '<div class="o new" style="left:262px;top:114px;width:276px;height:38px"></div>'
+        f'<div class="o cap" style="left:121px;top:213px;font-size:10px;background:rgba(20,20,20,.92);padding:2px 6px;border-radius:3px">sibilance level (grey) &middot; reduction: '
+        f'<span style="color:{green}">High</span>, <span style="color:{light}">Low</span> &middot; threshold</div>'
+    )
+
+    def values(threshold, freq, width, range_db, gr):
+        covers = (
+            '<div class="cover" style="left:14px;top:384px;width:58px;height:13px;--bg:#262626"></div>'
+            '<div class="cover" style="left:80px;top:388px;width:32px;height:14px;--bg:#262626"></div>'
+            '<div class="cover" style="left:140px;top:396px;width:68px;height:16px;--bg:#262626"></div>'
+            '<div class="cover" style="left:256px;top:396px;width:56px;height:16px;--bg:#262626"></div>'
+            '<div class="cover" style="left:368px;top:396px;width:56px;height:16px;--bg:#262626"></div>'
+        )
+        text = (
+            f'<div class="o val" style="left:17px;top:383px;color:{green};font-size:12px">{threshold}</div>'
+            f'<div class="o val" style="left:84px;top:388px;color:#fff;font-size:12px">{gr}</div>'
+            f'<div class="o val" style="left:148px;top:397px;color:{blue};font-size:12px">{freq}</div>'
+            f'<div class="o val" style="left:264px;top:397px;color:{green};font-size:12px">{width}</div>'
+            f'<div class="o val" style="left:378px;top:397px;color:{green};font-size:12px">{range_db}</div>'
+        )
+        return covers + text
+
+    dim_shape = ('<div class="o" style="left:226px;top:292px;width:100px;height:21px;background:#262626;opacity:.6;border-radius:4px"></div>'
+                 '<div class="o new" style="left:226px;top:292px;width:100px;height:21px"></div>')
+
+    high = tabs("high") + ruler + history
+    low = tabs("low") + ruler + history + values("-20.0 dB", "3.50 kHz", "1.0 oct", "-9 dB", "-3.1") + dim_shape
+
+    return w1.page("Fancy DS: Phase 4 Wave 2 mockup (dual-band detection)", "docs/ds.md, Phase 4 Wave 2: dual-band detection, Decisions 1 to 4 A. New things in dashed yellow, on the plugin's real screenshot (1x coordinates).", [
+        ("1 · High selected, Low switched on",
+         "Band tabs High | Low in the top row, between Detector and Mode. The power switch on the Low tab turns Dual band on; off, Low's tab shows only its name and the plugin works as now. "
+         "The frequency ruler shows Low's band in a lighter green with its own blue handle, and the history shows Low's reduction in the same light green beside High's.",
+         w1.shot(IMG + "ds-w2.png", W, H, high,
+                 "<b>High</b> is today's band, unchanged: the Threshold fader and meter, GR, Freq, Width, Band | Shelf and Range all show it. "
+                 "Both bars on the ruler drag: the handle sets that band's Freq, the edges its Width. Each drag is one undo step.")),
+        ("2 · Low selected",
+         "The same controls now show Low: Threshold (-20 dB), GR, Freq (3.50 kHz, 1 to 8 kHz), Width and Range (-9 dB). Band | Shelf dims: Low is always a band. "
+         "Attack, Release, Detector, Mode, Relative threshold, Link channels and Learn are shared; Learn sets both thresholds.",
+         w1.shot(IMG + "ds-w2.png", W, H, low,
+                 "The selected tab is the window's state, not a parameter, like EQ's selected band. Clicking either bar on the ruler also selects its tab.")),
+    ])
+
+
 STEMS = {"comp_optical": "comp_w2_optical", "verb_decay": "verb_w2_decay", "verb_duck": "verb_w2_duck"}
 
 

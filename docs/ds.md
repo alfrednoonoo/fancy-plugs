@@ -208,7 +208,7 @@ One push (`365a133`), with every recommended option; `tests/DsW1Tests.cpp`.
 
 ## Phase 4 Wave 2: dual-band detection
 
-**Draft for approval (22 November 2026).** Item 10 of the Wave 2 order (`docs/enhancements.md`; backlog item 2 of section 11). No code until it's approved, then a mockup. Modelled first: `docs/research/ds-dual-model.py`.
+**Approved by the user on 22 November 2026 with every recommended option (A).** Item 10 of the Wave 2 order (`docs/enhancements.md`; backlog item 2 of section 11). Then a mockup, approved before any code. Modelled first: `docs/research/ds-dual-model.py`.
 
 ### 1. Why
 
