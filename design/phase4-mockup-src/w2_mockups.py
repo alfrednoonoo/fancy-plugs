@@ -326,7 +326,7 @@ def limit():
 @plugin("ds", 52)
 def ds():
     W, H = 760, 465
-    green, light, blue = "#2DCC70", "#8FE3B4", "#3598DB"
+    green, light, blue = "#2DCC70", "#F1C315", "#3598DB"
 
     # The frequency ruler in ds-w2.png, measured: 1 kHz at x 133, 20 kHz at x 636, log.
     def x_of(hz):
@@ -388,7 +388,7 @@ def ds():
     return w1.page("Fancy DS: Phase 4 Wave 2 mockup (dual-band detection)", "docs/ds.md, Phase 4 Wave 2: dual-band detection, Decisions 1 to 4 A. New things in dashed yellow, on the plugin's real screenshot (1x coordinates).", [
         ("1 · High selected, Low switched on",
          "Band tabs High | Low in the top row, between Detector and Mode. The power switch on the Low tab turns Dual band on; off, Low's tab shows only its name and the plugin works as now. "
-         "The frequency ruler shows Low's band in a lighter green with its own blue handle, and the history shows Low's reduction in the same light green beside High's.",
+         "The frequency ruler shows Low's band in yellow with its own blue handle, and the history shows Low's reduction in yellow beside High's green (user, 22 November 2026).",
          w1.shot(IMG + "ds-w2.png", W, H, high,
                  "<b>High</b> is today's band, unchanged: the Threshold fader and meter, GR, Freq, Width, Band | Shelf and Range all show it. "
                  "Both bars on the ruler drag: the handle sets that band's Freq, the edges its Width. Each drag is one undo step.")),

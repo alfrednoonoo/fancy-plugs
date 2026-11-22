@@ -37,6 +37,17 @@
 - [ ] Set Lookahead to 2 ms while stopped: the plugin's latency in REAPER's FX chain changes, and the vocal is still in time with the other tracks.
 - [ ] Set Split filter to **Linear phase** while stopped: the latency grows to about 53 ms, the vocal stays in time, and it still de-esses. Back to Minimum phase.
 
+## Dual band (Phase 4 Wave 2)
+
+- [ ] The top row shows **Band** with **High | Low** between Detector and Mode, as in `reference/phase4/52__ds_w2_mockup.png`. With Low's switch off, DS sounds as before.
+- [ ] Click Low's switch on a vocal with "sh" and "ch" sounds: a yellow bar appears under the green one on the ruler, and yellow dips appear in the history on the "sh" sounds. The "sh" sounds soften; the vowels don't dull.
+- [ ] Click **Low**: the Threshold meter, GR, Freq, Width and Range show Low's (-20 dB, 3.50 kHz, 1.0 oct, -9 dB) in yellow, and Band | Shelf dims. Click **High**: back to High's.
+- [ ] Drag the yellow bar's handle and edges: Low's Freq and Width follow, and Low's tab is selected.
+- [ ] Listen with both bands: you hear both the "s" and the "sh" being taken away.
+- [ ] Switch **Wide**: the voice dips on "s" and on "sh". Switch Split filter to **Linear phase**: the latency is the same as with one band.
+- [ ] Learn with both bands on: both thresholds move.
+- [ ] Load **Vocal, s and sh**: Dual band is on. Turn Low's switch off while playing: no click.
+
 ## Presets, menus, undo, A/B and Compare
 
 - [ ] The preset browser lists **Vocals** and **Mix**, and the ‹ › arrows step through the presets.

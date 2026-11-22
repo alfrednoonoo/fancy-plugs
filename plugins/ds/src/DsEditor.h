@@ -29,6 +29,25 @@ private:
         void paint (juce::Graphics&) override;
     };
 
+    // Phase 4 Wave 2: the High | Low band tabs. A click on a name selects its band (the window's
+    // state, not a parameter); the power switch on Low turns Dual band on and off.
+    class BandTabs final : public juce::Component, public juce::SettableTooltipClient
+    {
+    public:
+        std::function<void (bool low)> onSelect;
+        std::function<void()> onPower;
+
+        void setState (bool lowSelected, bool dualOn);
+
+        void paint (juce::Graphics&) override;
+        void mouseDown (const juce::MouseEvent&) override;
+
+    private:
+        juce::Rectangle<float> powerArea() const;
+
+        bool low = false, dual = false;
+    };
+
     // The detector level and reduction over the last 3 s, and a frequency ruler with the band.
     // Drag on the history for Threshold, the handle for Freq, the band's edges for Width.
     class Display final : public juce::Component, public juce::SettableTooltipClient
@@ -42,6 +61,11 @@ private:
         // Phase 4 Wave 1: every new history column, for Learn.
         void setColumnListener (std::function<void (const DsDsp::HistoryColumn*, int)> listener) { history.onColumns = std::move (listener); }
 
+        // Phase 4 Wave 2: which band the history's level and threshold and the threshold drag are
+        // for, and a click on a band's bar selects it.
+        void setLowSelected (bool shouldBeLow);
+        std::function<void (bool low)> onSelectBand;
+
         void paint (juce::Graphics&) override;
         void resized() override;
         void mouseMove (const juce::MouseEvent&) override;
@@ -52,7 +76,7 @@ private:
         static constexpr int rulerHeight = 42;
 
     private:
-        enum class Drag { none, threshold, freq, lowEdge, highEdge };
+        enum class Drag { none, threshold, freq, lowEdge, highEdge, lowBandFreq, lowBandLowEdge, lowBandHighEdge };
 
         float historyHeight() const noexcept { return (float) (getHeight() - rulerHeight); }
         float yForDb (float db) const noexcept;
@@ -63,13 +87,19 @@ private:
         juce::RangedAudioParameter& parameterFor (Drag drag) const;
         void dragTo (juce::Point<float> position);
 
+        static bool isLowBandDrag (Drag drag) noexcept { return drag == Drag::lowBandFreq || drag == Drag::lowBandLowEdge || drag == Drag::lowBandHighEdge; }
+
         DsProcessor& dsProcessor;
         fancy::ui::DeEsserHistory history;
         Drag dragging = Drag::none;
+        bool lowSelected = false;
     };
 
     void onTick (float seconds) override;
     void updateLocks();
+
+    // Phase 4 Wave 2: shows High's or Low's Threshold, Freq, Width and Range.
+    void selectBand (bool low);
 
     // Phase 4 Wave 1: Learn listens to 2 s of the detector level and sets Threshold at its 90th
     // percentile, so only the loudest "s" sounds are turned down (Decision 1 A).
@@ -112,8 +142,15 @@ private:
     juce::Label learnNote, slopeLabel, ceilingLabel;
     fancy::ui::ParamDropdown slopeDropdown;
     fancy::ui::Knob ceilingKnob;
-    std::vector<float> learnedLevels;
+    std::vector<float> learnedLevels, learnedLowLevels;
     float learnSeconds = -1.0f;
+
+    // Phase 4 Wave 2: the Low band's controls, in the High band's places while Low is selected.
+    juce::Label bandLabel;
+    BandTabs bandTabs;
+    fancy::ui::ThresholdMeter lowThresholdMeter;
+    fancy::ui::Knob lowFreqKnob, lowWidthKnob, lowRangeKnob;
+    bool lowSelected = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DsEditor)
 };

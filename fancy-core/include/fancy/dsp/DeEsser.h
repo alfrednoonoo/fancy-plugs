@@ -22,6 +22,7 @@ public:
     enum Lookahead { lookaheadOff, lookahead1, lookahead2, lookahead5 };
 
     static constexpr double minHz = 2000.0, maxHz = 16000.0;
+    static constexpr double lowMinHz = 1000.0, lowMaxHz = 8000.0;   // Phase 4 Wave 2: the Low band
     static constexpr double ratioSlope = 0.875;    // 8:1
     static constexpr double kneeDb = 6.0;
     static constexpr double fullBandFloorDb = -60.0;
@@ -41,6 +42,12 @@ public:
         // Fancy DS's detection slope (docs/ds.md, Phase 4 Wave 1): 1, 2 or 4 detector filters in
         // a row, 12, 24 or 48 dB/oct. 1 is the detector as it was; DS-Mini never changes it.
         int slopeStages = 1;
+
+        // Fancy DS's dual-band detection (docs/ds.md, Phase 4 Wave 2): a second, Low band with its
+        // own detector, threshold and range, cut after the High band. Off, it isn't run, and the
+        // engine is as it was to the bit. DS-Mini never turns it on.
+        bool dual = false;
+        double lowFreqHz = 3500.0, lowWidthOctaves = 1.0, lowThresholdDb = -20.0, lowRangeDb = -9.0;
     };
 
     static double lookaheadMs (int choice) noexcept;
@@ -72,13 +79,16 @@ public:
 
     // For the editor, all lock-free.
     float takeReduction() noexcept { return reduction.exchange (0.0f, std::memory_order_relaxed); }
+    float takeLowReduction() noexcept { return lowReduction.exchange (0.0f, std::memory_order_relaxed); }
 
     // The detector level the Threshold meter shows: absolute, or relative to the full band.
     fancy::dsp::MeterTap levelMeter;
+    fancy::dsp::MeterTap lowLevelMeter;   // the Low band's, while it runs
 
     struct HistoryColumn
     {
         float levelDb, reductionDb;
+        float lowLevelDb = -200.0f, lowReductionDb = 0.0f;   // Phase 4 Wave 2
     };
 
     static constexpr double historySeconds = 3.0;
@@ -93,15 +103,19 @@ private:
     {
         double low = 0.0, high = 0.0;
         int bands = 3;
+        double lowBandLow = 0.0, lowBandHigh = 0.0;   // with two bands, the Low band's edges, under low
 
         bool operator== (const Edges&) const = default;
     };
 
     static Edges edgesFor (const Targets& targets) noexcept;
+    static Edges dualEdgesFor (const Targets& targets) noexcept;
 
     void processChunk (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples) noexcept;
     void updateFilters() noexcept;
-    void pushHistory (float levelDb, float reductionDb) noexcept;
+    void updateLowFilters() noexcept;
+    void resetLow() noexcept;
+    void pushHistory (const HistoryColumn& column) noexcept;
 
     double rate = 48000.0;
     Targets current;
@@ -110,6 +124,7 @@ private:
     int activeLookahead = lookaheadOff;
     bool activeLinear = false;
     bool activeShelf = false;
+    bool activeDual = false;
     int holdOffSamples = 0;
 
     // Filters: one detector per channel, and the minimum-phase split per audio channel.
@@ -118,6 +133,18 @@ private:
     std::array<fancy::dsp::Svf, 2> detectors, splits;
     std::array<std::array<fancy::dsp::Svf, 3>, 2> extraDetectors; // Phase 4 Wave 1: the slope's further stages
     fancy::dsp::Smoother logFreq, width;
+
+    // Phase 4 Wave 2: the Low band. lowRunning stays true after Dual band goes off until Low's
+    // reduction has fully released, so turning it off doesn't click.
+    fancy::dsp::SvfCoefficients lowCoefficients;
+    double lowWarpedFreq = 0.4, lowBandQ = 1.414;
+    std::array<fancy::dsp::Svf, 2> lowDetectors, lowSplits;
+    std::array<std::array<fancy::dsp::Svf, 3>, 2> lowExtraDetectors;
+    fancy::dsp::Smoother lowLogFreq, lowWidth;
+    std::array<double, 2> lowPeakDb { -200.0, -200.0 };
+    std::array<int, 2> lowHoldLeft { 0, 0 };
+    std::array<fancy::dsp::EnvelopeFollower, 2> lowFollowers;
+    bool lowRunning = false;
     int filterCountdown = 0;
 
     // Levels.
@@ -130,7 +157,7 @@ private:
 
     // Delays: the lookahead, the linear split's raw path, the gain and the dry path for bypass.
     std::array<std::vector<float>, 2> lookaheadLines, rawLines, dryLines;
-    std::array<std::vector<double>, 2> gainLines;
+    std::array<std::vector<double>, 2> gainLines, lowGainLines;
     int lookaheadPosition = 0, rawPosition = 0, dryPosition = 0, gainPosition = 0;
     int lookaheadSize = 1, rawSize = 1, drySize = 1, gainSize = 1;
 
@@ -146,11 +173,11 @@ private:
     // History.
     std::atomic<int> historyColumns { 510 };
     int columnFill = 0;
-    float columnLevel = -200.0f, columnReduction = 0.0f;
+    float columnLevel = -200.0f, columnReduction = 0.0f, columnLowLevel = -200.0f, columnLowReduction = 0.0f;
     std::vector<HistoryColumn> history = std::vector<HistoryColumn> ((size_t) historyCapacity);
     std::atomic<int> historyWrite { 0 }, historyRead { 0 };
 
-    std::atomic<float> reduction { 0.0f };
+    std::atomic<float> reduction { 0.0f }, lowReduction { 0.0f };
 };
 
 } // namespace fancy::dsp

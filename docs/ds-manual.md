@@ -70,12 +70,14 @@ The presets are good starting points: **Bright female vocal** and **Deep male vo
 | Vocals | Podcast voice | Threshold -26, Range -9, Lookahead 2 ms |
 | Mix | Harsh cymbals | Split, Shelf at 8 kHz, Range -6, Release 120 ms |
 | Mix | Bus taming | Wide, Shelf at 6 kHz, Threshold -30, Range -4 |
+| Vocals | Vocal, s and sh | Dual band on: High at the defaults, Low at 3.5 kHz, Threshold -20, Range -9 |
 
 ## Phase 4 additions
 
 - **Learn** (footer): play the vocal and click it; after 3 s Threshold sits where only the "s" sounds go over it.
 - **Filter slope** (drawer): how sharply the detector picks out the band. Steeper ignores more of the voice around it. 12 dB/oct is the old sound.
 - **Ceiling** (drawer): holds the output's true peak under this level. Off at the bottom; it adds a little latency while on.
+- **Dual band** (the **High | Low** tabs in the top row): a voice has two kinds of sibilance, "s" high up (about 5 to 10 kHz) and "sh" lower (about 2.5 to 5 kHz). **High** is the band above, unchanged. The switch on the **Low** tab turns on a second band for "sh", with its own Freq (1 to 8 kHz, 3.5 kHz by default), Width, Threshold (-20 dB) and Range (-9 dB). Click a tab's name to show that band's settings in the Threshold meter, GR bar and the DETECTION and REDUCTION knobs; Band | Shelf dims for Low, which is always a band. Attack, Release, Detector, Mode, Relative threshold, Link channels, Lookahead, Filter slope and Listen are shared. On the ruler Low's band is the yellow bar under High's; drag its handle or edges, and click either bar to select its tab. The history shows Low's reduction in yellow. Learn sets both thresholds. In Split each band cuts only its own band; in Wide the whole signal goes down by the deeper of the two. Two bands catch "sh" much better than one widened band, and dull the vowels far less.
 
 ## Latency
 

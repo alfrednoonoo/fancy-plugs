@@ -59,6 +59,20 @@ DeEsser::Edges DeEsser::edgesFor (const Targets& targets) noexcept
     return edges;
 }
 
+// Phase 4 Wave 2 (Decision 3 A): with two bands, five linear-phase bands (four with a High shelf),
+// the Low band's upper edge held under the High band's lower edge so they never overlap.
+DeEsser::Edges DeEsser::dualEdgesFor (const Targets& targets) noexcept
+{
+    auto edges = edgesFor (targets);
+    const auto half = std::pow (2.0, 0.5 * targets.lowWidthOctaves);
+    const auto lowHz = std::clamp (targets.lowFreqHz, lowMinHz, lowMaxHz);
+
+    edges.lowBandHigh = std::min (lowHz * half, edges.low / 1.26);
+    edges.lowBandLow = std::max (20.0, std::min (lowHz / half, edges.lowBandHigh / 1.26));
+    edges.bands += 2;
+    return edges;
+}
+
 void DeEsser::prepare (double sampleRate)
 {
     rate = sampleRate;
@@ -77,15 +91,16 @@ void DeEsser::prepare (double sampleRate)
     for (auto& line : rawLines) line.assign ((size_t) rawSize, 0.0f);
     for (auto& line : dryLines) line.assign ((size_t) drySize, 0.0f);
     for (auto& line : gainLines) line.assign ((size_t) gainSize, 1.0);
+    for (auto& line : lowGainLines) line.assign ((size_t) gainSize, 1.0);
     for (auto& buffer : crossoverInput) buffer.assign ((size_t) maxChunk, 0.0f);
 
-    bandScratch.assign ((size_t) (3 * 2 * maxChunk), 0.0);
+    bandScratch.assign ((size_t) (5 * 2 * maxChunk), 0.0);
 
     holdSamples = 0.001 * sampleRate;
     fallPerSample = 20.0 / sampleRate;
     rmsCoefficient = fancy::dsp::timeCoefficient (50.0, sampleRate);
 
-    for (auto* smoother : { &logFreq, &width, &outputGain, &bypassMix })
+    for (auto* smoother : { &logFreq, &width, &lowLogFreq, &lowWidth, &outputGain, &bypassMix })
         smoother->setTime (smoothingMs, sampleRate);
 
     switchGain.setTime (switchFadeMs / 5.0, sampleRate);
@@ -104,8 +119,9 @@ void DeEsser::reset()
         for (auto& line : *lines)
             std::fill (line.begin(), line.end(), 0.0f);
 
-    for (auto& line : gainLines)
-        std::fill (line.begin(), line.end(), 1.0);
+    for (auto* lines : { &gainLines, &lowGainLines })
+        for (auto& line : *lines)
+            std::fill (line.begin(), line.end(), 1.0);
 
     lookaheadPosition = rawPosition = dryPosition = gainPosition = 0;
 
@@ -113,6 +129,7 @@ void DeEsser::reset()
     for (auto& stages : extraDetectors) for (auto& filter : stages) filter.reset();
     for (auto& filter : splits) filter.reset();
     for (auto& follower : followers) follower.reset();
+    resetLow();
 
     peakDb = { -200.0, -200.0 };
     filterCountdown = 0;
@@ -130,6 +147,11 @@ void DeEsser::snapToTargets (const Targets& targets) noexcept
     activeLookahead = targets.lookahead;
     activeLinear = targets.linearPhase;
     activeShelf = targets.shelf;
+    activeDual = targets.dual;
+
+    lowLogFreq.snapTo (std::log2 (std::clamp (targets.lowFreqHz, lowMinHz, lowMaxHz)));
+    lowWidth.snapTo (targets.lowWidthOctaves);
+    updateLowFilters();
 
     logFreq.snapTo (std::log2 (std::clamp (targets.freqHz, minHz, maxHz)));
     width.snapTo (targets.widthOctaves);
@@ -138,7 +160,7 @@ void DeEsser::snapToTargets (const Targets& targets) noexcept
     switchGain.snapTo (1.0);
     updateFilters();
 
-    crossover.setBandCount (edgesFor (targets).bands);
+    crossover.setBandCount ((targets.dual ? dualEdgesFor (targets) : edgesFor (targets)).bands);
     designNeeded.store (true, std::memory_order_release);
 
     if (synchronousDesign)
@@ -155,6 +177,14 @@ void DeEsser::continueFrom (const DeEsser& other) noexcept
     meanSquare = other.meanSquare;
     holdLeft = other.holdLeft;
     filterCountdown = other.filterCountdown;
+    lowDetectors = other.lowDetectors;
+    lowExtraDetectors = other.lowExtraDetectors;
+    lowSplits = other.lowSplits;
+    lowFollowers = other.lowFollowers;
+    lowPeakDb = other.lowPeakDb;
+    lowHoldLeft = other.lowHoldLeft;
+    lowRunning = other.lowRunning;
+    lowGainLines = other.lowGainLines;
 
     // The same sizes, so these copy without allocating.
     lookaheadLines = other.lookaheadLines;
@@ -175,25 +205,53 @@ void DeEsser::updateFilters() noexcept
     coefficients.set (hz, bandQ, rate);
 }
 
+void DeEsser::updateLowFilters() noexcept
+{
+    const auto hz = std::exp2 (lowLogFreq.getCurrent());
+    lowBandQ = qForWidth (lowWidth.getCurrent());
+    lowWarpedFreq = std::tan (std::numbers::pi * hz / rate);
+    lowCoefficients.set (hz, lowBandQ, rate);
+}
+
+void DeEsser::resetLow() noexcept
+{
+    for (auto& filter : lowDetectors) filter.reset();
+    for (auto& stages : lowExtraDetectors) for (auto& filter : stages) filter.reset();
+    for (auto& filter : lowSplits) filter.reset();
+    for (auto& follower : lowFollowers) follower.reset();
+
+    lowPeakDb = { -200.0, -200.0 };
+    lowHoldLeft = { 0, 0 };
+    lowRunning = false;
+}
+
 void DeEsser::updateLinearDesign (const Targets& targets) noexcept
 {
     if (! targets.linearPhase)
         return;
 
-    const auto edges = edgesFor (targets);
+    const auto edges = targets.dual ? dualEdgesFor (targets) : edgesFor (targets);
     const auto forced = designNeeded.exchange (false, std::memory_order_acq_rel);
 
     if (! forced && edges == designedEdges)
         return;
 
-    const double hz[] { edges.low, edges.high };
-    crossover.design (hz, edges.bands);
+    if (targets.dual)
+    {
+        const double hz[] { edges.lowBandLow, edges.lowBandHigh, edges.low, edges.high };
+        crossover.design (hz, edges.bands);
+    }
+    else
+    {
+        const double hz[] { edges.low, edges.high };
+        crossover.design (hz, edges.bands);
+    }
     designedEdges = edges;
 }
 
 bool DeEsser::isDesignPending (const Targets& targets) const noexcept
 {
-    return targets.linearPhase && (designNeeded.load (std::memory_order_acquire) || edgesFor (targets) != designedEdges);
+    return targets.linearPhase && (designNeeded.load (std::memory_order_acquire) || (targets.dual ? dualEdgesFor (targets) : edgesFor (targets)) != designedEdges);
 }
 
 void DeEsser::process (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples) noexcept
@@ -215,7 +273,7 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
     // Lookahead, the split filter and, with the linear split, the shape change the latency or
     // the crossover: they fade out, swap and fade back in.
     const auto wantsSwitch = settings.lookahead != activeLookahead || settings.linearPhase != activeLinear
-                          || (activeLinear && settings.shelf != activeShelf);
+                          || (activeLinear && settings.shelf != activeShelf) || (activeLinear && settings.dual != activeDual);
 
     if (wantsSwitch)
     {
@@ -226,17 +284,19 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
             activeLookahead = settings.lookahead;
             activeLinear = settings.linearPhase;
             activeShelf = settings.shelf;
+            activeDual = settings.dual;
 
             for (auto* lines : { &lookaheadLines, &rawLines, &dryLines })
                 for (auto& line : *lines)
                     std::fill (line.begin(), line.end(), 0.0f);
 
-            for (auto& line : gainLines)
-                std::fill (line.begin(), line.end(), 1.0);
+            for (auto* lines : { &gainLines, &lowGainLines })
+                for (auto& line : *lines)
+                    std::fill (line.begin(), line.end(), 1.0);
 
             if (activeLinear)
             {
-                crossover.setBandCount (edgesFor (settings).bands);
+                crossover.setBandCount ((settings.dual ? dualEdgesFor (settings) : edgesFor (settings)).bands);
                 designNeeded.store (true, std::memory_order_release);
             }
 
@@ -246,6 +306,7 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
     else
     {
         activeShelf = settings.shelf;
+        activeDual = settings.dual;
 
         // A linear split has no output until its first filter arrives.
         if (holdOffSamples <= 0 && (! activeLinear || crossover.hasFilter()))
@@ -258,6 +319,8 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
     ballistics.set (settings.attackMs, settings.releaseMs, false, false, false, rate);
     logFreq.setTarget (std::log2 (std::clamp (settings.freqHz, minHz, maxHz)));
     width.setTarget (settings.widthOctaves);
+    lowLogFreq.setTarget (std::log2 (std::clamp (settings.lowFreqHz, lowMinHz, lowMaxHz)));
+    lowWidth.setTarget (settings.lowWidthOctaves);
     outputGain.setTarget (settings.outputGain);
     bypassMix.setTarget (settings.bypass ? 1.0 : 0.0);
 
@@ -266,13 +329,19 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
     const auto crossoverDelay = activeLinear ? crossover.getLatencySamples() : 0;
 
     std::array<std::array<float, maxChunk>, 2> delayed {};
-    std::array<std::array<double, maxChunk>, 2> gains {};
+    std::array<std::array<double, maxChunk>, 2> gains {}, lowGains {};
 
     // The split filter's settings at each sample: step 2 runs after step 1 has moved them on,
     // and reading them there would tie the sound to where the host's blocks start.
     std::array<fancy::dsp::SvfCoefficients, maxChunk> splitCoefficients;
-    std::array<double, maxChunk> splitWarped, splitQ;
-    auto chunkReduction = 0.0;
+    std::array<double, maxChunk> splitWarped, splitQ, lowSplitWarped, lowSplitQ;
+    auto chunkReduction = 0.0, chunkLowReduction = 0.0;
+
+    // The Low band runs while Dual band is on, and after until its reduction has let go.
+    if (settings.dual)
+        lowRunning = true;
+
+    const auto lowInChunk = lowRunning;
 
     // 1. The detector and the gain, and the audio through the lookahead.
     for (int i = 0; i < numSamples; ++i)
@@ -289,8 +358,23 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
             }
 
             updateFilters();
+
+            if (lowRunning)
+            {
+                for (int skip = 0; skip < filterInterval; ++skip)
+                {
+                    lowLogFreq.next();
+                    lowWidth.next();
+                }
+
+                updateLowFilters();
+            }
+
             filterCountdown = filterInterval;
         }
+
+        lowSplitWarped[(size_t) i] = lowWarpedFreq;
+        lowSplitQ[(size_t) i] = lowBandQ;
 
         splitCoefficients[(size_t) i] = coefficients;
         splitWarped[(size_t) i] = warpedFreq;
@@ -315,7 +399,7 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
             default:       sources[0] = sr; break;
         }
 
-        std::array<double, 2> levels {};
+        std::array<double, 2> levels {}, fullLevels {};
 
         for (int c = 0; c < (twoDetectors ? 2 : 1); ++c)
         {
@@ -349,6 +433,7 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
             const auto fullDb = std::max (fullBandFloorDb, 10.0 * std::log10 (meanSquare[(size_t) c] + 1.0e-30));
 
             levels[(size_t) c] = settings.relative ? peakDb[(size_t) c] - fullDb : peakDb[(size_t) c];
+            fullLevels[(size_t) c] = fullDb;
         }
 
         if (! twoDetectors || settings.link)
@@ -362,6 +447,72 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
             chunkReduction = std::max (chunkReduction, smoothed);
         }
 
+        // Phase 4 Wave 2: the Low band, detected from the same sources (Decision 2 A).
+        if (lowRunning)
+        {
+            std::array<double, 2> lowLevels {};
+
+            for (int c = 0; c < (twoDetectors ? 2 : 1); ++c)
+            {
+                const auto out = lowDetectors[(size_t) c].tick (lowCoefficients, sources[(size_t) c]);
+                auto filtered = lowCoefficients.k * out.band;
+
+                for (int stage = 0; stage < std::min (settings.slopeStages, 4) - 1; ++stage)
+                    filtered = lowCoefficients.k * lowExtraDetectors[(size_t) c][(size_t) stage].tick (lowCoefficients, filtered).band;
+
+                const auto db = toDb (std::abs (filtered));
+
+                if (db >= lowPeakDb[(size_t) c])
+                {
+                    lowPeakDb[(size_t) c] = db;
+                    lowHoldLeft[(size_t) c] = (int) holdSamples;
+                }
+                else if (lowHoldLeft[(size_t) c] > 0)
+                {
+                    --lowHoldLeft[(size_t) c];
+                }
+                else
+                {
+                    lowPeakDb[(size_t) c] = std::max (db, lowPeakDb[(size_t) c] - fallPerSample);
+                }
+
+                lowLevels[(size_t) c] = settings.relative ? lowPeakDb[(size_t) c] - fullLevels[(size_t) c] : lowPeakDb[(size_t) c];
+            }
+
+            if (! twoDetectors || settings.link)
+                lowLevels[0] = lowLevels[1] = twoDetectors ? std::max (lowLevels[0], lowLevels[1]) : lowLevels[0];
+
+            auto released = true;
+
+            for (size_t c = 0; c < 2; ++c)
+            {
+                const auto target = settings.dual
+                                        ? std::min (fancy::dsp::computeReduction (lowLevels[c], settings.lowThresholdDb, ratioSlope, kneeDb, false), -settings.lowRangeDb)
+                                        : 0.0;
+                const auto smoothed = lowFollowers[c].follow (ballistics, std::max (0.0, target));
+                lowGains[c][(size_t) i] = fromDb (-smoothed);
+                chunkLowReduction = std::max (chunkLowReduction, smoothed);
+                released = released && smoothed < 1.0e-6;
+            }
+
+            const auto shownLow = std::max (lowLevels[0], lowLevels[1]);
+            lowLevelMeter.report (0, (float) fromDb (std::min (shownLow, 0.0)));
+            lowLevelMeter.report (1, (float) fromDb (std::min (shownLow, 0.0)));
+            columnLowLevel = std::max (columnLowLevel, (float) shownLow);
+            columnLowReduction = std::max (columnLowReduction, (float) std::max (-20.0 * std::log10 (lowGains[0][(size_t) i]), -20.0 * std::log10 (lowGains[1][(size_t) i])));
+
+            // Off and let go: exactly unity from here, and the band stops.
+            if (! settings.dual && released)
+            {
+                lowGains[0][(size_t) i] = lowGains[1][(size_t) i] = 1.0;
+                resetLow();
+            }
+        }
+        else
+        {
+            lowGains[0][(size_t) i] = lowGains[1][(size_t) i] = 1.0;
+        }
+
         const auto shownLevel = std::max (levels[0], levels[1]);
         levelMeter.report (0, (float) fromDb (std::min (shownLevel, 0.0)));
         levelMeter.report (1, (float) fromDb (std::min (shownLevel, 0.0)));
@@ -371,9 +522,9 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
 
         if (++columnFill >= std::max (1, (int) (historySeconds * rate / historyColumns.load (std::memory_order_relaxed))))
         {
-            pushHistory (columnLevel, columnReduction);
-            columnLevel = -200.0f;
-            columnReduction = 0.0f;
+            pushHistory ({ columnLevel, columnReduction, columnLowLevel, columnLowReduction });
+            columnLevel = columnLowLevel = -200.0f;
+            columnReduction = columnLowReduction = 0.0f;
             columnFill = 0;
         }
 
@@ -404,7 +555,8 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
         {
             auto reference = (double) delayed[c][(size_t) i];
             auto gain = gains[c][(size_t) i];
-            double band;
+            auto lowGain = lowGains[c][(size_t) i];
+            double band, lowBand = 0.0;
 
             if (activeLinear)
             {
@@ -417,7 +569,21 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
                 gainLine[(size_t) gainPosition] = gain;
                 gain = gainLine[(size_t) ((gainPosition + gainSize - crossoverDelay) % gainSize)];
 
-                band = bandScratch[(size_t) ((1 * 2 + (int) c) * maxChunk + i)];
+                if (activeDual)
+                {
+                    // Five bands (four with a shelf): Low is band 1, High band 3.
+                    auto& lowLine = lowGainLines[c];
+                    lowLine[(size_t) gainPosition] = lowGain;
+                    lowGain = lowLine[(size_t) ((gainPosition + gainSize - crossoverDelay) % gainSize)];
+
+                    band = bandScratch[(size_t) ((3 * 2 + (int) c) * maxChunk + i)];
+                    lowBand = bandScratch[(size_t) ((1 * 2 + (int) c) * maxChunk + i)];
+                }
+                else
+                {
+                    band = bandScratch[(size_t) ((1 * 2 + (int) c) * maxChunk + i)];
+                    lowGain = 1.0;
+                }
             }
             else if (activeShelf)
             {
@@ -437,7 +603,32 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
             }
 
             // At a gain of exactly 1, (gain - 1) is exactly 0 and the output is the input.
-            const auto processed = settings.wide ? reference * gain : reference + (gain - 1.0) * band;
+            auto processed = settings.wide ? reference * gain : reference + (gain - 1.0) * band;
+
+            // Phase 4 Wave 2: the Low band's cut, after the High band's (Split), or the deeper of
+            // the two (Wide). Not run at all while the band is off.
+            if (lowInChunk)
+            {
+                if (settings.wide)
+                {
+                    processed = reference * std::min (gain, lowGain);
+                }
+                else if (activeLinear)
+                {
+                    processed += (lowGain - 1.0) * lowBand;
+                }
+                else
+                {
+                    const auto warped = lowSplitWarped[(size_t) i];
+                    fancy::dsp::SvfCoefficients bell;
+                    bell.k = 1.0 / (lowSplitQ[(size_t) i] * std::sqrt (std::max (lowGain, 1.0e-6)));
+                    bell.a1 = 1.0 / (1.0 + warped * (warped + bell.k));
+                    bell.a2 = warped * bell.a1;
+                    bell.a3 = warped * bell.a2;
+                    lowBand = bell.k * lowSplits[c].tick (bell, processed).band;
+                    processed += (lowGain - 1.0) * lowBand;
+                }
+            }
             references[c] = reference;
             outputs[c] = settings.listen ? reference - processed : processed;
         }
@@ -480,12 +671,19 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
     while (reductionDb > shown && ! reduction.compare_exchange_weak (shown, reductionDb, std::memory_order_relaxed))
     {
     }
+
+    auto shownLow = lowReduction.load (std::memory_order_relaxed);
+    const auto lowReductionDb = (float) chunkLowReduction;
+
+    while (lowReductionDb > shownLow && ! lowReduction.compare_exchange_weak (shownLow, lowReductionDb, std::memory_order_relaxed))
+    {
+    }
 }
 
-void DeEsser::pushHistory (float levelDb, float reductionDb) noexcept
+void DeEsser::pushHistory (const HistoryColumn& column) noexcept
 {
     const auto write = historyWrite.load (std::memory_order_relaxed);
-    history[(size_t) write] = { levelDb, reductionDb };
+    history[(size_t) write] = column;
     historyWrite.store ((write + 1) % historyCapacity, std::memory_order_release);
 }
 

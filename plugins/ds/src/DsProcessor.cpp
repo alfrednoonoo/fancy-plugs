@@ -61,6 +61,23 @@ fancy::FancyProcessor::Layout createLayout()
             .withValueFromStringFunction ([] (const juce::String& text)
                                           { return text.trim().equalsIgnoreCase ("off") ? (float) fancy::dsp::OutputCeiling::offDb : juce::jlimit (-12.0f, 0.0f, fancy::parseNumber (text)); })));
 
+    // Phase 4 Wave 2 (docs/ds.md): dual-band detection, appended. Off is DS as it was.
+    layout.add (toggle ("dual", "Dual band", false));
+    layout.add (fancy::floatParameter (
+        "lowFreq", "Low freq", fancy::logRange ((float) fancy::dsp::DeEsser::lowMinHz, (float) fancy::dsp::DeEsser::lowMaxHz, 1.0f), 3500.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("Hz")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value / 1000.0f, 2) + " kHz"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); })));
+    layout.add (fancy::floatParameter (
+        "lowWidth", "Low width", juce::NormalisableRange<float> (0.3f, 3.0f, 0.01f), 1.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("oct")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " oct"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    layout.add (fancy::deesser::dbParameter ("lowThreshold", "Low threshold", -60.0f, 0.0f, -20.0f));
+    layout.add (fancy::deesser::dbParameter ("lowRange", "Low range", -24.0f, 0.0f, -9.0f, 0));
+
     return layout;
 }
 
@@ -77,6 +94,7 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Podcast voice", { { "threshold", -26.0f }, { "range", -9.0f }, { "lookahead", lookahead2 } } },
         { "Harsh cymbals", { { "shape", shelf }, { "freq", 8000.0f }, { "range", -6.0f }, { "release", 120.0f } } },
         { "Bus taming", { { "mode", wide }, { "shape", shelf }, { "freq", 6000.0f }, { "threshold", -30.0f }, { "range", -4.0f } } },
+        { "Vocal, s and sh", { { "dual", 1.0f } } },
     };
 
     fancy::setCategories (presets, {
@@ -85,6 +103,7 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Bright female vocal", "Vocals" },
         { "Deep male vocal", "Vocals" },
         { "Podcast voice", "Vocals" },
+        { "Vocal, s and sh", "Vocals" },
         { "Harsh cymbals", "Mix" },
         { "Bus taming", "Mix" },
     });
@@ -142,6 +161,13 @@ DsDsp::Targets DsProcessor::readTargets() const
 
     // Phase 4 Wave 1: 12, 24 or 48 dB/oct.
     targets.slopeStages = 1 << juce::jlimit (0, 2, juce::roundToInt (read ("slope")));
+
+    // Phase 4 Wave 2: the Low band.
+    targets.dual = isOn ("dual");
+    targets.lowFreqHz = (double) read ("lowFreq");
+    targets.lowWidthOctaves = (double) read ("lowWidth");
+    targets.lowThresholdDb = (double) read ("lowThreshold");
+    targets.lowRangeDb = (double) read ("lowRange");
 
     return targets;
 }

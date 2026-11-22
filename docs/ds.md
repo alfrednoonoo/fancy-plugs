@@ -282,3 +282,14 @@ The selected tab isn't a parameter: it's the window's state, like EQ's selected 
 ### 7. Build order
 
 Approval of this note, then the mockup (`reference/phase4/52__ds_w2_mockup.png`), then one push: the engine's second band in `fancy::dsp::DeEsser`, the parameters, the tabs and the ruler's second bar, Learn for both bands, the preset, the tests, the manual and the checklist. Then the CPU measurement and the REAPER check.
+
+### 8. As built
+
+Mockup 52 approved by the user on 22 November 2026, with yellow (`accentYellow`, #F1C315) for the Low band instead of the mockup's light green (user). One push; `tests/DsW2Tests.cpp`.
+
+- The engine (`fancy::dsp::DeEsser`, shared with DS-Mini) gains the Low band as a second detector on the same sources, with its own filters (Filter slope's stages too), peak hold, follower and bell split, cut after the High band. While Dual band is off it isn't run; after it's switched off it runs until its reduction has fully let go (under 1e-6 dB), then stops, so switching off doesn't click. The High path's arithmetic is untouched: test 1 compares against the v1.6.0 engine, including Linear phase and Shelf.
+- Linear phase with two bands designs five bands (four with a High shelf); `dualEdgesFor` holds Low's upper edge 1.26 x under High's lower edge. Switching Dual band while in Linear phase fades out and in, as a change of shape does, because the crossover's band count changes; the latency doesn't.
+- `HistoryColumn` gains Low's level and reduction (DS-Mini leaves them at their defaults); the history draws Low's reduction in yellow and, with Low selected, Low's level and threshold. The engine reports Low's level on its own meter tap and its reduction separately for the GR bar.
+- The editor: `BandTabs` (High | Low, the power switch at Low's right end) between Detector and Mode; Low's Threshold meter, Freq, Width and Range in High's places while Low is selected (dimmed while Dual band is off); the ruler's Low bar in the lower half, its handle and edges draggable, a click on either bar selecting its tab. The screenshot preview shows Dual band on, as panel 1 of the mockup.
+- One new factory preset, **Vocal, s and sh** (Vocals).
+- Test 4 uses tones and absolute thresholds (-16 dB) so each band's filter skirt stays under the other's threshold; test 7 (Learn) is the editor's and is in the checklist.

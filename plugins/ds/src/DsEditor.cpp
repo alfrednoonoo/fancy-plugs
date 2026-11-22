@@ -29,18 +29,19 @@ constexpr float historyFloorDb = -60.0f, historyReductionDb = 30.0f;
 constexpr double rulerLowHz = 1000.0, rulerHighHz = 20000.0;
 
 const juce::Colour dsGreen = colours::accentGreen;
+const juce::Colour lowYellow = colours::accentYellow;   // the Low band (user, 22 November 2026)
 
 constexpr OutMeter::Geometry outGeometry { 14.5f, 16.0f, 316.0f, 26.0f, 4.9f, 324.0f, false, true };
 constexpr GainReductionMeter::Geometry gainGeometry { 13.0f, 20.0f, 246.0f, true, "GR" };
 
-ThresholdMeter::Style thresholdStyle()
+ThresholdMeter::Style thresholdStyle (juce::Colour accent = dsGreen)
 {
     ThresholdMeter::Style style;
     style.wellX = 12.0f;
     style.wellTop = 20.0f;
     style.wellHeight = 246.0f;
     style.lowestDb = -60.0f;
-    style.accent = dsGreen;
+    style.accent = accent;
     style.labelHeight = labelHeight;
     style.secondaryLabel = true;
     style.scale = true;
@@ -104,6 +105,75 @@ void DsEditor::Panels::paint (juce::Graphics& g)
     paintCardTitle (g, "REDUCTION", reductionX, cardY);
 }
 
+// BandTabs --------------------------------------------------------------------
+
+void DsEditor::BandTabs::setState (bool lowSelected, bool dualOn)
+{
+    if (lowSelected != low || dualOn != dual)
+    {
+        low = lowSelected;
+        dual = dualOn;
+        repaint();
+    }
+}
+
+juce::Rectangle<float> DsEditor::BandTabs::powerArea() const
+{
+    return { (float) getWidth() - 22.0f, 0.0f, 22.0f, (float) getHeight() };
+}
+
+void DsEditor::BandTabs::paint (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (bounds, 4.0f);
+
+    const auto half = bounds.reduced (2.0f).withWidth ((bounds.getWidth() - 6.0f) * 0.5f);
+    const juce::Rectangle<float> tabs[] { half, half.withX (half.getRight() + 2.0f) };
+
+    for (int i = 0; i < 2; ++i)
+    {
+        const auto selected = (i == 1) == low;
+        const auto accent = i == 0 ? dsGreen : lowYellow;
+
+        if (selected)
+        {
+            g.setColour (accent);
+            g.fillRoundedRectangle (tabs[i], 3.0f);
+        }
+
+        g.setColour (selected ? colours::bgWell : (i == 1 && ! dual ? colours::textSecondary : colours::textPrimary));
+        g.setFont (font (selected ? Weight::semiBold : Weight::regular, labelHeight));
+        g.drawText (i == 0 ? "High" : "Low", tabs[i].withTrimmedRight (i == 1 ? 14.0f : 0.0f), juce::Justification::centred, false);
+    }
+
+    // The power switch on Low: lit (yellow, or dark on the selected tab) while Dual band is on.
+    const auto area = powerArea().reduced (5.0f, 6.0f);
+    const auto size = juce::jmin (area.getWidth(), area.getHeight());
+    const auto icon = area.withSizeKeepingCentre (size, size);
+    juce::Path power;
+    power.addCentredArc (icon.getCentreX(), icon.getCentreY() + 0.5f, size * 0.42f, size * 0.42f, 0.0f, 0.7f, juce::MathConstants<float>::twoPi - 0.7f, true);
+    power.startNewSubPath (icon.getCentreX(), icon.getY());
+    power.lineTo (icon.getCentreX(), icon.getCentreY());
+
+    g.setColour (dual ? (low ? colours::bgWell : lowYellow) : colours::textSecondary.withAlpha (0.7f));
+    g.strokePath (power, juce::PathStrokeType (1.4f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+}
+
+void DsEditor::BandTabs::mouseDown (const juce::MouseEvent& event)
+{
+    if (powerArea().contains (event.position))
+    {
+        if (onPower != nullptr)
+            onPower();
+
+        return;
+    }
+
+    if (onSelect != nullptr)
+        onSelect (event.position.x >= (float) getWidth() * 0.5f);
+}
+
 // Display ---------------------------------------------------------------------
 
 DsEditor::Display::Display (DsProcessor& processor)
@@ -111,6 +181,15 @@ DsEditor::Display::Display (DsProcessor& processor)
 {
     setTooltip ("The sibilance level (grey) and the reduction (green) over the last 3 s. Drag up or down for Threshold. "
                 "Below, the band: drag the blue handle for Freq, or the band's edges for Width.");
+}
+
+void DsEditor::Display::setLowSelected (bool shouldBeLow)
+{
+    if (lowSelected != shouldBeLow)
+    {
+        lowSelected = shouldBeLow;
+        repaint();
+    }
 }
 
 void DsEditor::Display::resized()
@@ -163,9 +242,21 @@ void DsEditor::Display::paint (juce::Graphics& g)
     g.fillRoundedRectangle (bounds, 6.0f);
 
     // History: oldest on the left.
-    history.paint (g, bounds.getWidth(), top, (float) targets.thresholdDb,
-                   { dsGreen, juce::String::fromUTF8 ("sibilance level (grey) \xc2\xb7 reduction (green) \xc2\xb7 threshold"),
-                     false, historyFloorDb, historyReductionDb });
+    {
+        DeEsserHistory::Style style { dsGreen, juce::String::fromUTF8 ("sibilance level (grey) \xc2\xb7 reduction (green) \xc2\xb7 threshold"),
+                                      false, historyFloorDb, historyReductionDb };
+
+        // Phase 4 Wave 2: Low's reduction in yellow, and the selected band's level and threshold.
+        if (targets.dual)
+        {
+            style.caption = juce::String::fromUTF8 ("sibilance level (grey) \xc2\xb7 reduction: High (green), Low (yellow) \xc2\xb7 threshold");
+            style.showLowReduction = true;
+            style.lowAccent = lowYellow;
+            style.lowLevel = lowSelected;
+        }
+
+        history.paint (g, bounds.getWidth(), top, (float) (targets.dual && lowSelected ? targets.lowThresholdDb : targets.thresholdDb), style);
+    }
 
     // The ruler.
     {
@@ -185,6 +276,23 @@ void DsEditor::Display::paint (juce::Graphics& g)
 
         g.setColour (colours::uiBlue);
         g.fillRoundedRectangle (juce::Rectangle<float> (6.0f, 20.0f).withCentre ({ xForHz (targets.freqHz), barY + barHeight * 0.5f }), 2.0f);
+
+        // Phase 4 Wave 2: the Low band, in the bar's lower half, in yellow, with its own handle.
+        if (targets.dual)
+        {
+            const auto lowHalf = std::pow (2.0, 0.5 * targets.lowWidthOctaves);
+            const auto lowY = barY + barHeight * 0.5f + 1.0f, lowHeight = 8.0f;
+
+            g.setColour (lowYellow.withAlpha (lowSelected ? 0.9f : 0.6f));
+            g.fillRoundedRectangle (juce::Rectangle<float>::leftTopRightBottom (xForHz (targets.lowFreqHz / lowHalf), lowY,
+                                                                               xForHz (targets.lowFreqHz * lowHalf), lowY + lowHeight), 3.0f);
+
+            const auto handle = juce::Rectangle<float> (6.0f, 16.0f).withCentre ({ xForHz (targets.lowFreqHz), lowY + lowHeight * 0.5f });
+            g.setColour (colours::bgWell);
+            g.fillRoundedRectangle (handle.expanded (1.5f), 3.0f);
+            g.setColour (colours::uiBlue);
+            g.fillRoundedRectangle (handle, 2.0f);
+        }
 
         g.setFont (font (Weight::regular, 10.0f));
 
@@ -208,6 +316,25 @@ DsEditor::Display::Drag DsEditor::Display::dragAt (juce::Point<float> position) 
     const auto targets = dsProcessor.readTargets();
     const auto half = std::pow (2.0, 0.5 * targets.widthOctaves);
 
+    // Phase 4 Wave 2: the Low band's bar, in the lower half, comes first where the two overlap.
+    if (targets.dual && position.y >= historyHeight() + 8.0f + 8.0f)
+    {
+        const auto lowHalf = std::pow (2.0, 0.5 * targets.lowWidthOctaves);
+        const auto low = xForHz (targets.lowFreqHz / lowHalf), high = xForHz (targets.lowFreqHz * lowHalf);
+
+        if (std::abs (position.x - xForHz (targets.lowFreqHz)) <= 6.0f)
+            return Drag::lowBandFreq;
+
+        if (std::abs (position.x - low) <= 6.0f)
+            return Drag::lowBandLowEdge;
+
+        if (std::abs (position.x - high) <= 6.0f)
+            return Drag::lowBandHighEdge;
+
+        if (position.x > low && position.x < high)
+            return Drag::lowBandFreq;
+    }
+
     if (std::abs (position.x - xForHz (targets.freqHz)) <= 6.0f || targets.shelf)
         return Drag::freq;
 
@@ -223,7 +350,18 @@ DsEditor::Display::Drag DsEditor::Display::dragAt (juce::Point<float> position) 
 juce::RangedAudioParameter& DsEditor::Display::parameterFor (Drag drag) const
 {
     auto& apvts = dsProcessor.getApvts();
-    const auto* id = drag == Drag::threshold ? "threshold" : (drag == Drag::freq ? "freq" : "width");
+    const char* id = "width";
+
+    switch (drag)
+    {
+        case Drag::threshold:       id = lowSelected && dsProcessor.readTargets().dual ? "lowThreshold" : "threshold"; break;
+        case Drag::freq:            id = "freq"; break;
+        case Drag::lowBandFreq:     id = "lowFreq"; break;
+        case Drag::lowBandLowEdge:
+        case Drag::lowBandHighEdge: id = "lowWidth"; break;
+        default:                    break;
+    }
+
     return *apvts.getParameter (id);
 }
 
@@ -236,6 +374,11 @@ void DsEditor::Display::mouseMove (const juce::MouseEvent& event)
 void DsEditor::Display::mouseDown (const juce::MouseEvent& event)
 {
     dragging = dragAt (event.position);
+
+    // A click on a band's bar selects its tab.
+    if (dragging != Drag::threshold && onSelectBand != nullptr)
+        onSelectBand (isLowBandDrag (dragging));
+
     parameterFor (dragging).beginChangeGesture();
     dragTo (event.position);
 }
@@ -265,6 +408,9 @@ void DsEditor::Display::dragTo (juce::Point<float> position)
         case Drag::freq:      value = (float) hzForX (position.x); break;
         case Drag::lowEdge:   value = (float) (2.0 * std::log2 (targets.freqHz / std::max (1.0, hzForX (position.x)))); break;
         case Drag::highEdge:  value = (float) (2.0 * std::log2 (hzForX (position.x) / targets.freqHz)); break;
+        case Drag::lowBandFreq:     value = (float) hzForX (position.x); break;
+        case Drag::lowBandLowEdge:  value = (float) (2.0 * std::log2 (targets.lowFreqHz / std::max (1.0, hzForX (position.x)))); break;
+        case Drag::lowBandHighEdge: value = (float) (2.0 * std::log2 (hzForX (position.x) / targets.lowFreqHz)); break;
         case Drag::none:      return;
     }
 
@@ -293,6 +439,10 @@ DsEditor::DsEditor (DsProcessor& processor)
       editLink (dsGreen),
       slopeDropdown (parameter ("slope")),
       ceilingKnob (parameter ("ceiling"), "Ceiling", dsGreen, Knob::tightStyle),
+      lowThresholdMeter (parameter ("lowThreshold"), thresholdStyle (lowYellow)),
+      lowFreqKnob (parameter ("lowFreq"), "Freq", colours::uiBlue, Knob::tightStyle),
+      lowWidthKnob (parameter ("lowWidth"), "Width", lowYellow, Knob::tightStyle),
+      lowRangeKnob (parameter ("lowRange"), "Range", lowYellow, Knob::tightStyle),
       outMeter (outGeometry),
       gainFader (parameter ("output"), colours::uiTeal),
       lookaheadDropdown (parameter ("lookahead")),
@@ -384,6 +534,36 @@ DsEditor::DsEditor (DsProcessor& processor)
              &outMeter, &gainLabel, &gainFader })
         body.addAndMakeVisible (item);
 
+    // Phase 4 Wave 2: the band tabs between Detector and Mode, and Low's controls in High's places.
+    setUpLabel (bandLabel, "Band", juce::Justification::centredRight);
+    bandLabel.setBounds (232, rowY, 40, rowHeight);
+    bandTabs.setBounds (278, rowY + 1, 128, 24);
+    bandTabs.setTooltip ("High and Low: two sibilance bands, for \"s\" and for \"sh\". Click a name to see its settings; "
+                         "the switch on Low turns the second band on.");
+    bandTabs.onSelect = [this] (bool low) { selectBand (low); };
+    bandTabs.onPower = [this]
+    {
+        const auto on = ! dsProcessor().readTargets().dual;
+        dsProcessor().setParameter ("dual", on ? 1.0f : 0.0f);
+        selectBand (on);
+    };
+    display.onSelectBand = [this] (bool low) { selectBand (low); };
+
+    lowThresholdMeter.setBounds (thresholdMeter.getBounds());
+    lowThresholdMeter.setTooltip ("Low's threshold: how loud the Low band must get before it's turned down.");
+    lowFreqKnob.setBounds (freqKnob.getBounds());
+    lowWidthKnob.setBounds (widthKnob.getBounds());
+    lowRangeKnob.setBounds (rangeKnob.getBounds());
+    lowFreqKnob.setTooltip ("The centre of the Low band, where \"sh\" and \"ch\" sit (1 to 8 kHz).");
+    lowWidthKnob.setTooltip ("How wide the Low band is, in octaves.");
+    lowRangeKnob.setTooltip ("The most the Low band turns down. 0 dB does nothing.");
+
+    body.addAndMakeVisible (bandLabel);
+    body.addAndMakeVisible (bandTabs);
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &lowThresholdMeter, &lowFreqKnob, &lowWidthKnob, &lowRangeKnob })
+        body.addChildComponent (item);
+
     // EDIT drawer.
     drawer.setBounds (0, columnY - 4, rightColumnX, bodyHeight - columnY + 4);
 
@@ -419,6 +599,7 @@ DsEditor::DsEditor (DsProcessor& processor)
     learnButton.onClick = [this]
     {
         learnedLevels.clear();
+        learnedLowLevels.clear();
         learnSeconds = 0.0f;
         learnButton.setText ("Listening...");
     };
@@ -433,8 +614,13 @@ DsEditor::DsEditor (DsProcessor& processor)
             return;
 
         for (int i = 0; i < count; ++i)
+        {
             if (columns[i].levelDb > -150.0f)
                 learnedLevels.push_back (columns[i].levelDb);
+
+            if (columns[i].lowLevelDb > -150.0f)
+                learnedLowLevels.push_back (columns[i].lowLevelDb);
+        }
     });
 
     body.addChildComponent (drawer);
@@ -448,9 +634,36 @@ DsProcessor& DsEditor::dsProcessor() noexcept
     return dynamic_cast<DsProcessor&> (getFancyProcessor());
 }
 
+void DsEditor::selectBand (bool low)
+{
+    lowSelected = low;
+
+    for (juce::Component* high : std::initializer_list<juce::Component*> { &thresholdMeter, &freqKnob, &widthKnob, &rangeKnob })
+        high->setVisible (! low);
+
+    for (juce::Component* lowControl : std::initializer_list<juce::Component*> { &lowThresholdMeter, &lowFreqKnob, &lowWidthKnob, &lowRangeKnob })
+        lowControl->setVisible (low);
+
+    // Low is always a band (docs/ds.md, Phase 4 Wave 2).
+    shapeSegments.setAlpha (low ? 0.4f : 1.0f);
+    shapeSegments.setInterceptsMouseClicks (! low, ! low);
+
+    gainMeter.setBarColour (low ? lowYellow : dsGreen);
+    display.setLowSelected (low);
+    updateLocks();
+}
+
 void DsEditor::updateLocks()
 {
     const auto targets = dsProcessor().readTargets();
+
+    bandTabs.setState (lowSelected, targets.dual);
+
+    // With Dual band off, Low's controls still set it, dimmed, for when it's switched on.
+    for (juce::Component* lowControl : std::initializer_list<juce::Component*> { &lowThresholdMeter, &lowFreqKnob, &lowWidthKnob, &lowRangeKnob })
+        lowControl->setAlpha (targets.dual ? 1.0f : 0.5f);
+
+    lowThresholdMeter.setReadoutNote (targets.relative ? "relative" : juce::String {});
 
     widthKnob.setLocked (targets.shelf, widthHint);
     widthKnob.setAlpha (targets.shelf ? 0.5f : 1.0f);
@@ -464,9 +677,12 @@ void DsEditor::onTick (float seconds)
 
     updateLocks();
 
-    const auto reduction = juce::jmin (dsp.takeReduction(), 60.0f);
+    const auto highReduction = juce::jmin (dsp.takeReduction(), 60.0f);
+    const auto lowReduction = juce::jmin (dsp.takeLowReduction(), 60.0f);
+    const auto reduction = lowSelected ? lowReduction : highReduction;
 
     thresholdMeter.update (dsp.levelMeter, false, seconds);
+    lowThresholdMeter.update (dsp.lowLevelMeter, false, seconds);
     gainMeter.update (reduction, reduction, seconds);
     outMeter.update (processor.outputMeter, seconds);
     display.update();
@@ -488,13 +704,22 @@ void DsEditor::finishLearning()
     if (learnedLevels.size() < 8)
         return;
 
-    std::sort (learnedLevels.begin(), learnedLevels.end());
-    const auto learned = learnedLevels[(size_t) juce::jlimit (0, (int) learnedLevels.size() - 1, (int) (0.9 * (double) learnedLevels.size()))];
+    const auto setFromPercentile = [this] (std::vector<float>& levels, const char* parameterId)
+    {
+        std::sort (levels.begin(), levels.end());
+        const auto learned = levels[(size_t) juce::jlimit (0, (int) levels.size() - 1, (int) (0.9 * (double) levels.size()))];
 
-    auto& threshold = parameter ("threshold");
-    threshold.beginChangeGesture();
-    threshold.setValueNotifyingHost (threshold.convertTo0to1 (learned));
-    threshold.endChangeGesture();
+        auto& threshold = parameter (parameterId);
+        threshold.beginChangeGesture();
+        threshold.setValueNotifyingHost (threshold.convertTo0to1 (learned));
+        threshold.endChangeGesture();
+    };
+
+    setFromPercentile (learnedLevels, "threshold");
+
+    // Phase 4 Wave 2 (Decision 4 A): with two bands, Low's threshold from its own level too.
+    if (dsProcessor().readTargets().dual && learnedLowLevels.size() >= 8)
+        setFromPercentile (learnedLowLevels, "lowThreshold");
 }
 
 void DsEditor::showPreview (bool drawerOpen)
@@ -507,7 +732,13 @@ void DsEditor::showPreview (bool drawerOpen)
     setValue (parameter ("range"), -12.0f);
     setValue (parameter ("attack"), 0.5f);
     setValue (parameter ("release"), 60.0f);
+    setValue (parameter ("dual"), 1.0f);
+    setValue (parameter ("lowFreq"), 3500.0f);
+    setValue (parameter ("lowWidth"), 1.0f);
+    setValue (parameter ("lowThreshold"), -20.0f);
+    setValue (parameter ("lowRange"), -9.0f);
 
+    selectBand (false);
     updateLocks();
 
     // The mockup's history: "s" bursts every 120 px over a quiet voice, turned down above Threshold.
@@ -522,7 +753,11 @@ void DsEditor::showPreview (bool drawerOpen)
         if (t > 60 && t < 66)
             levelDb = -24.0f;
 
-        columns.push_back ({ levelDb, juce::jmax (0.0f, levelDb + 28.0f) * 0.55f });
+        // Phase 4 Wave 2: "sh" sounds half way between, turned down by the Low band.
+        const auto u = (x + 90) % 120;
+        const auto lowLevelDb = u < 18 ? -14.0f + 3.0f * random.nextFloat() : -40.0f - 6.0f * random.nextFloat();
+
+        columns.push_back ({ levelDb, juce::jmax (0.0f, levelDb + 28.0f) * 0.55f, lowLevelDb, juce::jmax (0.0f, lowLevelDb + 20.0f) * 0.6f });
     }
 
     display.showColumns (std::move (columns));

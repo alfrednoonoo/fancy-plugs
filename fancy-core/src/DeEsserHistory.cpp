@@ -50,24 +50,28 @@ void DeEsserHistory::paint (juce::Graphics& g, float width, float height, float 
     if (columns.empty())
         return;
 
-    juce::Path level, reduction;
+    juce::Path level, reduction, lowReduction;
     const auto count = (int) columns.size();
     const auto pixelsPerDb = (height - 8.0f) / style.reductionDb;
 
     level.startNewSubPath (0.0f, height);
     reduction.startNewSubPath (0.0f, 0.0f);
+    lowReduction.startNewSubPath (0.0f, 0.0f);
 
     for (int i = 0; i < count; ++i)
     {
         const auto& column = columns[(size_t) ((writeIndex + i) % count)];
-        level.lineTo ((float) i, yForDb (column.levelDb, height, style.floorDb));
+        level.lineTo ((float) i, yForDb (style.lowLevel ? column.lowLevelDb : column.levelDb, height, style.floorDb));
         reduction.lineTo ((float) i, 4.0f + juce::jlimit (0.0f, height, column.reductionDb * pixelsPerDb));
+        lowReduction.lineTo ((float) i, 4.0f + juce::jlimit (0.0f, height, column.lowReductionDb * pixelsPerDb));
     }
 
     level.lineTo ((float) count, height);
     level.closeSubPath();
     reduction.lineTo ((float) count, 0.0f);
     reduction.closeSubPath();
+    lowReduction.lineTo ((float) count, 0.0f);
+    lowReduction.closeSubPath();
 
     g.saveState();
     g.reduceClipRegion (juce::Rectangle<float> (0.0f, 0.0f, width, height).toNearestInt());
@@ -76,7 +80,7 @@ void DeEsserHistory::paint (juce::Graphics& g, float width, float height, float 
     g.fillPath (level);
 
     const auto thresholdY = yForDb (thresholdDb, height, style.floorDb);
-    g.setColour (style.accent.withAlpha (0.8f));
+    g.setColour ((style.lowLevel ? style.lowAccent : style.accent).withAlpha (0.8f));
 
     if (style.dashedThreshold)
     {
@@ -90,6 +94,12 @@ void DeEsserHistory::paint (juce::Graphics& g, float width, float height, float 
 
     g.setColour (style.accent.withAlpha (0.55f));
     g.fillPath (reduction);
+
+    if (style.showLowReduction)
+    {
+        g.setColour (style.lowAccent.withAlpha (0.55f));
+        g.fillPath (lowReduction);
+    }
 
     g.setColour (colours::textSecondary);
     g.setFont (font (Weight::regular, 10.0f));

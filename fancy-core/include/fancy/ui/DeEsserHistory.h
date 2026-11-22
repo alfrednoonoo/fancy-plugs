@@ -26,6 +26,12 @@ public:
         juce::String caption;
         bool dashedThreshold = false;
         float floorDb = -60.0f, reductionDb = 30.0f;
+
+        // Fancy DS's dual-band detection (Phase 4 Wave 2): the Low band's reduction in its own
+        // colour over the High band's, and the level and threshold of the band shown.
+        bool showLowReduction = false;
+        juce::Colour lowAccent;
+        bool lowLevel = false;
     };
 
     // One column per pixel of width, which also sets how much time each column covers.
