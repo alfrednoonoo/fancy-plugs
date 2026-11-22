@@ -139,3 +139,12 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] Move the crossovers: the read-outs update after the rebuild.
 - [ ] A Decay module after an Echo generator on its own: "can't measure" under each knob, and the sound doesn't change.
 - [ ] Save, reopen: the module and its settings come back.
+
+## Ducking and the Gate (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.6.0 that uses Fancy Verb: it sounds as before; REAPER shows the plugin with 4 input pins and nothing on 3/4.
+- [ ] SETUP, Ducking 60 % on a vocal: the reverb dips while the vocal sings and swells in the gaps.
+- [ ] Gate on, Threshold -30, Hold 80, Decay 40 on a snare in Low CPU mode: a tight gated reverb that ends with the snare's tail, not before it. Same in Zero latency mode.
+- [ ] Verb on a send, Source Sidechain, the vocal routed to pins 3/4: the vocal ducks the reverb. Unroute it: Ducking follows the send's own input.
+- [ ] The Gate's knobs dim while it's off.
+- [ ] Render offline twice: the renders match.

@@ -70,7 +70,13 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
       dryFader (parameter ("dry"), colours::uiTeal),
       latencyDropdown (parameter ("latency")),
       fftDropdown (parameter ("maxFft")),
-      storageDropdown (parameter ("irStorage"))
+      storageDropdown (parameter ("irStorage")),
+      duckSourceDropdown (parameter ("duckSource")),
+      duckKnob (parameter ("duck"), "Ducking", colours::uiTeal, Knob::tightStyle),
+      gateThresholdKnob (parameter ("gateThr"), "Threshold", colours::uiTeal, Knob::tightStyle),
+      gateHoldKnob (parameter ("gateHold"), "Hold", colours::uiTeal, Knob::tightStyle),
+      gateDecayKnob (parameter ("gateDecay"), "Decay", colours::uiTeal, Knob::tightStyle),
+      gateCheckbox (parameter ("gate"), "Gate")
 {
     // Phase 2.1 W.1: room in the header for undo, redo, A/B and Compare.
     setPresetDropdownWidth (230);
@@ -133,6 +139,39 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &latencyDropdown, &fftDropdown, &storageDropdown, &folderButton, &folderPath, &lateLabel, &loudnessToggle, &loudnessTrim })
+        drawer.addAndMakeVisible (item);
+
+    // Phase 4 Wave 2: Ducking and the Gate, live on the wet signal after the convolver, in the
+    // drawer's free space (Decision 1 A).
+    styleLabel (afterCaption, "AFTER THE REVERB", colours::textSecondary, juce::Justification::centredLeft, 10.0f);
+    styleLabel (sourceLabel, "Source", colours::textPrimary, juce::Justification::centredLeft, 13.0f);
+    styleLabel (sourceNote, "Sidechain when routed (pins 3/4)", colours::textSecondary, juce::Justification::centredLeft, 11.0f);
+    styleLabel (duckNote, "Turns the reverb down while the source plays, up to 24 dB at 100 %.", colours::textSecondary,
+                juce::Justification::topLeft, 11.0f);
+    duckNote.setMinimumHorizontalScale (1.0f);
+
+    afterCaption.setBounds (348, 50, 200, 14);
+    sourceLabel.setBounds (348, 70, 56, 24);
+    duckSourceDropdown.setBounds (404, 70, 110, 24);
+    sourceNote.setBounds (524, 70, 200, 24);
+    duckKnob.setBounds (340, 102, 76, 92);
+    duckNote.setBounds (428, 126, 280, 32);
+    gateCheckbox.setBounds (348, 236, 76, 20);
+    gateThresholdKnob.setBounds (428, 206, 76, 92);
+    gateHoldKnob.setBounds (508, 206, 76, 92);
+    gateDecayKnob.setBounds (588, 206, 76, 92);
+
+    duckSourceDropdown.setTooltip ("What Ducking and the Gate listen to: this track's input, or the sidechain (pins 3/4 in REAPER). "
+                                   "With nothing routed to the sidechain, Sidechain acts as Main.");
+    duckKnob.setTooltip ("Turns the reverb down while the source plays and lets it bloom in the gaps.");
+    gateCheckbox.setTooltip ("Stops the reverb when the source stops: a gated reverb.");
+    gateThresholdKnob.setTooltip ("The source level under which the gate starts to close.");
+    gateHoldKnob.setTooltip ("How long the gate stays open after the source falls under Threshold.");
+    gateDecayKnob.setTooltip ("How quickly the reverb fades out once the gate closes.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> {
+             &afterCaption, &sourceLabel, &duckSourceDropdown, &sourceNote, &duckKnob, &duckNote,
+             &gateCheckbox, &gateThresholdKnob, &gateHoldKnob, &gateDecayKnob })
         drawer.addAndMakeVisible (item);
 
     getBody().addChildComponent (drawer);
@@ -220,6 +259,14 @@ void VerbEditor::onTick (float)
 {
     centerLabel.setText (parameter ("center").getCurrentValueAsText(), juce::dontSendNotification);
     widthLabel.setText (parameter ("width").getCurrentValueAsText(), juce::dontSendNotification);
+
+    // Phase 4 Wave 2: the Gate's knobs dim while it's off.
+    {
+        const auto gateOn = parameter ("gate").getValue() >= 0.5f;
+
+        for (auto* knob : { &gateThresholdKnob, &gateHoldKnob, &gateDecayKnob })
+            knob->setAlpha (gateOn ? 1.0f : 0.4f);
+    }
 
     if (previewFrozen)
         return;

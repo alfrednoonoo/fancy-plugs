@@ -58,6 +58,13 @@ private:
     // Phase 4 Wave 1: Equal loudness, and the trim it applied.
     fancy::ui::ToggleCheckbox loudnessToggle { "Equal loudness", fancy::ui::colours::uiPurple };
     juce::Label loudnessTrim;
+
+    // Phase 4 Wave 2 (reference/phase4/48__verb_w2_duck_mockup.png): AFTER THE REVERB.
+    juce::Label afterCaption, sourceLabel, sourceNote, duckNote;
+    fancy::ui::ParamDropdown duckSourceDropdown;
+    fancy::ui::Knob duckKnob, gateThresholdKnob, gateHoldKnob, gateDecayKnob;
+    fancy::ui::ParamCheckbox gateCheckbox;
+
     std::unique_ptr<juce::FileChooser> chooser;
 
     int seenChainRevision = -1;

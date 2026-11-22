@@ -41,6 +41,13 @@ void VerbDsp::prepare (double newSampleRate, int newLatency)
     for (auto& ring : dryRing)
         ring.assign ((size_t) dryLength, 0.0f);
 
+    for (auto& ring : keyRing)
+        ring.assign ((size_t) dryLength, 0.0f);
+
+    ducker.prepare (sampleRate);
+    wetGate.prepare (sampleRate);
+    duckAmount.setTime (20.0, sampleRate);
+
     predelay.setTime (40.0, sampleRate);
 
     for (auto* smoother : { &center, &width, &wet, &dry, &output, &bypass })
@@ -71,6 +78,12 @@ void VerbDsp::reset() noexcept
     for (auto& ring : dryRing)
         std::fill (ring.begin(), ring.end(), 0.0f);
 
+    for (auto& ring : keyRing)
+        std::fill (ring.begin(), ring.end(), 0.0f);
+
+    ducker.reset();
+    wetGate.reset();
+
     predelayWrite = dryWrite = 0;
     switchGain.snapTo (1.0);
     lateBlocks.store (0, std::memory_order_relaxed);
@@ -96,6 +109,7 @@ void VerbDsp::snapToTargets (const Targets& targets) noexcept
     dry.snapTo (targets.dry);
     output.snapTo (targets.output);
     bypass.snapTo (targets.bypass ? 1.0 : 0.0);
+    duckAmount.snapTo (std::clamp (targets.ducking, 0.0, 1.0));
 }
 
 void VerbDsp::offer (std::unique_ptr<Convolver> convolver)
@@ -144,7 +158,8 @@ void VerbDsp::acceptIncoming() noexcept
     startFade (outgoing != nullptr ? crossfadeMs : fadeInMs);
 }
 
-void VerbDsp::processChunk (float* const* channels, int numChannels, int offset, int numSamples, bool offline) noexcept
+void VerbDsp::processChunk (float* const* channels, int numChannels, const float* const* sidechain, int numSidechain, int offset, int numSamples,
+                            bool offline) noexcept
 {
     acceptIncoming();
 
@@ -157,8 +172,32 @@ void VerbDsp::processChunk (float* const* channels, int numChannels, int offset,
     dry.setTarget (current.dry);
     output.setTarget (current.output);
     bypass.setTarget (current.bypass ? 1.0 : 0.0);
+    duckAmount.setTarget (std::clamp (current.ducking, 0.0, 1.0));
 
     const auto dryDelay = latency.load (std::memory_order_relaxed);
+
+    // Phase 4 Wave 2: Ducking and the Gate run only while on, or still letting go.
+    const auto dynamics = current.ducking > 0.0 || ! duckAmount.isSettled() || duckAmount.getCurrent() > 0.0 || ! ducker.isIdle()
+                       || current.gate || wetGate.getGain() < 1.0;
+    const auto useKey = current.duckSidechain && numSidechain > 0 && sidechain != nullptr;
+
+    // The sidechain, delayed by the latency as the dry path is, so the detector acts on the wet
+    // signal it's meant for (the model's finding).
+    if (useKey)
+    {
+        for (int ch = 0; ch < maxChannels; ++ch)
+        {
+            const auto* in = sidechain[std::min (ch, numSidechain - 1)] + offset;
+            auto& ring = keyRing[(size_t) ch];
+
+            for (int i = 0; i < numSamples; ++i)
+            {
+                const auto write = (dryWrite + i) % dryLength;
+                ring[(size_t) write] = std::isfinite (in[i]) ? in[i] : 0.0f;
+                delayedKey[(size_t) ch][(size_t) i] = ring[(size_t) ((write - dryDelay + dryLength) % dryLength)];
+            }
+        }
+    }
 
     for (int ch = 0; ch < maxChannels; ++ch)
     {
@@ -241,8 +280,17 @@ void VerbDsp::processChunk (float* const* channels, int numChannels, int offset,
         const auto mid = (wetLeft + wetRight) * 0.5;
         const auto side = (wetLeft - wetRight) * 0.5 * width.next();
 
-        const auto wetGain = wet.next();
+        auto wetGain = wet.next();
         const auto dryGain = dry.next();
+
+        // Phase 4 Wave 2: Ducking and the Gate, on the latency-delayed main input or sidechain.
+        if (dynamics)
+        {
+            const auto& source = useKey ? delayedKey : delayedDry;
+            const auto level = std::max (std::abs ((double) source[0][index]), std::abs ((double) source[mono && ! useKey ? 0 : 1][index]));
+            wetGain *= ducker.process (level, duckAmount.next());
+            wetGain *= wetGate.process (level, current.gate, current.gateThresholdDb, current.gateHoldMs, current.gateDecayMs);
+        }
         const auto outputGain = output.next();
         const auto bypassed = bypass.next();
         const auto mute = switchGain.next();
@@ -273,14 +321,15 @@ void VerbDsp::processChunk (float* const* channels, int numChannels, int offset,
     }
 }
 
-void VerbDsp::process (float* const* channels, int numChannels, int numSamples, bool offline) noexcept
+void VerbDsp::process (float* const* channels, int numChannels, const float* const* sidechain, int numSidechain, int numSamples, bool offline) noexcept
 {
     numChannels = std::min (numChannels, (int) maxChannels);
+    numSidechain = std::min (numSidechain, (int) maxChannels);
 
     for (int position = 0; position < numSamples;)
     {
         const auto chunk = std::min (numSamples - position, (int) maxChunk);
-        processChunk (channels, numChannels, position, chunk, offline);
+        processChunk (channels, numChannels, sidechain, numSidechain, position, chunk, offline);
         position += chunk;
     }
 }

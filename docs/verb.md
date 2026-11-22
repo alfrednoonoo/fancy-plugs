@@ -472,3 +472,12 @@ Verb's Low CPU mode reports 4096 samples of latency, and its dry path is delayed
 ### 5. Build order
 
 Approval, then the SETUP drawer mockup (`reference/phase4/48__verb_w2_duck_mockup.png`), then one push: the shared detector (Room held bit-identical), Verb's stages, the bus, tests, manual and checklist.
+
+### 6. As built
+
+Mockup 48 approved by the user on 22 November 2026; `tests/VerbDuckTests.cpp`.
+
+- `fancy::dsp::WetDucker` and `fancy::dsp::WetGate` (`WetDynamics.h`) carry Room's arithmetic exactly. Room itself is left on its own copy for now, so it can't move by a bit; switching it over is a later tidy-up with its legacy test.
+- `duck`, `duckSource`, `gate`, `gateThr`, `gateHold`, `gateDecay` appended. `VerbDsp` runs the stages only while either is on or still letting go; the detector reads the latency-delayed dry input, or a sidechain delayed the same way through its own ring.
+- An optional stereo sidechain bus (off by default) is added; `isBusesLayoutSupported` takes it off, mono or stereo, and `processAudio` reads the main and sidechain buses separately.
+- The SETUP drawer's AFTER THE REVERB group; the Gate's knobs dim while it's off.

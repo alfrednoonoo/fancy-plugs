@@ -170,3 +170,13 @@ Changes to the module chain (adding, removing, moving or editing a module, and c
 - Lengthening can't invent reverb: a band only grows until it reaches the IR's own noise floor, then fades out, so a 4x on a short IR gets as long as the IR allows and the card says so.
 - A band with no measurable decay (an echo pattern, a single click) is left as it is and reads "can't measure".
 - An older Verb plays the IR without the module.
+
+## Ducking and the Gate (Phase 4)
+
+In **SETUP > After the reverb**, two stages act live on the wet signal after the IR, whatever the rack holds:
+
+- **Ducking** (0 to 100 %): turns the reverb down while the source plays, by up to 24 dB at 100 % (fully above -20 dBFS, not at all below -50), and lets it bloom in the gaps. It comes back over about 300 ms.
+- **Gate**: stops the reverb when the source stops, for a gated reverb. **Threshold** (-60 to 0 dB) is the source level under which it starts to close, **Hold** (10 to 500 ms) how long it stays open after that, and **Decay** (5 to 500 ms) how fast the reverb then fades out.
+- **Source**: what both listen to, this track's input (**Main**) or the **Sidechain** input (pins 3/4 in REAPER), so a vocal can duck a reverb on a send. With nothing routed there, Sidechain acts as Main.
+
+Both wait for Low CPU mode's latency, so they act on the wet sound you hear, not 85 ms ahead of it. At Ducking 0 and the Gate off they don't run.

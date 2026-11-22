@@ -63,6 +63,27 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (setting ("maxFft", "Max FFT", { "16384", "65536" }, 1));
     layout.add (setting ("irStorage", "IR storage", { "Embed under 10 MB", "Always embed", "Path only" }, 0));
 
+    // Phase 4 Wave 2, appended (docs/verb.md): Ducking and the Gate on the wet signal.
+    const auto msParameter = [] (const char* id, const char* name, float low, float high, float defaultMs)
+    {
+        return fancy::floatParameter (id, name, juce::NormalisableRange<float> (low, high, 1.0f, 0.5f), defaultMs,
+                                      FloatAttributes {}
+                                          .withLabel ("ms")
+                                          .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " ms"; })
+                                          .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); }));
+    };
+
+    layout.add (fancy::percentParameter ("duck", "Ducking", 0.0f));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "duckSource", 1 }, "Ducking source", juce::StringArray { "Main", "Sidechain" }, 0));
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "gate", 1 }, "Gate", false));
+    layout.add (fancy::floatParameter ("gateThr", "Gate threshold", juce::NormalisableRange<float> (-60.0f, 0.0f, 0.1f), -30.0f,
+                                       FloatAttributes {}
+                                           .withLabel ("dB")
+                                           .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " dB"; })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    layout.add (msParameter ("gateHold", "Gate hold", 10.0f, 500.0f, 80.0f));
+    layout.add (msParameter ("gateDecay", "Gate decay", 5.0f, 500.0f, 40.0f));
+
     return layout;
 }
 
@@ -189,7 +210,8 @@ VerbProcessor::VerbProcessor()
     : FancyProcessor ("Fancy Verb", "FANCY_VERB",
                       BusesProperties()
                           .withInput ("Input", juce::AudioChannelSet::stereo(), true)
-                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true),
+                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                          .withInput ("Sidechain", juce::AudioChannelSet::stereo(), false), // Phase 4 Wave 2
                       createLayout(), factoryPresets()),
       buildThread (*this)
 {
@@ -248,6 +270,14 @@ VerbDsp::Targets VerbProcessor::readTargets()
     targets.modRate = (double) modulationRate.load (std::memory_order_relaxed);
     targets.modDepth = (double) modulationDepth.load (std::memory_order_relaxed);
     targets.modSpread = (double) modulationSpread.load (std::memory_order_relaxed);
+
+    // Phase 4 Wave 2.
+    targets.ducking = read ("duck") * 0.01;
+    targets.duckSidechain = read ("duckSource") >= 0.5f;
+    targets.gate = read ("gate") >= 0.5f;
+    targets.gateThresholdDb = read ("gateThr");
+    targets.gateHoldMs = read ("gateHold");
+    targets.gateDecayMs = read ("gateDecay");
     return targets;
 }
 
@@ -389,7 +419,15 @@ bool VerbProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     if (out != juce::AudioChannelSet::mono() && out != juce::AudioChannelSet::stereo())
         return false;
 
-    return out == layouts.getMainInputChannelSet();
+    if (out != layouts.getMainInputChannelSet())
+        return false;
+
+    // Phase 4 Wave 2: the optional sidechain, off, mono or stereo.
+    if (layouts.inputBuses.size() < 2)
+        return true;
+
+    const auto sidechain = layouts.getChannelSet (true, 1);
+    return sidechain.isDisabled() || sidechain == juce::AudioChannelSet::mono() || sidechain == juce::AudioChannelSet::stereo();
 }
 
 void VerbProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -409,8 +447,14 @@ void VerbProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBu
         while (buildPending())
             juce::Thread::sleep (1);
 
+    // Phase 4 Wave 2: the main bus and the sidechain, as their own buffers.
+    auto mainBuffer = getBusBuffer (buffer, false, 0);
+    const auto numSidechain = getBusCount (true) > 1 ? juce::jmin (getBusBuffer (buffer, true, 1).getNumChannels(), 2) : 0;
+    auto sidechainBuffer = numSidechain > 0 ? getBusBuffer (buffer, true, 1) : juce::AudioBuffer<float>();
+
     dsp.setTargets (readTargets());
-    dsp.process (buffer.getArrayOfWritePointers(), numChannels, buffer.getNumSamples(), offline);
+    dsp.process (mainBuffer.getArrayOfWritePointers(), juce::jmin (numChannels, mainBuffer.getNumChannels()),
+                 numSidechain > 0 ? sidechainBuffer.getArrayOfReadPointers() : nullptr, numSidechain, buffer.getNumSamples(), offline);
 }
 
 double VerbProcessor::getTailLengthSeconds() const

@@ -3,6 +3,7 @@
 #include "Convolver.h"
 
 #include <fancy/dsp/Smoother.h>
+#include <fancy/dsp/WetDynamics.h>
 
 #include <array>
 #include <atomic>
@@ -27,6 +28,13 @@ public:
 
         // Modulate's live settings (Phase 3 Q2.8), for a modulated convolver.
         double modRate = 0.3, modDepth = 0.5, modSpread = 1.0;
+
+        // Phase 4 Wave 2 (docs/verb.md): Ducking and the Gate on the wet signal, from the main
+        // input or the sidechain, delayed by the latency. At these defaults neither runs.
+        double ducking = 0.0;   // 0 to 1
+        bool duckSidechain = false;
+        bool gate = false;
+        double gateThresholdDb = -30.0, gateHoldMs = 80.0, gateDecayMs = 40.0;
     };
 
     ~VerbDsp();
@@ -37,7 +45,16 @@ public:
     void setTargets (const Targets& targets) noexcept { current = targets; }
     void snapToTargets (const Targets& targets) noexcept;
 
-    void process (float* const* channels, int numChannels, int numSamples, bool offline) noexcept;
+    void process (float* const* channels, int numChannels, int numSamples, bool offline) noexcept
+    {
+        process (channels, numChannels, nullptr, 0, numSamples, offline);
+    }
+
+    // Phase 4 Wave 2: with the sidechain, for Ducking and the Gate. numSidechain may be 0.
+    void process (float* const* channels, int numChannels, const float* const* sidechain, int numSidechain, int numSamples, bool offline) noexcept;
+
+    // The gate's gain now, for tests (1 open, 0 closed).
+    double getGateGain() const noexcept { return wetGate.getGain(); }
 
     // Worker thread. A convolver that was never picked up is replaced and freed.
     void offer (std::unique_ptr<verb::Convolver> convolver);
@@ -55,7 +72,8 @@ private:
     void dropConvolvers() noexcept;
     void acceptIncoming() noexcept;
     void startFade (double milliseconds) noexcept;
-    void processChunk (float* const* channels, int numChannels, int offset, int numSamples, bool offline) noexcept;
+    void processChunk (float* const* channels, int numChannels, const float* const* sidechain, int numSidechain, int offset, int numSamples,
+                       bool offline) noexcept;
 
     double sampleRate = 48000.0;
     Targets current;
@@ -77,4 +95,11 @@ private:
     std::atomic<int> lateBlocks { 0 };
 
     std::array<std::array<float, maxChunk>, maxChannels> wetInput {}, wetNew {}, wetOld {}, delayedDry {};
+
+    // Phase 4 Wave 2: the sidechain, delayed as the dry path is, and the two stages.
+    std::array<std::vector<float>, maxChannels> keyRing;
+    std::array<std::array<float, maxChunk>, maxChannels> delayedKey {};
+    fancy::dsp::WetDucker ducker;
+    fancy::dsp::WetGate wetGate;
+    fancy::dsp::Smoother duckAmount;
 };
