@@ -120,8 +120,8 @@ MORE = {
     "DS-Mini": [("dsmini-edit", "The EDIT drawer", "EDIT drawer"), ("dsmini-listening", "Listening to what's removed", "Controls")],
     "Sature": [("sature-edit", "The EDIT drawer", "EDIT"), ("sature-listening", "Listening to the added harmonics", "Controls")],
     "Room": [("room-edit", "The EDIT drawer", "EDIT")],
-    "TS": [("ts-edit", "The EDIT drawer", "EDIT drawer"), ("ts-listening", "Listening to the change", "The window")],
-    "Chorus": [("chorus-edit", "The EDIT drawer", "EDIT drawer"), ("chorus-listening", "Listening to the voices alone", "The window")],
+    "TS": [("ts-edit", "The EDIT drawer", "EDIT drawer"), ("ts-listening", "Listening to the change")],
+    "Chorus": [("chorus-edit", "The EDIT drawer", "EDIT drawer"), ("chorus-listening", "Listening to the voices alone")],
 }
 
 # The cover knob's lit arc: the suite's band colours, as on EQ's bands.

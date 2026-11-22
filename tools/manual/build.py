@@ -82,6 +82,9 @@ def clean_manual(md_text, plugin):
 def manual_html(plugin, sections):
     meta = C.PLUGINS[plugin]
     md_text = open(os.path.join(REPO, "docs", f"{meta['file']}-manual.md"), encoding="utf-8").read()
+    # Image links in a manual are for reading it on GitHub; the PDF places each plugin's screenshots
+    # itself (PLUGINS images and MORE), so they're dropped here rather than printed as broken images.
+    md_text = re.sub(r"^[ \t]*!\[[^\]]*\]\([^)]*\)[ \t]*\n?", "", md_text, flags=re.M)
     body = markdown.markdown(clean_manual(md_text, plugin), extensions=["tables", "sane_lists"])
 
     # Chapter sections: h2 -> h3 with anchors; h3 -> h4.
