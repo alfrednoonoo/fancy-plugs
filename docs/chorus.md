@@ -68,11 +68,14 @@ Each voice's delay over the last 2 s as a line in the accent at falling opacity,
 
 ## Factory presets
 
-Default; Classic chorus; Wide pad (Ensemble, 5 voices); Dimension width (Dimension, Depth 25 %); Vocal double (Doubler); Slow flange (Flange, Feedback +60 %); Vibrato (Classic, Rate 5 Hz, Wet 0, Dry −inf); Lo-fi wobble (Classic, Age 80 %, Rate 0.3 Hz). Categories Mix, Vocals, Instruments, Creative.
+Default; Classic chorus (2 voices); Wide pad (Ensemble, 5 voices); Dimension width (Dimension, 2 voices, Depth 25 %); Vocal double (Doubler); Slow flange (Flange, Feedback +60 %); Vibrato (Classic, Rate 5 Hz, Wet 0, Dry −inf); Lo-fi wobble (Classic, Age 80 %, Rate 0.3 Hz). Categories Mix, Vocals, Instruments, Creative.
 
 ## Decisions
 
-Chosen by the user on 22 November 2026: 1A, 2A, 3A, 4A. Still open, to settle before coding: what Ducking listens to and ducks (proposed: the wet dips while the input is loud, as in Delay), and whether 3A's switch to 2 voices on a mode change should only apply in presets.
+Chosen by the user on 22 November 2026: 1A, 2A, 3A, 4A, and the two follow-up points below (both as recommended, 22 November 2026).
+
+- **Ducking** stays one knob. The wet path dips while the input is loud, as in Delay: the detector is the input's peak level (1 ms attack), the threshold is fixed at −24 dB and the release at 250 ms (Delay's defaults). Ducking 100 % turns the wet down by up to 24 dB (Delay's largest Amount), scaled linearly in dB; 0 % is bit-exact with no ducking.
+- **3A's "2 voices" lives in the presets only.** Changing Mode never writes Voices; the Classic chorus and Dimension width factory presets store Voices 2. No parameter changes another, so automation and saved projects load the same whatever order their values arrive in.
 
 - **Decision 1: Feedback polarity.** Mockup 51 drew a polarity dropdown in the drawer as well as a bipolar Feedback knob.
   - **A (R).** The bipolar knob alone (−90 to +90 %); the drawer's slot shows nothing new. One control for one job.
@@ -93,8 +96,9 @@ Chosen by the user on 22 November 2026: 1A, 2A, 3A, 4A. Still open, to settle be
 4. Feedback +90 % is stable for 60 s of noise (no growth past +25 dB, no denormals), and DC can't build up.
 5. Tempo sync: at 120 BPM, 1/4 is 2 Hz, and the LFO's phase follows the host's position.
 6. Keep bass mono: below Low cut the side channel of the output is the dry's.
-7. Every mode, rate and block size: no clicks when Delay, Voices or Mode change (largest step under the signal's own).
-8. Automation, state round trip, bypass crossfade, bit-identical automation without change (§4).
+7. Every mode, rate and block size: no clicks when Delay, Voices or Mode change (largest step under the signal's own). Changing Mode leaves Voices as it was.
+8. Ducking: at 100 % the wet drops by 24 ± 1 dB while the input is above −24 dB and is back within 1 dB about 250 ms after it stops; 0 % is bit-exact.
+9. Automation, state round trip, bypass crossfade, bit-identical automation without change (§4).
 
 ## Build order
 
