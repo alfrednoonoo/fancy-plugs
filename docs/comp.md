@@ -491,3 +491,103 @@ Mockup 46 approved by the user on 22 November 2026; `tests/CompOpticalTests.cpp`
 
 - `fancy::dsp::OpticalFollower` (`Compression.h`) is the model's follower, with Attack = 90 % rise and Hold as the default follower has them. Comp keeps one per channel; with `optical` (appended, off) the non-Classic branch uses it and Classic is skipped. Each follower's state tracks the other's reduction, so switching Optical on or off doesn't jump.
 - The Options page's Optical checkbox sits under Attack = 90 % rise, with its note below while Host sync isn't the Detector input. Host sync's group (mockup 43) moved down 37 px to make room. Classic and Auto dim on the main window while Optical is on.
+
+## Phase 4 Wave 2: six-band sidechain EQ and steeper cuts
+
+**Draft for approval (22 November 2026).** Item 13 of the Wave 2 order (`docs/enhancements.md`; backlog item 7 of section 3), for v1.7.1. Modelled first: `docs/research/comp-sceq-model.py`.
+
+### 1. What it adds
+
+The detector EQ grows from three fixed bands to six, each with a type, and Highpass and Lowpass get steeper slopes. All of it acts only on what the detector hears, never on the audio.
+
+- **Six bands.** Each has a **Type**: Off, Low shelf, Bell or High shelf, and Freq, Gain and Q (Q for the bell). Bands 1 to 3 default to today's low shelf, bell and high shelf, with their own parameters unchanged. Bands 4 to 6 are new and default to Off. A band set to Off, or at 0 dB, isn't run, so saved projects stay bit-identical.
+- **Cut slopes.** `hpSlope` and `lpSlope`: 12 dB/oct (today, the default), 24 or 48, as cascades of Butterworth sections at the same frequency, as DS's Filter slope does. The Highpass and Lowpass knobs stay on the main window.
+
+### 2. What the model found
+
+The model is a mix bed at −18 dBFS RMS with a 55 Hz kick; Comp runs at 4:1 with Threshold −20 dB. Each figure is how far the gain reduction jumps on every kick:
+
+| Detector high-pass | Kick −6 dBFS, cut at 150 Hz | Kick −2 dBFS, bass at 98–131 Hz kept, cut at 90 Hz |
+|---|---|---|
+| none | +4.1 dB | +4.8 dB |
+| 12 dB/oct (today) | +0.1 dB | +1.2 dB |
+| 24 dB/oct | −0.1 dB | +0.2 dB |
+| 48 dB/oct | −0.1 dB | −0.1 dB |
+| 96 dB/oct ("brickwall") | −0.1 dB | −0.1 dB |
+
+Today's slope is enough when the cut can sit well above the kick. When it has to sit close, to keep a bass line driving the compressor, 24 or 48 dB/oct stops the pumping. A brickwall slope adds nothing beyond 48, so it's left out (decision 2).
+
+### 3. Decisions
+
+- **Decision 1: the bands.**
+  - **A (R).** Six bands with types Off, Low shelf, Bell and High shelf. Bands 1 to 3 default to today's three, and the Highpass and Lowpass cuts stay separate, on their knobs.
+  - **B.** Six fully general bands that include the cuts, with the main window's Highpass and Lowpass moved into them. Q2.5 turned this down: old projects would change slightly, and the main layout would too.
+- **Decision 2: cut slopes.**
+  - **A (R).** 12, 24 and 48 dB/oct, as the model justifies.
+  - **B.** Add a 96 dB/oct "Brickwall" as the backlog named it. It measures the same as 48.
+- **Decision 3: the Detector page.**
+  - **A (R).** Band tabs 1 to 6 over the response curve, which has a draggable handle per band. Under the curve sit the selected band's Type dropdown and its Freq, Gain and Q knobs, with the two slope dropdowns beside them. Auto threshold stays where it is. Only the drawer changes; a mockup follows approval.
+  - **B.** All six bands' knobs at once: 18 knobs, too small to use on one page.
+
+### 4. Tests
+
+1. Legacy: bands 4 to 6 Off and 12 dB/oct slopes render exactly as v1.7.0, with every detector input and every page's settings.
+2. Types: a band set to Bell at +12 dB and 3 kHz raises a 3 kHz tone's detector level by 12 ± 0.5 dB over a 300 Hz tone; Low shelf and High shelf behave likewise below and above their frequencies.
+3. Slopes: one octave below Highpass, 24 dB/oct is 12 ± 1 dB further down than 12 dB/oct, and 48 dB/oct is 36 ± 1.5 dB further down; the −3 dB point doesn't move.
+4. The model's case 2: at 24 dB/oct the reduction jumps by under 0.5 dB on each kick, against over 1 dB at 12.
+5. Preview filter plays the whole detector chain, the new bands and slopes included.
+6. CPU: six bands and 48 dB/oct slopes add under 15 % to Comp at its defaults.
+
+### 5. Build order
+
+Approval, then the Detector page mockup (`reference/phase4/55__comp_w2_sceq_mockup.png`), then one push: the bands and slopes in `CompDsp`, the parameters, the Detector page, tests, manual and checklist.
+
+## Phase 4 Wave 2: link modes
+
+**Draft for approval (22 November 2026).** Item 14 of the Wave 2 order (`docs/enhancements.md`; backlog item 8 of section 3), for v1.7.1. Modelled first: `docs/research/comp-linkmodes-model.py`.
+
+### 1. What it adds
+
+`linkMode`: how the two channels are detected and compressed.
+
+- **Stereo** (today, the default): left and right, combined by Link channels and Link amount. Saved projects are unchanged, bit for bit.
+- **Mid/Side:** the input is split into mid and side. Each is detected and compressed on its own, with Link channels and Link amount now acting between mid and side, and the result is turned back into left and right.
+- **M>S:** the mid's level compresses only the side, and the mid passes untouched. The width narrows while the centre is loud, so a vocal steps forward.
+- **S>M:** the side's level compresses only the mid.
+
+The detector inputs keep their meaning. Main L+R and Sidechain L+R are split into mid and side in these modes. A single-channel input (L, R, Mid, Side, Host sync) drives the gain of whichever channels the mode compresses. Upward, Character, Auto threshold and the GR meter work per channel as now, with the meter's two bars reading M and S in these modes and labelled so.
+
+### 2. What the model found
+
+The model has a vocal in the mid, in phrases at −12 dBFS RMS, and guitars in the side at a steady −20. Comp runs at 4:1 with Threshold −24 dB. Gains are shown as singing / gaps:
+
+| Mode | Mid | Side | Width moves with the vocal |
+|---|---|---|---|
+| Stereo (today, linked) | −9.4 / −5.5 dB | −9.4 / −5.5 dB | 3.9 dB |
+| Mid/Side | −8.9 / −3.3 dB | −3.1 / −3.1 dB | 0.0 dB |
+| M>S | 0 | −8.9 / −3.3 dB | 5.5 dB, on purpose |
+| S>M | −3.1 / −3.1 dB | 0 | 0.0 dB |
+
+In Stereo, a loud vocal turns the guitars down with it, so the width breathes with the singing. Mid/Side keeps the width steady while it controls the vocal. M>S makes the breathing deliberate.
+
+### 3. Decisions
+
+- **Decision 1: the modes.**
+  - **A (R).** Stereo, Mid/Side, M>S and S>M, as above.
+  - **B.** Stereo and Mid/Side only. M>S and S>M are specialised, though the model shows what they're for.
+- **Decision 2: where it goes.**
+  - **A (R).** A **Link mode** dropdown on the Options page, beside Link amount. The GR meter's labels read M and S when the mode isn't Stereo, and the main layout doesn't otherwise change.
+  - **B.** A small Stereo | M/S switch on the main window by Link channels, with M>S and S>M only in the drawer.
+
+### 4. Tests
+
+1. Legacy: Stereo renders exactly as v1.7.0 with every detector input, linked and unlinked.
+2. Mid/Side on a mono signal (side silent): the output equals Stereo's to −120 dB, and the side stays silent.
+3. The model's mix: in Mid/Side the side's gain moves by under 0.5 dB between singing and gaps, while in Stereo it moves by over 3 dB.
+4. M>S: the mid passes bit for bit, and the side is reduced by the mid's level. S>M likewise the other way round.
+5. Sidechain L+R in Mid/Side: the sidechain's mid drives the mid, and its side drives the side.
+6. CPU: Mid/Side adds under 10 % to Comp at its defaults.
+
+### 5. Build order
+
+Approval, then the Options page mockup (with item 13's), then one push: the modes in `CompDsp`, the parameter, the Options page and the GR labels, tests, manual and checklist.
