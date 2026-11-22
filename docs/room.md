@@ -283,7 +283,7 @@ One push holds the whole item, with Decision 1 A: everything in the EDIT drawer,
 
 ## Phase 4 Wave 2: Low decay, Attack and a sidechain for Ducking
 
-**Draft for approval (22 November 2026).** Items 19, 20 and 21 of the Wave 2 order (`docs/enhancements.md`; backlog items 2, 4 and 5 of section 14), for v1.7.1, in one note because they touch the same network and drawer. Modelled first: `docs/research/room-w2-model.py`.
+**Approved by the user on 22 November 2026 with every recommended option (A).** Items 19, 20 and 21 of the Wave 2 order (`docs/enhancements.md`; backlog items 2, 4 and 5 of section 14), for v1.7.1, in one note because they touch the same network and drawer. Modelled first: `docs/research/room-w2-model.py`.
 
 ### 1. Low decay (item 19)
 
