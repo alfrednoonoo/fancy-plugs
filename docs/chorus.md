@@ -118,4 +118,4 @@ First push on 22 November 2026: `fancy::ui::colours::accentPink`, `plugins/choru
 - Presets as listed, with two additions kept by the user (22 November 2026): Vibrato has one voice (three would be a chorus) and Slow flange a Rate of 0.2 Hz.
 - The LFOs are worked out every 8 samples and followed in straight lines between, on the DSP's own clock (so any block size gives the same output); each segment starts where the last ended. Pan laws, Age's values, Flange's delay map and the filter coefficients are worked out only when what they depend on moves, and Age uses Fancy Delay's fast tanh.
 - CPU (§0.4, median of five, ratio to Fancy Comp), by run: 45040470828 2.35 x at the defaults and 3.70 x at 6 voices; 45045046397 (cached values) 1.73 x and 2.76 x; 45048863820 (a cast floor, no gain) 1.77 x and 2.86 x; **45052618864 (LFO segments) 1.15 x and 1.48 x**, both under target (1.5 x and 3 x). Every Chorus test and the offline render (bit-identical at random block sizes) passed in each.
-- Not yet: the REAPER check (`docs/chorus-checklist.md`).
+- REAPER check passed by the user on 22 November 2026.
