@@ -668,6 +668,9 @@ void LimitEditor::onTick (float seconds)
     gainLockCheckbox.setOn (processor.readTargets().gainLock);
     updateAutoTarget (seconds);
 
+    // Phase 4 Wave 2: the Clip knob dims while the clipper is off.
+    clipKnob.setAlpha (processor.readTargets().clip ? 1.0f : 0.4f);
+
     thresholdMeter.update (processor.inputMeter, false, seconds);
     gainMeter.update (reduction, reduction, seconds);
     outMeter.update (processor.outputMeter, seconds);
