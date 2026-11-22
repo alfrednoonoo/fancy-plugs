@@ -255,7 +255,7 @@ One push (`f276ab4`), with every recommended option; `tests/DelayW1Tests.cpp`. I
 
 ## Phase 4 Wave 2: LFO shape and stereo phase
 
-**Draft for approval (22 November 2026).** Item 22 of the Wave 2 order (`docs/enhancements.md`; backlog item 6 of section 6), for v1.7.1. Modelled first: `docs/research/delay-lfo-model.py`.
+**Approved by the user on 22 November 2026 with every recommended option (A), with one change to decision 3: the switch shows wave symbols, not words.** Item 22 of the Wave 2 order (`docs/enhancements.md`; backlog item 6 of section 6), for v1.7.1. Modelled first: `docs/research/delay-lfo-model.py`.
 
 ### 1. What it adds
 
@@ -295,7 +295,7 @@ A sharp triangle jumps the pitch by its whole range in a millisecond at each fli
   - **A (R).** Sine and Triangle (rounded). Random already provides the irregular motion.
   - **B.** Sine, Triangle and Square (a smoothed square on the position, which makes a pitch spike at each flip).
 - **Decision 3: where they go.**
-  - **A (R).** On the Motion page: a small **Sine | Tri** switch beside Rate, and a **Stereo** knob after Random, with the card kept at its size (the knobs narrow slightly). A mockup follows approval.
+  - **A (R).** On the Motion page: a small two-way switch beside Rate showing a **sine wave symbol | a triangle wave symbol** (user, 22 November 2026: symbols, not the words Sine and Tri), with the names in its tooltip, and a **Stereo** knob after Random, with the card kept at its size (the knobs narrow slightly). A mockup follows approval.
   - **B.** In the EDIT drawer, as rows for the selected tap.
 
 ### 4. Tests
