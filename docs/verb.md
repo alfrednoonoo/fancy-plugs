@@ -482,3 +482,84 @@ Mockup 48 approved by the user on 22 November 2026; `tests/VerbDuckTests.cpp`.
 - `duck`, `duckSource`, `gate`, `gateThr`, `gateHold`, `gateDecay` appended. `VerbDsp` runs the stages only while either is on or still letting go; the detector reads the latency-delayed dry input, or a sidechain delayed the same way through its own ring.
 - An optional stereo sidechain bus (off by default) is added; `isBusesLayoutSupported` takes it off, mono or stereo, and `processAudio` reads the main and sidechain buses separately.
 - The SETUP drawer's AFTER THE REVERB group; the Gate's knobs dim while it's off.
+
+## Phase 4 Wave 2: Attack for the Reverb generator
+
+**Draft for approval (22 November 2026).** Item 17 of the Wave 2 order (`docs/enhancements.md`; backlog item 5 of section 5), for v1.7.1. Modelled first: `docs/research/verb-attack-width-model.py` (part 1).
+
+### 1. What it adds
+
+**Attack** (0 to 500 ms, default 0), a new setting of the Reverb generator module. It's a raised-cosine fade-in over Attack ms on the whole generated tail, early reflections included. The tail then swells in instead of starting at full level, as a bloom hall, a reverse-like pad or a gated room does. Build-up stays what it is: how long the tail takes to become dense, not how loud its start is. At 0 the generator builds the IR it builds today, bit for bit. It's an IR setting, so changing it rebuilds the IR as the module's other settings do, with Verb's crossfade.
+
+### 2. What the model found
+
+A generated tail with Decay 1.8 s:
+
+| Attack | C80 (clarity) | Energy peaks at | Total level |
+|---|---|---|---|
+| 0 ms (today) | −0.8 dB | 0 ms | 0 dB |
+| 50 ms | −3.4 dB | 50 ms | −1.0 dB |
+| 150 ms | −12.6 dB | 130 ms | −3.0 dB |
+| 300 ms | −21.0 dB | 240 ms | −5.9 dB |
+
+A long Attack takes the tail's start away, so it loses level as well as clarity (decision 2).
+
+### 3. Decisions
+
+- **Decision 1: where it goes.**
+  - **A (R).** A tenth knob on the Reverb module's card, after Build-up, in the card's knob grid. The card grows by one knob, and a mockup follows approval.
+  - **B.** No new knob: a "Build-up shapes level" toggle that makes Build-up a fade-in as well. Fewer controls, but density and loudness can't then be set apart.
+- **Decision 2: the level it loses.**
+  - **A (R).** Leave it. SETUP's Equal loudness (Wave 1), when on, already evens out IR changes, and the Normalize module does too. The manual says so.
+  - **B.** The generator makes up the lost energy itself, so Attack never changes the reverb's level.
+
+### 4. Tests
+
+1. Legacy: Attack 0 builds the same IR as v1.7.0, bit for bit, for every Reverb setting and Early type.
+2. Attack 150 ms with Decay 1.8 s: the IR's 10 ms energy peaks between 110 and 150 ms, and C80 falls by 10 to 14 dB.
+3. The fade-in is raised-cosine: the IR's envelope at Attack / 2 is half its level at Attack, within 1 dB.
+4. Changing Attack while playing rebuilds and crossfades with no click (Verb's existing rebuild test, with Attack added).
+
+### 5. Build order
+
+Approval, then the Reverb card mockup (with item 18's SETUP row), then one push: the setting appended to `reverbSettings`, the envelope in `IrBuilder`, the card knob, tests, manual and checklist.
+
+## Phase 4 Wave 2: Width to 200 %
+
+**Draft for approval (22 November 2026).** Item 18 of the Wave 2 order (`docs/enhancements.md`; backlog item 8 of section 5), for v1.7.1. Modelled first: `docs/research/verb-attack-width-model.py` (part 2).
+
+### 1. What it adds
+
+Width (0 to 100 %) scales the wet signal's side. **Extra width** (100 to 200 %, default 100, in SETUP) scales it further, so Width 100 % with Extra width 200 % puts twice the side in the wet signal. The two multiply, and Width keeps its range and meaning, so automation and saved projects are untouched. At 100 % the output is today's, bit for bit.
+
+### 2. What the model found
+
+A wet signal whose sides are correlated 0.3, as a stereo reverb's typically are:
+
+| | Width 100 % | 150 % | 200 % |
+|---|---|---|---|
+| Side raised only: each side | 0 dB | +1.6 dB | +3.1 dB |
+| Side raised only: mono sum | 0 dB | 0 dB | 0 dB |
+| Keeping each side's level: mono sum | 0 dB | −1.6 dB | −3.1 dB |
+| Correlation | +0.30 | −0.09 | −0.36 |
+
+Raising only the side keeps the mono sum exactly as it was, so a mono fold-down sounds the same. Each side does get up to 3 dB louder. Holding each side's level instead makes the reverb quieter in mono. Past 150 % the sides are more opposed than alike (negative correlation), which is what "wider than the source" means. The manual will say to check in mono, and that 120 to 150 % is the useful range.
+
+### 3. Decisions
+
+- **Decision 1: the control.**
+  - **A (R).** An **Extra width** knob (100 to 200 %) in SETUP that multiplies Width, as above. Width keeps its knob and range.
+  - **B.** A "Width to 200 %" toggle in SETUP that doubles what the Width knob means while it's on. One knob, but the same knob position then means two different widths.
+- **Decision 2: level.**
+  - **A (R).** Raise only the side: the mono sum is unchanged, and each side rises by up to 3 dB.
+  - **B.** Hold each side's level: the stereo level is unchanged, and the mono sum drops by up to 3 dB.
+
+### 4. Tests
+
+1. Legacy: Extra width 100 % renders exactly as v1.7.0 with every Center and Width.
+2. Extra width 200 % with Width 100 %: the wet side is doubled within 0.05 dB, and the mono sum `(L + R) / 2` is unchanged, bit for bit.
+3. Smoothing: moving Extra width from 100 to 200 % while playing changes the side over 20 ms, as Width does, with no click.
+
+### 5. Build order
+
+Approval, then the SETUP row in the mockup with item 17, then one push: the parameter, the side gain, the SETUP knob, tests, manual and checklist.
