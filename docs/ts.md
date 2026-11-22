@@ -1,6 +1,6 @@
 # Fancy TS: design note
 
-**Draft, for approval.** Phase 4 item 3 (`docs/enhancements.md`), a transient shaper. Name Fancy TS (the user renamed Fancy Transient on 22 November 2026), bundle ID `com.fancyplugs.ts`. Layout approved as mockup 50 (`reference/phase4/50__transient_mockup.png`, decisions 1 to 5 of `docs/research/new-plugins-features.md`, all A). Modelled first: `docs/research/ts-model.py`. Ideas only from the plugins surveyed; no names, graphics or sounds.
+**Approved by the user on 22 November 2026 with every recommended option (A).** Phase 4 item 3 (`docs/enhancements.md`), a transient shaper. Name Fancy TS (the user renamed Fancy Transient on 22 November 2026), bundle ID `com.fancyplugs.ts`. Layout approved as mockup 50 (`reference/phase4/50__transient_mockup.png`, decisions 1 to 5 of `docs/research/new-plugins-features.md`, all A). Modelled first: `docs/research/ts-model.py`. Ideas only from the plugins surveyed; no names, graphics or sounds.
 
 ## What it is
 
