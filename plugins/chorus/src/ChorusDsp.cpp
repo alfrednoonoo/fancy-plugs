@@ -36,10 +36,17 @@ double coefficient (double ms, double rate) noexcept
     return 1.0 - std::exp (-1.0 / std::max (1.0e-9, ms * 0.001 * rate));
 }
 
+// floor by an integer cast, which compiles to one instruction where std::floor is a library call.
+double fastFloor (double x) noexcept
+{
+    const auto whole = (double) (long long) x;
+    return whole > x ? whole - 1.0 : whole;
+}
+
 // sin (2 pi x) for x in [0, 1): folded to [-pi/2, pi/2] and a 9th-order odd polynomial (error < 4e-6).
 double sinCycle (double x) noexcept
 {
-    auto t = x - std::floor (x);   // 0 to 1
+    auto t = x - fastFloor (x);   // 0 to 1
     t = t < 0.5 ? t : t - 1.0;     // -0.5 to 0.5
 
     auto a = 2.0 * pi * t;          // -pi to pi
@@ -108,13 +115,13 @@ double ChorusDsp::lfoValue (int shape, double phaseCycles, std::uint32_t seed) n
 {
     if (shape == triangle)
     {
-        const auto f = phaseCycles - std::floor (phaseCycles);
+        const auto f = phaseCycles - fastFloor (phaseCycles);
         return f < 0.25 ? 4.0 * f : (f < 0.75 ? 2.0 - 4.0 * f : 4.0 * f - 4.0);
     }
 
     if (shape == smoothRandom)
     {
-        const auto cycle = (long long) std::floor (phaseCycles);
+        const auto cycle = (long long) fastFloor (phaseCycles);
         const auto f = phaseCycles - (double) cycle;
         const auto a = hashToUnit (cycle, seed), b = hashToUnit (cycle + 1, seed);
         return a + (b - a) * f * f * (3.0 - 2.0 * f);
@@ -253,10 +260,10 @@ void ChorusDsp::updateFilters (double lowCut, double highCut, double ageAmount) 
 double ChorusDsp::readLine (int channel, double delaySamples) const noexcept
 {
     const auto& line = lines[(size_t) channel];
-    const auto position = (double) writeIndex - delaySamples;
-    const auto whole = std::floor (position);
-    const auto f = position - whole;
-    const auto index = (int) whole;
+    // A whole line ahead, so the position is never negative and a cast floors it.
+    const auto position = (double) (writeIndex + lineSize) - delaySamples;
+    const auto index = (int) position;
+    const auto f = position - (double) index;
 
     const auto xm1 = (double) line[(size_t) ((index - 1) & lineMask)];
     const auto x0 = (double) line[(size_t) (index & lineMask)];
