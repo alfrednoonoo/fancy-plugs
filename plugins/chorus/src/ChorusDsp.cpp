@@ -53,6 +53,14 @@ double sinCycle (double x) noexcept
     return a * (1.0 + a2 * (-1.0 / 6.0 + a2 * (1.0 / 120.0 + a2 * (-1.0 / 5040.0 + a2 * (1.0 / 362880.0)))));
 }
 
+// tanh as a 7/6 Pade form held to +-1 (Fancy Delay's fast tanh), for Age's saturation.
+double fastTanh (double x) noexcept
+{
+    const auto x2 = x * x;
+    const auto y = x * (135135.0 + x2 * (17325.0 + x2 * (378.0 + x2))) / (135135.0 + x2 * (62370.0 + x2 * (3150.0 + x2 * 28.0)));
+    return std::clamp (y, -1.0, 1.0);
+}
+
 // A value in -1 to 1 for each whole cycle and seed: the smooth random LFO's points.
 double hashToUnit (long long cycle, std::uint32_t seed) noexcept
 {
@@ -179,6 +187,10 @@ void ChorusDsp::reset()
     dcIn = dcOut = {};
     duckPeak = duckDb = 0.0;
     noiseState = 0x1234567u;
+    pans.fill ({});
+    ageCache = {};
+    motionCache = {};
+    filterInputs = { -1.0, -1.0, -1.0 };
     writeIndex = 0;
     phase = 0.0;
     aligned = false;
@@ -336,6 +348,7 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
         gain.setTarget (v < voices ? 1.0 : 0.0);
     }
 
+    const auto samplesPerColumn = std::max (1, (int) (historySeconds * rate / historyColumns.load (std::memory_order_relaxed)));
     const auto switching = wantedMode != activeMode || wantedShape != activeShape || settings.sync != activeSync;
 
     for (int i = 0; i < numSamples; ++i)
@@ -358,7 +371,15 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
         }
 
         if ((now & (coefficientInterval - 1)) == 0)
-            updateFilters (lowCutHz.getCurrent(), highCutHz.getCurrent(), age.getCurrent());
+        {
+            const std::array<double, 3> wanted { lowCutHz.getCurrent(), highCutHz.getCurrent(), age.getCurrent() };
+
+            if (wanted != filterInputs)
+            {
+                filterInputs = wanted;
+                updateFilters (wanted[0], wanted[1], wanted[2]);
+            }
+        }
 
         double in[2];
         in[0] = sanitise (channels[0][i]);
@@ -380,8 +401,13 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
         const auto rightOffset = lfoPhase.next() / 360.0;
         const auto norm = normalise.next();
 
-        const auto centre = centreDelayMs (activeMode, delayNow);
-        const auto sweep = sweepMs (activeMode, delayNow, depthNow);
+        if (delayNow != motionCache.delay || depthNow != motionCache.depth || activeMode != motionCache.mode)
+        {
+            motionCache = { delayNow, depthNow, activeMode, centreDelayMs (activeMode, delayNow), sweepMs (activeMode, delayNow, depthNow) };
+        }
+
+        const auto centre = motionCache.centre;
+        const auto sweep = motionCache.sweep;
         const auto msToSamples = 0.001 * rate;
 
         double wetSum[2] {}, feedbackSum[2] {};
@@ -422,17 +448,19 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
             // Narrowed and panned: Width 0 is mono; at the edges a voice sits on one side.
             const auto m = 0.5 * (y[0] + y[1]);
             const auto s = 0.5 * (y[0] - y[1]) * widthNow * (1.0 - std::abs (position));
-            double left = 1.0, right = 1.0;
+            // The pan law, recalculated only when the voice's place moves.
+            auto& pan = pans[(size_t) v];
 
-            if (position != 0.0)
+            if (position != pan.position)
             {
                 const auto angle = (position + 1.0) * 0.25 * pi;
-                left = std::cos (angle) * std::numbers::sqrt2;
-                right = std::sin (angle) * std::numbers::sqrt2;
+                pan.position = position;
+                pan.left = position == 0.0 ? 1.0 : std::cos (angle) * std::numbers::sqrt2;
+                pan.right = position == 0.0 ? 1.0 : std::sin (angle) * std::numbers::sqrt2;
             }
 
-            wetSum[0] += gain * (left * m + s);
-            wetSum[1] += gain * (right * m - s);
+            wetSum[0] += gain * (pan.left * m + s);
+            wetSum[1] += gain * (pan.right * m - s);
         }
 
         // Feedback, DC-blocked, back into the lines with the input.
@@ -453,6 +481,15 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
         const auto lowBlend = lowCutBlend.next();
         const auto highBlend = highCutBlend.next();
         const auto ageNow = age.next();
+
+        if (ageNow != ageCache.amount)
+        {
+            ageCache.amount = ageNow;
+            ageCache.drive = 1.0 + 3.0 * ageNow;
+            ageCache.inverseDrive = 1.0 / ageCache.drive;
+            ageCache.blend = std::min (1.0, 10.0 * ageNow);
+            ageCache.hiss = std::pow (10.0, (-90.0 + 20.0 * ageNow) / 20.0) * 1.7320508075688772;
+        }
         lowCutHz.next();
         highCutHz.next();
 
@@ -470,15 +507,14 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
 
             if (ageNow > 0.0)
             {
-                const auto drive = 1.0 + 3.0 * ageNow;
-                x = std::tanh (drive * x) / drive;
+                x = fastTanh (ageCache.drive * x) * ageCache.inverseDrive;
 
                 const auto aged = ageFilters[(size_t) ch].tick (ageCoefficients, x).low;
-                x += std::min (1.0, 10.0 * ageNow) * (aged - x);
+                x += ageCache.blend * (aged - x);
 
                 noiseState = noiseState * 1664525u + 1013904223u;
                 const auto noise = (double) (noiseState >> 8) * (2.0 / 16777216.0) - 1.0;
-                x += noise * std::pow (10.0, (-90.0 + 20.0 * ageNow) / 20.0) * 1.7320508075688772;
+                x += noise * ageCache.hiss;
             }
 
             w[ch] = x;
@@ -553,7 +589,7 @@ void ChorusDsp::process (float* const* channels, int numChannels, int numSamples
         }
 
         // The display's columns.
-        if (++columnFill >= std::max (1, (int) (historySeconds * rate / historyColumns.load (std::memory_order_relaxed))))
+        if (++columnFill >= samplesPerColumn)
         {
             column.voices = voices;
             pushHistory (column);

@@ -140,6 +140,30 @@ private:
     // Age's hiss.
     std::uint32_t noiseState = 0x1234567u;
 
+    // Values worked out only when what they depend on moves: each voice's pan law, and Age's.
+    struct Pan
+    {
+        double position = 0.0, left = 1.0, right = 1.0;
+    };
+
+    struct AgeCache
+    {
+        double amount = -1.0, drive = 1.0, inverseDrive = 1.0, blend = 0.0, hiss = 0.0;
+    };
+
+    std::array<Pan, maxVoices> pans {};
+    AgeCache ageCache;
+
+    struct MotionCache
+    {
+        double delay = -1.0, depth = -1.0;
+        int mode = -1;
+        double centre = 0.0, sweep = 0.0;
+    };
+
+    MotionCache motionCache;
+    std::array<double, 3> filterInputs { -1.0, -1.0, -1.0 };   // Low cut, High cut, Age at the last update
+
     // History.
     std::atomic<int> historyColumns { 480 };
     int columnFill = 0;
