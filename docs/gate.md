@@ -450,6 +450,18 @@ No Level threshold works through both parts of the song. Transient at 8 dB catch
 
 Approval, then the mockup (`reference/phase4/53__gate_w2_transient_mockup.png`), then one push: the mode and Rise in `GateDsp`, the parameters, the Level card's switch and knob, tests, manual and checklist. Mockups 53 and 54 approved by the user on 23 November 2026: the window grows to 790 x 465 (the Range card gets a title row for the Detector switch), and in Upward the drawer's Ratio knob becomes Up ratio, as Range becomes Boost; Ceiling goes under Learn.
 
+### 7. As built
+
+Built with item 12 in one push; `tests/GateW2bTests.cpp`, checked first against `docs/research/gate-w2b-prepush.py` (a sample-for-sample model of the DSP as built).
+
+- `detMode` (Level, Transient; default Level) and `rise` (3 to 24 dB, default 8) are appended. `Machine::stepTransient` runs the machine on hits: a hit opens it, or re-opens it from where it is; it holds for Hold once fully open, then closes over Release. A re-opening counts as a new hit for MIDI out (note-off, then note-on), so each hit sends one note.
+- The level follower (1 ms, 20 ms) and its 50 ms average run on |x| of the filtered detector signal, on the louder channel with Link on. A hit re-arms once the rise is under half of Rise, as in the model.
+- **Ratio dims in Transient and doesn't act there:** the expander works on the level against Threshold, which would undo what Transient is for. The note listed Ratio among the shared controls; this is the one change.
+- **Test 4 changed:** a tone swelling in over 30 ms *from silence* is a rise of tens of dB in its first milliseconds, so Transient rightly opens on it. The test uses the model's own bleed instead: bass notes back to back, each swelling in over 30 ms, at -6 dBFS (55, 82.4 and 110 Hz). None after the first opens it (the largest rise is 5.7 dB against Rise 8), and a 1 ms click 10 dB over Threshold opens it within 1 ms.
+- Window 790 x 465 as mockups 53 and 54: the history, the knob cards and the footer widen; the Threshold, Gain and Out meters and the faders grow 24 px over the same dB range. The window's minimum grows with it.
+
+CPU is printed by the "Gate Transient CPU measurement" case in `measurements-<sha>`.
+
 ## Phase 4 Wave 2: Upward mode
 
 **Approved by the user on 22 November 2026 with every recommended option (A).** Item 12 of the Wave 2 order (`docs/enhancements.md`; backlog item 6 of section 9), for v1.7.1. Modelled first: `docs/research/gate-upward-model.py`.
@@ -507,3 +519,13 @@ It raises peaks by up to Boost, so the output can pass 0 dBFS (decision 3).
 ### 6. Build order
 
 Approval, then the mockup (`reference/phase4/54__gate_w2_upward_mockup.png`, with item 11's if both are approved together), then one push: Upward in `GateDsp`, the parameters, the Mode switch, the Boost knob, the drawer's Up ratio and Ceiling, tests, manual and checklist.
+
+### 7. As built
+
+Built with item 11 in one push; `tests/GateW2bTests.cpp`.
+
+- `mode` gains "Upward" (index 2, appended; Gate and Duck keep 0 and 1), and `boost` (0 to 12 dB, default +4), `upRatio` (1.1:1 to 4:1, default 1.5:1) and `ceiling` (Off at -12.5, or -12 to 0 dBTP; not automatable) are appended. `Targets` has `upward` beside `duck`.
+- In Level, the boost's target is min(Boost, (level - Threshold) x (Up ratio - 1)) dB, held at its last value for Hold once the level drops under, smoothed in dB with Attack and Release. With Transient it's Boost along the machine's raised-cosine curve. Switching into and out of Upward fades over about 1 ms (`upBlend`), as Gate and Duck do. The machine runs with its close level at Threshold, for the light ("boost") and MIDI out.
+- Ceiling is `fancy::dsp::OutputCeiling` after the gate in `GateProcessor`, in every mode, as DS has it; Off is out of the path with no latency. It's a dropdown in the drawer (mockup 54) of common values plus "Type a value..."; Ctrl-click types one too.
+- **Test 4 changed:** on a plain noise bed (no drums) the chorus 4 dB over Threshold rises by the formula's 2.0 dB (+-0.25), and the verse by under 0.05 dB. The note's 2.5 to 3.5 dB came from the model's song with drums, whose peaks push the RMS level higher.
+- Test 5 runs through `GateProcessor`: Upward with Boost 12 on a 0.98 sine passes +6 dBFS with Ceiling Off (latency 0) and stays under -0.9 dBFS at -1 dBTP (latency reported). The host test checks that turning Ceiling on and off reaches the host once each way.

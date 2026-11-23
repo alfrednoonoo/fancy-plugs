@@ -99,3 +99,14 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] Stop the song: it keeps chopping at the tempo; play from a bar: the chops land on the beat again. Loop a bar: no doubled or missing chop at the loop point.
 - [ ] Tick MIDI trigger: the Host sync controls dim and the pulse is ignored.
 - [ ] Render offline twice: the renders match.
+
+## Transient detector and Upward mode (v1.7.1)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy Gate: it loads and sounds as before (Detector Level, Mode Gate or Duck, Ceiling Off). The window is 790 x 465 and every control is where it was, with the Range card's new title row.
+- [ ] Tom track with bass bleed, Lowpass about 1 kHz, Detector **Transient**, Rise 8 dB: every hit opens it, soft and loud, and the bass doesn't, in a quiet and a loud section. RMS size becomes Rise; Hysteresis and Ratio dim.
+- [ ] Transient on a held synth note: it opens once at the start and closes after Hold and Release while the note goes on.
+- [ ] Transient with MIDI out on: one note per hit. With Lookahead on, it opens Pre-open ahead of each hit. Duck mode ducks on each hit.
+- [ ] Tick MIDI trigger, or choose Host sync: the Detector switch dims.
+- [ ] Mode **Upward** on a mix with a quiet verse and a loud chorus, Threshold between them, RMS size 50 ms: the chorus comes up by about Boost or less, the verse doesn't change. Range becomes Boost, Ratio in the drawer becomes Up ratio, Hysteresis dims, the light reads "boost".
+- [ ] Switch Gate, Duck and Upward while playing: no clicks.
+- [ ] Ceiling in the drawer: pick -1.0 dBTP from the list, then Type a value... and type -3; Ctrl-click opens the box too. Upward with Boost 12 on a loud track stays under it; the host's latency compensation keeps the track in time when you turn it on and off. Off adds no latency.

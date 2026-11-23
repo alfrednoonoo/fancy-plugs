@@ -15,7 +15,7 @@ A gate that's closing re-opens on the next hit. A gate that's open doesn't re-tr
 | Part | What it shows |
 |---|---|
 | Threshold meter | The input level, with the Threshold handle over it. The dashed line is the close level. Below it are Threshold and the close level in dB |
-| Gain | How far the gate turns the signal down right now, and the light: **open** (yellow), **hold** (orange) or **closed** (grey) |
+| Gain | How far the gate turns the signal down right now, and the light: **open** (yellow), **hold** (orange) or **closed** (grey). In Upward the light reads **boost** while it's raising the level |
 | History | The last 3 s: the input level as a grey fill and the gate's gain as a yellow line, with the open and close levels. Click or drag on it to set Threshold |
 
 ## Controls
@@ -33,7 +33,10 @@ A gate that's closing re-opens on the next hit. A gate that's open doesn't re-tr
 | Lowpass, Highpass | 20 Hz-22 kHz | Off | Filters on the detector only. A Highpass at 100 Hz stops bass spill opening a vocal gate |
 | Detector input | Main or Sidechain, L+R, L or R | Main input L+R | What the gate listens to |
 | Lookahead | On or off | Off | Delays the audio by 50 ms, so the gate can open before the hit. Adds 50 ms latency, which REAPER compensates |
-| Mode | Gate or Duck | Gate | Duck turns the signal down by Range while the detector is over Threshold |
+| Mode | Gate, Duck or Upward | Gate | Duck turns the signal down by Range while the detector is over Threshold. Upward turns it up above Threshold (see Upward mode) |
+| Detector (Range card) | Level or Transient | Level | Level opens on the level, as above. Transient opens on a sudden rise (see Transient detector) |
+| Rise | 3 to 24 dB | 8 dB | In Transient, in RMS size's place: how far the level must jump above its recent average to count as a hit |
+| Boost | 0 to 12 dB | +4 dB | In Upward, in Range's place: the most it raises the level by |
 | Preview filter | On or off | Off | Plays what the detector hears, through Lowpass and Highpass. It's temporary: it turns off when you close the window, it's never saved in a project or preset, and it isn't automatable. While it's on, the title strip shows **LISTENING**. A project saved with it on in v1.2.0 or earlier opens with it off |
 | Link channels | On or off | On | Both channels open together, on the louder one |
 | Wet, Dry | -inf to +12 dB | 0 dB, -inf | The gated signal and the untouched signal |
@@ -85,10 +88,37 @@ Turning MIDI off, or changing Lookahead, ends a sounding note.
 - **Ratio:** at inf:1 the gate closes as before. Lower, it's an expander: the level falls this many dB for each dB under Threshold, never deeper than Range.
 - **De-bleed:** raises Threshold while the sound outside Highpass and Lowpass is louder than inside, so a loud cymbal can't open a tom's gate. Set Highpass and Lowpass first; without them it has nothing to compare.
 - **Detector input** now also offers **Mid** and **Side**.
+- **Ceiling** (v1.7.1), under Learn: Off, or -12 to 0 dBTP. It holds the output's true peak under that level, in every mode; Upward is what needs it, since its boost can push peaks over 0 dBFS. Pick a value from the list, or choose **Type a value...** (or Ctrl-click it) to type one. Off is out of the path and adds no latency; on adds a little, which the host compensates.
+- **Up ratio** (v1.7.1) takes Ratio's place while Mode is Upward (see Upward mode). Gate's Ratio keeps its own value.
+
+## Transient detector
+
+The **Detector** switch in the Range card's title row picks how the gate decides to open. **Level** is the gate as it always was: it opens when the level reaches Threshold (peak, or RMS with RMS size). **Transient** opens on a sudden rise in level instead: a drum hit rises in about a millisecond, while a bass note, a pad or a held chord swells in over tens of milliseconds, so those don't count, however loud they are.
+
+Use it on a drum mic whose bleed changes level through a song, such as a tom mic that hears the bass quietly in the verse and loudly in the chorus: no single Threshold suits both parts, but Transient catches every hit and ignores the bass in both. It's for bleed with slow onsets. For cymbals, which are hits too, set Lowpass instead.
+
+- **Rise** (3 to 24 dB, 8 dB by default) takes RMS size's place: how far the level must jump above its own 50 ms average to count as a hit. Lower catches softer hits; higher ignores more.
+- **Threshold** becomes a floor, so noise between hits can't trigger it.
+- The gate closes **Hold** after the last hit, then fades over **Release**, whatever the level, so a held sound can't keep it open. **Hysteresis** has no part in it and dims.
+- Attack, Range, Duck mode, Lookahead with Pre-open, MIDI out (one note per hit) and the lights work as in Level. **Ratio** is the Level detector's expander, so it dims in Transient.
+- MIDI trigger and Host sync don't use the detector, so the switch dims while either is on.
+
+## Upward mode
+
+**Mode > Upward** turns the sound up above Threshold, where Gate and Duck turn it down. Above Threshold the level rises by (level - Threshold) x (Up ratio - 1) dB, never more than **Boost**; below Threshold nothing changes, to the bit. Loud passages get louder than quiet ones, which puts contrast back into a flattened mix or lets a chorus lift.
+
+- **Boost** (0 to 12 dB, +4 dB by default) takes Range's place: the most it raises the level by.
+- **Up ratio** (1.1:1 to 4:1, 1.5:1 by default) takes Ratio's place in the EDIT drawer. At 1.5:1, a passage 4 dB over Threshold comes up 2 dB.
+- **Attack** and **Release** set how fast the boost rises and falls, and **Hold** keeps it up for that long after the level drops under Threshold. **Hysteresis** has no part in it and dims.
+- An RMS size of 30 to 100 ms suits it best; at 0 it follows peaks and acts like a fast lift.
+- With **Transient**, Upward lifts each hit by Boost for Hold.
+- MIDI out sends a note when the boost starts and ends.
+- It raises peaks by up to Boost, so the output can pass 0 dBFS. Set **Ceiling** in the EDIT drawer, or turn **Output** down by about Boost.
+- It lifts a whole drum loop alike, hits and decays, so it adds no punch: that's Fancy TS's job.
 
 ## Latency
 
-0 samples with Lookahead off. 50 ms with it on, at every sample rate.
+0 samples with Lookahead off. 50 ms with it on, at every sample rate. Ceiling adds a little more while it's on.
 
 ## Using it in other hosts
 

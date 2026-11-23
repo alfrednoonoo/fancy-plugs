@@ -127,7 +127,8 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (filterParameter ("lowpass", "Lowpass", 20.0f, (float) GateDsp::lowpassOffHz, (float) GateDsp::lowpassOffHz, true));
     layout.add (filterParameter ("highpass", "Highpass", (float) GateDsp::highpassOffHz, 5000.0f, (float) GateDsp::highpassOffHz, false));
 
-    layout.add (std::make_unique<Choice> (juce::ParameterID { "mode", 1 }, "Mode", juce::StringArray { "Gate", "Duck" }, 0));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "mode", 1 }, "Mode", juce::StringArray { "Gate", "Duck",
+                                                                                                   "Upward" }, 0)); // Phase 4 Wave 2, appended
     layout.add (toggle ("link", "Link channels", true));
 
     layout.add (fancy::levelParameter ("wet", "Wet", mixFloorDb, 12.0f, 0.0f, mixFloorDb));
@@ -172,6 +173,31 @@ fancy::FancyProcessor::Layout createLayout()
                                            .withLabel ("%")
                                            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
                                            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
+    // Phase 4 Wave 2, v1.7.1, appended (docs/gate.md): the Transient detector (item 11) and Upward
+    // mode (item 12). Level, and the Gate and Duck modes, are the gate as it was.
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "detMode", 1 }, "Detector mode", juce::StringArray { "Level", "Transient" }, 0));
+    layout.add (dbParameter ("rise", "Rise", 3.0f, 24.0f, 8.0f));
+    layout.add (fancy::floatParameter (
+        "boost", "Boost", juce::NormalisableRange<float> (0.0f, 12.0f, 0.1f), 4.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("dB")
+            .withStringFromValueFunction ([] (float value, int) { return (value > 0.0f ? "+" : "") + fancy::formatFixed (value, 1) + " dB"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    layout.add (fancy::floatParameter (
+        "upRatio", "Up ratio", fancy::logRange (1.1f, 4.0f, 0.01f), 1.5f,
+        juce::AudioParameterFloatAttributes {}
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + ":1"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseRatio (text, 4.0f); })));
+    layout.add (fancy::floatParameter (
+        "ceiling", "Ceiling", juce::NormalisableRange<float> ((float) fancy::dsp::OutputCeiling::offDb, 0.0f, 0.1f), (float) fancy::dsp::OutputCeiling::offDb,
+        juce::AudioParameterFloatAttributes {}
+            .withAutomatable (false)
+            .withLabel ("dBTP")
+            .withStringFromValueFunction ([] (float value, int)
+                                          { return value <= (float) fancy::dsp::OutputCeiling::offDb ? juce::String ("Off") : fancy::formatFixed (value, 1) + " dBTP"; })
+            .withValueFromStringFunction ([] (const juce::String& text)
+                                          { return text.trim().equalsIgnoreCase ("off") ? (float) fancy::dsp::OutputCeiling::offDb : juce::jlimit (-12.0f, 0.0f, fancy::parseNumber (text)); })));
 
     return layout;
 }
@@ -254,7 +280,8 @@ GateDsp::Targets GateProcessor::readTargets() const
     targets.lowpassHz = (double) read ("lowpass");
     targets.highpassHz = (double) read ("highpass");
     targets.preview = isListening();
-    targets.duck = isOn ("mode");
+    targets.duck = juce::roundToInt (read ("mode")) == 1;
+    targets.upward = juce::roundToInt (read ("mode")) == 2;
     targets.link = isOn ("link");
     targets.wetGain = fancy::levelToGain (read ("wet"), mixFloorDb);
     targets.dryGain = fancy::levelToGain (read ("dry"), mixFloorDb);
@@ -275,6 +302,12 @@ GateDsp::Targets GateProcessor::readTargets() const
     targets.syncStepBeats = syncStepBeats (juce::roundToInt (read ("syncRate")));
     targets.syncShape = juce::jlimit (0.05, 1.0, (double) read ("syncShape") * 0.01);
 
+    // Phase 4 Wave 2, v1.7.1.
+    targets.transient = juce::roundToInt (read ("detMode")) == 1;
+    targets.riseDb = (double) read ("rise");
+    targets.boostDb = (double) read ("boost");
+    targets.upRatio = (double) read ("upRatio");
+
     return targets;
 }
 
@@ -282,7 +315,13 @@ void GateProcessor::prepareAudio (double sampleRate, int)
 {
     dsp.prepare (sampleRate);
     dsp.snapToTargets (readTargets());
-    setLatencySamples (dsp.getLatencySamples());
+    ceiling.prepare (sampleRate);
+    setLatencySamples (totalLatency());
+}
+
+int GateProcessor::totalLatency() const noexcept
+{
+    return dsp.getLatencySamples() + ceiling.getLatencySamples ((double) read ("ceiling"));
 }
 
 void GateProcessor::reset()
@@ -348,10 +387,13 @@ void GateProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBu
     dsp.setTransport (readPosition()); // Phase 4 Wave 2: Host sync's grid
     dsp.process (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples, &midi);
 
+    // Phase 4 Wave 2, v1.7.1: the output ceiling, out of the path entirely while it's Off.
+    ceiling.process (main, numChannels, numSamples, (double) read ("ceiling"), isOn ("bypass"));
+
     outputMeter.push (main, numChannels, numSamples);
 
-    if (getLatencySamples() != dsp.getLatencySamples())
-        setLatencySamples (dsp.getLatencySamples());
+    if (getLatencySamples() != totalLatency())
+        setLatencySamples (totalLatency());
 }
 
 void GateProcessor::setParameter (const juce::String& parameterId, float value)

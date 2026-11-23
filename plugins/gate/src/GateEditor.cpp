@@ -5,27 +5,31 @@
 #include <fancy/plugin/ParamFormat.h>
 
 #include <cmath>
+#include <iterator>
 
 using namespace fancy::ui;
 
 namespace
 {
 // design/phase2_0_1-mockup-src/gate.html at 100 %. The shared header is 16 px taller than the
-// mockup's, so the window is too.
-constexpr int baseWidth = 740;
+// mockup's, so the window is too. Phase 4 Wave 2, v1.7.1 (mockups 53 and 54): 50 px wider for
+// Upward's third Mode choice and 24 px taller for the Range card's title row, so 790 x 465.
+constexpr int baseWidth = 790;
+constexpr int growY = 24;
 
 // Phase 4 Wave 2: Host sync's small Shape knob, 66 tall with its label and value (Comp's).
 constexpr fancy::ui::Knob::Style syncKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
-constexpr int bodyHeight = 368;
+constexpr int bodyHeight = 368 + growY;
 constexpr int baseHeight = ShellEditor::headerHeight + bodyHeight;
-constexpr int rightColumnX = 590;
+constexpr int rightColumnX = 640;
 
-constexpr int centreX = 120, centreWidth = 456;
+constexpr int centreX = 120, centreWidth = 506;
 constexpr int historyY = 40, historyHeight = 70;
 constexpr int envelopeY = 118, cardHeight = 96;
-constexpr int lowerY = 222, levelWidth = 226, filterX = 354, filterWidth = 222;
-constexpr int footerY = 336;
-constexpr int faderTop = 26, faderHeight = 331;
+constexpr int lowerY = 222, lowerHeight = cardHeight + growY, lowerKnobY = lowerY + growY;
+constexpr int levelWidth = 251, filterX = 379, filterWidth = 247;
+constexpr int footerY = 336 + growY;
+constexpr int faderTop = 26, faderHeight = 331 + growY;
 
 constexpr float labelHeight = 10.5f;   // the mockup's captions and checkboxes
 constexpr float historyFloorDb = -90.0f;
@@ -33,15 +37,16 @@ constexpr float historyFloorDb = -90.0f;
 const juce::Colour gateYellow = colours::accentYellow;
 const juce::Colour noiseGrey { 0xff909090 };
 
-constexpr OutMeter::Geometry outGeometry { 14.5f, 16.0f, 316.0f, 26.0f, 4.9f, 324.0f, false, true };
-constexpr GainReductionMeter::Geometry gainGeometry { 16.0f, 14.0f, 232.0f, true, "Gain" };
+// The wells grow with the window, over the same dB range.
+constexpr OutMeter::Geometry outGeometry { 14.5f, 16.0f, 316.0f + growY, 26.0f, 4.9f * (290.0f + growY) / 290.0f, 324.0f + growY, false, true };
+constexpr GainReductionMeter::Geometry gainGeometry { 16.0f, 14.0f, 232.0f + growY, true, "Gain" };
 
 ThresholdMeter::Style thresholdStyle()
 {
     ThresholdMeter::Style style;
     style.wellX = 8.0f;
     style.wellTop = 14.0f;
-    style.wellHeight = 232.0f;
+    style.wellHeight = 232.0f + growY;
     style.lowestDb = -90.0f;
     style.accent = gateYellow;
     style.labelHeight = labelHeight;
@@ -112,8 +117,8 @@ void GateEditor::Panels::paint (juce::Graphics& g)
 
     g.fillRoundedRectangle ((float) centreX, (float) historyY, (float) centreWidth, (float) historyHeight, 6.0f);
     g.fillRoundedRectangle ((float) centreX, (float) envelopeY, (float) centreWidth, (float) cardHeight, 6.0f);
-    g.fillRoundedRectangle ((float) centreX, (float) lowerY, (float) levelWidth, (float) cardHeight, 6.0f);
-    g.fillRoundedRectangle ((float) filterX, (float) lowerY, (float) filterWidth, (float) cardHeight, 6.0f);
+    g.fillRoundedRectangle ((float) centreX, (float) lowerY, (float) levelWidth, (float) lowerHeight, 6.0f);
+    g.fillRoundedRectangle ((float) filterX, (float) lowerY, (float) filterWidth, (float) lowerHeight, 6.0f);
 }
 
 // History ---------------------------------------------------------------------
@@ -272,11 +277,20 @@ void GateEditor::Light::setState (int newState)
     }
 }
 
+void GateEditor::Light::setUpward (bool isUpward)
+{
+    if (isUpward != upward)
+    {
+        upward = isUpward;
+        repaint();
+    }
+}
+
 void GateEditor::Light::paint (juce::Graphics& g)
 {
     const auto lit = state != GateDsp::lightClosed;
     const auto colour = state == GateDsp::lightOpen ? gateYellow : state == GateDsp::lightHold ? colours::accentOrange : colours::grey6;
-    const auto text = state == GateDsp::lightOpen ? "open" : state == GateDsp::lightHold ? "hold" : "closed";
+    const auto text = state == GateDsp::lightOpen ? (upward ? "boost" : "open") : state == GateDsp::lightHold ? "hold" : "closed";
 
     g.setFont (font (Weight::regular, labelHeight));
 
@@ -295,6 +309,48 @@ void GateEditor::Light::paint (juce::Graphics& g)
 
     g.setColour (lit ? colour : colours::textSecondary);
     g.drawText (text, juce::Rectangle<float> (left + 11.0f, 0.0f, textWidth + 2.0f, (float) getHeight()), juce::Justification::centredLeft, false);
+}
+
+// CeilingDropdown -------------------------------------------------------------
+
+void GateEditor::CeilingDropdown::paint (juce::Graphics& g)
+{
+    paintDropdownBox (g, getLocalBounds().toFloat(), getValueText(), 12.0f, isMenuOpen());
+}
+
+void GateEditor::CeilingDropdown::mouseDown (const juce::MouseEvent& event)
+{
+    if (! event.mods.isPopupMenu() && (event.mods.isCtrlDown() || event.mods.isCommandDown()))
+        openValueEditor();
+    else
+        ParamClickControl::mouseDown (event);
+}
+
+void GateEditor::CeilingDropdown::clicked()
+{
+    static constexpr float values[] { (float) fancy::dsp::OutputCeiling::offDb, 0.0f, -0.1f, -0.3f, -0.5f, -1.0f, -2.0f, -3.0f, -6.0f, -12.0f };
+    static constexpr int typeId = 100;
+
+    const auto current = param.convertFrom0to1 (param.getValue());
+
+    Menu menu;
+
+    for (int i = 0; i < (int) std::size (values); ++i)
+        menu.addItem (i + 1, param.getText (param.convertTo0to1 (values[i]), 0), true, std::abs (values[i] - current) < 0.05f);
+
+    menu.addSeparator();
+    menu.addItem (typeId, "Type a value...");
+
+    menu.show (*this, [safeThis = juce::Component::SafePointer<CeilingDropdown> (this)] (int result)
+    {
+        if (safeThis == nullptr || result <= 0)
+            return;
+
+        if (result == typeId)
+            safeThis->openValueEditor();
+        else
+            safeThis->setDenormalised (values[result - 1]);
+    });
 }
 
 // MidiDropdown ----------------------------------------------------------------
@@ -407,7 +463,12 @@ GateEditor::GateEditor (GateProcessor& processor)
       ratioKnob (parameter ("ratio"), "Ratio", gateYellow, Knob::smallStyle),
       deBleedKnob (parameter ("deBleed"), "De-bleed", colours::uiBlue, Knob::smallStyle),
       syncRateDropdown (parameter ("syncRate")),
-      syncShapeKnob (parameter ("syncShape"), "Shape", gateYellow, syncKnobStyle)
+      syncShapeKnob (parameter ("syncShape"), "Shape", gateYellow, syncKnobStyle),
+      detModeSegments (parameter ("detMode"), gateYellow, colours::bgHeader),
+      riseKnob (parameter ("rise"), "Rise", gateYellow, Knob::tightStyle),
+      boostKnob (parameter ("boost"), "Boost", gateYellow, Knob::tightStyle),
+      upRatioKnob (parameter ("upRatio"), "Up ratio", gateYellow, Knob::smallStyle),
+      ceilingDropdown (parameter ("ceiling"))
 {
     auto& body = getBody();
 
@@ -432,21 +493,40 @@ GateEditor::GateEditor (GateProcessor& processor)
     addLatencyNote (lookaheadCheckbox);
     latencyLabel.setBounds (294, 9, 100, 24);
     modeLabel.setBounds (440, 9, 40, 24);
-    modeSegments.setBounds (486, 9, 90, 24);
+    modeSegments.setBounds (492, 9, 134, 24);   // Gate | Duck | Upward (mockup 54)
     modeSegments.setTextHeight (labelHeight);
 
     // Left column.
-    thresholdMeter.setBounds (8, historyY, 58, 276);
-    gainMeter.setBounds (68, historyY, 40, 269);
-    light.setBounds (60, historyY + 271, 56, 16);
+    thresholdMeter.setBounds (8, historyY, 58, 276 + growY);
+    gainMeter.setBounds (68, historyY, 40, 269 + growY);
+    light.setBounds (60, historyY + 271 + growY, 56, 16);
     light.setInterceptsMouseClicks (false, false);
 
     // Centre.
     history.setBounds (centreX, historyY, centreWidth, historyHeight);
 
     cardKnobs ({ &preOpenKnob, &attackKnob, &holdKnob, &releaseKnob, &hysteresisKnob }, centreX, centreWidth, envelopeY);
-    cardKnobs ({ &rangeKnob, &rmsKnob }, centreX, levelWidth, lowerY);
-    cardKnobs ({ &lowpassKnob, &highpassKnob }, filterX, filterWidth, lowerY);
+    cardKnobs ({ &rangeKnob, &rmsKnob }, centreX, levelWidth, lowerKnobY);
+    cardKnobs ({ &lowpassKnob, &highpassKnob }, filterX, filterWidth, lowerKnobY);
+
+    // Phase 4 Wave 2, v1.7.1: the Range card's title row (mockup 53), and the knobs that take
+    // Range's and RMS size's places in Upward and Transient (shown by updateLocks).
+    styleLabel (detModeLabel, "Detector", colours::textSecondary, juce::Justification::centredRight, labelHeight);
+    detModeLabel.setBounds (196, lowerY + 2, 60, 18);
+    detModeSegments.setBounds (262, lowerY + 2, 106, 18);
+    detModeSegments.setTextHeight (labelHeight);
+    detModeSegments.setTooltip ("Level opens on the level, as a gate does. Transient opens on a sudden rise in level: a drum hit, "
+                                "not a bass note, pad or held chord swelling in, however loud. It's for slow-onset bleed; for cymbals use Lowpass.");
+    riseKnob.setBounds (rmsKnob.getBounds());
+    riseKnob.setTooltip ("How far the level must jump above its own recent average to count as a hit. Threshold is then a floor.");
+    boostKnob.setBounds (rangeKnob.getBounds());
+    boostKnob.setTooltip ("The most Upward raises the level by, above Threshold.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &detModeLabel, &detModeSegments })
+        body.addAndMakeVisible (item);
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &riseKnob, &boostKnob })
+        body.addChildComponent (item);
 
     for (auto* knob : { &attackKnob, &holdKnob, &releaseKnob, &rmsKnob })
         knob->setShowDefaultMark (true);
@@ -466,7 +546,7 @@ GateEditor::GateEditor (GateProcessor& processor)
     linkCheckbox.setBounds (116, footerY, 98, 20);
     midiCheckbox.setBounds (218, footerY, 128, 20);
     midiDropdown.setBounds (346, footerY - 2, 78, 24);
-    velocityCheckbox.setBounds (432, footerY, 140, 20);
+    velocityCheckbox.setBounds (482, footerY, 140, 20);
 
     for (auto* checkbox : { &linkCheckbox, &midiCheckbox, &velocityCheckbox })
         checkbox->setLabelHeight (labelHeight);
@@ -483,11 +563,11 @@ GateEditor::GateEditor (GateProcessor& processor)
     // Wide enough for the whole word (it was clipped to "EDI" at 50 px).
     latencyLabel.setBounds (294, 9, 86, 24);
     editLink.setBounds (382, 9, 60, 24);
-    modeLabel.setBounds (444, 9, 36, 24);
+    modeLabel.setBounds (450, 9, 36, 24);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
     body.addAndMakeVisible (editLink);
 
-    drawer.setBounds (centreX, envelopeY - 4, centreWidth, lowerY + cardHeight - envelopeY + 4);
+    drawer.setBounds (centreX, envelopeY - 4, centreWidth, lowerY + lowerHeight - envelopeY + 4);
 
     midiInCheckbox.setBounds (18, 50, 140, 20);
     midiInCheckbox.setLabelHeight (12.0f);
@@ -495,7 +575,7 @@ GateEditor::GateEditor (GateProcessor& processor)
     styleLabel (midiInNote, "Note-on opens, note-off closes. The detector is ignored.", colours::textSecondary, juce::Justification::topLeft, 11.0f);
     midiInNote.setBounds (40, 72, 190, 30);
 
-    learnButton.setBounds (18, 118, 84, 26);
+    learnButton.setBounds (18, 118 + growY, 84, 26);
     learnButton.onClick = [this]
     {
         learnedLevels.clear();
@@ -503,29 +583,43 @@ GateEditor::GateEditor (GateProcessor& processor)
         learnButton.setText ("Listening...");
     };
     styleLabel (learnNote, "Listens for 3 s and sets Threshold", colours::textSecondary, juce::Justification::centredLeft, 11.0f);
-    learnNote.setBounds (110, 118, 130, 26);
+    learnNote.setBounds (110, 118 + growY, 130, 26);
 
-    ratioKnob.setBounds (246, 40, 90, 99);
+    // The drawer's right half moves with the 50 px the window gains (mockup 54).
+    ratioKnob.setBounds (296, 40, 90, 99);
     ratioKnob.setTooltip ("Below inf:1 the gate becomes an expander: the level falls this many dB for each dB under Threshold, never deeper than Range.");
-    deBleedKnob.setBounds (346, 40, 90, 99);
+    deBleedKnob.setBounds (396, 40, 90, 99);
     deBleedKnob.setTooltip ("Raises Threshold while the sound outside Lowpass and Highpass is louder than inside, so bleed can't open the gate.");
     styleLabel (drawerNote, "De-bleed needs Lowpass and Highpass set: out-of-band thumps can't open the gate.",
                 colours::textSecondary, juce::Justification::topLeft, 11.0f);
-    drawerNote.setBounds (250, 146, 190, 44);
+    drawerNote.setBounds (300, 146 + growY, 190, 44);
 
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &midiInCheckbox, &midiInNote, &learnButton, &learnNote, &ratioKnob, &deBleedKnob, &drawerNote })
+    // Phase 4 Wave 2, v1.7.1: Up ratio in Ratio's place in Upward, and Ceiling under Learn.
+    upRatioKnob.setBounds (ratioKnob.getBounds());
+    upRatioKnob.setTooltip ("In Upward, how many dB the level rises for each dB over Threshold, never more than Boost.");
+    styleLabel (ceilingLabel, "Ceiling", colours::textSecondary, juce::Justification::centredLeft, 13.0f);
+    ceilingLabel.setBounds (18, 189, 80, 24);
+    ceilingDropdown.setBounds (108, 189, 120, 24);
+    ceilingDropdown.setTooltip ("Holds the output's true peak under this level, so Upward's boost can't clip. Off adds no latency; on adds a little. "
+                                "Ctrl-click to type a value.");
+    addLatencyNote (ceilingDropdown);
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &midiInCheckbox, &midiInNote, &learnButton, &learnNote, &ratioKnob, &deBleedKnob, &drawerNote,
+                                                                           &ceilingLabel, &ceilingDropdown })
         drawer.addAndMakeVisible (item);
+
+    drawer.addChildComponent (upRatioKnob);
 
     body.addChildComponent (drawer);
 
     // Phase 4 Wave 2: Host sync's group under Ratio and De-bleed, shown by updateSyncGroup.
     styleLabel (syncCaption, "HOST SYNC", colours::textSecondary, juce::Justification::topLeft, 10.0f);
     styleLabel (syncRateLabel, "Rate", colours::textPrimary, juce::Justification::centredLeft, 12.0f);
-    syncCaption.setBounds (250, 146, 190, 12);
-    syncRateLabel.setBounds (250, 166, 32, 24);
-    syncRateDropdown.setBounds (282, 166, 88, 24);
+    syncCaption.setBounds (300, 146 + growY, 190, 12);
+    syncRateLabel.setBounds (300, 166 + growY, 32, 24);
+    syncRateDropdown.setBounds (332, 166 + growY, 88, 24);
     syncRateDropdown.setTextHeight (12.0f);
-    syncShapeKnob.setBounds (378, 138, 60, 66);
+    syncShapeKnob.setBounds (428, 138 + growY, 60, 66);
     syncRateDropdown.setTooltip ("The grid Host sync opens the gate on, at the host's tempo.");
     syncShapeKnob.setTooltip ("How long each opening lasts, as a share of the step, whatever Threshold is.");
 
@@ -535,7 +629,7 @@ GateEditor::GateEditor (GateProcessor& processor)
     history.onColumns = [this] (const GateDsp::HistoryColumn* columns, int count) { learnFrom (columns, count); };
 
     // Right column.
-    outMeter.setBounds (rightColumnX + 6, 10, 46, 350);
+    outMeter.setBounds (rightColumnX + 6, 10, 46, 350 + growY);
 
     styleLabel (wetLabel, "Wet", colours::textSecondary, juce::Justification::centred, labelHeight);
     styleLabel (dryLabel, "Dry", colours::textSecondary, juce::Justification::centred, labelHeight);
@@ -597,6 +691,24 @@ void GateEditor::updateLocks()
     velocityCheckbox.setTooltip (velocityTooltip (targets));
 
     thresholdMeter.setCloseDb ((float) (targets.thresholdDb + targets.hysteresisDb));
+
+    // Phase 4 Wave 2, v1.7.1. Transient has no effect with the MIDI trigger or Host sync, which
+    // bypass the detector; Hysteresis has no part in Transient or Upward.
+    const auto detectorBypassed = targets.midiIn || targets.detector == GateDsp::hostSync;
+    const auto transient = targets.transient && ! detectorBypassed;
+
+    detModeSegments.setAlpha (detectorBypassed ? 0.4f : 1.0f);
+    rmsKnob.setVisible (! targets.transient);
+    riseKnob.setVisible (targets.transient);
+    riseKnob.setAlpha (detectorBypassed ? 0.4f : 1.0f);
+    rangeKnob.setVisible (! targets.upward);
+    boostKnob.setVisible (targets.upward);
+    ratioKnob.setVisible (! targets.upward);
+    upRatioKnob.setVisible (targets.upward);
+    upRatioKnob.setAlpha (transient ? 0.4f : 1.0f);   // with Transient, each hit is lifted by Boost
+    ratioKnob.setAlpha (transient ? 0.4f : 1.0f);     // Ratio is the Level detector's expander
+    hysteresisKnob.setAlpha (transient || targets.upward ? 0.4f : 1.0f);
+    light.setUpward (targets.upward);
 }
 
 void GateEditor::updateSyncGroup()
@@ -732,6 +844,23 @@ void GateEditor::showDrawerPreview()
     updateLocks();
     updateSyncGroup();
     syncCaption.setText ("HOST SYNC", juce::dontSendNotification);
+}
+
+void GateEditor::showModePreview (bool upward)
+{
+    showPreview (false);
+    setValue (parameter (upward ? "mode" : "detMode"), upward ? 2.0f : 1.0f);
+    updateLocks();
+}
+
+void GateEditor::showUpwardDrawerPreview()
+{
+    showPreview (false);
+    setValue (parameter ("mode"), 2.0f);
+    setValue (parameter ("ceiling"), -1.0f);
+    drawer.setVisible (true);
+    updateLocks();
+    updateSyncGroup();
 }
 
 juce::Colour GateEditor::getAccentColour()

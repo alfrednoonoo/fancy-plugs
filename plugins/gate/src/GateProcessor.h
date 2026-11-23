@@ -2,6 +2,7 @@
 
 #include "GateDsp.h"
 
+#include <fancy/dsp/OutputCeiling.h>
 #include <fancy/plugin/FancyProcessor.h>
 
 class GateProcessor final : public fancy::FancyProcessor
@@ -39,6 +40,11 @@ private:
     fancy::dsp::TempoTrigger::Position readPosition();
 
     GateDsp dsp;
+
+    // Phase 4 Wave 2, v1.7.1 (Upward, Decision 3 A): the shared output ceiling, out of the path
+    // while it's Off.
+    fancy::dsp::OutputCeiling ceiling;
+    int totalLatency() const noexcept;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GateProcessor)
 };

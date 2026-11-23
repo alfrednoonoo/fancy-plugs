@@ -127,6 +127,57 @@ GateDsp::Machine::Event GateDsp::Machine::step (double levelDb, double openDb, d
     return none;
 }
 
+GateDsp::Machine::Event GateDsp::Machine::stepTransient (bool hit, double attackStep, double releaseStep, int holdSamples) noexcept
+{
+    // A hit opens it, or re-opens it from where it is, with no jump.
+    if (hit)
+    {
+        const auto wasClosed = state == closed;
+        state = opening;
+        holdLeft = holdSamples;
+        return wasClosed ? opened : retriggered;
+    }
+
+    switch (state)
+    {
+        case opening:
+            position += attackStep;
+
+            if (position >= 1.0)
+            {
+                position = 1.0;
+                state = hold;
+            }
+
+            break;
+
+        case open:
+        case hold:
+            // Hold runs out whatever the level, so a held sound can't keep it open.
+            if (--holdLeft <= 0)
+                state = closing;
+
+            break;
+
+        case closing:
+            position -= releaseStep;
+
+            if (position <= 0.0)
+            {
+                position = 0.0;
+                state = closed;
+                return shut;
+            }
+
+            break;
+
+        case closed:
+            break;
+    }
+
+    return none;
+}
+
 // Helpers ---------------------------------------------------------------------------------
 
 int GateDsp::velocityFor (double peakDbValue) noexcept
@@ -173,6 +224,7 @@ void GateDsp::prepare (double sampleRate)
         smoother->setTime (parameterMs, rate);
 
     duckBlend.setTime (switchFadeMs / 5.0, rate);
+    upBlend.setTime (switchFadeMs / 5.0, rate);
 
     bypass.setTime (10.0, rate);
     switchGain.setTime (switchFadeMs / 5.0, rate);
@@ -199,6 +251,14 @@ void GateDsp::reset()
     numIncomingNotes = 0;
     trigger.reset();
     expanderDb[0] = expanderDb[1] = 0.0;
+
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        transientLevel[ch] = transientAverage[ch] = 0.0;
+        transientArmed[ch] = true;
+        boostDb[ch] = heldBoostDb[ch] = 0.0;
+        boostHoldLeft[ch] = 0;
+    }
 
     for (auto& bleed : bleedLevels)
         bleed.reset();
@@ -243,6 +303,7 @@ void GateDsp::setTargets (const Targets& targets) noexcept
     preOpen.setTarget (std::clamp (targets.preOpenMs, 0.0, lookaheadMs) * 0.001 * rate);
     curveRange.setTarget (targets.rangeDb <= rangeFloorDb ? 0.0 : std::pow (10.0, std::min (0.0, targets.rangeDb) / 20.0));
     duckBlend.setTarget (targets.duck ? 1.0 : 0.0);
+    upBlend.setTarget (targets.upward ? 1.0 : 0.0);
 }
 
 void GateDsp::snapToTargets (const Targets& targets) noexcept
@@ -250,7 +311,7 @@ void GateDsp::snapToTargets (const Targets& targets) noexcept
     setTargets (targets);
 
     for (auto* smoother : { &logHighpass, &logLowpass, &highpassBlend, &lowpassBlend, &rms, &wet, &dry, &noise, &output, &bypass, &preOpen,
-                            &curveRange, &duckBlend })
+                            &curveRange, &duckBlend, &upBlend })
         smoother->snapToTarget();
 
     activeLookahead = targets.lookahead;
@@ -459,8 +520,16 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
 
     // Phase 4 Wave 1: each is skipped entirely at its default.
     const auto midSide = settings.detector == mid || settings.detector == side;
-    const auto expanding = settings.ratio < infiniteRatio && ! settings.duck;
     const auto hostSyncing = settings.detector == hostSync;
+
+    // Phase 4 Wave 2, v1.7.1. The MIDI trigger and Host sync bypass the detector, so Transient
+    // has no effect with them. Ratio is Gate mode's, on the Level detector.
+    const auto transienting = settings.transient && ! settings.midiIn && ! hostSyncing;
+    const auto expanding = settings.ratio < infiniteRatio && ! settings.duck && ! settings.upward && ! transienting;
+    const auto upSlope = settings.upRatio - 1.0;
+    const auto transientAttack = 1.0 - std::exp (-1.0 / (0.001 * rate));
+    const auto transientRelease = 1.0 - std::exp (-1.0 / (0.020 * rate));
+    const auto transientAverageStep = 1.0 - std::exp (-1.0 / (0.050 * rate));
     const auto deBleeding = settings.deBleed > 0.0 && ! hostSyncing;
     const auto expanderSlope = settings.ratio - 1.0;
     const auto expanderFloorDb = settings.rangeDb <= rangeFloorDb ? curveFloorDb : settings.rangeDb;
@@ -523,6 +592,7 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
         }
 
         duckBlend.next();
+        const auto upAmount = upBlend.next();
 
         double in[2], key[2];
 
@@ -593,8 +663,37 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
             if (settings.midiIn)
                 heard = heldNotes > 0 ? 200.0 : -400.0;
 
-            const auto event = machines[m].step (heard, openDb + raise[m], closeDb + raise[m],
-                                                 1.0 / attackSamples, 1.0 / releaseSamples, holdSamples);
+            Machine::Event event;
+
+            if (transienting)
+            {
+                // Transient: a hit is a rise of Rise dB over the level's own 50 ms average, with
+                // the level over Threshold as a floor. It re-arms once the rise has passed.
+                const auto x = settings.link ? std::max (std::abs (filtered[0]), std::abs (filtered[1])) : std::abs (filtered[m]);
+                auto& follower = transientLevel[m];
+                follower += (x - follower) * (x > follower ? transientAttack : transientRelease);
+                transientAverage[m] += (x - transientAverage[m]) * transientAverageStep;
+
+                const auto followerDb = 20.0 * std::log10 (std::max (follower, 1.0e-15));
+                const auto riseDb = followerDb - 20.0 * std::log10 (std::max (transientAverage[m], 1.0e-15));
+
+                if (riseDb < 0.5 * settings.riseDb)
+                    transientArmed[m] = true;
+
+                const auto hit = transientArmed[m] && riseDb >= settings.riseDb && followerDb >= openDb + raise[m];
+
+                if (hit)
+                    transientArmed[m] = false;
+
+                event = machines[m].stepTransient (hit, 1.0 / attackSamples, 1.0 / releaseSamples, holdSamples);
+            }
+            else
+            {
+                // Upward has no hysteresis: it boosts while the level is over Threshold.
+                const auto closeAt = settings.upward ? openDb : closeDb;
+                event = machines[m].step (heard, openDb + raise[m], closeAt + raise[m],
+                                          1.0 / attackSamples, 1.0 / releaseSamples, holdSamples);
+            }
 
             // MIDI follows the linked state, or the left channel's when unlinked.
             if (m == 0 && settings.midi && event != Machine::none)
@@ -641,6 +740,54 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
                 auto& current = expanderDb[ch];
                 current += (target - current) * (target > current ? expanderAttack : expanderRelease);
                 cachedGain[ch] = std::pow (10.0, current / 20.0);
+                cachedPosition[ch] = -1.0;
+            }
+
+            // Upward: above Threshold the level is raised by (level - Threshold) x (Up ratio - 1)
+            // dB, at most Boost, on Attack and Release, and held for Hold once it drops under.
+            // With Transient, each hit is lifted by Boost along the machine's curve.
+            if (upAmount > 0.0)
+            {
+                const auto index = settings.link ? 0 : ch;
+                double upDb;
+
+                if (transienting)
+                {
+                    upDb = settings.boostDb * (0.5 - 0.5 * std::cos (std::numbers::pi * machine.position));
+                }
+                else
+                {
+                    auto heard = settings.link ? loudest : level[ch];
+
+                    if (settings.midiIn)
+                        heard = heldNotes > 0 ? 200.0 : -400.0;
+
+                    const auto over = heard - (openDb + raise[index]);
+                    double want;
+
+                    if (over >= 0.0)
+                    {
+                        want = std::min (settings.boostDb, over * upSlope);
+                        heldBoostDb[ch] = want;
+                        boostHoldLeft[ch] = holdSamples;
+                    }
+                    else if (boostHoldLeft[ch] > 0)
+                    {
+                        --boostHoldLeft[ch];
+                        want = heldBoostDb[ch];
+                    }
+                    else
+                    {
+                        want = 0.0;
+                    }
+
+                    auto& boost = boostDb[ch];
+                    boost += (want - boost) * (want > boost ? expanderAttack : expanderRelease);
+                    upDb = boost;
+                }
+
+                const auto upGain = std::pow (10.0, upDb / 20.0);
+                cachedGain[ch] = upAmount >= 1.0 ? upGain : cachedGain[ch] + (upGain - cachedGain[ch]) * upAmount;
                 cachedPosition[ch] = -1.0;
             }
 

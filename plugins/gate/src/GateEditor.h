@@ -22,6 +22,11 @@ public:
     // Phase 4 Wave 2: the EDIT drawer open, with Host sync chosen.
     void showDrawerPreview();
 
+    // Phase 4 Wave 2, v1.7.1: the main window with Transient chosen, or in Upward; and the drawer
+    // in Upward with a ceiling.
+    void showModePreview (bool upward);
+    void showUpwardDrawerPreview();
+
     // The hint the locked Pre-open knob shows.
     static const char* const preOpenHint;
 
@@ -71,10 +76,26 @@ private:
     {
     public:
         void setState (int newState);
+        void setUpward (bool isUpward);   // reads "boost" for "open"
         void paint (juce::Graphics&) override;
 
     private:
         int state = GateDsp::lightClosed;
+        bool upward = false;
+    };
+
+    // Phase 4 Wave 2 (mockup 54): Ceiling as a dropdown of common values. A ctrl-click, or
+    // "Type a value...", opens the typed-value box, as a knob's value does.
+    class CeilingDropdown final : public fancy::ui::ParamClickControl, public fancy::ui::MenuTarget
+    {
+    public:
+        using ParamClickControl::ParamClickControl;
+
+        void paint (juce::Graphics&) override;
+        void mouseDown (const juce::MouseEvent&) override;
+
+    private:
+        void clicked() override;
     };
 
     // "A4 · ch 1": opens the note, channel and velocity window menus.
@@ -144,6 +165,15 @@ private:
     juce::Label syncCaption, syncRateLabel;
     fancy::ui::ParamDropdown syncRateDropdown;
     fancy::ui::Knob syncShapeKnob;
+    // Phase 4 Wave 2, v1.7.1 (mockups 53 and 54): the Detector switch in the Range card's title
+    // row, Rise in RMS size's place in Transient, Boost in Range's place and Up ratio in Ratio's
+    // in Upward, and Ceiling under Learn.
+    juce::Label detModeLabel;
+    fancy::ui::ParamSegments detModeSegments;
+    fancy::ui::Knob riseKnob, boostKnob, upRatioKnob;
+    juce::Label ceilingLabel;
+    CeilingDropdown ceilingDropdown;
+
     std::vector<float> learnedLevels;
     float learnSeconds = -1.0f;   // -1 while not learning
 

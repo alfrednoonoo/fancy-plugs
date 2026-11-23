@@ -53,6 +53,13 @@ public:
         // length as a share of the step.
         double syncStepBeats = 0.5;
         double syncShape = 0.5;
+
+        // Phase 4 Wave 2, v1.7.1: the Transient detector (item 11) and Upward mode (item 12).
+        // Level and Gate or Duck are the gate as it was, to the bit.
+        bool transient = false;
+        double riseDb = 8.0;
+        bool upward = false;
+        double boostDb = 4.0, upRatio = 1.5;
     };
 
     // Phase 4 Wave 2: the host's position at the start of the next block, for Host sync.
@@ -76,6 +83,10 @@ public:
         enum Event { none, opened, retriggered, shut };
 
         Event step (double levelDb, double openDb, double closeDb, double attackStep, double releaseStep, int holdSamples) noexcept;
+
+        // Phase 4 Wave 2: the Transient detector's machine. A hit opens it (or re-opens it, from
+        // where it is); it holds for Hold once fully open, then closes over Release, whatever the level.
+        Event stepTransient (bool hit, double attackStep, double releaseStep, int holdSamples) noexcept;
         void reset() noexcept { state = closed; position = 0.0; holdLeft = 0; armed = true; }
 
         State state = closed;
@@ -147,6 +158,15 @@ private:
 
     // Phase 4 Wave 2: Host sync's pulse.
     fancy::dsp::TempoTrigger trigger;
+
+    // Phase 4 Wave 2, v1.7.1: the Transient detector's level and its own average, linear, per
+    // machine; and Upward's boost in dB, with its hold, per channel. upBlend fades the curve between
+    // Gate or Duck and Upward when Mode changes.
+    double transientLevel[2] { 0.0, 0.0 }, transientAverage[2] { 0.0, 0.0 };
+    bool transientArmed[2] { true, true };
+    double boostDb[2] { 0.0, 0.0 }, heldBoostDb[2] { 0.0, 0.0 };
+    int boostHoldLeft[2] { 0, 0 };
+    fancy::dsp::Smoother upBlend;
 
     int lookaheadSamples = 2400;
     bool activeLookahead = false;

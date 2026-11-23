@@ -535,6 +535,7 @@ TEST_CASE ("Each latency change reaches the host once", "[host][latency]")
    #endif
    #if FANCY_HAS_GATE
     { GateProcessor p; checkLatencyNotices (p, "lookahead", 0.0f, 1.0f); }
+    { GateProcessor p; checkLatencyNotices (p, "ceiling", -12.5f, -1.0f); } // Phase 4 Wave 2, v1.7.1
    #endif
    #if FANCY_HAS_LIMIT
     { LimitProcessor p; checkLatencyNotices (p, "oversampling", 0.0f, 1.0f); }

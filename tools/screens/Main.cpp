@@ -697,6 +697,23 @@ int main (int argc, char** argv)
             ok = writeBothScales (*editor, "gate-drawer", outputDir) && ok;
         }
     }
+
+    // Phase 4 Wave 2, v1.7.1: Transient chosen, Upward, and the drawer in Upward with Ceiling.
+    for (const auto* view : { "gate-transient", "gate-upward", "gate-drawer-upward" })
+    {
+        GateProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<GateEditor*> (base.get()))
+        {
+            if (juce::String (view) == "gate-drawer-upward")
+                editor->showUpwardDrawerPreview();
+            else
+                editor->showModePreview (juce::String (view) == "gate-upward");
+
+            ok = writeBothScales (*editor, view, outputDir) && ok;
+        }
+    }
    #endif
 
    #if FANCY_HAS_LIMIT
