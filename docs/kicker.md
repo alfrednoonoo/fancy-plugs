@@ -155,3 +155,53 @@ At 1x the click's aliasing sits only 33 dB under the kick, which is audible as g
 ### 5. Build order
 
 Approval, then one push: the parameter, the oversampler, the drawer row, tests, manual and checklist.
+
+## Phase 4: sidechain Duck
+
+**Draft for approval (23 November 2026).** Kicker 7 of `docs/enhancements.md`, from Phase 3 Q2.2 ("an optional sidechain input ducks the added sub when a kick hits on the sidechain"), deferred to Phase 4 and now planned for v1.7.1 (user, 22 November 2026). Modelled first: `docs/research/kicker-duck-model.py`.
+
+### 1. What it does
+
+On a bass, Kicker adds low end: Boost swells the bass's own note, and Sub adds an octave below. When the kick hits, kick and bass fill 40–80 Hz together and the low end clips or blurs. **Duck** turns the bass down while a kick on the sidechain hits, then lets it back over **Release**, so the two take turns.
+
+- **Duck** (0 to 24 dB, default 0, when it isn't run) and **Duck release** (20 to 500 ms, default 120).
+- **Duck from**: **Sidechain** (an optional stereo sidechain bus, as on Verb and Room) or **Host sync**, the shared tempo-synced trigger Comp and Gate use, with its Rate and Shape, for ducking on the beat without a kick track.
+- The detector follows the key's peak with a 1 ms attack and ducks fully above −12 dBFS, not at all below −24 dBFS, so a kick's tail doesn't hold it down.
+
+### 2. What the model found
+
+A bass line (55 to 82 Hz in 8th notes) with Kicker's added sub, and a kick on every beat on the sidechain, Release 120 ms:
+
+| What's ducked | Duck | The bass under each kick | Peak during kicks | The bass between kicks |
+|---|---|---|---|---|
+| — | 0 dB | −11.2 dB | +1.9 dBFS | 0 dB |
+| The added sub only (Q2.2's wording) | 6 dB | −12.0 dB | +1.4 dBFS | −0.3 dB |
+| | 12 dB | −12.2 dB | +1.2 dBFS | −0.5 dB |
+| **The whole bass, sub and dry** | **6 dB** | **−17.2 dB** | **+0.1 dBFS** | **−1.7 dB** |
+| | 12 dB | −23.2 dB | −1.0 dBFS | −3.2 dB |
+
+Ducking only the added sub barely helps, because most of what meets the kick is the bass itself. Ducking the whole bass is what makes room. An earlier run, ducking fully down to −40 dBFS, never let the bass back between kicks, because the kick's tail kept it down. That's why the detector stops at −24.
+
+### 3. Decisions
+
+- **Decision 1: what's ducked.**
+  - **A (R).** The whole output, the added part and the dry: the model shows that's what clears the low end.
+  - **B.** The added part only, as Q2.2 wrote it.
+- **Decision 2: Host sync.**
+  - **A (R).** Include it, as Duck from's second choice, sharing Comp's and Gate's trigger (`TempoTrigger`, flat pulse as Gate's).
+  - **B.** Sidechain only.
+- **Decision 3: where the controls go.**
+  - **A (R).** In the EDIT drawer, in both Boost and Sub mode: Duck and Duck release as small knobs, Duck from as a dropdown, and Rate and Shape while Host sync is chosen. The main window gets a small **DUCK** tag beside the EDIT link while Duck is above 0, so it isn't hidden. A mockup follows approval.
+  - **B.** Duck on the main window as a fourth knob.
+
+### 4. Tests
+
+1. Legacy: Duck 0 renders exactly as v1.7.0 in Boost and Sub mode, with no sidechain bus connected.
+2. The model's mix, Duck 6 dB on the whole output: the bass under each kick is at least 5 dB lower, and between kicks it's back within 2 dB.
+3. A kick tail held at −30 dBFS doesn't duck.
+4. Host sync at 1/4, 120 BPM: ducks on every beat to the sample, as Gate's test.
+5. The host checks with the new bus: a mono main bus with no sidechain, sidechain inactive, the validators, and the "No sidechain signal" notice.
+
+### 5. Build order
+
+Approval, then the drawer mockup (`reference/phase4/63__kicker_duck_mockup.png`), then one push: the bus, the ducker, Host sync, the drawer and the tag, tests, manual and checklist.
