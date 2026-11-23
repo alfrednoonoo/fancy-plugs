@@ -622,9 +622,11 @@ TEST_CASE ("eq w2 CPU measurement", "[.measure]")
     const auto clean4xCpu = measure (clean4x);
     const auto warm4xCpu = measure (warm4x);
 
-    std::printf ("eq w2 cpu (median of 5, 48 kHz, 128 samples, stereo): 24 Brickwall cuts %.3f %% (target < 1.5 %% for 24 bands), "
+    // Brickwall's target is per cut (user, 23 November 2026, docs/eq.md item 15 test 5): each cut
+    // is eight sections, so 24 of them aren't held to the 1.5 % set for 24 one-section bands.
+    std::printf ("eq w2 cpu (median of 5, 48 kHz, 128 samples, stereo): 24 Brickwall cuts %.3f %%, %.3f %% per cut (target < 0.25 %% per cut), "
                  "24 bells %.3f %% in the same run (%.2f x)\n",
-                 brickwallCpu, bellsCpu, brickwallCpu / bellsCpu);
+                 brickwallCpu, brickwallCpu / 24.0, bellsCpu, brickwallCpu / bellsCpu);
     std::printf ("eq w2 cpu, Character (no bands): Clean %.3f %%, Warm %.3f %% (adds %.3f %%); at 4x Clean %.3f %%, Warm %.3f %% (adds %.3f %%)\n",
                  cleanCpu, warmCpu, warmCpu - cleanCpu, clean4xCpu, warm4xCpu, warm4xCpu - clean4xCpu);
 }
