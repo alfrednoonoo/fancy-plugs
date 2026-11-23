@@ -56,6 +56,9 @@ private:
 
         // Phase 3 Q2.3.
         std::atomic<float>* character, *characterAmount, *modRate, *modDepth, *modRandom, *diffusion;
+
+        // Phase 4 Wave 2.
+        std::atomic<float>* modShape, *modStereo;
     };
 
     float read (const char* parameterId) const;

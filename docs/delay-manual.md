@@ -76,11 +76,13 @@ The **Tone | Motion** switch at the right of the tab row swaps the selected tap'
 | Character | Clean, Tape, BBD | Clean is the plain delay. Tape adds a soft saturation, a low bump around 90 Hz and a top end that dulls with every pass through the loop. BBD is a dark, band-limited bucket-brigade sound whose top falls as the time gets longer, with a faint noise that follows the signal |
 | Amount | 0-100 % | How strong the character is. Unused on Clean |
 | Rate | 0.1-10 Hz | Speed of the wow and flutter |
+| Shape (the wave switch under Rate) | Sine, Triangle | The wobble's shape, drawn as a sine wave and a triangle wave; hover over either for its name. **Sine** sweeps the pitch smoothly up and down, lingering at the ends. **Triangle** holds the pitch at +Depth, then at -Depth, flipping each half cycle: a steady detune, with a tape-like warble at slow rates. Its flips are rounded so they don't jump |
 | Depth | 0-50 cents | The peak pitch change. 0 is no modulation |
 | Random | 0-100 % | How much of the motion is a slow random wander rather than a steady wobble |
+| Stereo | 0-180° | How far ahead the right channel's wobble runs. 0° moves both sides together, so the repeats stay centred; 90°, the default, widens them a little; 180° moves the sides in opposition, the widest. Width still scales it |
 | Diffusion | 0-100 % | Smears each repeat into the next inside the loop, so repeats turn into a wash |
 
-Switching Character while playing is click-free.
+Switching Character or Shape, or turning Stereo, while playing is click-free. Shape and Stereo do nothing while Depth is 0.
 
 ## EDIT
 

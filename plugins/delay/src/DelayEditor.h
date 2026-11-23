@@ -41,6 +41,19 @@ private:
         void paintSegment (juce::Graphics&, int index, juce::Rectangle<float> area, juce::Colour ink) override;
     };
 
+    // Phase 4 Wave 2: the LFO shape, drawn as a sine wave and a triangle wave, with the names
+    // in the tooltip of the segment under the mouse.
+    class WaveSwitch final : public fancy::ui::ParamSegments
+    {
+    public:
+        using ParamSegments::ParamSegments;
+
+        juce::String getTooltip() override;
+
+    private:
+        void paintSegment (juce::Graphics&, int index, juce::Rectangle<float> area, juce::Colour ink) override;
+    };
+
     // The controls for one tap. All 16 exist, and only the selected one is shown.
     class TapEditor final : public juce::Component
     {
@@ -95,8 +108,14 @@ private:
         fancy::ui::ParamSegments characterSegments;
         fancy::ui::Knob amountKnob, modRateKnob, modDepthKnob, randomKnob, diffusionKnob;
 
+        // Phase 4 Wave 2: Shape under Rate, and Stereo after Random.
+        WaveSwitch shapeSwitch;
+        fancy::ui::Knob stereoKnob;
+
     public:
         void showMotion (bool motion) { showPage (motion); }
+        fancy::ui::Knob& getStereoKnob() noexcept { return stereoKnob; }
+        WaveSwitch& getShapeSwitch() noexcept { return shapeSwitch; }
     };
 
     void onTick (float seconds) override;

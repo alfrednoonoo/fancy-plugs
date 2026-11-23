@@ -51,6 +51,40 @@ constexpr double diffuserMs[] { 7.3, 11.9, 17.1, 23.7 };
 constexpr double maxDiffusion = 0.65;
 constexpr double duckRangeDb = 6.0; // Amount is reached 6 dB over the threshold
 
+// Phase 4 Wave 2 ---------------------------------------------------------------------------
+
+// The triangle's corners are rounded over this share of the cycle: its slope turns over as a
+// half sine there, so the pitch moves from +Depth to -Depth without a jump.
+constexpr double triangleCorner = 0.1;
+
+// The rounded triangle's peak, in cycles of travel at slope 1; dividing by it gives -1 to 1.
+constexpr double trianglePeak = 0.25 - 0.5 * triangleCorner + triangleCorner / std::numbers::pi;
+
+// The triangle's position amplitude over the sine's for the same peak pitch change.
+constexpr double triangleScale = 2.0 * std::numbers::pi * trianglePeak;
+
+// A triangle from -1 to 1 with rounded corners, in phase with sin (2 pi cycle): 0 at 0, the peak
+// at a quarter, the trough at three quarters.
+double roundedTriangle (double cycle) noexcept
+{
+    auto s = cycle - 0.25;   // the distance from the peak, -0.5 to 0.5
+    s -= std::floor (s + 0.5);
+    s = std::abs (s);
+
+    constexpr double half = 0.5 * triangleCorner;
+    constexpr double bend = triangleCorner / std::numbers::pi;
+    double position;
+
+    if (s < half)
+        position = trianglePeak - bend * (1.0 - std::cos (std::numbers::pi * s / triangleCorner));
+    else if (s > 0.5 - half)
+        position = -trianglePeak + bend * (1.0 - std::cos (std::numbers::pi * (0.5 - s) / triangleCorner));
+    else
+        position = trianglePeak - bend - (s - half);
+
+    return position / trianglePeak;
+}
+
 double softCurve (double u) noexcept
 {
     return u / std::sqrt (1.0 + u * u);
@@ -140,6 +174,12 @@ void DelayDsp::prepare (double sampleRate)
         for (auto* smoother : { &tap.tapeMix, &tap.bbdMix })
             smoother->setTime (characterMs, rate);
 
+        // Phase 4 Wave 2.
+        tap.shapeMix.setTime (characterMs, rate);
+        tap.stereoOffset.setTime (parameterMs, rate);
+        tap.shapeMix.snapTo (0.0);
+        tap.stereoOffset.snapTo (0.25);
+
         for (int ch = 0; ch < 2; ++ch)
         {
             for (int k = 0; k < 4; ++k)
@@ -218,6 +258,10 @@ void DelayDsp::setTapTargets (Tap& tap, const TapSpec& spec, bool anySolo, doubl
     tap.bbdMix.setTarget (spec.character == bbd ? 1.0 : 0.0);
     tap.diffusion.setTarget (std::clamp (spec.diffusion, 0.0, 1.0));
 
+    // Phase 4 Wave 2. 90 degrees is a quarter cycle, exactly.
+    tap.shapeMix.setTarget (spec.modShape == triangle ? 1.0 : 0.0);
+    tap.stereoOffset.setTarget (std::clamp (spec.modStereoDegrees, 0.0, 180.0) / 360.0);
+
     const auto active = spec.used && spec.on;
     const auto audible = active && (! anySolo || spec.solo);
 
@@ -279,7 +323,7 @@ void DelayDsp::snapTap (Tap& tap) noexcept
     for (auto* smoother : { &tap.feedback, &tap.width, &tap.volume, &tap.panLeft, &tap.panRight, &tap.inGate, &tap.outGate,
                             &tap.lowpassMix, &tap.highpassMix, &tap.crushMix, &tap.loopMix, &tap.saturateMix, &tap.pingMix,
                             &tap.startLeft, &tap.lowpassOctaves, &tap.highpassOctaves, &tap.bits,
-                            &tap.modDepth, &tap.tapeMix, &tap.bbdMix, &tap.diffusion })
+                            &tap.modDepth, &tap.tapeMix, &tap.bbdMix, &tap.diffusion, &tap.shapeMix, &tap.stereoOffset })
         smoother->snapToTarget();
 
     tap.headA = tap.headB = tap.targetDelay;
@@ -490,6 +534,8 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
         const auto tapeMix = tap.tapeMix.next();
         const auto bbdMix = tap.bbdMix.next();
         const auto diffusion = tap.diffusion.next();
+        const auto shapeMix = tap.shapeMix.next();     // Phase 4 Wave 2
+        const auto stereoOffset = tap.stereoOffset.next();
         const auto characterOn = tapeMix > 0.0 || bbdMix > 0.0;
 
         if (characterOn)
@@ -546,11 +592,50 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
 
             tap.walk += (tap.walkTarget - tap.walk) * (tap.modRate * 6.0 / rate);
 
-            for (int ch = 0; ch < 2; ++ch)
+            // The phasor's angle in cycles, kept for the triangle (Phase 4 Wave 2).
+            tap.modPhase += tap.modRate / rate;
+            tap.modPhase -= std::floor (tap.modPhase);
+
+            if (shapeMix == 0.0 && stereoOffset == 0.25)
             {
-                const auto sine = ch == 0 ? tap.modSin : tap.modCos; // the right channel a quarter cycle ahead
-                const auto motion = (1.0 - tap.modRandom) * sine + tap.modRandom * tap.walk;
-                offset[ch] = amplitude * (1.0 + motion);
+                // Sine at 90 degrees: the modulation as it was before Phase 4 Wave 2, to the bit.
+                for (int ch = 0; ch < 2; ++ch)
+                {
+                    const auto wave = ch == 0 ? tap.modSin : tap.modCos; // the right channel a quarter cycle ahead
+                    const auto motion = (1.0 - tap.modRandom) * wave + tap.modRandom * tap.walk;
+                    offset[ch] = amplitude * (1.0 + motion);
+                }
+            }
+            else
+            {
+                // Phase 4 Wave 2: the right channel runs stereoOffset of a cycle ahead, and Shape
+                // crossfades the sine into the rounded triangle. The triangle needs triangleScale
+                // times the sine's travel for the same peak pitch, and the centre moves up with it
+                // so the read never comes ahead of the tap's time.
+                if (stereoOffset != tap.stereoFor)
+                {
+                    const auto angle = 2.0 * std::numbers::pi * stereoOffset;
+                    tap.stereoSin = std::sin (angle);
+                    tap.stereoCos = std::cos (angle);
+                    tap.stereoFor = stereoOffset;
+                }
+
+                const double sines[2] { tap.modSin, tap.modSin * tap.stereoCos + tap.modCos * tap.stereoSin };
+                const auto centre = 1.0 + shapeMix * (triangleScale - 1.0);
+
+                for (int ch = 0; ch < 2; ++ch)
+                {
+                    auto shaped = sines[ch];
+
+                    if (shapeMix > 0.0)
+                    {
+                        const auto triangleValue = roundedTriangle (tap.modPhase + (ch == 0 ? 0.0 : stereoOffset));
+                        shaped += shapeMix * (triangleScale * triangleValue - shaped);
+                    }
+
+                    const auto motion = (1.0 - tap.modRandom) * shaped + tap.modRandom * tap.walk;
+                    offset[ch] = amplitude * (centre + motion);
+                }
             }
         }
 

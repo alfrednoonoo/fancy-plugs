@@ -206,6 +206,22 @@ fancy::FancyProcessor::Layout createLayout()
             .withValueFromStringFunction ([] (const juce::String& text)
                                           { return text.trim().equalsIgnoreCase ("off") ? (float) fancy::dsp::OutputCeiling::offDb : juce::jlimit (-12.0f, 0.0f, fancy::parseNumber (text)); })));
 
+    // Phase 4 Wave 2 (docs/delay.md, "LFO shape and stereo phase"), appended per tap: Sine at 90
+    // degrees is the modulation as it was.
+    for (int tap = 0; tap < delay::maxTaps; ++tap)
+    {
+        const auto prefix = "Tap " + juce::String (tap + 1) + " ";
+
+        layout.add (std::make_unique<Choice> (juce::ParameterID { DelayProcessor::id (tap, "modShape"), 1 }, prefix + "Mod shape",
+                                              juce::StringArray { "Sine", "Triangle" }, 0));
+        layout.add (fancy::floatParameter (DelayProcessor::id (tap, "modStereo"), prefix + "Mod stereo", juce::NormalisableRange<float> (0.0f, 180.0f, 1.0f), 90.0f,
+                                           juce::AudioParameterFloatAttributes {}
+                                               .withLabel (juce::String::fromUTF8 ("\xc2\xb0"))
+                                               .withStringFromValueFunction ([] (float value, int)
+                                                                             { return juce::String (juce::roundToInt (value)) + juce::String::fromUTF8 ("\xc2\xb0"); })
+                                               .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    }
+
     return layout;
 }
 
@@ -273,7 +289,8 @@ DelayProcessor::DelayProcessor()
         tapValues[(size_t) tap] = { value ("used"), value ("on"), value ("solo"), value ("mode"), value ("ms"), value ("note"), value ("feel"),
                                     value ("mult"), value ("fb"), value ("lp"), value ("hp"), value ("bits"), value ("width"), value ("vol"),
                                     value ("pan"), value ("ping"), value ("inloop"), value ("sat"),
-                                    value ("char"), value ("charAmt"), value ("modRate"), value ("modDepth"), value ("modRand"), value ("diff") };
+                                    value ("char"), value ("charAmt"), value ("modRate"), value ("modDepth"), value ("modRand"), value ("diff"),
+                                    value ("modShape"), value ("modStereo") };
     }
 }
 
@@ -329,6 +346,9 @@ DelayDsp::TapSpec DelayProcessor::readTap (int tap) const
     spec.modDepthCents = (double) load (values.modDepth);
     spec.modRandom = (double) load (values.modRandom) * 0.01;
     spec.diffusion = (double) load (values.diffusion) * 0.01;
+
+    spec.modShape = load (values.modShape) >= 0.5f ? DelayDsp::triangle : DelayDsp::sine;
+    spec.modStereoDegrees = (double) load (values.modStereo);
 
     return spec;
 }
@@ -436,7 +456,7 @@ void DelayProcessor::setParameter (const juce::String& parameterId, float value)
 void DelayProcessor::resetTap (int tap)
 {
     static const char* const suffixes[] { "on", "solo", "mode", "ms", "note", "feel", "mult", "fb", "lp", "hp", "bits", "width", "vol", "pan", "ping", "inloop", "sat",
-                                          "char", "charAmt", "modRate", "modDepth", "modRand", "diff" };
+                                          "char", "charAmt", "modRate", "modDepth", "modRand", "diff", "modShape", "modStereo" };
 
     for (const auto* suffix : suffixes)
     {

@@ -1071,7 +1071,7 @@ TEST_CASE ("the delay editor opens", "[delay]")
     const std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditorAndMakeActive());
 
     REQUIRE (editor != nullptr);
-    CHECK (editor->getWidth() == 760);
+    CHECK (editor->getWidth() == 820); // Phase 4 Wave 2: 60 px wider
 
     processor.editorBeingDeleted (editor.get());
 }

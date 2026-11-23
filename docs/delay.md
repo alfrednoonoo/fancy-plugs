@@ -308,3 +308,12 @@ A sharp triangle jumps the pitch by its whole range in a millisecond at each fli
 ### 5. Build order
 
 Approval, then the Motion page mockup (`reference/phase4/57__delay_w2_mockup.png`), then one push: the shapes and stereo phase in the tap modulation, the parameters, the Motion page, tests, manual and checklist. Mockup 57 approved by the user on 23 November 2026: the window grows 60 px wider, to 820 px, and the wave switch sits under Rate.
+
+### 6. As built
+
+One push, with every recommended option; `tests/DelayW2Tests.cpp`, its numbers run first through `docs/research/delay-lfo-prepush.py` (Triangle held 87 % of the time, largest change 0.30 cents per cycle; 180° correlation -1.00; worst second difference on switching 3.6e-4).
+
+- **Parameters,** appended per tap after `ceiling`: `tNmodShape` (Sine, Triangle; Sine) and `tNmodStereo` (0 to 180°, step 1, 90°).
+- **Engine.** A cycle counter runs beside the modulation phasor, and the rounded triangle is worked out from it in closed form: straight between the corners, a half-sine turn of the slope over 10 % of the cycle at each corner. For the same peak pitch it needs 1.457 times the sine's travel (2π times its peak of 0.232 cycles), and the centre of the read moves up with it so the read never comes ahead of the tap's time. Shape crossfades over 30 ms and Stereo is smoothed over 30 ms. While Shape is Sine and Stereo exactly 90°, the old code runs, so v1.7.0's sound is bit-identical (tested against `tests/LegacyDelayW1Dsp`, a copy of v1.7.0's engine).
+- **Switching Shape** moves the read's centre by 0.46 times the sine's travel over 30 ms, a brief pitch glide (about 0.6 ms of delay at Depth 12 cents and 0.8 Hz), the same kind as turning Depth.
+- **Layout** (mockup 57): the window is 820 x 448 (minimum too); the tap graph is 670 wide and the knob card 499; Volume, the tap row's S, power and x, EDIT, the meter and the faders move 60 px right. Stereo is centred at x 555, Diffusion moves to x 585, and the wave switch is 50 x 17 at (364, 311 in the body). The Tone page's knobs keep their places. The wave switch's tooltip names the segment under the mouse; its pop-up screenshot is `delay-tooltip-wave`.

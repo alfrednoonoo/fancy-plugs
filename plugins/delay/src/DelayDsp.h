@@ -14,6 +14,7 @@ class DelayDsp
 {
 public:
     enum Character { clean, tape, bbd };
+    enum ModShape { sine, triangle };
 
     struct TapSpec
     {
@@ -30,6 +31,11 @@ public:
         double characterAmount = 0.5;   // 0 to 1
         double modRateHz = 0.8, modDepthCents = 0.0, modRandom = 0.3;
         double diffusion = 0.0;         // 0 to 1
+
+        // Phase 4 Wave 2: the LFO's shape, and how far ahead the right channel's LFO runs.
+        // Sine at 90 degrees is the modulation as it was, to the bit.
+        int modShape = sine;
+        double modStereoDegrees = 90.0; // 0 to 180
     };
 
     struct Targets
@@ -107,6 +113,11 @@ private:
         double modAmplitude = 0.0, modAmplitudeDepth = -1.0, modAmplitudeRate = -1.0;
         int walkCountdown = 0;
         std::uint32_t noiseState = 1;
+
+        // Phase 4 Wave 2: Shape's crossfade (0 sine, 1 triangle), the stereo offset as a fraction
+        // of a cycle (a quarter is 90 degrees), and its sine and cosine for the value last used.
+        Smoother shapeMix, stereoOffset;
+        double stereoSin = 1.0, stereoCos = 0.0, stereoFor = 0.25;
 
         struct ToneState
         {

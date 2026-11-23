@@ -101,6 +101,14 @@
 - [ ] Freeze while repeats play: they hold without fading and new input isn't heard; off, they decay as normal. No clicks either way.
 - [ ] Feedback 110 % with Ceiling -1 dBTP: the output stays under it.
 
+## LFO shape and stereo phase (Phase 4 Wave 2, item 22)
+
+- [ ] The window is 820 px wide at 100 % (and can't be made narrower); the tap graph and the knob card are wider, and nothing overlaps on the Tone or Motion page.
+- [ ] Open a project saved with v1.7.0 that uses Fancy Delay with Depth above 0: it sounds as before, with Shape on the sine and Stereo at 90°.
+- [ ] Motion page: the wave switch under Rate shows a sine and a triangle; hovering over each names it.
+- [ ] Depth 12 cents at 0.8 Hz, Random 0, on a sustained note: Triangle holds a steady detune that flips up and down; Sine sweeps smoothly. Switching between them while playing doesn't click.
+- [ ] Stereo at 0°: the repeats stay centred (mono-like); at 180° they're at their widest. Turning it while playing doesn't click.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
