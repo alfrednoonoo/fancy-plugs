@@ -1,0 +1,15 @@
+Fancy Comp, Phase 4 Wave 2 items 13 and 14 (six-band detector EQ, cut slopes, link modes)
+CI run 45159840182, commit fceda32, windows-latest, "[measure]" (tests/CompSceqTests.cpp)
+
+Comp six-band detector EQ and link modes CPU, 48 kHz, 128 samples, stereo, median of 5 runs:
+  defaults                         0.498 %
+  bands 1 to 3 on (v1.7.0's most)  0.573 %
+  + band 4, Highpass 24 dB/oct     0.636 %, adds +12.7 % of the defaults (target < +15 %)
+  six bands, 48 dB/oct cuts        0.862 %, +73.1 % (recorded)
+  Mid/Side                         0.542 %, +8.9 % (target < +10 %)
+
+Model checks (CI run 45143291318, commit 5690626):
+  Comp SC EQ 4: the reduction jumps +1.23 dB on each kick at 12 dB/oct, +0.14 dB at 24
+                (docs/research/comp-sceq-model.py: +1.23 to +1.25 and +0.15 to +0.17)
+  Comp link 3:  the side's reduction moves 3.90 dB with the vocal in Stereo, -0.01 dB in Mid/Side
+                (docs/research/comp-linkmodes-model.py: 3.9 and 0.0)
