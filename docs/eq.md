@@ -373,7 +373,7 @@ One push with item 16 (v1.7.1). Tests in `tests/EqW2Tests.cpp`, their numbers fr
 - `fancy::dsp::matched`: `maxSections` 8, `slopeOrders` gains 16, and "Brickwall (96)" is appended to `bNslope`.
 - **Shelves and Tilt:** they have slopes in this EQ (section 1 said they don't). A shelf or Tilt set to Brickwall stays at 48 dB/oct (`shelfMaxOrder`, in `design()`), and the band's right-click Slope menu leaves Brickwall out for them. The drawer's Slope dropdown, shared by every type, still lists it; the manual says what it does there. The drawer's Slope dropdown is 124 px wide (was 110) to fit the name.
 - **Linear-phase test:** at a 1 kHz corner with the 8192 FIR. The model shows the Blackman-windowed FIR can't hold a 100 Hz Brickwall to 0.5 dB (6 dB of error at 8192, 1.7 dB at 16384), because the slope is narrower than the window's resolution there; at 1 kHz the error is 0.07 dB. The manual's advice for low cuts in Linear phase is the longest FIR.
-- **CPU:** recorded by the `eq w2 CPU measurement` line (24 Brickwall cuts against 24 bells in the same run); figures in `docs/measurements/eq-w2.txt` once the run is green.
+- **CPU:** recorded by the `eq w2 CPU measurement` line (24 Brickwall cuts against 24 bells in the same run); figures in `docs/measurements/eq-w2.txt` (run 45167508920): 24 Brickwall cuts 5.03 %, 5.3 times 24 bells (0.94 %) in the same run, over test 5's 1.5 % target; each cut is eight sections. Character Warm adds 0.20 % at Off and 0.79 % at 4x.
 
 ## Phase 4 Wave 2: Character output stage
 

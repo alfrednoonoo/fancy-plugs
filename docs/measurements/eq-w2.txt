@@ -1,0 +1,4 @@
+# Phase 4 Wave 2 items 15 and 16, run 45167508920, commit 1c7d4b8 (section 0.4: median of 5 runs in one build).
+eq w2 cpu (median of 5, 48 kHz, 128 samples, stereo): 24 Brickwall cuts 5.029 % (target < 1.5 % for 24 bands), 24 bells 0.941 % in the same run (5.34 x)
+eq w2 cpu, Character (no bands): Clean 0.184 %, Warm 0.380 % (adds 0.196 %); at 4x Clean 0.834 %, Warm 1.622 % (adds 0.789 %)
+eq q24 cpu reference: Fancy Comp default 0.649 % in the same run; 24 Stereo bells / comp = 1.46, 24 mixed / comp = 1.40, linear 1 FIR / comp = 1.41, linear 2 FIRs / comp = 1.35, linear 4 FIRs / comp = 1.72
