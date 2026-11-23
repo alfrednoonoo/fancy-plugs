@@ -410,8 +410,8 @@ void DelayEditor::TapEditor::paint (juce::Graphics& g)
     g.drawText (detailText(), row.withTrimmedLeft (46), juce::Justification::centredLeft, true);
 
     g.setColour (colours::bgSection);
-    g.fillRoundedRectangle (592.0f, (float) tabRowY, 23.0f, (float) tabRowHeight, 3.0f);
-    g.fillRoundedRectangle (622.0f, (float) tabRowY, 24.0f, (float) tabRowHeight, 3.0f);
+    g.fillRoundedRectangle (652.0f, (float) tabRowY, 23.0f, (float) tabRowHeight, 3.0f);
+    g.fillRoundedRectangle (682.0f, (float) tabRowY, 24.0f, (float) tabRowHeight, 3.0f);
 }
 
 // DelayEditor -----------------------------------------------------------------
@@ -714,7 +714,13 @@ std::vector<ShellEditor::PopupOpener> DelayEditor::getPopupOpeners()
     openers.push_back ({ "value-note", [this] { tapEditors[(size_t) selectedTap]->getNoteKnob().openValueEditor(); } });
     openers.push_back ({ "tooltip-wave", [this]
                          {
+                             // The openers before it leave the drawer and the typed-value box open.
                              auto& editor = *tapEditors[(size_t) selectedTap];
+
+                             if (auto* typed = editor.getNoteKnob().getValueEditor(); typed != nullptr && typed->onEscapeKey != nullptr)
+                                 typed->onEscapeKey();
+
+                             drawer.setVisible (false);
                              editor.showMotion (true);
                              showTip (editor.getShapeSwitch(), "Triangle: a steady detune that flips each half cycle");
                          } });
