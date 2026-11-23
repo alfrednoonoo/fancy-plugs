@@ -717,12 +717,16 @@ def exciter():
 # ---------------------------------------------------------------------------------------------
 @plugin("kicker_duck", "63__kicker_duck_mockup.png")
 def kicker_duck():
-    W, H = 392, 492
+    # 40 px wider (392 to 432) so the DUCK tag fits beside EDIT: the knob card widens evenly on both sides.
+    W, H = grow("kicker", "kicker-wide", 40, [(0, 73, 280), (73, 440, [12, 250]), (440, 492, 250)])
+    grow("kicker-edit", "kicker-edit-wide", 40, [(0, 73, 280), (73, 492, 262)])
     red = "#E74D3D"
     tabs = cover(20, 88, 48, 20) + seg(22, 86, 160, 22, ["Main", "Duck and clip"], 0, "#4C4C4C", fs=12, text="#fff")
     tabs2 = cover(20, 88, 48, 20) + seg(22, 86, 160, 22, ["Main", "Duck and clip"], 1, "#4C4C4C", fs=12, text="#fff")
-    tag = ('<div class="o new pill" style="left:206px;top:92px;width:48px;height:18px;background:' + red + ';color:#141414;'
-           'font-weight:700;font-size:10px;letter-spacing:.06em">DUCK</div>')
+    tag = (cover(84, 452, 180, 24, "#303030")
+           + '<div class="o new pill" style="left:84px;top:455px;width:48px;height:18px;background:' + red + ';color:#141414;'
+             'font-weight:700;font-size:10px;letter-spacing:.06em">DUCK</div>'
+           + '<div class="o cap" style="left:142px;top:456px;font-size:12px;color:#A0A0A0">Boost: lifts its own low end</div>')
     page2 = (tabs2 + cover(14, 118, 250, 370)
              + group_title(24, 126, "DUCK")
              + knob(64, 140, "Duck", "6.0 dB", red, 0.25, size=44, fs=13, width=84)
@@ -739,20 +743,21 @@ def kicker_duck():
              + outline(18, 378, 242, 76))
     return w1.page("Fancy Kicker: Phase 4 mockup (sidechain Duck and the oversampled clipper)",
                    lead("docs/kicker.md: sidechain Duck (Decisions 1 to 3 A) and Wave 2 item 45, Clip oversampling", "Decisions 1 and 2 A"), [
-        ("1 · The main window: a DUCK tag while Duck is above 0",
-         "The tag sits at the top right of the knob card, beside Boost | Sub: there is no room beside the EDIT link, whose caption fills the row. "
-         "It shows only while Duck is above 0, so a ducking Kicker is never a surprise; clicking it opens the drawer's second page.",
-         shot("kicker", W, H, tabs[:0] + tag, "In Sub mode the tag sits in the same place.")),
+        ("1 · The main window: a DUCK tag beside EDIT, while Duck is above 0",
+         "To fit the tag beside the EDIT link with the mode caption after it, <b>the window grows 40 px wider, from 392 to 432 px</b> (its minimum too; user, 23 November 2026): "
+         "the knob card widens evenly on both sides, so Freq, Wet and Dry stay centred. "
+         "The tag shows only while Duck is above 0, so a ducking Kicker is never a surprise; clicking it opens the drawer's second page.",
+         shot("kicker-wide", W, H, tag, "In Sub mode the row is the same, with Sub's caption.")),
         ("2 · The EDIT drawer, page Duck and clip",
          "The drawer is full, so it gets two pages, <b>Main | Duck and clip</b>, as Sature's and Exciter's do; Main is today's drawer. "
          "<b>Duck</b> (0 to 24 dB, 0 by default) and <b>Release</b> (20 to 500 ms, 120 by default), <b>Duck from</b> (Sidechain or Host sync), "
          "with Rate (1/1 to 1/16) and Shape while Host sync is chosen: a pulse on the host's grid, for ducking on the beat without a kick track. <b>Clip oversampling</b> (Off, 2x, 4x; Off by default) is here too, since Main has no row free under Ceiling.",
-         shot("kicker-edit", W, H, page2,
+         shot("kicker-edit-wide", W, H, page2,
               "Duck ducks the whole output, the dry bass with the added low end (Decision 1 A). Duck 0 and Clip oversampling Off are today's sound, to the bit. "
               "With Sidechain chosen and nothing routed, the main window shows the \"No sidechain signal\" notice.")),
         ("3 · The EDIT drawer, page Main",
          "Today's drawer, unchanged, under the new page switch.",
-         shot("kicker-edit", W, H, tabs, "")),
+         shot("kicker-edit-wide", W, H, tabs, "")),
     ])
 
 
