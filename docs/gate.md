@@ -460,7 +460,7 @@ Built with item 12 in one push; `tests/GateW2bTests.cpp`, checked first against 
 - **Test 4 changed:** a tone swelling in over 30 ms *from silence* is a rise of tens of dB in its first milliseconds, so Transient rightly opens on it. The test uses the model's own bleed instead: bass notes back to back, each swelling in over 30 ms, at -6 dBFS (55, 82.4 and 110 Hz). None after the first opens it (the largest rise is 5.7 dB against Rise 8), and a 1 ms click 10 dB over Threshold opens it within 1 ms.
 - Window 790 x 465 as mockups 53 and 54: the history, the knob cards and the footer widen; the Threshold, Gain and Out meters and the faders grow 24 px over the same dB range. The window's minimum grows with it.
 
-CPU is printed by the "Gate Transient CPU measurement" case in `measurements-<sha>`.
+CPU (run 45125270876, median of 5, 48 kHz, 128 samples): Gate at its defaults 0.62 % (0.81 x Comp), Transient 0.55 % (no measurable cost, under the 10 % target), Upward 0.87 % (1.15 x Comp; the per-sample `pow` for the boost, which could be skipped while the boost is steady).
 
 ## Phase 4 Wave 2: Upward mode
 
