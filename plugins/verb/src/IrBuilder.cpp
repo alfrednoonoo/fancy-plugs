@@ -523,6 +523,19 @@ Butterworth4 butterworth4 (double hz, double sampleRate, bool highpass) noexcept
              butterworthSection (limited, sampleRate, 1.3065629648763766, highpass) };
 }
 
+// Phase 4 Wave 2 (docs/verb.md, item 17): Attack is the Reverb generator's twelfth setting, after
+// True stereo. It fades the generated tail in (raised cosine) after the tail's level is set, so a
+// long Attack costs level, as the design note's Decision 2 A has it.
+constexpr size_t reverbAttackIndex = 11;
+
+double attackGain (size_t index, double attackSamples) noexcept
+{
+    if ((double) index >= attackSamples)
+        return 1.0;
+
+    return 0.5 - 0.5 * std::cos (pi * (double) index / attackSamples);
+}
+
 void addReverbExtended (Channels& ir, const ModuleSpec& module, double sampleRate)
 {
     const auto lengthSeconds = (double) module.values[0];
@@ -536,6 +549,7 @@ void addReverbExtended (Channels& ir, const ModuleSpec& module, double sampleRat
     const auto buildUpSeconds = (double) module.values[8] / 1000.0;
     const auto early = (EarlyType) juce::jlimit (0, 3, juce::roundToInt (module.values[9]));
     const auto trueStereo = module.values[10] >= 0.5f;
+    const auto attackSamples = (double) module.values[reverbAttackIndex] * 0.001 * sampleRate;
 
     const auto length = std::max ((size_t) 1, (size_t) (lengthSeconds * sampleRate));
     const auto fillSamples = buildUpSeconds * sampleRate;
@@ -656,6 +670,11 @@ void addReverbExtended (Channels& ir, const ModuleSpec& module, double sampleRat
     if (trueStereo)
         makeTrueStereo (ir);
 
+    if (attackSamples > 0.0)
+        for (int p = 0; p < paths; ++p)
+            for (size_t i = 0; i < length; ++i)
+                wet[(size_t) p][i] *= attackGain (i, attackSamples);
+
     for (int p = 0; p < paths; ++p)
         for (size_t i = 0; i < length; ++i)
             ir[(size_t) p][i] += wet[(size_t) p][i] * gain;
@@ -665,7 +684,8 @@ bool usesNewReverbSettings (const ModuleSpec& module) noexcept
 {
     const auto& settings = settingsOf (ModuleType::reverb);
 
-    for (size_t i = 5; i < settings.size(); ++i)
+    // Attack works on either generator, so it doesn't choose between them.
+    for (size_t i = 5; i < reverbAttackIndex; ++i)
         if (module.values[i] != settings[i].defaultValue)
             return true;
 
@@ -737,6 +757,11 @@ void addReverb (Channels& ir, const ModuleSpec& module, double sampleRate)
             energy += sample * sample;
 
     const auto gain = energy > 0.0 ? std::sqrt (2.0 / energy) : 0.0;
+
+    if (const auto attackSamples = (double) module.values[reverbAttackIndex] * 0.001 * sampleRate; attackSamples > 0.0)
+        for (size_t ch = 0; ch < 2; ++ch)
+            for (size_t i = 0; i < length; ++i)
+                wet[ch][i] *= attackGain (i, attackSamples);
 
     growTo (ir, length);
 

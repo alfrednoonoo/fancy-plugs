@@ -54,6 +54,10 @@ const std::vector<Setting> reverbSettings {
     { "buildUp", "Build-up", 0.0f, 300.0f, 100.0f, 1.0f, 1.0f, 0, "ms" },
     { "early", "Early", 0.0f, 3.0f, 0.0f, 1.0f, 1.0f, 0, "", false, Setting::Kind::choice },
     { "trueStereo", "True stereo", 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0, "", false, Setting::Kind::toggle },
+
+    // Phase 4 Wave 2 (docs/verb.md, item 17), appended: a raised-cosine fade-in on the generated
+    // tail. At 0 the IR is built as before, to the bit.
+    { "attack", "Attack", 0.0f, 500.0f, 0.0f, 1.0f, 0.5f, 0, "ms" },
 };
 // Phase 3 Q2.8. Rate, Depth and Spread change smoothly without a rebuild; Start rebuilds.
 const std::vector<Setting> modulateSettings {

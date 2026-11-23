@@ -76,7 +76,8 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
       gateThresholdKnob (parameter ("gateThr"), "Threshold", colours::uiTeal, Knob::tightStyle),
       gateHoldKnob (parameter ("gateHold"), "Hold", colours::uiTeal, Knob::tightStyle),
       gateDecayKnob (parameter ("gateDecay"), "Decay", colours::uiTeal, Knob::tightStyle),
-      gateCheckbox (parameter ("gate"), "Gate")
+      gateCheckbox (parameter ("gate"), "Gate"),
+      extraWidthKnob (parameter ("extraWidth"), "Extra width", colours::uiTeal, Knob::tightStyle)
 {
     // Phase 2.1 W.1: room in the header for undo, redo, A/B and Compare.
     setPresetDropdownWidth (230);
@@ -137,8 +138,20 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
     loudnessTrim.setBounds (labelX + 160, row (5), 200, rowHeight);
     loudnessTrim.setTooltip ("The gain Equal loudness applied, so this IR plays at the same loudness as any other.");
 
+    // Phase 4 Wave 2 (reference/phase4/64__verb_w2_attack_width_mockup.png): Extra width under
+    // Equal loudness.
+    styleLabel (extraWidthNote, "Multiplies Width (the header's W knob). Mono stays the same; each side rises up to 3 dB. "
+                                "Check in mono; 120 to 150 % is the useful range.",
+                colours::textSecondary, juce::Justification::topLeft, 11.0f);
+    extraWidthNote.setMinimumHorizontalScale (1.0f);
+    extraWidthKnob.setBounds (20, 253, 80, 92);
+    extraWidthNote.setBounds (112, 273, 200, 64);
+    extraWidthKnob.setTooltip ("Widens the reverb past the W knob's 100 %: it multiplies Width, raising only the side, "
+                               "so the mono sum stays the same.");
+
     for (juce::Component* item : std::initializer_list<juce::Component*> {
-             &latencyDropdown, &fftDropdown, &storageDropdown, &folderButton, &folderPath, &lateLabel, &loudnessToggle, &loudnessTrim })
+             &latencyDropdown, &fftDropdown, &storageDropdown, &folderButton, &folderPath, &lateLabel, &loudnessToggle, &loudnessTrim,
+             &extraWidthKnob, &extraWidthNote })
         drawer.addAndMakeVisible (item);
 
     // Phase 4 Wave 2: Ducking and the Gate, live on the wet signal after the convolver, in the

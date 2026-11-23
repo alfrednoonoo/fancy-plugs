@@ -524,6 +524,14 @@ A long Attack takes the tail's start away, so it loses level as well as clarity 
 
 Approval, then the Reverb card mockup (with item 18's SETUP row; drawn as `reference/phase4/64__verb_w2_attack_width_mockup.png` and approved by the user on 23 November 2026: Attack takes the card's free tenth place, Extra width goes under Equal loudness), then one push: the setting appended to `reverbSettings`, the envelope in `IrBuilder`, the card knob, tests, manual and checklist.
 
+### 6. As built
+
+Mockup 64 approved by the user on 23 November 2026; `tests/VerbW2bTests.cpp`, with test 2's ranges run first through `docs/research/verb-attack-width-prepush.py` (the generator at its defaults, both channels: the peak at 120 to 140 ms and C80 down 11.7 to 12.0 dB over 30 seeds).
+
+- `attack` is the Reverb generator's twelfth setting (index 11, after True stereo), 0 to 500 ms, skew 0.5. The card places it in the grid's tenth slot, after Build-up, with a tooltip pointing to Equal loudness.
+- Both generator paths (the original one and the Q2.8 one) multiply the generated tail by the raised cosine after its unit-energy gain is set, so Attack costs level (Decision 2 A). `usesNewReverbSettings` stops before Attack, so a module at the Q2.8 defaults keeps the original generator whatever Attack is.
+- Tests 1 and 3 are one check per generator path: for every Early type, with True stereo off and on, the IR with Attack 150 ms is the IR without it times the raised cosine (to float rounding), and identical after 150 ms. A module saved without `attack` reads 0 and builds the same IR.
+
 ## Phase 4 Wave 2: Width to 200 %
 
 **Approved by the user on 22 November 2026 with every recommended option (A).** Item 18 of the Wave 2 order (`docs/enhancements.md`; backlog item 8 of section 5), for v1.7.1. Modelled first: `docs/research/verb-attack-width-model.py` (part 2).
@@ -563,3 +571,11 @@ Raising only the side keeps the mono sum exactly as it was, so a mono fold-down 
 ### 5. Build order
 
 Approval, then the SETUP row in the mockup with item 17, then one push: the parameter, the side gain, the SETUP knob, tests, manual and checklist.
+
+### 6. As built
+
+Mockup 64 approved by the user on 23 November 2026; `tests/VerbW2bTests.cpp`.
+
+- `extraWidth` (100 to 200 %, default 100) is appended after the Gate's parameters, so no stateVersion bump: a state without it loads at 100 %. `readTargets` multiplies Width by `extraWidth / 100`, exactly 1 at 100 %, so the existing Width smoother carries it and nothing else in `VerbDsp` changes.
+- SETUP: the knob under Equal loudness at (20, 253), with its note, as mockup 64.
+- Test 2's mono sum is held to float rounding (1e-6), not to the bit: each output channel is rounded to float before `(L + R) / 2` is formed, so the sum can differ in its last bit even though the mid is computed identically.

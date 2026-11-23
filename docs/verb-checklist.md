@@ -148,3 +148,14 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] Verb on a send, Source Sidechain, the vocal routed to pins 3/4: the vocal ducks the reverb. Unroute it: Ducking follows the send's own input.
 - [ ] The Gate's knobs dim while it's off.
 - [ ] Render offline twice: the renders match.
+
+## Attack and Extra width (Phase 4 Wave 2, items 17 and 18)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy Verb with a Reverb generator: it sounds as before; the card's Attack reads 0 ms and SETUP's Extra width 100 %.
+- [ ] Reverb generator, Attack 150 ms on a snare: the reverb swells in after the hit instead of starting with it, and it's a little quieter. Equal loudness on: the level comes back.
+- [ ] Turn Attack while the loop plays: the IR rebuilds and crossfades with no click. The waveform shows the fade-in at the start.
+- [ ] Attack with Early on Room or Hall: the early reflections fade in too.
+- [ ] SETUP, Extra width 150 % on a stereo loop: the reverb is wider. Switch the master to mono: the reverb's level and tone don't change from Extra width 100 %.
+- [ ] Width 0W with Extra width 200 %: still mono (they multiply).
+- [ ] Automate Extra width from 100 to 200 %: it moves smoothly, no zipper.
+- [ ] Render offline twice: the renders match.

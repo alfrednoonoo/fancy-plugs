@@ -65,6 +65,10 @@ private:
     fancy::ui::Knob duckKnob, gateThresholdKnob, gateHoldKnob, gateDecayKnob;
     fancy::ui::ParamCheckbox gateCheckbox;
 
+    // Phase 4 Wave 2 (reference/phase4/64__verb_w2_attack_width_mockup.png): Extra width.
+    fancy::ui::Knob extraWidthKnob;
+    juce::Label extraWidthNote;
+
     std::unique_ptr<juce::FileChooser> chooser;
 
     int seenChainRevision = -1;

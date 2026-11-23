@@ -92,8 +92,11 @@ Projects saved before 1.5 that used a four-channel file keep playing its first t
 | Build-up | 0–300 ms | How long the tail takes to reach full density; with Room or Hall, it also fades the tail in under the early reflections |
 | Early | Off, Room, Hall, Plate | Room and Hall add discrete early reflections from a simple box model (Room has more, closer together); Plate makes the tail dense from the first sample, with no reflections |
 | True stereo | off/on | Makes a true-stereo IR, with its own cross paths |
+| Attack | 0–500 ms | Fades the whole tail in over this time, early reflections included, so the reverb swells in (a bloom hall, a pad) instead of starting at full level. 0 by default |
 
-With Low RT, High RT, Size, Build-up, Early and True stereo at their defaults, the generator makes exactly the IR it did before 1.5.
+With Low RT, High RT, Size, Build-up, Early and True stereo at their defaults, the generator makes exactly the IR it did before 1.5. At Attack 0 it makes exactly the IR it did before 1.7.1.
+
+Attack and Build-up are different: Build-up sets how long the tail takes to become dense, Attack how long it takes to become loud. Attack takes the tail's start away, so a long one makes the reverb quieter as well as less clear: about 1 dB at 50 ms and 3 dB at 150 ms with Decay 1.8 s. Turn on **Equal loudness** in SETUP to even that out, or raise Wet. Changing Attack rebuilds the IR with the usual crossfade.
 
 **Modulate** moves the tail slowly, so long reverbs don't ring statically, without changing pitch. It plays the tail after Start in two versions with the same decay and spectrum but different fine detail, and crossfades between them. The early part never moves. Only one Modulate fits in a chain, and where it sits doesn't matter: it always acts on the finished IR.
 
@@ -116,7 +119,7 @@ Rate, Depth and Spread change smoothly while you play, without a rebuild. Modula
 | Wet | -inf to +12 dB | -12 dB | Reverb level |
 | Dry | -inf to +12 dB | 0 dB | Direct level |
 
-Those five and the header's Output knob can be automated. Module settings can't, because the chain's length changes while the plugin runs.
+Those five, Extra width in SETUP and the header's Output knob can be automated. Module settings can't, because the chain's length changes while the plugin runs.
 
 ## SETUP
 
@@ -127,6 +130,7 @@ Those five and the header's Output knob can be automated. Module settings can't,
 | IR storage | Whether a project keeps its own copy of the IR |
 | IR folder | Where to look for files that have moved |
 | Equal loudness | Sets the wet level so every IR plays about as loud as any other, so a small room and a cathedral don't jump 12 dB apart. The gain it applied shows beside it. Off by default |
+| Extra width | 100–200 %, 100 % by default. Widens the reverb past the right column's Width: the two multiply, so Width 100W with Extra width 150 % puts one and a half times the side in the wet signal. It raises only the side, so the mono sum stays exactly the same, and each side gets up to 3 dB louder at 200 %. Past about 150 % the left and right are more opposed than alike: check in mono, and keep to 120–150 % for most mixes. It can be automated and changes smoothly, as Width does |
 
 The late-block counter should stay at 0. If it climbs, a background job missed its deadline and a slice of the tail dropped out, so try Low CPU.
 

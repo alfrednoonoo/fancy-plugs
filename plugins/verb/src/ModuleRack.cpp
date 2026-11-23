@@ -256,6 +256,10 @@ void ModuleCard::addSettingKnobs()
         const auto bipolar = juce::String (setting.id) == "gain" || juce::String (setting.id).endsWith ("Gain");
 
         auto knob = std::make_unique<Knob> (*control.parameter, setting.label, colour, style, bipolar);
+
+        if (type == ModuleType::reverb && juce::String (setting.id) == "attack")
+            knob->setTooltip ("Fades the reverb in over this time, early reflections included: a bloom instead of a start at full level. "
+                              "A long Attack makes the reverb quieter; Equal loudness in SETUP evens that out.");
         addAndMakeVisible (*knob);
         control.component = std::move (knob);
 
@@ -329,6 +333,10 @@ void ModuleCard::placeKnobs()
 
         place (9, { 80, 268, 110, 28 });   // Early
         place (10, { 206, 272, 140, 20 }); // True stereo
+
+        // Phase 4 Wave 2 (reference/phase4/64__verb_w2_attack_width_mockup.png): Attack takes
+        // the grid's free tenth place, after Build-up.
+        place (11, { 12 + 66 * 4, 158, 66, 99 });
         updateDimming();
     }
     else if (type == ModuleType::modulate)

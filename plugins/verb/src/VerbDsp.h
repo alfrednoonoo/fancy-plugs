@@ -22,7 +22,7 @@ public:
     {
         double predelayMs = 0.0;
         double center = 0.0; // -1 to 1
-        double width = 1.0;  // 0 to 1
+        double width = 1.0;  // 0 to 1, or to 2 with Extra width (Phase 4 Wave 2)
         double wet = 1.0, dry = 1.0, output = 1.0;
         bool bypass = false;
 

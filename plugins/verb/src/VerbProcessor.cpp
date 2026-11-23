@@ -84,6 +84,14 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (msParameter ("gateHold", "Gate hold", 10.0f, 500.0f, 80.0f));
     layout.add (msParameter ("gateDecay", "Gate decay", 5.0f, 500.0f, 40.0f));
 
+    // Phase 4 Wave 2 (docs/verb.md, item 18), appended: multiplies Width. At 100 % the output is
+    // as before, to the bit.
+    layout.add (fancy::floatParameter ("extraWidth", "Extra width", juce::NormalisableRange<float> (100.0f, 200.0f, 1.0f), 100.0f,
+                                       FloatAttributes {}
+                                           .withLabel ("%")
+                                           .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
     return layout;
 }
 
@@ -262,7 +270,8 @@ VerbDsp::Targets VerbProcessor::readTargets()
     VerbDsp::Targets targets;
     targets.predelayMs = read ("predelay");
     targets.center = read ("center") * 0.01;
-    targets.width = read ("width") * 0.01;
+    // Phase 4 Wave 2: Extra width multiplies Width. Divided by 100 so 100 % is exactly 1.
+    targets.width = read ("width") * 0.01 * ((double) read ("extraWidth") / 100.0);
     targets.wet = fancy::levelToGain (read ("wet"), mixFloorDb);
     targets.dry = fancy::levelToGain (read ("dry"), mixFloorDb);
     targets.output = fancy::dbToGain ((double) read ("output"));
