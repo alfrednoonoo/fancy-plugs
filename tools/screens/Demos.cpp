@@ -64,6 +64,12 @@
 #if FANCY_HAS_ROOM
  #include "RoomProcessor.h"
 #endif
+#if FANCY_HAS_TS
+ #include "TsProcessor.h"
+#endif
+#if FANCY_HAS_CHORUS
+ #include "ChorusProcessor.h"
+#endif
 
 namespace
 {
@@ -639,6 +645,14 @@ std::vector<Script> scripts()
    #if FANCY_HAS_ROOM
     s.push_back ({ "room", maker<RoomProcessor>(), Mix { 0.6f, 1.2f, 0.4f, 0.0f, 0.4f, 0.5f },
                    { { "size", outAndBack (0.3f, 0.85f) }, { "decay", outAndBack (0.3f, 0.85f) } } });
+   #endif
+   #if FANCY_HAS_TS
+    // Drums up front, so each hit's start visibly rises in the history as Attack goes up.
+    s.push_back ({ "ts", maker<TsProcessor>(), Mix { 1.2f, 1.2f, 0.8f, 0.0f, 0.3f, 0.2f }, { { "attack", outAndBack (0.0f, 12.0f), false } } });
+   #endif
+   #if FANCY_HAS_CHORUS
+    // A pad and bass up front, so the voices' lines swing wider in the display as Depth goes up.
+    s.push_back ({ "chorus", maker<ChorusProcessor>(), Mix { 0.4f, 0.4f, 0.3f, 0.0f, 0.6f, 1.2f }, { { "depth", outAndBack (15.0f, 85.0f), false } } });
    #endif
 
     return s;
