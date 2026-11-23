@@ -204,4 +204,4 @@ Ducking only the added sub barely helps, because most of what meets the kick is 
 
 ### 5. Build order
 
-Approval, then the drawer mockup (`reference/phase4/63__kicker_duck_mockup.png`), then one push: the bus, the ducker, Host sync, the drawer and the tag, tests, manual and checklist.
+Approval, then the drawer mockup (`reference/phase4/63__kicker_duck_mockup.png`), then one push: the bus, the ducker, Host sync, the drawer and the tag, tests, manual and checklist. Mockup 63 approved by the user on 23 November 2026: the window grows 40 px wider, to 432 px, so the DUCK tag sits beside EDIT; the drawer has two pages, Main and Duck and clip.

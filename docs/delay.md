@@ -307,4 +307,4 @@ A sharp triangle jumps the pitch by its whole range in a millisecond at each fli
 
 ### 5. Build order
 
-Approval, then the Motion page mockup (`reference/phase4/57__delay_w2_mockup.png`), then one push: the shapes and stereo phase in the tap modulation, the parameters, the Motion page, tests, manual and checklist.
+Approval, then the Motion page mockup (`reference/phase4/57__delay_w2_mockup.png`), then one push: the shapes and stereo phase in the tap modulation, the parameters, the Motion page, tests, manual and checklist. Mockup 57 approved by the user on 23 November 2026: the window grows 60 px wider, to 820 px, and the wave switch sits under Rate.

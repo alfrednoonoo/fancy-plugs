@@ -345,4 +345,4 @@ What the model found: Ducking 100 % on a drum reverb is down 24 dB throughout wh
 
 ### 6. Build order
 
-Approval, then the drawer mockup (`reference/phase4/56__room_w2_mockup.png`), then one push: the shelf, the taps, the bus and Duck from in `RoomDsp` and `RoomProcessor`, the drawer, tests, manual and checklist.
+Approval, then the drawer mockup (`reference/phase4/56__room_w2_mockup.png`), then one push: the shelf, the taps, the bus and Duck from in `RoomDsp` and `RoomProcessor`, the drawer, tests, manual and checklist. Mockup 56 approved by the user on 23 November 2026: the window grows 64 px taller, to 529 px, for the Decay shape group.

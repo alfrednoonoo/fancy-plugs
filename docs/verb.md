@@ -522,7 +522,7 @@ A long Attack takes the tail's start away, so it loses level as well as clarity 
 
 ### 5. Build order
 
-Approval, then the Reverb card mockup (with item 18's SETUP row), then one push: the setting appended to `reverbSettings`, the envelope in `IrBuilder`, the card knob, tests, manual and checklist.
+Approval, then the Reverb card mockup (with item 18's SETUP row; drawn as `reference/phase4/64__verb_w2_attack_width_mockup.png` and approved by the user on 23 November 2026: Attack takes the card's free tenth place, Extra width goes under Equal loudness), then one push: the setting appended to `reverbSettings`, the envelope in `IrBuilder`, the card knob, tests, manual and checklist.
 
 ## Phase 4 Wave 2: Width to 200 %
 

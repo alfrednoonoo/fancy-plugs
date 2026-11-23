@@ -316,4 +316,4 @@ At 100 % the added harmonics vanish in mono. That's the warning for this control
 
 ### 8. Build order
 
-Approval, then the mockup (`reference/phase4/61__sature_w2b_mockup.png`): the Type segment with Diode and Fold, and the drawer's two pages. Then one push, with tests, manual and checklist.
+Approval, then the mockup (`reference/phase4/61__sature_w2b_mockup.png`): the Type segment with Diode and Fold, and the drawer's two pages. Then one push, with tests, manual and checklist. Mockup 61 approved by the user on 23 November 2026: the drawer has two pages, Shape (with Offset) and Tone and stereo.

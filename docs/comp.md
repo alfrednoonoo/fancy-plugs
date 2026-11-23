@@ -540,7 +540,7 @@ Today's slope is enough when the cut can sit well above the kick. When it has to
 
 ### 5. Build order
 
-Approval, then the Detector page mockup (`reference/phase4/55__comp_w2_sceq_mockup.png`), then one push: the bands and slopes in `CompDsp`, the parameters, the Detector page, tests, manual and checklist.
+Approval, then the Detector page mockup (`reference/phase4/55__comp_w2_sceq_mockup.png`), then one push: the bands and slopes in `CompDsp`, the parameters, the Detector page, tests, manual and checklist. Mockup 55 (with item 14's Options page) approved by the user on 23 November 2026.
 
 ## Phase 4 Wave 2: link modes
 

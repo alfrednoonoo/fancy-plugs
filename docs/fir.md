@@ -398,4 +398,4 @@ What the model found: Subtract on a voice in the centre with hiss mostly in the 
 
 ### 6. Build order
 
-Approval, then the mockup (`reference/phase4/59__fir_w2_mockup.png`): the Threshold | Ratio switch and the Mid | Side switch. Then one push with the ratio curve, Mid/Side, the preset, tests, manual and checklist.
+Approval, then the mockup (`reference/phase4/59__fir_w2_mockup.png`): the Threshold | Ratio switch and the Mid | Side switch. Then one push with the ratio curve, Mid/Side, the preset, tests, manual and checklist. Mockup 59 approved by the user on 23 November 2026: the window grows 70 px wider, to 830 px (the graph widens), for the Mid | Side switch; a Reset ratio curve button under Reset curve.

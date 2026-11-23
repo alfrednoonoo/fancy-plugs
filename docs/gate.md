@@ -448,7 +448,7 @@ No Level threshold works through both parts of the song. Transient at 8 dB catch
 
 ### 6. Build order
 
-Approval, then the mockup (`reference/phase4/53__gate_w2_transient_mockup.png`), then one push: the mode and Rise in `GateDsp`, the parameters, the Level card's switch and knob, tests, manual and checklist.
+Approval, then the mockup (`reference/phase4/53__gate_w2_transient_mockup.png`), then one push: the mode and Rise in `GateDsp`, the parameters, the Level card's switch and knob, tests, manual and checklist. Mockups 53 and 54 approved by the user on 23 November 2026: the window grows to 790 x 465 (the Range card gets a title row for the Detector switch), and in Upward the drawer's Ratio knob becomes Up ratio, as Range becomes Boost; Ceiling goes under Learn.
 
 ## Phase 4 Wave 2: Upward mode
 

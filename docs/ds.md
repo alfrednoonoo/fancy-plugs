@@ -346,4 +346,4 @@ A seventh profile, **Hiss**, after DS-Mini's voice and instrument profiles: Hiss
 
 ### 6. Build order
 
-Approval, then the mockup (`reference/phase4/60__ds_w2b_mockup.png`): the three-way Detection switch and the drawer's Reduce row, and DS-Mini's profile list with Hiss. Then one push, with tests, manuals and checklists for both plugins.
+Approval, then the mockup (`reference/phase4/60__ds_w2b_mockup.png`): the three-way Detection switch and the drawer's Reduce row, and DS-Mini's profile list with Hiss. Then one push, with tests, manuals and checklists for both plugins. Mockup 60 approved by the user on 23 November 2026: Reduce under Filter slope, Ceiling a row lower.

@@ -395,4 +395,4 @@ The graph gets a **GR history** view: each band's gain reduction over the last 3
 
 ### 7. Build order
 
-Approval, then the mockup (`reference/phase4/58__multicomp_w2_mockup.png`): the band row's Look knob, the drawer's detector EQ and slope rows, and the GR history view. Then one push with the four items, tests, manual and checklist.
+Approval, then the mockup (`reference/phase4/58__multicomp_w2_mockup.png`): the band row's Look knob, the drawer's detector EQ and slope rows, and the GR history view. Then one push with the four items, tests, manual and checklist. Mockup 58 approved by the user on 23 November 2026.

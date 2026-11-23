@@ -165,4 +165,4 @@ The excited path is already high-passed at Freq, before and after the shaper, wh
 
 ### 8. Build order
 
-Approval, then the drawer mockup (`reference/phase4/62__exciter_w2_mockup.png`), then one push with all five items, tests, manual and checklist.
+Approval, then the drawer mockup (`reference/phase4/62__exciter_w2_mockup.png`), then one push with all five items, tests, manual and checklist. Mockup 62 approved by the user on 23 November 2026: the drawer has two pages, Main (with Oversampling filter) and Harmonics.
