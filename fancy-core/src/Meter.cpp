@@ -481,6 +481,16 @@ void GainReductionMeter::show (float leftDb, float rightDb)
     repaint();
 }
 
+void GainReductionMeter::setChannelNames (const juce::String& first, const juce::String& second)
+{
+    if (names[0] != first || names[1] != second)
+    {
+        names[0] = first;
+        names[1] = second;
+        repaint();
+    }
+}
+
 void GainReductionMeter::paint (juce::Graphics& g)
 {
     constexpr float maxReductionDb = 30.0f;
@@ -524,7 +534,8 @@ void GainReductionMeter::paint (juce::Graphics& g)
     g.setColour (colours::textPrimary);
 
     const auto text = layout.singleBar ? "-" + formatFixed (reduction[0], 1)
-                                       : "-" + formatFixed (reduction[0], 1) + " dB  -" + formatFixed (reduction[1], 1) + " dB";
+                    : names[0].isNotEmpty() ? names[0] + " -" + formatFixed (reduction[0], 1) + "  " + names[1] + " -" + formatFixed (reduction[1], 1)
+                                            : "-" + formatFixed (reduction[0], 1) + " dB  -" + formatFixed (reduction[1], 1) + " dB";
 
     g.drawText (text, bounds.withTop (bounds.getBottom() - 23.0f), juce::Justification::centred, false);
 }

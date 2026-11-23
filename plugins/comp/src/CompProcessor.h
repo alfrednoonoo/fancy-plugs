@@ -17,6 +17,19 @@ public:
     static double syncStepBeats (int index) noexcept;
     static constexpr int defaultSyncRate = 6; // 1/4
 
+    // Phase 4 Wave 2: the detector bands' Type choices (CompDsp::BandType's order) and each
+    // band's parameter IDs, 0 to 5.
+    struct BandIds
+    {
+        const char* type;
+        const char* frequency;
+        const char* gain;
+        const char* q;
+    };
+
+    static const juce::StringArray& bandTypeNames();
+    static const BandIds& bandIds (int band) noexcept;
+
     // Whether Host sync is running on the host's tempo, for the Options page's caption.
     bool syncHasHostTempo() const noexcept { return dsp.syncHasHostTempo(); }
 

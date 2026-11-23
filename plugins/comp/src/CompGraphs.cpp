@@ -1,4 +1,5 @@
 #include "CompGraphs.h"
+#include "CompProcessor.h"
 
 #include <fancy/dsp/Compression.h>
 #include <fancy/dsp/MatchedFilters.h>
@@ -18,8 +19,10 @@ constexpr double curveDb = 18.0;
 constexpr double previewRate = 48000.0;
 constexpr float handleRadius = 5.0f;
 
-const char* const frequencyIds[] { "scLowFreq", "scMidFreq", "scHighFreq" };
-const char* const gainIds[] { "scLowGain", "scMidGain", "scHighGain" };
+// Phase 4 Wave 2: the six bands' parameters, and the band tabs' size.
+const char* frequencyId (int band) { return CompProcessor::bandIds (band).frequency; }
+const char* gainId (int band) { return CompProcessor::bandIds (band).gain; }
+constexpr float tabWidth = 20.0f, tabHeight = 16.0f, tabGap = 2.0f;
 
 void drawDashed (juce::Graphics& g, juce::Line<float> line, float thickness)
 {
@@ -180,7 +183,28 @@ double DetectorCurve::dbFor (float y) const
 
 juce::Point<float> DetectorCurve::handleFor (int band) const
 {
-    return { xFor ((double) params.get (frequencyIds[band])), yFor ((double) params.get (gainIds[band])) };
+    return { xFor ((double) params.get (frequencyId (band))), yFor ((double) params.get (gainId (band))) };
+}
+
+int DetectorCurve::bandType (int band) const
+{
+    return juce::roundToInt (params.get (CompProcessor::bandIds (band).type));
+}
+
+juce::Rectangle<float> DetectorCurve::tabBounds (int band) const
+{
+    return { 8.0f + (float) band * (tabWidth + tabGap), 7.0f, tabWidth, tabHeight };
+}
+
+void DetectorCurve::setSelected (int band)
+{
+    band = juce::jlimit (0, CompDsp::numDetectorBands - 1, band);
+
+    if (band != selected)
+    {
+        selected = band;
+        repaint();
+    }
 }
 
 int DetectorCurve::bandAt (juce::Point<float> position) const
@@ -188,8 +212,14 @@ int DetectorCurve::bandAt (juce::Point<float> position) const
     auto best = -1;
     auto bestDistance = 12.0f;
 
-    for (int b = 0; b < 3; ++b)
+    // The selected band first, so it wins over a handle under it.
+    for (int i = 0; i < CompDsp::numDetectorBands; ++i)
     {
+        const auto b = (selected + i) % CompDsp::numDetectorBands;
+
+        if (bandType (b) == CompDsp::bandOff)
+            continue;
+
         const auto distance = handleFor (b).getDistanceFrom (position);
 
         if (distance < bestDistance)
@@ -230,17 +260,25 @@ void DetectorCurve::paint (juce::Graphics& g)
     const auto highpass = (double) params.get ("highpass");
     const auto lowpass = (double) params.get ("lowpass");
 
-    std::array<matched::BandFilter, 3> filters;
+    // Phase 4 Wave 2: 12, 24 or 48 dB/oct, a Butterworth response of order 2, 4 or 8.
+    const auto highOrder = 2 << juce::jlimit (0, 2, juce::roundToInt (params.get ("hpSlope")));
+    const auto lowOrder = 2 << juce::jlimit (0, 2, juce::roundToInt (params.get ("lpSlope")));
 
-    for (int b = 0; b < 3; ++b)
+    std::array<matched::BandFilter, CompDsp::numDetectorBands> filters;
+
+    for (int b = 0; b < CompDsp::numDetectorBands; ++b)
     {
+        const auto type = bandType (b);
+
         matched::BandSpec spec;
-        spec.type = b == 0 ? matched::BandType::lowShelf : b == 2 ? matched::BandType::highShelf : matched::BandType::band;
-        spec.frequencyHz = (double) params.get (frequencyIds[b]);
-        spec.gainDb = (double) params.get (gainIds[b]);
-        spec.q = b == 1 ? (double) params.get ("scMidQ") : matched::butterworthQ;
+        spec.type = type == CompDsp::bandLowShelf ? matched::BandType::lowShelf
+                  : type == CompDsp::bandHighShelf ? matched::BandType::highShelf
+                                                   : matched::BandType::band;
+        spec.frequencyHz = (double) params.get (frequencyId (b));
+        spec.gainDb = (double) params.get (gainId (b));
+        spec.q = type == CompDsp::bandBell ? (double) params.get (CompProcessor::bandIds (b).q) : matched::butterworthQ;
         spec.order = 2;
-        spec.on = spec.gainDb != 0.0;
+        spec.on = type != CompDsp::bandOff && spec.gainDb != 0.0;
         filters[(size_t) b] = matched::design (spec, previewRate);
     }
 
@@ -254,12 +292,12 @@ void DetectorCurve::paint (juce::Graphics& g)
 
         if (highpass > 20.5)
         {
-            const auto r = std::pow (hz / highpass, 4.0);
+            const auto r = std::pow (hz / highpass, 2.0 * (double) highOrder);
             db += 10.0 * std::log10 (r / (1.0 + r));
         }
 
         if (lowpass < 23900.0)
-            db += 10.0 * std::log10 (1.0 / (1.0 + std::pow (hz / lowpass, 4.0)));
+            db += 10.0 * std::log10 (1.0 / (1.0 + std::pow (hz / lowpass, 2.0 * (double) lowOrder)));
 
         auto withBands = db;
         const auto w = 2.0 * std::numbers::pi * hz / previewRate;
@@ -291,37 +329,98 @@ void DetectorCurve::paint (juce::Graphics& g)
     g.setColour (colours::uiBlue);
     g.strokePath (total, juce::PathStrokeType (2.0f));
 
-    for (int b = 0; b < 3; ++b)
+    // A handle for each band that isn't Off, with its number; the selected one filled, on top.
+    g.setFont (smallFont (9.0f));
+
+    for (int i = 1; i <= CompDsp::numDetectorBands; ++i)
     {
+        const auto b = (selected + i) % CompDsp::numDetectorBands;
+
+        if (bandType (b) == CompDsp::bandOff)
+            continue;
+
         const auto centre = handleFor (b);
-        const auto active = params.get (gainIds[b]) != 0.0f;
+        const auto active = params.get (gainId (b)) != 0.0f;
         const auto circle = juce::Rectangle<float> (handleRadius * 2.0f, handleRadius * 2.0f).withCentre (centre);
 
-        g.setColour (colours::bgWell);
+        g.setColour (b == selected ? colours::bgWell.interpolatedWith (colours::uiBlue, 0.35f) : colours::bgWell);
         g.fillEllipse (circle);
-        g.setColour (colours::uiBlue.withAlpha (active ? 1.0f : 0.35f));
+        g.setColour (colours::uiBlue.withAlpha (active || b == selected ? 1.0f : 0.35f));
         g.drawEllipse (circle, 2.0f);
+        g.drawText (juce::String (b + 1), juce::Rectangle<float> (centre.x + 6.0f, centre.y + 3.0f, 10.0f, 11.0f), juce::Justification::centredLeft, false);
     }
 
     g.restoreState();
 
     if (highpass > 20.5)
     {
+        auto text = "HP " + juce::String (juce::roundToInt (highpass)) + " Hz";
+
+        if (highOrder > 2)
+            text << " - " << juce::String (highOrder * 6) << " dB/oct";
+
         g.setFont (smallFont (9.0f));
-        g.setColour (colours::uiBlue.withAlpha (0.5f));
-        g.drawText ("HP " + juce::String (juce::roundToInt (highpass)) + " Hz",
-                    juce::Rectangle<float> (xFor (highpass) + 4.0f, bounds.getBottom() - 16.0f, 80.0f, 11.0f), juce::Justification::centredLeft, false);
+        g.setColour (colours::uiBlue.withAlpha (highOrder > 2 ? 0.8f : 0.5f));
+        g.drawText (text, juce::Rectangle<float> (xFor (highpass) + 4.0f, bounds.getBottom() - 16.0f, 120.0f, 11.0f), juce::Justification::centredLeft, false);
+    }
+
+    // The band tabs over the curve's top-left corner: Off bands dimmed, the selected one blue.
+    const auto strip = tabBounds (0).getUnion (tabBounds (CompDsp::numDetectorBands - 1)).expanded (2.0f);
+    g.setColour (colours::bgSection);
+    g.fillRoundedRectangle (strip, 4.0f);
+
+    for (int b = 0; b < CompDsp::numDetectorBands; ++b)
+    {
+        const auto tab = tabBounds (b);
+
+        if (b == selected)
+        {
+            g.setColour (colours::uiBlue);
+            g.fillRoundedRectangle (tab, 3.0f);
+            g.setColour (colours::bgWell);
+            g.setFont (font (Weight::semiBold, 10.5f));
+        }
+        else
+        {
+            g.setColour (bandType (b) == CompDsp::bandOff ? juce::Colour (0xff5a5a5a) : juce::Colour (0xffdddddd));
+            g.setFont (font (Weight::medium, 10.5f));
+        }
+
+        g.drawText (juce::String (b + 1), tab, juce::Justification::centred, false);
     }
 }
 
 void DetectorCurve::mouseDown (const juce::MouseEvent& event)
 {
+    dragging = -1;
+
+    for (int b = 0; b < CompDsp::numDetectorBands; ++b)
+    {
+        if (tabBounds (b).expanded (1.0f).contains (event.position))
+        {
+            setSelected (b);
+
+            if (onSelect != nullptr)
+                onSelect (b);
+
+            return;
+        }
+    }
+
     dragging = bandAt (event.position);
 
     if (dragging >= 0)
     {
-        params.begin (frequencyIds[dragging]);
-        params.begin (gainIds[dragging]);
+        if (dragging != selected)
+        {
+            setSelected (dragging);
+
+            if (onSelect != nullptr)
+                onSelect (dragging);
+        }
+
+        params.begin (frequencyId (dragging));
+        params.begin (gainId (dragging));
     }
 }
 
@@ -330,8 +429,8 @@ void DetectorCurve::mouseDrag (const juce::MouseEvent& event)
     if (dragging < 0)
         return;
 
-    params.set (frequencyIds[dragging], (float) hzFor (event.position.x));
-    params.set (gainIds[dragging], (float) juce::jlimit (-curveDb, curveDb, dbFor (event.position.y)));
+    params.set (frequencyId (dragging), (float) hzFor (event.position.x));
+    params.set (gainId (dragging), (float) juce::jlimit (-curveDb, curveDb, dbFor (event.position.y)));
     repaint();
 }
 
@@ -339,8 +438,8 @@ void DetectorCurve::mouseUp (const juce::MouseEvent&)
 {
     if (dragging >= 0)
     {
-        params.end (frequencyIds[dragging]);
-        params.end (gainIds[dragging]);
+        params.end (frequencyId (dragging));
+        params.end (gainId (dragging));
     }
 
     dragging = -1;
@@ -348,11 +447,16 @@ void DetectorCurve::mouseUp (const juce::MouseEvent&)
 
 void DetectorCurve::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& wheel)
 {
-    const auto q = params.get ("scMidQ") * std::exp (wheel.deltaY * 0.6f);
+    // The selected band's Q, while it's a Bell.
+    if (bandType (selected) != CompDsp::bandBell)
+        return;
 
-    params.begin ("scMidQ");
-    params.set ("scMidQ", juce::jlimit (0.3f, 8.0f, q));
-    params.end ("scMidQ");
+    const auto* id = CompProcessor::bandIds (selected).q;
+    const auto q = params.get (id) * std::exp (wheel.deltaY * 0.6f);
+
+    params.begin (id);
+    params.set (id, juce::jlimit (0.3f, 8.0f, q));
+    params.end (id);
     repaint();
 }
 

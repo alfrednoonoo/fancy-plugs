@@ -149,3 +149,10 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 ## Level history in dB (v1.7.1)
 
 - [ ] EDIT > History on a vocal or a quiet passage: the waveforms are in dB (-60 at the centre line, 0 at the edges), with faint lines and grey labels -12 to -60 at the left. Breaths and quiet syllables are visible; the dashed threshold pair sits at its level (Threshold -24: well out from the centre). The yellow GR line, zoom, Grid, pause and peak work as before.
+
+## Six-band detector EQ, cut slopes and link modes (v1.7.1)
+
+- [ ] Load a project saved with v1.7.0 that uses Comp's detector bands: it sounds the same, and bands 1 to 3 show Low shelf, Bell and High shelf with their old values.
+- [ ] EDIT > Detector: click tabs 1 to 6; the band's Type, Freq, Gain and Q show below. Set band 4 to Bell: its handle appears on the curve with a 4; drag it, and the wheel changes its Q. Set a band to Off: its tab dims and its handle goes.
+- [ ] Preview filter with Highpass at 90 Hz on a mix with a kick: switch Cut slopes Highpass between 12, 24 and 48 dB; the kick gets quieter in the preview each step, and the curve and its "HP ... dB/oct" label follow.
+- [ ] Options > Link mode on a stereo mix with a vocal: Mid/Side keeps the guitars' width steady while the vocal is controlled; M>S narrows the image as the vocal gets loud; S>M turns the middle down by the sides. The GR read-outs say M and S. Back to Stereo: the GR labels return to dB, and switching causes no click.

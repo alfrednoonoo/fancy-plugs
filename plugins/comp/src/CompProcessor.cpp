@@ -187,6 +187,47 @@ fancy::FancyProcessor::Layout createLayout()
     // Phase 4 Wave 2, appended (docs/comp.md): Optical mode.
     layout.add (toggle ("optical", "Optical", false));
 
+    // Phase 4 Wave 2, items 13 and 14, appended (docs/comp.md): a Type for bands 1 to 3 (their
+    // old shapes by default) and a Q for the two shelves (used only as a Bell), bands 4 to 6
+    // (Off by default), the cut slopes and the link mode. The defaults leave the sound as it was.
+    const auto qParameter = [] (const juce::String& id, const juce::String& name)
+    {
+        return fancy::floatParameter (
+            id, name, fancy::logRange (0.3f, 8.0f, 0.01f), 1.0f,
+            juce::AudioParameterFloatAttributes {}
+                .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2); })
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); }));
+    };
+
+    const auto typeParameter = [] (const juce::String& id, const juce::String& name, int defaultType)
+    {
+        return std::make_unique<Choice> (juce::ParameterID { id, 1 }, name, CompProcessor::bandTypeNames(), defaultType);
+    };
+
+    layout.add (typeParameter ("scLowType", "SC band 1 type", CompDsp::bandLowShelf));
+    layout.add (typeParameter ("scMidType", "SC band 2 type", CompDsp::bandBell));
+    layout.add (typeParameter ("scHighType", "SC band 3 type", CompDsp::bandHighShelf));
+    layout.add (qParameter ("scLowQ", "SC band 1 Q"));
+    layout.add (qParameter ("scHighQ", "SC band 3 Q"));
+
+    const float newBandHz[] { 200.0f, 2000.0f, 5000.0f };
+
+    for (int band = 4; band <= 6; ++band)
+    {
+        const auto id = "sc" + juce::String (band);
+        const auto name = "SC band " + juce::String (band) + " ";
+
+        layout.add (typeParameter (id + "Type", name + "type", CompDsp::bandOff));
+        layout.add (hzParameter (id + "Freq", name + "freq", 20.0f, 20000.0f, newBandHz[band - 4]));
+        layout.add (gainParameter (id + "Gain", name + "gain", -18.0f, 18.0f, 0.0f));
+        layout.add (qParameter (id + "Q", name + "Q"));
+    }
+
+    const juce::StringArray slopes { "12 dB", "24 dB", "48 dB" };
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "hpSlope", 1 }, "Highpass slope", slopes, 0));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "lpSlope", 1 }, "Lowpass slope", slopes, 0));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "linkMode", 1 }, "Link mode", juce::StringArray { "Stereo", "Mid/Side", "M>S", "S>M" }, 0));
+
     return layout;
 }
 
@@ -290,16 +331,21 @@ CompDsp::Targets CompProcessor::readTargets()
     targets.floorDb = (double) read ("upFloor");
     targets.autoThreshold = isOn ("autoThr");
 
-    const char* const frequencyIds[] { "scLowFreq", "scMidFreq", "scHighFreq" };
-    const char* const gainIds[] { "scLowGain", "scMidGain", "scHighGain" };
-
-    for (size_t b = 0; b < (size_t) CompDsp::numEqBands; ++b)
+    // Phase 4 Wave 2: six bands. A shelf's Q is Butterworth's, as before; a Bell uses its Q.
+    for (size_t b = 0; b < (size_t) CompDsp::numDetectorBands; ++b)
     {
-        targets.eq[b].frequencyHz = (double) read (frequencyIds[b]);
-        targets.eq[b].gainDb = (double) read (gainIds[b]);
+        const auto& ids = bandIds ((int) b);
+        const auto type = juce::roundToInt (read (ids.type));
+
+        targets.eqTypes[b] = type;
+        targets.eq[b].frequencyHz = (double) read (ids.frequency);
+        targets.eq[b].gainDb = (double) read (ids.gain);
+        targets.eq[b].q = type == CompDsp::bandBell ? (double) read (ids.q) : 0.70710678118654752;
     }
 
-    targets.eq[(size_t) CompDsp::bell].q = (double) read ("scMidQ");
+    targets.highPassSlope = juce::roundToInt (read ("hpSlope"));
+    targets.lowPassSlope = juce::roundToInt (read ("lpSlope"));
+    targets.linkMode = juce::roundToInt (read ("linkMode"));
 
     targets.holdMs = (double) read ("hold");
     const auto range = read ("range");
@@ -370,6 +416,27 @@ void CompProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBu
 
     if (getLatencySamples() != dsp.getLatencySamples())
         setLatencySamples (dsp.getLatencySamples());
+}
+
+// Phase 4 Wave 2: the detector bands' Type choices and parameter IDs.
+const juce::StringArray& CompProcessor::bandTypeNames()
+{
+    static const juce::StringArray names { "Off", "Low shelf", "Bell", "High shelf" };
+    return names;
+}
+
+const CompProcessor::BandIds& CompProcessor::bandIds (int band) noexcept
+{
+    static const BandIds ids[CompDsp::numDetectorBands] {
+        { "scLowType", "scLowFreq", "scLowGain", "scLowQ" },
+        { "scMidType", "scMidFreq", "scMidGain", "scMidQ" },
+        { "scHighType", "scHighFreq", "scHighGain", "scHighQ" },
+        { "sc4Type", "sc4Freq", "sc4Gain", "sc4Q" },
+        { "sc5Type", "sc5Freq", "sc5Gain", "sc5Q" },
+        { "sc6Type", "sc6Freq", "sc6Gain", "sc6Q" },
+    };
+
+    return ids[juce::jlimit (0, CompDsp::numDetectorBands - 1, band)];
 }
 
 // The host's position, for the history's beat and bar lines. Stopped or unknown, none.

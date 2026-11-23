@@ -189,12 +189,17 @@ public:
     // Sets levels directly, for rendered screenshots.
     void show (float leftDb, float rightDb);
 
+    // Names before each read-out, such as "M" and "S" (Fancy Comp's link modes). Empty, the
+    // read-outs are "-2.8 dB  -2.6 dB" as before.
+    void setChannelNames (const juce::String& first, const juce::String& second);
+
     void paint (juce::Graphics&) override;
 
 private:
     Geometry layout;
     float reduction[2] { 0.0f, 0.0f };
     juce::Colour barColour { 0xffffcf07 };
+    juce::String names[2];
 };
 
 } // namespace fancy::ui

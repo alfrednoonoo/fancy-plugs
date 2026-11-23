@@ -7,6 +7,9 @@
 #include <fancy/ui/Meter.h>
 #include <fancy/ui/ShellEditor.h>
 
+#include <array>
+#include <memory>
+
 class CompEditor final : public fancy::ui::ShellEditor
 {
 public:
@@ -35,6 +38,8 @@ private:
     void updateSyncGroup(); // Phase 4 Wave 2
     void updateDimming();
     void updateHistoryCaption();
+    void selectBand (int band);  // Phase 4 Wave 2
+    void updateBandControls();
     CompParameters makeParameters();
 
     Panels panels;
@@ -68,8 +73,15 @@ private:
     DrawerTabs drawerTabs;
 
     DetectorCurve detectorCurve;
-    juce::Label lowShelfLabel, bellLabel, highShelfLabel;
-    fancy::ui::Knob scLowFreqKnob, scLowGainKnob, scMidFreqKnob, scMidGainKnob, scMidQKnob, scHighFreqKnob, scHighGainKnob;
+
+    // Phase 4 Wave 2 (reference/phase4/55__comp_w2_sceq_mockup.png): the selected band's Type,
+    // Freq, Gain and Q under the curve (one set per band, the selected one shown), and the cut
+    // slopes beside them.
+    juce::Label bandCaption, bandTypeLabel, slopesCaption, highSlopeLabel, lowSlopeLabel;
+    std::array<std::unique_ptr<fancy::ui::ParamDropdown>, CompDsp::numDetectorBands> bandTypeDropdowns;
+    std::array<std::unique_ptr<fancy::ui::Knob>, CompDsp::numDetectorBands> bandFreqKnobs, bandGainKnobs, bandQKnobs;
+    fancy::ui::ParamDropdown highSlopeDropdown, lowSlopeDropdown;
+    int selectedBand = 0;
     fancy::ui::ParamCheckbox autoThresholdCheckbox;
     juce::Label autoOffsetLabel;
 
@@ -84,6 +96,10 @@ private:
 
     // Phase 4 Wave 1: Hold and Range on the Options page, and the History page.
     fancy::ui::Knob holdKnob, rangeKnob;
+
+    // Phase 4 Wave 2: Link mode under Hold and Range.
+    juce::Label linkModeLabel;
+    fancy::ui::ParamDropdown linkModeDropdown;
 
     // Phase 4 Wave 2: Host sync's group on the Options page, shown while it's the Detector input.
     juce::Label syncCaption, syncRateLabel, syncNote;

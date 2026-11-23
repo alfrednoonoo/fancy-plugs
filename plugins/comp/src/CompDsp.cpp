@@ -32,6 +32,17 @@ constexpr int eqUpdateSamples = 16;
 // Phase 4 Wave 1 (docs/comp.md).
 constexpr double listenFadeMs = 10.0;
 
+// Phase 4 Wave 2 (docs/comp.md, item 13): Butterworth sections for 12, 24 and 48 dB/oct, all at
+// the cut's frequency, so its -3 dB point stays put.
+constexpr int cutStages (int slope) noexcept
+{
+    return slope == CompDsp::slope48 ? 4 : slope == CompDsp::slope24 ? 2 : 1;
+}
+
+constexpr double cutQ[3][4] { { butterworthQ, 0.0, 0.0, 0.0 },
+                              { 0.54119610014619698, 1.3065629648763766, 0.0, 0.0 },
+                              { 0.50979557910415917, 0.60134488693504529, 0.89997622313641570, 2.5629154477415055 } };
+
 using fancy::dsp::timeCoefficient;
 
 double dbToGain (double db) noexcept
@@ -156,6 +167,7 @@ CompDsp::Config CompDsp::configFor (const Targets& targets) const noexcept
     config.oversampling = targets.oversampling;
     config.minimumPhase = targets.minimumPhase;
     config.limiter = targets.limitOutput;
+    config.linkMode = targets.linkMode;
     config.preCompSamples = (int) std::lround (targets.preCompMs * 0.001 * sampleRate);
     return config;
 }
@@ -252,11 +264,20 @@ void CompDsp::setNewTargets (const Targets& targets) noexcept
     upFloor.setTarget (targets.floorDb);
     drive.setTarget (targets.driveDb);
 
-    for (size_t b = 0; b < (size_t) numEqBands; ++b)
+    for (size_t b = 0; b < (size_t) numDetectorBands; ++b)
     {
+        // Phase 4 Wave 2: Off fades the band out as 0 dB does, in the shape it had.
+        const auto type = targets.eqTypes[b];
+
         eqSmoothers[b].logFrequency.setTarget (std::log (targets.eq[b].frequencyHz));
-        eqSmoothers[b].gain.setTarget (targets.eq[b].gainDb);
+        eqSmoothers[b].gain.setTarget (type == bandOff ? 0.0 : targets.eq[b].gainDb);
         eqSmoothers[b].q.setTarget (targets.eq[b].q);
+
+        if (type != bandOff && type != eqShapes[b])
+        {
+            eqShapes[b] = type;
+            eqNeedsUpdate = true;
+        }
     }
 
     if (! targets.autoThreshold)
@@ -300,7 +321,7 @@ void CompDsp::updateEqCoefficients() noexcept
 {
     namespace matched = fancy::dsp::matched;
 
-    for (size_t b = 0; b < (size_t) numEqBands; ++b)
+    for (size_t b = 0; b < (size_t) numDetectorBands; ++b)
     {
         const auto gainDb = eqSmoothers[b].gain.getCurrent();
         const auto active = gainDb != 0.0;
@@ -317,9 +338,9 @@ void CompDsp::updateEqCoefficients() noexcept
         }
 
         matched::BandSpec spec;
-        spec.type = b == (size_t) lowShelf ? matched::BandType::lowShelf
-                  : b == (size_t) highShelf ? matched::BandType::highShelf
-                                            : matched::BandType::band;
+        spec.type = eqShapes[b] == bandLowShelf ? matched::BandType::lowShelf
+                  : eqShapes[b] == bandHighShelf ? matched::BandType::highShelf
+                                                 : matched::BandType::band;
         spec.frequencyHz = std::exp (eqSmoothers[b].logFrequency.getCurrent());
         spec.gainDb = gainDb;
         spec.q = eqSmoothers[b].q.getCurrent();
@@ -334,7 +355,7 @@ void CompDsp::updateEqCoefficients() noexcept
 
 double CompDsp::filterEq (ChannelState& state, double x) noexcept
 {
-    for (size_t b = 0; b < (size_t) numEqBands; ++b)
+    for (size_t b = 0; b < (size_t) numDetectorBands; ++b)
     {
         if (! eqActive[b])
             continue;
@@ -349,6 +370,65 @@ double CompDsp::filterEq (ChannelState& state, double x) noexcept
     }
 
     return x;
+}
+
+// Phase 4 Wave 2: Highpass then Lowpass, each a cascade at its slope. At 12 dB/oct both, this is
+// DetectorFilter::filter itself, so the path stays as it was to the bit.
+double CompDsp::filterCuts (ChannelState& state, double x, double highPassBlend, double lowPassBlend) noexcept
+{
+    if (activeHighPassSlope == slope12 && activeLowPassSlope == slope12)
+        return state.detector.filter (x, highPassStages[0], lowPassStages[0], highPassBlend, lowPassBlend);
+
+    auto high = state.detector.highPass.tick (highPassStages[0], x).high;
+
+    for (int k = 1; k < cutStages (activeHighPassSlope); ++k)
+        high = state.highPassExtra[(size_t) k - 1].tick (highPassStages[(size_t) k], high).high;
+
+    const auto afterHighPass = x + (high - x) * highPassBlend;
+    auto low = state.detector.lowPass.tick (lowPassStages[0], afterHighPass).low;
+
+    for (int k = 1; k < cutStages (activeLowPassSlope); ++k)
+        low = state.lowPassExtra[(size_t) k - 1].tick (lowPassStages[(size_t) k], low).low;
+
+    return afterHighPass + (low - afterHighPass) * lowPassBlend;
+}
+
+void CompDsp::setCutCoefficients (bool highPass, double frequencyHz) noexcept
+{
+    const auto slope = highPass ? activeHighPassSlope : activeLowPassSlope;
+    auto& stages = highPass ? highPassStages : lowPassStages;
+
+    for (int k = 0; k < cutStages (slope); ++k)
+        stages[(size_t) k].set (frequencyHz, cutQ[slope][k], internalRate);
+}
+
+// A new slope takes effect at once, its added sections starting from rest.
+void CompDsp::setCutSlopes (int highPassSlope, int lowPassSlope) noexcept
+{
+    highPassSlope = juce::jlimit ((int) slope12, (int) slope48, highPassSlope);
+    lowPassSlope = juce::jlimit ((int) slope12, (int) slope48, lowPassSlope);
+
+    if (highPassSlope != activeHighPassSlope)
+    {
+        activeHighPassSlope = highPassSlope;
+
+        for (auto& state : channels)
+            for (auto& section : state.highPassExtra)
+                section.reset();
+
+        setCutCoefficients (true, std::exp (logHighPass.getCurrent()));
+    }
+
+    if (lowPassSlope != activeLowPassSlope)
+    {
+        activeLowPassSlope = lowPassSlope;
+
+        for (auto& state : channels)
+            for (auto& section : state.lowPassExtra)
+                section.reset();
+
+        setCutCoefficients (false, std::exp (logLowPass.getCurrent()));
+    }
 }
 
 void CompDsp::resetCore()
@@ -375,6 +455,12 @@ void CompDsp::resetCore()
         state.upFollower.reset();
         state.character.reset();
         state.eq.fill ({});
+
+        for (auto& section : state.highPassExtra)
+            section.reset();
+
+        for (auto& section : state.lowPassExtra)
+            section.reset();
     }
 
     // Auto threshold starts from the reference, so its offset begins at 0 dB.
@@ -445,6 +531,7 @@ void CompDsp::setTargets (const Targets& targets)
 
     setNewTargets (targets);
     updateBallistics();
+    setCutSlopes (targets.highPassSlope, targets.lowPassSlope); // Phase 4 Wave 2
 }
 
 void CompDsp::applyConfig (const Config& config)
@@ -466,8 +553,8 @@ void CompDsp::applyConfig (const Config& config)
     resetCore();
     setTargets (current);
 
-    lowPassCoefficients.set (std::exp (logLowPass.getCurrent()), butterworthQ, internalRate);
-    highPassCoefficients.set (std::exp (logHighPass.getCurrent()), butterworthQ, internalRate);
+    setCutCoefficients (false, std::exp (logLowPass.getCurrent()));
+    setCutCoefficients (true, std::exp (logHighPass.getCurrent()));
     rmsCoefficient = timeCoefficient (rms.getCurrent(), internalRate);
 
     // The rate changed: the character's filters and the detector EQ follow it.
@@ -510,8 +597,8 @@ void CompDsp::snapToTargets (const Targets& targets)
 
     switchGain.snapTo (1.0);
 
-    lowPassCoefficients.set (std::exp (logLowPass.getCurrent()), butterworthQ, internalRate);
-    highPassCoefficients.set (std::exp (logHighPass.getCurrent()), butterworthQ, internalRate);
+    setCutCoefficients (false, std::exp (logLowPass.getCurrent()));
+    setCutCoefficients (true, std::exp (logHighPass.getCurrent()));
 }
 
 void CompDsp::updateConfig (int numSamples)
@@ -557,6 +644,11 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
     const auto factor = factorOf (activeConfig);
     const auto preCompDelay = activeConfig.preCompSamples * factor;
 
+    // Phase 4 Wave 2 (docs/comp.md, item 14): in the M/S modes the two channels are mid and side
+    // from here to the end of the sample, and turn back into left and right there.
+    const auto mode = activeConfig.linkMode;
+    const auto midSide = mode != linkStereo;
+
     double peakReduction[2] { 0.0, 0.0 };
     auto peakLift = 0.0;
     auto historyIn = 0.0, historyOut = 0.0;
@@ -566,10 +658,10 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
     for (int i = 0; i < numSamples; ++i)
     {
         if (! logLowPass.isSettled())
-            lowPassCoefficients.set (std::exp (logLowPass.next()), butterworthQ, internalRate);
+            setCutCoefficients (false, std::exp (logLowPass.next()));
 
         if (! logHighPass.isSettled())
-            highPassCoefficients.set (std::exp (logHighPass.next()), butterworthQ, internalRate);
+            setCutCoefficients (true, std::exp (logHighPass.next()));
 
         const auto thresholdDb = threshold.next();
         const auto slopeNow = slope.next();
@@ -628,13 +720,28 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
         const auto characterMix = characterAmount.next();
         const auto characterOn = activeCharacter != characterOff && characterMix != 0.0;
 
+        if (midSide)
+        {
+            const auto left = (double) signal[0][i], right = (double) signal[1][i];
+            signal[0][i] = (float) (0.5 * (left + right));
+            signal[1][i] = (float) (0.5 * (left - right));
+        }
+
         // Pre: a saturator before the compressor, so the detector hears it (Decision 1 A).
         if (characterOn && ! activeCharacterPost)
             for (int ch = 0; ch < 2; ++ch)
                 signal[ch][i] = (float) channels[(size_t) ch].character.process ((double) signal[ch][i], driveGain, characterMix);
 
-        const auto mainLeft = current.feedback ? channels[0].previousOutput : (double) signal[0][i];
-        const auto mainRight = current.feedback ? channels[1].previousOutput : (double) signal[1][i];
+        auto mainLeft = current.feedback ? channels[0].previousOutput : (double) signal[0][i];
+        auto mainRight = current.feedback ? channels[1].previousOutput : (double) signal[1][i];
+
+        if (midSide)
+        {
+            // Back to left and right, so every Detector input keeps its meaning.
+            const auto m = mainLeft, s = mainRight;
+            mainLeft = m + s;
+            mainRight = m - s;
+        }
         const auto keyLeft = (double) key[0][i];
         const auto keyRight = (double) key[1][i];
 
@@ -654,6 +761,17 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             default:      detector[0] = mainLeft; detector[1] = mainRight; break;
         }
 
+        // The two-channel inputs are heard as mid and side in the M/S modes; a one-channel
+        // input drives whichever channels the mode compresses.
+        const auto pairIsMidSide = midSide && (current.detector == mainLR || current.detector == sideLR);
+
+        if (pairIsMidSide)
+        {
+            const auto a = detector[0], b = detector[1];
+            detector[0] = 0.5 * (a + b);
+            detector[1] = 0.5 * (a - b);
+        }
+
         double level[2];
         double filtered[2];
 
@@ -668,7 +786,7 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             }
             else
             {
-                filtered[ch] = state.detector.filter (detector[ch], highPassCoefficients, lowPassCoefficients, highPassBlend, lowPassBlend);
+                filtered[ch] = filterCuts (state, detector[ch], highPassBlend, lowPassBlend);
                 filtered[ch] = filterEq (state, filtered[ch]);
             }
             level[ch] = state.detector.levelDb (filtered[ch], std::min (rmsCoefficient, maxDetectorCoefficient));
@@ -691,7 +809,8 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             const auto feedsBack = current.feedback && (current.detector < sideLR || current.detector > sideR);
             const auto a = feedsBack ? (double) signal[0][i] : filtered[0];
             const auto b = feedsBack ? (double) signal[1][i] : filtered[1];
-            const auto power = 0.5 * (a * a + b * b);
+            // Mid and side carry half the power of left and right: m^2 + s^2 = (l^2 + r^2) / 2.
+            const auto power = (pairIsMidSide || (feedsBack && midSide) ? 1.0 : 0.5) * (a * a + b * b);
 
             gatePower += gateCoefficient * (power - gatePower);
 
@@ -716,19 +835,30 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
         const auto writePosition = (preCompPosition + i) % preCompLength;
         const auto readPosition = (writePosition + preCompLength - preCompDelay) % preCompLength;
 
+        double delayedAt[2] { 0.0, 0.0 }, unityAt[2] { 1.0, 1.0 }, outAt[2] { 0.0, 0.0 };
+
         for (int ch = 0; ch < 2; ++ch)
         {
             auto& state = channels[(size_t) ch];
 
+            // Phase 4 Wave 2: M>S leaves the mid untouched and compresses the side from the mid's
+            // level; S>M the other way round. Elsewhere each channel follows its own level.
+            const auto passive = (mode == linkMidToSide && ch == 0) || (mode == linkSideToMid && ch == 1);
+            const auto drivingLevel = mode == linkMidToSide ? level[0] : mode == linkSideToMid ? level[1] : level[ch];
+
             double reduction;
 
-            if (current.classic && ! current.optical)
+            if (passive)
+            {
+                reduction = 0.0;
+            }
+            else if (current.classic && ! current.optical)
             {
                 // The smoothed level feeds the gain computer. Levels are measured from the
                 // bottom of the knee, because smoothing in dB from silence would add a long
                 // delay before the level even reached the threshold.
                 const auto kneeFloorDb = effectiveThreshold - kneeDb;
-                const auto smoothed = state.follower.follow (ballistics, std::max (level[ch], kneeFloorDb) - kneeFloorDb) + kneeFloorDb;
+                const auto smoothed = state.follower.follow (ballistics, std::max (drivingLevel, kneeFloorDb) - kneeFloorDb) + kneeFloorDb;
 
                 reduction = computeReduction (smoothed, effectiveThreshold, slopeNow, kneeDb, current.weirdKnee);
 
@@ -737,7 +867,7 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             }
             else
             {
-                auto target = computeReduction (level[ch], effectiveThreshold, slopeNow, kneeDb, current.weirdKnee);
+                auto target = computeReduction (drivingLevel, effectiveThreshold, slopeNow, kneeDb, current.weirdKnee);
 
                 if (rangeOn)
                     target = std::min (target, rangeDbNow);
@@ -772,13 +902,13 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             // smoothed level starts at the knee, so the lift always reads the level itself.
             auto lift = 0.0;
 
-            if (current.upward || state.upFollower.envelope != 0.0)
+            if (! passive && (current.upward || state.upFollower.envelope != 0.0))
             {
                 auto liftTarget = 0.0;
 
                 if (current.upward)
                     liftTarget = fancy::dsp::upward::liftFor (
-                        level[ch], effectiveThreshold,
+                        drivingLevel, effectiveThreshold,
                         { upThresholdDb + offsetDb, fancy::dsp::upward::ratioFromSlope (upSlopeNow), maxLiftDb, floorDb });
 
                 lift = state.upFollower.follow (upBallistics, liftTarget);
@@ -794,10 +924,10 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
 
             const auto reductionGain = std::pow (10.0, -reduction / 20.0);
             const auto unityGain = lift == 0.0 ? reductionGain : std::pow (10.0, (lift - reduction) / 20.0);
-            const auto gain = unityGain * makeupGain;
+            const auto gain = passive ? 1.0 : unityGain * makeupGain; // the untouched channel gets no make-up
             auto compressed = delayed * gain;
 
-            if (characterOn && activeCharacterPost)
+            if (characterOn && activeCharacterPost && ! passive)
                 compressed = state.character.process (compressed, driveGain, characterMix);
 
             state.previousOutput = compressed;
@@ -812,9 +942,28 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
             signal[ch][i] = (float) out;
 
             // The history: the delayed input against it after the gain, before make-up.
-            historyIn = std::max (historyIn, std::abs (delayed));
-            historyOut = std::max (historyOut, std::abs (delayed * unityGain));
+            if (! midSide)
+            {
+                historyIn = std::max (historyIn, std::abs (delayed));
+                historyOut = std::max (historyOut, std::abs (delayed * unityGain));
+            }
+
             historyReduction[ch] = reduction;
+            delayedAt[ch] = delayed;
+            unityAt[ch] = unityGain;
+            outAt[ch] = out;
+        }
+
+        // Phase 4 Wave 2: mid and side back to left and right, and the history in left and right.
+        if (midSide)
+        {
+            signal[0][i] = (float) (outAt[0] + outAt[1]);
+            signal[1][i] = (float) (outAt[0] - outAt[1]);
+
+            const auto inMid = delayedAt[0], inSide = delayedAt[1];
+            const auto outMid = delayedAt[0] * unityAt[0], outSide = delayedAt[1] * unityAt[1];
+            historyIn = std::max (std::abs (inMid + inSide), std::abs (inMid - inSide));
+            historyOut = std::max (std::abs (outMid + outSide), std::abs (outMid - outSide));
         }
 
         history.add ((float) historyIn, (float) historyOut, (float) historyReduction[0], (float) historyReduction[1], (float) effectiveThreshold);

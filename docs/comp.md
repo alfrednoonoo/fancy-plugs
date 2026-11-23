@@ -542,6 +542,15 @@ Today's slope is enough when the cut can sit well above the kick. When it has to
 
 Approval, then the Detector page mockup (`reference/phase4/55__comp_w2_sceq_mockup.png`), then one push: the bands and slopes in `CompDsp`, the parameters, the Detector page, tests, manual and checklist. Mockup 55 (with item 14's Options page) approved by the user on 23 November 2026.
 
+### 6. As built
+
+One push with item 14 (one plugin per push).
+
+- **Parameters,** appended after `optical`: `scLowType`, `scMidType`, `scHighType` (Off, Low shelf, Bell, High shelf; by default today's shapes), `scLowQ` and `scHighQ` (0.3 to 8, 1.0; used only as a Bell), then for bands 4 to 6 `sc4Type` to `sc6Type` (Off), `sc4Freq` to `sc6Freq` (20 Hz to 20 kHz; 200 Hz, 2 kHz, 5 kHz), `sc4Gain` to `sc6Gain` (±18 dB, 0) and `sc4Q` to `sc6Q`, and `hpSlope` and `lpSlope` (12, 24, 48 dB; 12). Bands 1 to 3 keep their own frequency ranges, so a v1.7.0 project's automation keeps its meaning. A shelf's Q is Butterworth's, as before.
+- **DSP:** `CompDsp::numDetectorBands` bands. A band keeps its shape while Off fades its gain to 0 over 20 ms, so switching Off doesn't click. The cuts are cascades of SVF sections at Butterworth Qs (`filterCuts`); at 12 dB/oct both, the old `DetectorFilter::filter` runs, to the bit. A new slope starts its added sections from rest.
+- **Detector page** as mockup 55 places it: tabs inside the curve, the selected band's Type, Freq, Gain and Q under it (one set of controls per band, the selected one shown), Cut slopes to the right. The curve draws each band that isn't Off with its number. The HP label adds the slope when it's steeper than 12.
+- **Tests:** `tests/CompSceqTests.cpp`; `tests/LegacyCompW2Dsp.*` is `CompDsp` at v1.7.0. Test 4 ports the model's case 2 (the model gives +1.23 to +1.25 dB at 12 dB/oct and +0.15 to +0.17 at 24 over five noise beds).
+
 ## Phase 4 Wave 2: link modes
 
 **Approved by the user on 22 November 2026 with every recommended option (A).** Item 14 of the Wave 2 order (`docs/enhancements.md`; backlog item 8 of section 3), for v1.7.1. Modelled first: `docs/research/comp-linkmodes-model.py`.
@@ -591,6 +600,15 @@ In Stereo, a loud vocal turns the guitars down with it, so the width breathes wi
 ### 5. Build order
 
 Approval, then the Options page mockup (with item 13's), then one push: the modes in `CompDsp`, the parameter, the Options page and the GR labels, tests, manual and checklist.
+
+### 6. As built
+
+In item 13's push.
+
+- **`linkMode`** (Stereo, Mid/Side, M>S, S>M; Stereo), appended after item 13's parameters. It is part of `CompDsp::Config`, so a change fades out and in, as an oversampling change does.
+- **DSP:** in the M/S modes `compress` turns each sample into mid and side at the start, at the oversampled rate, and back at the end; Character, Upward and Range run per channel in that domain. The detector inputs are formed from left and right first; Main and Sidechain L+R are then split. The channel a mode leaves alone gets gain 1: no make-up, no lift, no Character. Auto threshold's power is the same in either domain (m^2 + s^2 = (l^2 + r^2) / 2). The history is drawn in left and right.
+- **UI:** Link mode on the Options page at drawer (308, 293), as mockup 55 places it; `GainReductionMeter::setChannelNames` labels the read-outs M and S.
+- **Tests:** in `tests/CompSceqTests.cpp` (link 2 to 5). Test 4's "bit for bit" is within -120 dB: the mid is rebuilt from left and right in float.
 
 ## v1.7.1: level history in dB
 

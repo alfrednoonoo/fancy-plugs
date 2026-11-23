@@ -76,13 +76,8 @@ CompEditor::CompEditor (CompProcessor& processor)
       linkAmountKnob (parameter ("linkAmount"), "Link amount", colours::uiTeal, Knob::smallStyle),
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
       detectorCurve (makeParameters()),
-      scLowFreqKnob (parameter ("scLowFreq"), "Freq", colours::uiBlue, Knob::tightStyle),
-      scLowGainKnob (parameter ("scLowGain"), "Gain", colours::uiBlue, Knob::tightStyle, true),
-      scMidFreqKnob (parameter ("scMidFreq"), "Freq", colours::uiBlue, Knob::tightStyle),
-      scMidGainKnob (parameter ("scMidGain"), "Gain", colours::uiBlue, Knob::tightStyle, true),
-      scMidQKnob (parameter ("scMidQ"), "Q", colours::uiBlue, Knob::tightStyle),
-      scHighFreqKnob (parameter ("scHighFreq"), "Freq", colours::uiBlue, Knob::tightStyle),
-      scHighGainKnob (parameter ("scHighGain"), "Gain", colours::uiBlue, Knob::tightStyle, true),
+      highSlopeDropdown (parameter ("hpSlope")),
+      lowSlopeDropdown (parameter ("lpSlope")),
       autoThresholdCheckbox (parameter ("autoThr"), "Auto threshold"),
       typeSegments (parameter ("charType"), colours::uiTeal, colours::bgWell),
       positionSegments (parameter ("charPos"), colours::uiTeal, colours::bgWell),
@@ -96,6 +91,7 @@ CompEditor::CompEditor (CompProcessor& processor)
       upwardCurve (makeParameters()),
       holdKnob (parameter ("hold"), "Hold", colours::uiTeal, Knob::smallStyle),
       rangeKnob (parameter ("range"), "Range", colours::uiTeal, Knob::smallStyle),
+      linkModeDropdown (parameter ("linkMode")),
       syncRateDropdown (parameter ("syncRate")),
       syncShapeKnob (parameter ("syncShape"), "Shape", colours::uiTeal, syncKnobStyle),
       zoomSwitch (juce::StringArray { "1.5 s", "3 s", "6 s", "12 s" }),
@@ -204,34 +200,61 @@ CompEditor::CompEditor (CompProcessor& processor)
         label.setFont (font (Weight::semiBold, 11.0f).withExtraKerningFactor (0.06f));
     };
 
-    groupLabel (lowShelfLabel, "Low shelf");
-    groupLabel (bellLabel, "Bell");
-    groupLabel (highShelfLabel, "High shelf");
-    lowShelfLabel.setBounds (30, 162, 120, 14);
-    bellLabel.setBounds (178, 162, 120, 14);
-    highShelfLabel.setBounds (388, 162, 120, 14);
+    // Phase 4 Wave 2 (mockup 55, section 1): the selected band under the curve, the cut slopes
+    // to its right. Drawer coordinates, measured from the mockup.
+    groupLabel (bandCaption, "Band 1");
+    groupLabel (slopesCaption, "Cut slopes");
+    bandCaption.setBounds (30, 165, 120, 14);
+    slopesCaption.setBounds (360, 165, 140, 14);
 
+    styleLabel (bandTypeLabel, "Type", colours::textPrimary, juce::Justification::centredLeft);
+    bandTypeLabel.setFont (font (Weight::regular, 12.0f));
+    bandTypeLabel.setBounds (30, 181, 60, 16);
+
+    styleLabel (highSlopeLabel, "Highpass", colours::textSecondary, juce::Justification::centredLeft);
+    styleLabel (lowSlopeLabel, "Lowpass", colours::textSecondary, juce::Justification::centredLeft);
+    highSlopeLabel.setFont (font (Weight::regular, 12.0f));
+    lowSlopeLabel.setFont (font (Weight::regular, 12.0f));
+    highSlopeLabel.setBounds (360, 182, 60, 22);
+    lowSlopeLabel.setBounds (360, 216, 60, 22);
+    highSlopeDropdown.setBounds (422, 182, 78, 22);
+    lowSlopeDropdown.setBounds (422, 216, 78, 22);
+    highSlopeDropdown.setTextHeight (12.0f);
+    lowSlopeDropdown.setTextHeight (12.0f);
+    highSlopeDropdown.setTooltip ("The main window's Highpass slope, in dB per octave. Only the detector hears it.");
+    lowSlopeDropdown.setTooltip ("The main window's Lowpass slope, in dB per octave. Only the detector hears it.");
+
+    for (int b = 0; b < CompDsp::numDetectorBands; ++b)
     {
-        auto x = 18;
+        const auto& ids = CompProcessor::bandIds (b);
 
-        for (auto* knob : { &scLowFreqKnob, &scLowGainKnob, &scMidFreqKnob, &scMidGainKnob, &scMidQKnob, &scHighFreqKnob, &scHighGainKnob })
-        {
-            knob->setBounds (x, 178, 66, 99);
-            x += 66;
+        bandTypeDropdowns[(size_t) b] = std::make_unique<ParamDropdown> (parameter (ids.type));
+        bandFreqKnobs[(size_t) b] = std::make_unique<Knob> (parameter (ids.frequency), "Freq", colours::uiBlue, Knob::tightStyle);
+        bandGainKnobs[(size_t) b] = std::make_unique<Knob> (parameter (ids.gain), "Gain", colours::uiBlue, Knob::tightStyle, true);
+        bandQKnobs[(size_t) b] = std::make_unique<Knob> (parameter (ids.q), "Q", colours::uiBlue, Knob::tightStyle);
 
-            if (knob == &scLowGainKnob || knob == &scMidQKnob)
-                x += 14;
-        }
+        bandTypeDropdowns[(size_t) b]->setBounds (30, 201, 108, 24);
+        bandTypeDropdowns[(size_t) b]->setTextHeight (12.0f);
+        bandTypeDropdowns[(size_t) b]->setTooltip ("Off, a low shelf, a bell or a high shelf. Only the detector hears the bands.");
+        bandFreqKnobs[(size_t) b]->setBounds (147, 177, 66, 99);
+        bandGainKnobs[(size_t) b]->setBounds (207, 177, 66, 99);
+        bandQKnobs[(size_t) b]->setBounds (267, 177, 66, 99);
+        bandQKnobs[(size_t) b]->setTooltip ("The bell's width. Shelves don't use it.");
+
+        for (juce::Component* item : std::initializer_list<juce::Component*> {
+                 bandTypeDropdowns[(size_t) b].get(), bandFreqKnobs[(size_t) b].get(), bandGainKnobs[(size_t) b].get(), bandQKnobs[(size_t) b].get() })
+            drawer.addChildComponent (item);
     }
+
+    detectorCurve.onSelect = [this] (int band) { selectBand (band); };
 
     autoThresholdCheckbox.setBounds (24, 322, 150, 20);
     styleLabel (autoOffsetLabel, {}, colours::textSecondary, juce::Justification::centredLeft);
     autoOffsetLabel.setFont (font (Weight::regular, 12.0f));
     autoOffsetLabel.setBounds (180, 322, 320, 20);
 
-    tabContents[DrawerTabs::detector] = { &detectorCurve, &lowShelfLabel, &bellLabel, &highShelfLabel,
-                                          &scLowFreqKnob, &scLowGainKnob, &scMidFreqKnob, &scMidGainKnob, &scMidQKnob, &scHighFreqKnob, &scHighGainKnob,
-                                          &autoThresholdCheckbox, &autoOffsetLabel };
+    tabContents[DrawerTabs::detector] = { &detectorCurve, &bandCaption, &bandTypeLabel, &slopesCaption, &highSlopeLabel, &lowSlopeLabel,
+                                          &highSlopeDropdown, &lowSlopeDropdown, &autoThresholdCheckbox, &autoOffsetLabel };
 
     // Character tab.
     styleLabel (typeLabel, "Type", colours::textPrimary, juce::Justification::centredLeft);
@@ -268,6 +291,15 @@ CompEditor::CompEditor (CompProcessor& processor)
     holdKnob.setTooltip ("The release waits this long after the last peak, so fast settings don't ripple on low notes.");
     rangeKnob.setTooltip ("The most gain reduction Comp will apply. Off at the top.");
 
+    // Phase 4 Wave 2 (mockup 55, section 2): Link mode under Hold and Range.
+    styleLabel (linkModeLabel, "Link mode", colours::textSecondary, juce::Justification::centredLeft);
+    linkModeLabel.setFont (font (Weight::regular, 13.0f));
+    linkModeLabel.setBounds (308, 293, 80, 24);
+    linkModeDropdown.setBounds (394, 293, 104, 24);
+    linkModeDropdown.setTextHeight (12.0f);
+    linkModeDropdown.setTooltip ("Stereo: left and right. Mid/Side: mid and side compressed apart, Link acting between them. "
+                                 "M>S: the mid's level turns down the side only. S>M: the side's level turns down the mid only.");
+
     // Phase 4 Wave 2 (reference/phase4/43__comp_w2_mockup.png): Host sync's group under the
     // checkboxes, shown by updateSyncGroup while Host sync is the Detector input.
     const auto setUpLabel = [] (juce::Label& label, const juce::String& text, float height, juce::Colour colour)
@@ -296,7 +328,8 @@ CompEditor::CompEditor (CompProcessor& processor)
         drawer.addChildComponent (item);
 
     tabContents[DrawerTabs::options] = { &oversamplingLabel, &oversamplingDropdown, &phaseLabel, &phaseDropdown, &releaseCurveLabel, &releaseCurveDropdown,
-                                         &feedbackCheckbox, &attack90Checkbox, &opticalCheckbox, &linkAmountKnob, &drawerOutputKnob, &holdKnob, &rangeKnob };
+                                         &feedbackCheckbox, &attack90Checkbox, &opticalCheckbox, &linkAmountKnob, &drawerOutputKnob, &holdKnob, &rangeKnob,
+                                         &linkModeLabel, &linkModeDropdown };
 
     // History page.
     zoomSwitch.setBounds (24, 56, 200, 24);
@@ -349,7 +382,8 @@ CompEditor::CompEditor (CompProcessor& processor)
     detectorDropdown.addSection (6, "Mid/side");
 
     attackKnob.setTooltip ("Time constant: the time to reach about 63 % of the target. Change this in EDIT.");
-    detectorCurve.setTooltip ("Drag a handle to set its band's Freq and Gain. The wheel sets the bell's Q. The bands shape only what the detector hears.");
+    detectorCurve.setTooltip ("Click a number to edit that band below. Drag a handle to set its band's Freq and Gain; the wheel sets a bell's Q. "
+                              "The bands shape only what the detector hears.");
     autoThresholdCheckbox.setTooltip ("Follows the input's long-term level, so the gain reduction stays steady. Threshold is set as if the input sat at -18 dBFS RMS.");
 
     updateDimming();
@@ -370,6 +404,27 @@ void CompEditor::showTab (int tab)
             item->setVisible (t == tab);
 
     updateSyncGroup();
+    updateBandControls();
+}
+
+// Phase 4 Wave 2: one band's controls at a time, the one picked on the curve.
+void CompEditor::selectBand (int band)
+{
+    selectedBand = juce::jlimit (0, CompDsp::numDetectorBands - 1, band);
+    detectorCurve.setSelected (selectedBand);
+    updateBandControls();
+}
+
+void CompEditor::updateBandControls()
+{
+    const auto shown = shownTab == DrawerTabs::detector;
+
+    bandCaption.setText ("BAND " + juce::String (selectedBand + 1), juce::dontSendNotification);
+
+    for (int b = 0; b < CompDsp::numDetectorBands; ++b)
+        for (juce::Component* item : std::initializer_list<juce::Component*> {
+                 bandTypeDropdowns[(size_t) b].get(), bandFreqKnobs[(size_t) b].get(), bandGainKnobs[(size_t) b].get(), bandQKnobs[(size_t) b].get() })
+            item->setVisible (shown && b == selectedBand);
 }
 
 void CompEditor::updateSyncGroup()
@@ -396,6 +451,8 @@ void CompEditor::updateSyncGroup()
 void CompEditor::showSyncPreview()
 {
     showDrawerPreview (DrawerTabs::options);
+    setValue (parameter ("linkMode"), (float) CompDsp::linkStereo);
+    updateDimming();
     setValue (parameter ("detector"), (float) CompDsp::hostSync);
     showTab (DrawerTabs::options);
     syncNote.setText ("A hit on every step of the host's grid. Release shapes the duck most.", juce::dontSendNotification);
@@ -420,6 +477,22 @@ void CompEditor::updateDimming()
 
     for (auto* item : std::initializer_list<juce::Component*> { &upThresholdKnob, &upRatioKnob, &maxLiftKnob, &floorKnob })
         item->setAlpha (upwardOn ? 1.0f : 0.4f);
+
+    // Phase 4 Wave 2: a band's settings dim while it's Off, and Q while it isn't a Bell.
+    for (int b = 0; b < CompDsp::numDetectorBands; ++b)
+    {
+        auto& type = parameter (CompProcessor::bandIds (b).type);
+        const auto value = juce::roundToInt (type.convertFrom0to1 (type.getValue()));
+
+        bandFreqKnobs[(size_t) b]->setAlpha (value == CompDsp::bandOff ? 0.4f : 1.0f);
+        bandGainKnobs[(size_t) b]->setAlpha (value == CompDsp::bandOff ? 0.4f : 1.0f);
+        bandQKnobs[(size_t) b]->setAlpha (value == CompDsp::bandBell ? 1.0f : 0.4f);
+    }
+
+    // And the GR meter reads M and S while the link mode isn't Stereo.
+    auto& mode = parameter ("linkMode");
+    const auto midSide = juce::roundToInt (mode.convertFrom0to1 (mode.getValue())) != CompDsp::linkStereo;
+    gainReductionMeter.setChannelNames (midSide ? "M" : juce::String(), midSide ? "S" : juce::String());
 }
 
 void CompEditor::onTick (float seconds)
@@ -457,9 +530,17 @@ void CompEditor::onTick (float seconds)
     {
         juce::String signature;
 
-        for (const auto* id : { "highpass", "lowpass", "scLowFreq", "scLowGain", "scMidFreq", "scMidGain", "scMidQ", "scHighFreq", "scHighGain",
+        for (const auto* id : { "highpass", "lowpass", "hpSlope", "lpSlope",
                                 "charType", "charDrive", "threshold", "ratio", "knee", "weird", "up", "upThr", "upRatio", "upLift", "upFloor", "autoThr" })
             signature << juce::String (parameter (id).getValue(), 5) << ";";
+
+        for (int b = 0; b < CompDsp::numDetectorBands; ++b)
+        {
+            const auto& ids = CompProcessor::bandIds (b);
+
+            for (const auto* id : { ids.type, ids.frequency, ids.gain, ids.q })
+                signature << juce::String (parameter (id).getValue(), 5) << ";";
+        }
 
         if (signature != graphSignature)
         {
@@ -519,6 +600,15 @@ void CompEditor::showDrawerPreview (int tab)
     thresholdMeter.setEffectiveThreshold (-12.0f);
     autoOffsetLabel.setText ("offset +6.0 dB  -  reference -18 dBFS RMS", juce::dontSendNotification);
     upwardCurve.setCurrent (-52.0f, 6.0f, 0.0f);
+
+    // Phase 4 Wave 2 (reference/phase4/55__comp_w2_sceq_mockup.png): band 4 a bell at 400 Hz,
+    // -4 dB, the Highpass at 24 dB/oct and band 2 selected; Link mode Mid/Side on the Options page.
+    setValue (parameter ("sc4Type"), (float) CompDsp::bandBell);
+    setValue (parameter ("sc4Freq"), 400.0f);
+    setValue (parameter ("sc4Gain"), -4.0f);
+    setValue (parameter ("hpSlope"), (float) CompDsp::slope24);
+    setValue (parameter ("linkMode"), (float) (tab == DrawerTabs::options ? CompDsp::linkMidSide : CompDsp::linkStereo));
+    selectBand (1);
     updateDimming();
 
     // Phase 4 Wave 1: the mockup's Hold and Range, and a history of a beat at 120 BPM into

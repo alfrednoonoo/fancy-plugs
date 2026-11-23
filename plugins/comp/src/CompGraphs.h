@@ -62,13 +62,18 @@ struct CompParameters
     void end (const juce::String& id) const;
 };
 
-// The detector's response: Highpass and Lowpass (dimmer) and the three bands. The handles drag a
-// band's Freq and Gain; the wheel sets the bell's Q. It only draws the detector: it never changes
-// the audio path.
+// The detector's response: Highpass and Lowpass (dimmer) and the six bands (Phase 4 Wave 2,
+// reference/phase4/55__comp_w2_sceq_mockup.png). Band tabs 1 to 6 in the top-left corner pick the
+// band edited under the curve; each band that isn't Off has a handle that drags its Freq and Gain,
+// and the wheel sets the selected Bell's Q. It only draws the detector: it never changes the audio.
 class DetectorCurve final : public juce::Component, public juce::SettableTooltipClient
 {
 public:
     explicit DetectorCurve (CompParameters parameters);
+
+    void setSelected (int band);
+    int getSelected() const noexcept { return selected; }
+    std::function<void (int)> onSelect;
 
     void paint (juce::Graphics&) override;
     void mouseDown (const juce::MouseEvent&) override;
@@ -83,9 +88,12 @@ private:
     double dbFor (float y) const;
     juce::Point<float> handleFor (int band) const;
     int bandAt (juce::Point<float> position) const;
+    int bandType (int band) const;
+    juce::Rectangle<float> tabBounds (int band) const;
 
     CompParameters params;
     int dragging = -1;
+    int selected = 0;
 };
 
 // Character's transfer curve f(d·x)/d for the current Type and Drive, input against output in

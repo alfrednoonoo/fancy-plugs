@@ -30,6 +30,14 @@ public:
     enum Character { characterOff, warm, bright };
     enum EqBand { lowShelf, bell, highShelf, numEqBands };
 
+    // Phase 4 Wave 2 (docs/comp.md, items 13 and 14): six detector bands, each with a type (the
+    // Type choice's order), the cut slopes and the link modes. Bands 1 to 3 default to the
+    // three above; 4 to 6 to Off.
+    static constexpr int numDetectorBands = 6;
+    enum BandType { bandOff, bandLowShelf, bandBell, bandHighShelf };
+    enum CutSlope { slope12, slope24, slope48 };
+    enum LinkMode { linkStereo, linkMidSide, linkMidToSide, linkSideToMid };
+
     static constexpr double infiniteRatio = 100.0;
 
     // Auto threshold's reference: Threshold is set as if the input sat here (Decision 3 A).
@@ -84,9 +92,12 @@ public:
         double maxLiftDb = 12.0;
         double floorDb = -70.0;
         bool autoThreshold = false;
-        std::array<EqBandTargets, numEqBands> eq { EqBandTargets { 100.0, 0.0, 0.70710678118654752 },
-                                                   EqBandTargets { 1000.0, 0.0, 1.0 },
-                                                   EqBandTargets { 8000.0, 0.0, 0.70710678118654752 } };
+        std::array<EqBandTargets, numDetectorBands> eq { EqBandTargets { 100.0, 0.0, 0.70710678118654752 },
+                                                         EqBandTargets { 1000.0, 0.0, 1.0 },
+                                                         EqBandTargets { 8000.0, 0.0, 0.70710678118654752 },
+                                                         EqBandTargets { 200.0, 0.0, 1.0 },
+                                                         EqBandTargets { 2000.0, 0.0, 1.0 },
+                                                         EqBandTargets { 5000.0, 0.0, 1.0 } };
 
         // Phase 4 Wave 1 (docs/comp.md). Hold 0 and Range 0 (Off) leave the path as it was.
         double holdMs = 0.0;
@@ -97,6 +108,12 @@ public:
         // kick's length as a share of the step.
         double syncStepBeats = 1.0;
         double syncShape = 0.25;
+
+        // Phase 4 Wave 2, items 13 and 14. The defaults leave the path as it was, to the bit.
+        std::array<int, numDetectorBands> eqTypes { bandLowShelf, bandBell, bandHighShelf, bandOff, bandOff, bandOff };
+        int highPassSlope = slope12;
+        int lowPassSlope = slope12;
+        int linkMode = linkStereo;
     };
 
     // The host's transport, for the history's beat and bar lines. Set once per block.
@@ -171,6 +188,7 @@ private:
     {
         int oversampling = off;
         int preCompSamples = 0;
+        int linkMode = linkStereo; // Phase 4 Wave 2: a change fades out and in, as oversampling's does
         bool minimumPhase = false;
         bool limiter = false;
 
@@ -190,7 +208,8 @@ private:
         fancy::dsp::OpticalFollower optical; // Phase 4 Wave 2
         double previousOutput = 0.0;
         CharacterStage character;
-        std::array<EqState, numEqBands> eq {};
+        std::array<EqState, numDetectorBands> eq {};
+        std::array<fancy::dsp::Svf, 3> highPassExtra, lowPassExtra; // Phase 4 Wave 2: steeper cuts
     };
 
     struct EqSmoothers
@@ -215,6 +234,9 @@ private:
     void setNewTargets (const Targets& targets) noexcept;
     void updateEqCoefficients() noexcept;
     double filterEq (ChannelState& state, double x) noexcept;
+    double filterCuts (ChannelState& state, double x, double highPassBlend, double lowPassBlend) noexcept;
+    void setCutCoefficients (bool highPass, double frequencyHz) noexcept;
+    void setCutSlopes (int highPassSlope, int lowPassSlope) noexcept;
     void activateCharacter() noexcept;
 
     double sampleRate = 48000.0, internalRate = 48000.0;
@@ -226,7 +248,9 @@ private:
     std::array<ChannelState, 2> channels;
     fancy::dsp::TruePeakLimiter limiter;
 
-    fancy::dsp::SvfCoefficients highPassCoefficients, lowPassCoefficients;
+    // Phase 4 Wave 2: one Butterworth section per 12 dB/oct; the first is the 12 dB/oct one.
+    std::array<fancy::dsp::SvfCoefficients, 4> highPassStages, lowPassStages;
+    int activeHighPassSlope = slope12, activeLowPassSlope = slope12;
 
     Targets current;
     Config activeConfig, wantedConfig;
@@ -249,9 +273,10 @@ private:
     // Phase 3 Q2.5.
     fancy::dsp::Smoother upThreshold, upSlope, maxLift, upFloor;
     fancy::dsp::Smoother drive, characterAmount, autoOffset;
-    std::array<EqSmoothers, numEqBands> eqSmoothers;
-    std::array<fancy::dsp::matched::Section, numEqBands> eqSections {};
-    std::array<bool, numEqBands> eqActive {};
+    std::array<EqSmoothers, numDetectorBands> eqSmoothers;
+    std::array<fancy::dsp::matched::Section, numDetectorBands> eqSections {};
+    std::array<bool, numDetectorBands> eqActive {};
+    std::array<int, numDetectorBands> eqShapes { bandLowShelf, bandBell, bandHighShelf, bandBell, bandBell, bandBell }; // the type designed (kept while Off fades out)
     int eqCountdown = 0;
     bool eqNeedsUpdate = false;
 
