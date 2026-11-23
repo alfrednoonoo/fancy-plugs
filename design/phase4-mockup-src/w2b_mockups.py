@@ -762,6 +762,163 @@ def kicker_duck():
 
 
 # ---------------------------------------------------------------------------------------------
+# Comp's level history on a dB scale (docs/comp.md, "Level history in dB"). history_svg() redraws
+# fancy::ui::LevelHistory::paint at 1x, linear (today) or in dB, from columns like the editor's preview.
+def beat_columns():
+    """CompEditor's screenshot preview: a beat at 120 BPM into 3:1 at -12 dB, 952 columns (3 s)."""
+    import math
+    cols, reduction, previous = [], 0.0, -1
+    for c in range(952):
+        t = c * 3.0 / 952
+        beat_pos = (t - 0.11) / 0.5 + 10.0
+        phase = beat_pos - math.floor(beat_pos)
+        a = 0.95 if phase < 0.03 else 0.95 * math.exp(-phase * 3.2)
+        a = a * (0.8 + 0.2 * abs(math.sin(c * 0.85))) + 0.03
+        level = 20 * math.log10(a)
+        target = max(0.0, level + 12.0) * (1 - 1 / 3)
+        reduction += (0.7 if target > reduction else 0.03) * (target - reduction)
+        beat = math.floor(beat_pos)
+        mark = 0 if previous < 0 or beat == previous else (2 if beat % 4 == 0 else 1)
+        previous = beat
+        cols.append((a, a * 10 ** (-reduction / 20), reduction, -12.0, mark))
+    return cols
+
+
+def quiet_columns():
+    """A spoken phrase: syllables peaking at -14 to -24 dBFS, breaths at -45, into 3:1 at -24 dB, 3 s."""
+    import math
+    import random
+    rng = random.Random(7)
+    syllables = [(0.10, 0.16, -16), (0.30, 0.12, -22), (0.47, 0.20, -14), (0.72, 0.10, -24), (0.86, 0.18, -18),
+                 (1.62, 0.14, -15), (1.80, 0.22, -20), (2.07, 0.12, -14), (2.24, 0.16, -23), (2.45, 0.24, -17)]
+    cols, reduction = [], 0.0
+    for c in range(952):
+        t = c * 3.0 / 952
+        a = 10 ** ((-52 + 4 * math.sin(t * 9)) / 20)  # room tone
+        if 1.18 < t < 1.50:
+            a = max(a, 10 ** (-44 / 20) * math.sin(math.pi * (t - 1.18) / 0.32))  # a breath
+        for start, length, peak in syllables:
+            if start <= t < start + length + 0.15:
+                x = (t - start) / length
+                env = math.sin(math.pi * min(x, 1.0) / 2) if x < 0.3 else math.exp(-(x - 0.3) * 3.5)
+                a = max(a, 10 ** (peak / 20) * env)
+        a *= 0.75 + 0.25 * rng.random()
+        level = 20 * math.log10(max(a, 1e-6))
+        target = max(0.0, level + 24.0) * (1 - 1 / 3)
+        reduction += (0.5 if target > reduction else 0.02) * (target - reduction)
+        cols.append((a, a * 10 ** (-reduction / 20), reduction, -24.0, 0))
+    return cols
+
+
+def history_svg(cols, scale, floor_db=-60.0, w=476, h=260):
+    """One graph at 1x. scale "lin" is today's paint; "db" maps a peak's level linearly in dB from the
+    centre line (floor_db) to the edges (0 dB), with faint level lines and their labels on the left."""
+    import math
+    mid, amp = h / 2, h / 2 - 8
+    per = len(cols) / w
+
+    def dist(peak):
+        if scale == "lin":
+            return min(1.0, peak) * amp
+        if peak <= 0:
+            return 0.0
+        return max(0.0, min(1.0, (20 * math.log10(peak) - floor_db) / -floor_db)) * amp
+
+    def ry(db):
+        return 4 + (h - 8) * max(0.0, min(1.0, db / 24))
+
+    px = []
+    for x in range(w):
+        chunk = cols[int(x * per):max(int(x * per) + 1, int((x + 1) * per))]
+        px.append((max(c[0] for c in chunk), max(c[1] for c in chunk), max(c[2] for c in chunk), max(c[4] for c in chunk)))
+    s = [f'<svg width="{w}" height="{h}" style="position:absolute;left:0;top:0" font-family="Inter" font-size="9">',
+         f'<rect width="{w}" height="{h}" rx="6" fill="#141414"/>']
+    one = scale == "db1"  # one-sided: floor at the bottom, 0 dB at the top
+    if one:
+        amp = h - 8
+
+        def spans(d):
+            return h - d, d
+    else:
+        def spans(d):
+            return mid - d, 2 * d
+    labels = []
+    if scale != "lin":
+        for db in list(range(-12, int(floor_db), -12)) + [int(floor_db)]:
+            d = dist(10 ** (db / 20)) if db > floor_db else 0.0
+            ys = (h - d,) if one else ((mid - d, mid + d) if d else (mid,))
+            for y in ys:
+                s.append(f'<rect x="0" y="{y:.2f}" width="{w}" height="1" fill="#fff" fill-opacity=".07"/>')
+            if d or not one:
+                labels.append((db, ys[0] - 2))
+    for colour, alpha, i in (("#5a5a5a", .9, 0), ("#00A985", .85, 1)):
+        for x, p in enumerate(px):
+            d = dist(p[i])
+            if d > 0.25:
+                y0, hh = spans(d)
+                s.append(f'<rect x="{x}" y="{y0:.2f}" width="1" height="{hh:.2f}" fill="{colour}" fill-opacity="{alpha}"/>')
+    for db, y in labels:
+        s.append(f'<text x="5" y="{y:.1f}" fill="#B0B0B0" stroke="#141414" stroke-width="2.5" paint-order="stroke">{db}</text>')
+    for x, p in enumerate(px):
+        if p[3]:
+            s.append(f'<rect x="{x}" y="0" width="1" height="{h}" fill="#fff" fill-opacity="{.35 if p[3] == 2 else .14}"/>')
+    d = dist(10 ** (cols[-1][3] / 20))
+    for y in ((h - d,) if one else (mid - d, mid + d)):
+        s.append(f'<line x1="0" y1="{y:.2f}" x2="{w}" y2="{y:.2f}" stroke="#fff" stroke-opacity=".45" stroke-dasharray="4 4"/>')
+    s.append('<polyline fill="none" stroke="#FFCF07" stroke-width="2" points="'
+             + " ".join(f"{x + .5},{ry(p[2]):.2f}" for x, p in enumerate(px)) + '"/>')
+    for db in (6, 12, 18):
+        s.append(f'<text x="{w - 4}" y="{ry(db) - 4:.1f}" text-anchor="end" fill="#FFCF07" fill-opacity=".55">{db}</text>')
+    ly = h - 14
+    s.append(f'<rect x="6" y="{ly + 2}" width="8" height="8" fill="#5a5a5a"/><text x="17" y="{ly + 9}" fill="#8D8D8D">in</text>'
+             f'<rect x="34" y="{ly + 2}" width="8" height="8" fill="#00A985"/><text x="45" y="{ly + 9}" fill="#00A985">out</text>'
+             f'<rect x="68" y="{ly + 5}" width="8" height="2" fill="#FFCF07"/><text x="79" y="{ly + 9}" fill="#FFCF07">GR</text>')
+    s.append("</svg>")
+    return "".join(s)
+
+
+def graph_box(svg, outlined=True):
+    return (f'<div class="o{" new" if outlined else ""}" style="left:236px;top:213px;width:476px;height:260px">{svg}</div>')
+
+
+@plugin("comp_db", "65__comp_db_history_mockup.png")
+def comp_db():
+    W, H = 934, 547
+    beat, quiet = beat_columns(), quiet_columns()
+    after = graph_box(history_svg(beat, "db"))
+
+    def pair(cols):
+        return ('<div class="row">'
+                + "".join(f'<div><div class="cap" style="margin-bottom:6px">{t}</div><div class="shot" style="width:476px;height:260px">'
+                          f'{history_svg(cols, s)}</div></div>' for t, s in (("Today: linear", "lin"), ("Proposed: dB, floor -60", "db")))
+                + '<div class="side">The same phrase both ways. On the linear scale a syllable at -24 dBFS reaches 6 % of the half-height and the -24 dB '
+                  'threshold sits 8 px from the centre, so neither the reduction nor the breath at -44 can be read. In dB every syllable, the breath and '
+                  'the room tone at -52 are visible, and the threshold sits 60 % of the way out.</div></div>')
+
+    return w1.page("Fancy Comp: level history on a dB scale (mockup)",
+                   lead("docs/comp.md, \"Level history in dB\"", "Decisions 1 to 3 A"), [
+        ("1 · Before: the History page today (v1.7.0, linear)",
+         "The CI screenshot, unchanged: a beat at 120 BPM into 3:1 at -12 dB. The threshold is a quarter of the way out, and everything under about -30 dBFS is a hairline at the centre.",
+         shot("comp-history", W, H, "", "The page, the zoom switch, Grid, peak and the GR line from the top (0 to 24 dB, right) all stay as they are.")),
+        ("2 · After: the same beat on a dB scale",
+         "Only the waveforms and the threshold move: each column's peak is drawn at its level in dB, from <b>-60 dB at the centre line</b> to <b>0 dB at the edges</b> (Decision 1 A, mirrored; Decision 2 A, a fixed 60 dB). "
+         "Faint level lines every 12 dB, with their values in grey at the left edge; the GR scale stays at the right in yellow. "
+         "On this scale the gap between the grey and teal edges is the gain reduction itself, at 3.5 px per dB.",
+         shot("comp-history", W, H, after,
+              "No new control (Decision 3 A: dB only, the linear view goes). Not a parameter and nothing saved; the recorder and its columns are unchanged, "
+              "so this is a paint change in <b>fancy::ui::LevelHistory</b> only. The tooltip and the manual say the scale.")),
+        ("3 · Why: a quiet passage, both ways",
+         "A spoken phrase, syllables at -14 to -24 dBFS and a breath at -44, into 3:1 at -24 dB.",
+         pair(quiet)),
+        ("4 · Decision 1 B for comparison: one-sided, level up from the bottom",
+         "The same two signals with the level drawn up from -60 dB at the bottom edge to 0 dB at the top, as a level meter over time: twice the height per dB (7 px), "
+         "one threshold line, but it is no longer a waveform, and loud peaks run into the GR line coming down from the top.",
+         '<div class="row">' + "".join(f'<div class="shot" style="width:476px;height:260px">{history_svg(c, "db1")}</div>' for c in (beat, quiet))
+         + '<div class="side">Left: the beat. Right: the spoken phrase.</div></div>'),
+    ])
+
+
+# ---------------------------------------------------------------------------------------------
 def render(key):
     filename, fn = PLUGINS[key]
     html = w1.SRC / f"w2b-{key.replace('_', '-')}.html"

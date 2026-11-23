@@ -591,3 +591,42 @@ In Stereo, a loud vocal turns the guitars down with it, so the width breathes wi
 ### 5. Build order
 
 Approval, then the Options page mockup (with item 13's), then one push: the modes in `CompDsp`, the parameter, the Options page and the GR labels, tests, manual and checklist.
+
+## v1.7.1: level history in dB
+
+**Awaiting the user's approval.** Asked for by the user on 23 November 2026, after a comparison with Woodstock Audio's Waveform Compressor. The History page (Wave 1, section 5) draws the waveforms on a linear scale, so anything under about −30 dBFS is a hairline at the centre, and a threshold of −24 dB sits 8 px from it. This note draws them in dB. Mockup: `reference/phase4/65__comp_db_history_mockup.png` (`design/phase4-mockup-src/w2b_mockups.py comp_db`): before, after, a quiet passage both ways, and Decision 1 B.
+
+### 1. What changes
+
+- **Waveforms:** each column's input and output peak is drawn at its level in dB, linear in dB from the floor at the centre line to 0 dB at the edges, mirrored as today. Silence and anything under the floor draw nothing.
+- **Threshold:** the dashed pair sits at the threshold's level on the same scale (−24 dB with a −60 floor: 60 % of the way out, against 6 % today).
+- **Level lines:** faint lines every 12 dB (white at 7 %), with their values in grey at the left edge, drawn over the waveforms with a dark outline so they stay legible.
+- **Unchanged:** the GR line from the top (0 to 24 dB, yellow scale on the right), zoom, Grid, pause, peak read-out, the legend, the colours, the page layout and the window size.
+- On this scale the gap between the grey and teal edges *is* the gain reduction, at 3.5 px per dB (with a 60 dB floor), so the waveforms and the GR line now tell the same story.
+
+### 2. Decisions
+
+- **Decision 1: the shape.**
+  - **A (R).** Mirrored about the centre line, as today: still reads as a waveform, the picture the user approved in Wave 1; only the scale changes (mockup, sections 2 and 3).
+  - **B.** One-sided, level up from the bottom (as Pro-C draws it): twice the height per dB and one threshold line, but it stops looking like a waveform, loud peaks run into the GR line from the top, and the legend sits on the waveform (mockup, section 4).
+- **Decision 2: the floor.**
+  - **A (R).** Fixed at −60 dB: room tone and breaths show, and 12 dB steps give five clean lines.
+  - **B.** A small `30 | 60 | 90 dB` switch on the zoom row, remembered per editor like Zoom. More control, one more thing on the page.
+- **Decision 3: keep a linear view?**
+  - **A (R).** No: dB only. The linear view hides exactly what a compressor works on, and a switch would only add a control.
+  - **B.** A `dB` checkbox beside Grid, on by default, so linear stays one click away.
+
+### 3. Code and state
+
+A paint change in `fancy::ui::LevelHistory` only (`fancy-core/src/LevelHistory.cpp`): one mapping function from peak to distance, used for the waveforms and the threshold, plus the level lines. The recorder, `LevelColumn`, the FIFO and the audio thread don't change. No parameter, nothing saved, no `stateVersion` change, so projects load and render bit-identically. DS and DS-Mini keep `DeEsserHistory` and are untouched; MultiComp's GR history (Wave 2) has no waveforms. The tooltip becomes "Input in grey and output in teal, in dB (−60 at the centre), before make-up; gain reduction in yellow. Click to pause."
+
+### 4. Tests
+
+1. The mapping: 0 dBFS reaches the edge, the floor and silence reach the centre, −30 dB is half-way (with a −60 floor), within 0.5 px.
+2. The existing History tests (column rate, merged zooms, peak read-out, beat marks) pass unchanged.
+3. The `comp-history` screenshot is re-rendered and compared with mockup 65; DS's and DS-Mini's screenshots are unchanged.
+4. Comp's legacy and automation tests pass unchanged (nothing in the DSP moves).
+
+### 5. Build order
+
+Approval of this note and mockup 65, then one push: the paint change, the tooltip, test 1, the `comp-history` screenshot, the manual's History section (the scale, with the new screenshot) and a line in `docs/comp-checklist.md`. Then the REAPER check, then the next item of `docs/enhancements.md`.
