@@ -337,3 +337,38 @@ Mockup 49 approved by the user on 22 November 2026; `tests/LimitW2Tests.cpp`.
 - `HistoryColumn` gains `clipDb` (the most the clipper took in a column); the display fills it in orange over the red reduction and adds "clipped (orange)" to the legend while the clipper is on or has clipped.
 - The drawer's Clip before limiting checkbox and Clip knob sit beside the DC filter and Release curve rows.
 - Tests 3 and 4 are looser than section 4: the loudness gain is checked between 0.1 and 1.5 dB (the model's 0.2 to 0.8 came from a simplified limiter, not Limit's), and aliasing as 4x at least 20 dB cleaner than Off and under -60 dBFS, because the true-peak guard and final clip run at the base rate after the clipper.
+
+## Phase 4 Wave 2: Mid/Side link and an external sidechain
+
+**Draft for approval (23 November 2026).** Items 30 and 31 of the Wave 2 order (`docs/enhancements.md`; backlog items 7 and 8 of section 10), for v1.7.1. Modelled first: `docs/research/limit-w2-model.py`. The model argues against building either; the decisions below let you choose.
+
+### 1. Mid/Side and per-channel link (item 30)
+
+The backlog asked for M/S and per-channel link modes beside Link %. **Per-channel already exists:** Link at 0 % limits each channel on its own, and anything between blends the two.
+
+**Mid/Side** would limit mid and side separately, so a peak at the sides (a hard-panned tom fill, a crash) turns down only the side and not the centre's vocal. But Limit's ceiling is in left and right, and `L = M + S` can peak higher than either. The model, a centre vocal with a hard-left tom fill pushed 3 dB into a −1 dBFS ceiling, shows:
+
+| | Vocal dips on each fill | Left/right peak |
+|---|---|---|
+| L/R linked (today) | 1.6 dB | at the ceiling |
+| Mid/Side limited | — | +3.7 dB over the ceiling |
+| Mid/Side, then left/right held at the ceiling | 1.6 dB | at the ceiling |
+
+To keep its promise, the ceiling, Limit has to finish in left and right, and that final stage takes back exactly what Mid/Side saved. A mid/side limiter only helps where the ceiling can be broken, which a brickwall limiter mustn't allow.
+
+### 2. External sidechain (item 31)
+
+A limiter keeps its own output under the ceiling, so it must hear itself. Keyed by another signal alone, Limit let its own peaks through at **+3.7 dB over the ceiling** in the model. Taking the deeper of its own gain and the key's holds the ceiling, but then the key only adds ducking, which is Fancy Comp's job (its sidechain, with Range and Host sync).
+
+### 3. Decisions
+
+- **Decision 1: item 30.**
+  - **A (R).** Drop it. Per-channel is Link 0 %, which the manual will spell out, and Mid/Side can't help under a true ceiling.
+  - **B.** Build Mid/Side with a final left/right ceiling stage, for the rare case where the sides peak much more than the centre and you accept the same final reduction.
+- **Decision 2: item 31.**
+  - **A (R).** Drop it. Keyed limiting either breaks the ceiling or becomes ducking, which Comp does.
+  - **B.** Build it as "the deeper of own and key", with an optional sidechain bus and the host checks run again.
+
+### 4. If both are dropped
+
+`docs/enhancements.md` marks items 30 and 31 dropped with the reason, and Limit's manual says that Link 0 % is per-channel limiting. No code changes.
