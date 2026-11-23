@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <utility>
 
 namespace
@@ -29,6 +30,28 @@ constexpr double redesignStepDb = 0.01;
 constexpr double autoTrimMs = 200.0;
 constexpr double soloFadeMs = 10.0;
 constexpr int autoGainPoints = 96;
+
+// Phase 4 Wave 2, Character (docs/eq.md): Sature's soft curve as f(d x) / d, slope 1 at zero.
+// Subtle is symmetric at -9 dB of drive; Warm is asymmetric (negative limit 4, so the 2nd
+// harmonic leads) at -3 dB, with a 5 Hz DC blocker after it. Set from
+// docs/research/eq-character-model.py.
+constexpr double subtleDrive = 0.35481338923357547;  // -9 dB
+constexpr double warmDrive = 0.70794578438413791;    // -3 dB
+constexpr double warmNegativeLimit = 4.0;
+constexpr double dcBlockerHz = 5.0;
+constexpr double characterFadeMs = 10.0;
+
+fancy::dsp::saturation::Curve characterCurve (bool warm) noexcept
+{
+    fancy::dsp::saturation::Curve curve;
+    curve.soft = 1.0;
+    curve.negativeLimit = warm ? warmNegativeLimit : 1.0;
+    curve.tape = 0.0;
+    return curve;
+}
+
+const fancy::dsp::saturation::Curve subtleCurve = characterCurve (false);
+const fancy::dsp::saturation::Curve warmCurve = characterCurve (true);
 
 // How far the level is past Threshold, with a soft knee: 0 below Threshold - 3 dB.
 double distancePast (double distanceDb) noexcept
@@ -117,6 +140,7 @@ void EqDsp::reset()
     }
 
     detectorClock = 0;
+    characterStates = {};
 
     for (auto& oversampler : oversamplers)
         if (oversampler != nullptr)
@@ -373,6 +397,10 @@ void EqDsp::applyConfig (const Config& config)
 
     stepPosition = 0;
 
+    characterFadeStep = 1.0 / std::max (1.0, characterFadeMs * 0.001 * processRate);
+    dcCoefficient = std::exp (-2.0 * std::numbers::pi * dcBlockerHz / processRate);
+    characterStates = {};
+
     for (auto& oversampler : oversamplers)
         oversampler->reset();
 
@@ -410,6 +438,8 @@ void EqDsp::snapToTargets (const Targets& targets)
 
     autoTrim.snapTo (targets.autoGain ? std::pow (10.0, (double) autoGainDb.load() / 20.0) : 1.0);
     soloMix.snapTo (targets.soloBand >= 0 ? 1.0 : 0.0);
+    characterFrom = characterTo = std::clamp (targets.character, (int) characterClean, (int) characterWarm);
+    characterFade = 1.0;
     bypass.snapTo (targets.bypass ? 1.0 : 0.0);
     switchGain.snapTo (1.0);
 }
@@ -762,6 +792,7 @@ void EqDsp::processChunk (float* const* channels, int numChannels, int offset, i
     if (activeConfig.linearPhase)
     {
         linear.process (signal, numChannels, numSamples);
+        runCharacter (signal, numChannels, numSamples);
     }
     else if (activeConfig.oversampling > 0)
     {
@@ -782,6 +813,7 @@ void EqDsp::processChunk (float* const* channels, int numChannels, int offset, i
 
         float* upChannels[maxChannels] { up.getChannelPointer (0), up.getChannelPointer (1) };
         filterBlock (upChannels, numChannels, (int) up.getNumSamples());
+        runCharacter (upChannels, numChannels, (int) up.getNumSamples());
 
         oversampler.processSamplesDown (block);
 
@@ -791,6 +823,7 @@ void EqDsp::processChunk (float* const* channels, int numChannels, int offset, i
     else
     {
         filterBlock (signal, numChannels, numSamples);
+        runCharacter (signal, numChannels, numSamples);
     }
 
     gain.setTarget (current.gain);
@@ -864,6 +897,75 @@ void EqDsp::process (float* const* channels, int numChannels, int numSamples,
         processChunk (channels, numChannels, done, chunk, sidechain, numSidechain);
         done += chunk;
     }
+}
+
+double EqDsp::shapeCharacter (int character, CharacterState& state, double x) const noexcept
+{
+    if (character == characterSubtle)
+        return state.adaa.process (subtleCurve, subtleDrive * x, false, 0.0) / subtleDrive;
+
+    const auto y = state.adaa.process (warmCurve, warmDrive * x, false, 0.0) / warmDrive;
+
+    // The asymmetric curve makes DC on loud signals.
+    state.dcOutput = y - state.dcInput + dcCoefficient * state.dcOutput;
+    state.dcInput = y;
+    return state.dcOutput;
+}
+
+// Phase 4 Wave 2: Clean, settled, returns at once, so the output is as before to the bit.
+void EqDsp::runCharacter (float* const* channels, int numChannels, int numSamples) noexcept
+{
+    // A change starts only when the previous fade has finished.
+    const auto wanted = std::clamp (current.character, (int) characterClean, (int) characterWarm);
+
+    if (characterFade >= 1.0 && wanted != characterTo)
+    {
+        characterFrom = characterTo;
+        characterTo = wanted;
+        characterFade = 0.0;
+
+        if (characterTo != characterClean)
+            for (auto& perChannel : characterStates)
+                perChannel[(size_t) (characterTo - 1)] = {};
+    }
+
+    if (characterFrom == characterClean && characterTo == characterClean)
+        return;
+
+    const auto fading = characterFade < 1.0;
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        const auto fade = characterFade;
+
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            auto& states = characterStates[(size_t) ch];
+            const auto x = (double) channels[ch][i];
+
+            const auto to = characterTo == characterClean ? x : shapeCharacter (characterTo, states[(size_t) (characterTo - 1)], x);
+            auto y = to;
+
+            if (fading)
+            {
+                const auto from = characterFrom == characterClean ? x : shapeCharacter (characterFrom, states[(size_t) (characterFrom - 1)], x);
+                y = from + fade * (to - from);
+            }
+
+            channels[ch][i] = (float) (std::isfinite (y) ? y : 0.0);
+        }
+
+        if (fading)
+            characterFade = std::min (1.0, characterFade + characterFadeStep);
+    }
+
+    for (auto& states : characterStates)
+        for (auto& state : states)
+            if (! std::isfinite (state.adaa.previousIntegral) || ! std::isfinite (state.dcOutput))
+                state = {};
+
+    if (characterFade >= 1.0)
+        characterFrom = characterTo;
 }
 
 // Auto gain (Decision 3 A): the static curve's power, averaged over 20 Hz to 20 kHz in equal

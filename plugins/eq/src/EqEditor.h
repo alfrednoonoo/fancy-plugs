@@ -45,6 +45,9 @@ public:
     // Panel 2 of the Q2.4 mockup: band 3 on Mid and selected, band 5 on Side.
     void showChannelPreview();
 
+    // Phase 4 Wave 2: band 1 a Brickwall high-pass, selected, with the drawer open and Character Warm.
+    void showBrickwallPreview();
+
     // Panel 3 of the Q2.4 mockup: the Match card open over a learned reference and current.
     void showMatchPreview();
 
@@ -257,6 +260,10 @@ private:
     // Phase 4 Wave 1: Auto gain in the drawer, and its trim under the Gain fader.
     fancy::ui::ParamCheckbox autoGainCheckbox;
     juce::Label autoGainLabel;
+
+    // Phase 4 Wave 2 (docs/eq.md): the Character output stage, under Auto gain.
+    fancy::ui::ParamDropdown characterDropdown;
+    juce::Label characterLabel;
 
     bool compactMode = false;
     float lastRange = -1.0f;

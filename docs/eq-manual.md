@@ -35,7 +35,7 @@ Click a tab or a handle to choose a band. In Compact mode these controls float o
 | Low shelf, High shelf | yes | yes | Gain is reached well past Freq, with half of it at Freq |
 | Band | yes | no | A bell. It never turns into a notch, however deep the cut |
 | Notch | no | no | A true null at Freq |
-| Low pass, High pass | no | yes | |
+| Low pass, High pass | no | yes | Up to 48 dB/oct, or Brickwall (96 dB/oct) |
 | Band pass | no | no | Unity at Freq |
 | All pass | no | no | Changes phase only |
 | Tilt | yes | yes | Pivots at Freq: -Gain/2 below and +Gain/2 above |
@@ -106,7 +106,7 @@ Dynamic bands add no latency. In Compact mode the floating card widens while the
 | Phase | Minimum, Linear | Minimum | Linear keeps every frequency time-aligned, at the cost of latency. Use it for multi-mic or parallel work |
 | FIR length | 2048–16384 | 8192 | Linear mode only. Longer holds low-frequency detail better and adds latency |
 | Oversampling | Off, 2x, 4x | Off | Minimum mode only. Rarely needed, because the filters already hold their shape |
-| Slope | 6–48 dB/oct | 12 dB/oct | For the selected band |
+| Slope | 6–48 dB/oct, Brickwall (96) | 12 dB/oct | For the selected band. Brickwall is for Low pass and High pass; a shelf or Tilt set to it stays at 48 dB/oct |
 | Analyzer | Off, Pre, Post | Post | Before or after the EQ. The graph's corner shows which |
 | Size | 4096, 8192, 16384 | 8192 | Larger shows more low-frequency detail and reacts more slowly |
 | Window | Hann, Blackman-Harris | Blackman-Harris | Blackman-Harris separates a loud tone from nearby quiet ones better |
@@ -116,6 +116,7 @@ Dynamic bands add no latency. In Compact mode the floating card widens while the
 | Pink tilt | off/on | off | Adds 4.5 dB per octave about 1 kHz, so pink noise reads flat |
 | Peak hold | off/on | off | Adds a fainter line at the highest level. Turn it off to clear it |
 | Smoothing | 0–100 % | 50 % | How slowly the analyzer line moves |
+| Character | Clean, Subtle, Warm | Clean | A little saturation after the bands, before Output. See Phase 4 additions |
 
 ## Match
 
@@ -179,6 +180,8 @@ Drag the window's edge in REAPER. The graph takes the extra room. The smallest s
 - **Auto gain** (settings row): keeps the output as loud as the input whatever the curve does, worked out from the curve itself. The trim shows at the graph's bottom right ("auto -2.3").
 - **Reach** (a dynamic band's settings): how far past Threshold the band reaches its full Range, 1 to 48 dB. 12 dB is the classic curve; lower is harder and more compressor-like, higher gentler.
 - **Analyzer > Pre + Post:** the input's spectrum, dimmer, under the output's. **Freeze** (top right of the graph) holds the current spectrum under the live one, to compare a change with the moment before; click again to let go.
+- **Brickwall slope** (Slope, for Low pass and High pass): 96 dB/oct. Everything past the corner goes and what's above it is untouched: a third of an octave past a 100 Hz high-pass is 32 dB down, a third of an octave inside it is level. In Minimum phase it rings about twice as long as 48 dB/oct (about 30 ms at 100 Hz, 100 ms at 30 Hz), which can smear a kick's low end; use Linear phase when that matters, with FIR length 16384 for a corner below about 300 Hz (a shorter FIR softens a low Brickwall's corner). If you've drawn automation for a band's Slope in an older project, it now lands one step lower on the list; the saved Slope itself loads as it was.
+- **Character** (EDIT drawer): **Clean** is the EQ as it always was. **Subtle** adds faint odd harmonics, about 0.1 % at -12 dBFS. **Warm** adds more, led by the 2nd harmonic, about 1.6 % at -6 dBFS. Quiet material passes at its own level; only peaks are coloured, and the level changes by under 0.25 dB at -6 dBFS. It runs at the oversampled rate when Oversampling is on. Auto gain doesn't count it. Changing it fades over 10 ms.
 
 ## Presets
 

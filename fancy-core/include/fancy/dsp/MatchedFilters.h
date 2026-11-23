@@ -14,8 +14,11 @@ enum class Channel { stereo, left, right, mid, side };
 enum class BandType { lowShelf, highShelf, band, notch, lowPass, highPass, bandPass, allPass, tilt };
 
 constexpr int maxBands = 24;
-constexpr int maxSections = 4;
-constexpr int slopeOrders[] { 1, 2, 3, 4, 6, 8 };
+// Fancy EQ's Brickwall slope (docs/eq.md, Phase 4 Wave 2) is order 16, eight sections; it's
+// for cuts only, so shelves and Tilt stop at shelfMaxOrder.
+constexpr int maxSections = 8;
+constexpr int slopeOrders[] { 1, 2, 3, 4, 6, 8, 16 };
+constexpr int shelfMaxOrder = 8;
 constexpr double butterworthQ = 0.70710678118654752;
 
 constexpr bool hasGain (BandType type) noexcept

@@ -366,6 +366,15 @@ Brickwall cuts twice as hard just past the corner and leaves what's above it unt
 
 Approval, then one push, with no mockup: the slope shows up in the existing Slope menus and the drawer. That covers the sections, the appended choice, tests, the manual (with a note on automation) and the checklist.
 
+### 6. As built
+
+One push with item 16 (v1.7.1). Tests in `tests/EqW2Tests.cpp`, their numbers from `docs/research/eq-w2-prepush.py`.
+
+- `fancy::dsp::matched`: `maxSections` 8, `slopeOrders` gains 16, and "Brickwall (96)" is appended to `bNslope`.
+- **Shelves and Tilt:** they have slopes in this EQ (section 1 said they don't). A shelf or Tilt set to Brickwall stays at 48 dB/oct (`shelfMaxOrder`, in `design()`), and the band's right-click Slope menu leaves Brickwall out for them. The drawer's Slope dropdown, shared by every type, still lists it; the manual says what it does there. The drawer's Slope dropdown is 124 px wide (was 110) to fit the name.
+- **Linear-phase test:** at a 1 kHz corner with the 8192 FIR. The model shows the Blackman-windowed FIR can't hold a 100 Hz Brickwall to 0.5 dB (6 dB of error at 8192, 1.7 dB at 16384), because the slope is narrower than the window's resolution there; at 1 kHz the error is 0.07 dB. The manual's advice for low cuts in Linear phase is the longest FIR.
+- **CPU:** recorded by the `eq w2 CPU measurement` line (24 Brickwall cuts against 24 bells in the same run); figures in `docs/measurements/eq-w2.txt` once the run is green.
+
 ## Phase 4 Wave 2: Character output stage
 
 **Approved by the user on 22 November 2026 with every recommended option (A).** Item 16 of the Wave 2 order (`docs/enhancements.md`; backlog item 7 of section 4), for v1.7.1. Modelled first: `docs/research/eq-character-model.py`.
@@ -377,8 +386,8 @@ Approval, then one push, with no mockup: the slope shows up in the existing Slop
 | Character | Drive | Curve | THD at −18 / −12 / −6 dBFS | Level change at −6 dBFS |
 |---|---|---|---|---|
 | Clean | none (not run) | | 0 | 0 |
-| Subtle | −9 dB | symmetric, so odd harmonics | 0.03 / 0.10 / 0.39 % | −0.10 dB |
-| Warm | −3 dB | asymmetric (negative limit 4), so the 2nd harmonic leads the 3rd by about 5 dB | 0.11 / 0.43 / 1.6 % | −0.21 dB |
+| Subtle | −9 dB | symmetric, so odd harmonics | 0.025 / 0.098 / 0.385 % | −0.12 dB (−0.10 at 4x) |
+| Warm | −3 dB | asymmetric (negative limit 4), so the 2nd harmonic leads the 3rd by about 5 dB | 0.108 / 0.425 / 1.60 % | −0.22 dB (−0.21 at 4x) |
 
 A 5 Hz DC blocker follows Warm, because asymmetry makes DC on loud signals. The stage runs at the oversampled rate when EQ's Oversampling is on, and at the base rate with ADAA alone when it's off.
 
@@ -409,3 +418,12 @@ The drives were set from the model. At Comp's Warm settings the stage already ga
 ### 5. Build order
 
 Approval, then one push: the stage in `EqDsp`, the parameter, the drawer row, tests, manual and checklist.
+
+### 6. As built
+
+One push with item 15 (v1.7.1). The THD and level figures in section 1's table are the pre-push model's (`docs/research/eq-w2-prepush.py`), with the first-order ADAA and the DC blocker the build runs; the first model's rounded figures were 0.03 / 0.10 / 0.39 % and 0.11 / 0.43 / 1.6 %.
+
+- `character` (Clean, Subtle, Warm), appended. `EqDsp::runCharacter` runs after the bands: on the oversampled block when Oversampling is on, after the FIR in Linear phase, at the base rate otherwise. Clean and settled returns at once, so the output is v1.7.0's to the bit, including after a return to Clean.
+- ADAA adds half a sample of delay while Subtle or Warm is on, which is not reported as latency (as Comp's Character).
+- **Switching:** a 10 ms linear crossfade from the old character to the new; a further change waits for it to finish. The newly faded-in stage starts from rest.
+- **Drawer:** a Character dropdown under Auto gain (third column, fifth row), with a tooltip. Screenshot `eq-brickwall` shows it set to Warm with a Brickwall high-pass selected.

@@ -55,7 +55,8 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
     };
 
     const juce::StringArray types { "Low shelf", "High shelf", "Band", "Notch", "Low pass", "High pass", "Band pass", "All pass", "Tilt" };
-    const juce::StringArray slopes { "6 dB/oct", "12 dB/oct", "18 dB/oct", "24 dB/oct", "36 dB/oct", "48 dB/oct" };
+    // Brickwall (Phase 4 Wave 2, docs/eq.md) is appended, so every saved slope keeps its index.
+    const juce::StringArray slopes { "6 dB/oct", "12 dB/oct", "18 dB/oct", "24 dB/oct", "36 dB/oct", "48 dB/oct", "Brickwall (96)" };
 
     constexpr int defaultTypes[] { 0, 2, 2, 1 };
     constexpr float defaultHz[] { 80.0f, 500.0f, 2000.0f, 8000.0f };
@@ -169,6 +170,9 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
                                                .withLabel ("dB")
                                                .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, value < 10.0f ? 1 : 0) + " dB"; })
                                                .withValueFromStringFunction ([] (const juce::String& text) { return std::abs (fancy::parseNumber (text)); })));
+
+    // Phase 4 Wave 2 (docs/eq.md), appended: Clean doesn't run the stage, so it's the old sound.
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "character", 1 }, "Character", juce::StringArray { "Clean", "Subtle", "Warm" }, 0));
 
     return layout;
 }
@@ -287,7 +291,7 @@ eq::BandSpec EqProcessor::readBand (int band)
     spec.frequencyHz = (double) values.frequency->load (std::memory_order_relaxed);
     spec.gainDb = (double) values.gain->load (std::memory_order_relaxed);
     spec.q = (double) values.q->load (std::memory_order_relaxed);
-    spec.order = eq::slopeOrders[juce::jlimit (0, 5, juce::roundToInt (values.slope->load (std::memory_order_relaxed)))];
+    spec.order = eq::slopeOrders[juce::jlimit (0, 6, juce::roundToInt (values.slope->load (std::memory_order_relaxed)))];
     spec.channel = (eq::Channel) juce::jlimit (0, 4, juce::roundToInt (values.channel->load (std::memory_order_relaxed)));
     return spec;
 }
@@ -334,6 +338,7 @@ EqDsp::Targets EqProcessor::readTargets()
 
     // Phase 4 Wave 1: the band solo is listen target band + 1 (FancyProcessor::setListenTarget).
     targets.autoGain = isOn ("autoGain");
+    targets.character = juce::jlimit (0, 2, juce::roundToInt (read ("character")));
     targets.soloBand = isListening() ? getListenTarget() - 1 : -1;
 
     if (targets.soloBand >= eq::maxBands)

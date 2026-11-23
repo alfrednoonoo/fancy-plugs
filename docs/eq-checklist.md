@@ -166,6 +166,15 @@ Tell me "EQ OK", or list which items failed and what you saw. Once it's OK, I'll
 - [ ] A dynamic band with Reach 3 acts hard and fast; 48 gently; 12 as before.
 - [ ] Analyzer Pre + Post shows both spectra; Freeze holds one under the live one.
 
+## Brickwall slope and Character (Phase 4 Wave 2, v1.7.1)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy EQ: it loads and sounds as before, every band's Slope as it was, Character Clean.
+- [ ] A High pass at 100 Hz on Brickwall (96): the rumble under a vocal is gone and the voice's low end above the corner is untouched, compared with 48 dB/oct. Switching between them while playing doesn't click.
+- [ ] The same in Linear phase: no low-end smear on a kick.
+- [ ] Right-click a shelf's handle: its Slope menu stops at 48 dB/oct.
+- [ ] Character Subtle, then Warm, on a mix bus: Subtle is barely there, Warm thickens peaks; quiet passages sound the same; switching while playing doesn't click. Clean is the EQ as before.
+- [ ] Character Warm with Oversampling 4x on bright material: no harshness that Off doesn't have.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

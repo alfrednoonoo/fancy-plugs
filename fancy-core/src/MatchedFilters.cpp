@@ -268,8 +268,12 @@ struct Butterworth
     int pairs = 0;
 };
 
-void addShelf (BandFilter& filter, const BandSpec& spec, double w, bool high, double gain) noexcept
+void addShelf (BandFilter& filter, const BandSpec& requested, double w, bool high, double gain) noexcept
 {
+    // Brickwall is for cuts: a shelf or Tilt asked for it stays at 48 dB/oct.
+    auto spec = requested;
+    spec.order = std::min (spec.order, shelfMaxOrder);
+
     Butterworth butterworth (spec.order);
     butterworth.applyResonance (spec.q);
 

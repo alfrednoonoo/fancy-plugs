@@ -3,6 +3,7 @@
 #include "EqFilters.h"
 #include "LinearPhase.h"
 
+#include <fancy/dsp/Saturation.h>
 #include <fancy/dsp/Smoother.h>
 
 #include <juce_dsp/juce_dsp.h>
@@ -21,6 +22,8 @@ public:
     static constexpr int maxChannels = 2;
     static constexpr int stepSamples = 16;
 
+    enum Character { characterClean, characterSubtle, characterWarm };
+
     struct Targets
     {
         std::array<eq::BandSpec, eq::maxBands> bands;
@@ -35,6 +38,9 @@ public:
         // Phase 4 Wave 1 (docs/eq.md). Off and -1 leave the output as it was, to the bit.
         bool autoGain = false;
         int soloBand = -1;
+
+        // Phase 4 Wave 2 (docs/eq.md): Clean, Subtle or Warm. Clean doesn't run the stage.
+        int character = characterClean;
     };
 
     // The channel count is the bus's, when it's known: Linear phase designs for it (a mono bus
@@ -186,6 +192,21 @@ private:
     eq::BandSpec soloSpec;
     int soloDesignedBand = -1;
     std::array<std::array<std::array<double, 2>, eq::maxSections>, maxChannels> soloState {};
+
+    // Phase 4 Wave 2: the Character stage, after the bands at the processing rate. A change fades
+    // over 10 ms from the old character to the new one; the next waits for it to finish.
+    struct CharacterState
+    {
+        fancy::dsp::saturation::Adaa adaa;
+        double dcInput = 0.0, dcOutput = 0.0;
+    };
+
+    void runCharacter (float* const* channels, int numChannels, int numSamples) noexcept;
+    double shapeCharacter (int character, CharacterState& state, double x) const noexcept;
+
+    std::array<std::array<CharacterState, 2>, maxChannels> characterStates {};
+    int characterFrom = characterClean, characterTo = characterClean;
+    double characterFade = 1.0, characterFadeStep = 1.0, dcCoefficient = 0.0;
 
     std::array<std::vector<float>, maxChannels> dryDelay;
     int dryLength = 1;

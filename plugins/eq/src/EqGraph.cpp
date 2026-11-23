@@ -1080,8 +1080,12 @@ void EqGraph::showBandMenu (int band, juce::Point<float> position)
 
     fancy::ui::Menu slopeMenu;
 
+    // Brickwall (the last choice) is for cuts only: a shelf or Tilt stops at 48 dB/oct.
+    const auto isCut = spec.type == eq::BandType::lowPass || spec.type == eq::BandType::highPass;
+
     for (int i = 0; i < slopes.size(); ++i)
-        slopeMenu.addItem (slopeBase + i, slopes[i], true, slopes[i] == slope.getCurrentValueAsText());
+        if (isCut || i < slopes.size() - 1)
+            slopeMenu.addItem (slopeBase + i, slopes[i], true, slopes[i] == slope.getCurrentValueAsText());
 
     fancy::ui::Menu menu;
     menu.addTitle ("Band " + juce::String (band + 1) + dot + type.getCurrentValueAsText() + dot + fancy::formatHz ((float) spec.frequencyHz));

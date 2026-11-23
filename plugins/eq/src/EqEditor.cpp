@@ -834,7 +834,8 @@ EqEditor::EqEditor (EqProcessor& processor)
       tiltCheckbox (parameter ("anaTilt"), "Pink tilt"),
       peakCheckbox (parameter ("anaPeak"), "Peak hold"),
       smoothingKnob (parameter ("anaSmooth"), "Smoothing", colours::uiTeal, Knob::smallStyle),
-      autoGainCheckbox (parameter ("autoGain"), "Auto gain")
+      autoGainCheckbox (parameter ("autoGain"), "Auto gain"),
+      characterDropdown (parameter ("character"))
 {
     // The title strip keeps one colour while the accent follows the selection.
     setTitleColour (bandColour (0));
@@ -904,7 +905,7 @@ EqEditor::EqEditor (EqProcessor& processor)
     const std::pair<juce::Label*, const char*> labels[] {
         { &phaseLabel, "Phase" }, { &firLabel, "FIR length" }, { &oversamplingLabel, "Oversampling" }, { &slopeLabel, "Slope" },
         { &rangeLabel, "Graph range" }, { &analyzerLabel, "Analyzer" }, { &fftLabel, "Size" }, { &windowLabel, "Window" }, { &overlapLabel, "Overlap" },
-        { &analyzerChannelLabel, "Channel" }
+        { &analyzerChannelLabel, "Channel" }, { &characterLabel, "Character" }
     };
 
     for (const auto& [label, text] : labels)
@@ -944,16 +945,20 @@ EqEditor::EqEditor (EqProcessor& processor)
     autoGainCheckbox.setBounds (labelX3, row (3) + 2, 96, 20);
     autoGainCheckbox.setTooltip ("Keeps the output as loud as the input whatever the curve does, worked out from the curve itself.");
     smoothingKnob.setBounds (610, row (1), 90, 99);
+    characterLabel.setBounds (labelX3, row (4), 86, rowHeight);
+    characterDropdown.setBounds (controlX3, row (4), 110, rowHeight);
+    characterDropdown.setTooltip ("Clean, or a little saturation after the bands: Subtle adds faint odd harmonics, Warm more, led by the 2nd.");
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &phaseDropdown, &firDropdown, &oversamplingDropdown, &analyzerDropdown, &fftDropdown, &windowDropdown, &overlapDropdown,
              &analyzerChannelDropdown,
-             &rangeDropdown, &tiltCheckbox, &peakCheckbox, &smoothingKnob, &autoGainCheckbox })
+             &rangeDropdown, &tiltCheckbox, &peakCheckbox, &smoothingKnob, &autoGainCheckbox, &characterDropdown })
         drawer.addAndMakeVisible (item);
 
     for (auto& dropdown : slopeDropdowns)
     {
-        dropdown->setBounds (controlX1, row (3), 110, rowHeight);
+        // Wider than the column's other dropdowns, for "Brickwall (96)".
+        dropdown->setBounds (controlX1, row (3), 124, rowHeight);
         drawer.addChildComponent (*dropdown);
     }
 
@@ -1307,6 +1312,28 @@ void EqEditor::showPreview (bool drawerOpen)
     layoutEditors();
 
     drawer.setVisible (drawerOpen);
+
+    bandEditors[(size_t) selectedBand]->update();
+    graph.update();
+}
+
+void EqEditor::showBrickwallPreview()
+{
+    applyPreviewValues();
+
+    auto& processor = eqProcessor();
+    processor.setParameter ("b1type", (float) (int) eq::BandType::highPass);
+    processor.setParameter ("b1freq", 60.0f);
+    processor.setParameter ("b1q", 0.707f);
+    processor.setParameter ("b1slope", 6.0f);
+    processor.setParameter ("character", 2.0f);
+
+    parameter ("compact").setValueNotifyingHost (0.0f);
+    compactMode = false;
+    selectBand (0);
+    layoutEditors();
+
+    drawer.setVisible (true);
 
     bandEditors[(size_t) selectedBand]->update();
     graph.update();

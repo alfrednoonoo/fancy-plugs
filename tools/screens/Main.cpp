@@ -200,7 +200,11 @@ bool renderEq (const juce::File& outputDir)
 
     // A Mid band selected and a Side band, with the total for Mid.
     editor->showChannelPreview();
-    return writeBothScales (*editor, "eq-channel", outputDir) && ok;
+    ok = writeBothScales (*editor, "eq-channel", outputDir) && ok;
+
+    // Phase 4 Wave 2: a Brickwall high-pass in the drawer's Slope, and Character.
+    editor->showBrickwallPreview();
+    return writeBothScales (*editor, "eq-brickwall", outputDir) && ok;
 }
 #endif
 
