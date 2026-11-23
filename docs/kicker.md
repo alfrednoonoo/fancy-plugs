@@ -154,7 +154,7 @@ At 1x the click's aliasing sits only 33 dB under the kick, which is audible as g
 
 ### 5. Build order
 
-Approval, then one push: the parameter, the oversampler, the drawer row, tests, manual and checklist.
+Approval, then one push: the parameter, the oversampler, the drawer row, tests, manual and checklist. The row sits on the drawer's second page, Duck and clip, under CLIPPER, as mockup 63 draws it, since the first page has no free row under Ceiling (user, 23 November 2026).
 
 ## Phase 4: sidechain Duck
 
