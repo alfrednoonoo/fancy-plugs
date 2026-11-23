@@ -250,3 +250,70 @@ Mockup 45 approved by the user on 22 November 2026; `tests/SatureW2Tests.cpp`, a
 - Each outer band has its own 8th-order split (the low band the low-pass outputs of the Low edge's sections, the high band the high-pass outputs of the High edge's), ADAA, tape loss, tilt and oversampler copy (`SwitchedOversampler` now allows 4 copies). The mid band's code is untouched; the outer bands' `added` is summed into it before the DC filter, each by Mix.
 - Auto gain looks the table up with the band's own Drive and the mid band's Type, Character and Tone.
 - The drawer's OUTER BANDS group; the DC filter checkbox narrowed to make room. The BAND card tints and names the driven bands. CPU figures: from the next run's `measurements-<sha>`.
+
+## Phase 4 Wave 2: curve shaping, curve families, cuts, harmonic spread and Mid/Side
+
+**Draft for approval (23 November 2026).** Items 35 to 39 of the Wave 2 order (`docs/enhancements.md`; backlog items 4, 3, 5, 7 and 8 of section 13), for v1.7.1, in one note because they all live in the EDIT drawer and the Type segment. Modelled first: `docs/research/sature-w2b-model.py`. Every new setting defaults to today's sound, bit for bit.
+
+### 1. Curve shaping (item 35)
+
+- **Offset** (−0.5 to +0.5, default 0): a bias added before the curve and removed after it, with the DC blocked. A symmetric curve then makes even harmonics, the 2nd first. On Tape at drive 12 dB, an Offset of 0.1 gives H2 at −29 dB and 0.25 gives −21 dB, while H3 stays at −15 dB. This is the "even" side of Character, made independent of it.
+- **Knee** (0.5 to 2, default 1): how sharply the curve bends into saturation. Across its range THD only moves from 16.9 to 19.9 %, and H3 from −16 to −14 dB, so it's a subtle control (decision 1).
+
+### 2. Two curve families (item 36)
+
+At −6 dBFS with drive 12 dB, measured against Tape and Clip:
+
+| Type | H2 | H3 | H4 | H5 | THD |
+|---|---|---|---|---|---|
+| Tape (soft) | — | −15.3 dB | — | −26.5 dB | 17.9 % |
+| Clip (hard) | — | −12.8 dB | — | −26.8 dB | 23.5 % |
+| **Diode** (half-wave: passes one polarity, softly limits the other) | −12.8 dB | −15.3 dB | −18.6 dB | −26.5 dB | 32 % |
+| **Fold** (past the ceiling the wave folds back) | — | **+1.3 dB** | — | −14.9 dB | 117 % |
+
+Diode gives even and odd harmonics together, a rectified, buzzy colour. Fold is extreme: its 3rd harmonic is louder than the fundamental, a synth-like, metallic sound for creative use. Both are appended to Type, and both use ADAA, as the existing curves do.
+
+### 3. Low cut and High cut (item 37)
+
+**Low cut** and **High cut** (Off, or 20 Hz to 20 kHz, 12 or 24 dB/oct), each **Pre** (shapes what's driven) or **Post** (shapes what's heard), default Off. On a bass-heavy input (80 Hz at −6 dBFS with a 2 kHz tone at −18), a Low cut at 200 Hz before the curve cut the added distortion's energy by 21 dB, and the intermodulation around the 2 kHz tone from +6.4 to −11.3 dB. That's the mud a heavy bass makes when it drives the saturation of everything above it.
+
+### 4. Harmonic spread (item 38)
+
+**Spread** (0 to 100 %): the added part (output minus clean) gets an opposite phase shift on each channel, so the saturation spreads wide while the fundamental stays centred. On a mono source:
+
+| Spread | Added part's L/R correlation | Whole signal | Added part in a mono fold-down |
+|---|---|---|---|
+| 0 % (today) | +1.00 | +1.00 | 0 dB |
+| 50 % | 0.00 | +0.72 | −3 dB |
+| 100 % | −1.00 | +0.71 | **cancels completely** |
+
+At 100 % the added harmonics vanish in mono. That's the warning for this control (decision 2).
+
+### 5. Mid/Side (item 39)
+
+**Channels**: Stereo (today), **Mid only** or **Side only**. With a centre bass and wide pads, Mid only saturates the bass and leaves the pads clean (no distortion added in the side at all), and Side only does the reverse. In Stereo the two drive each other, which is today's sound.
+
+### 6. Decisions
+
+- **Decision 1: Knee.**
+  - **A (R).** Offset only. Knee's effect is too small to be worth a control: the Type choice already picks the bend.
+  - **B.** Both Offset and Knee, as the backlog has them.
+- **Decision 2: Spread's range.**
+  - **A (R).** 0 to 50 %, where the added part is decorrelated but survives in mono (−3 dB at most).
+  - **B.** 0 to 100 %, with the manual warning that above 50 % the saturation thins out in mono and vanishes at 100 %.
+- **Decision 3: where they go.**
+  - **A (R).** Diode and Fold appended to the Type segment, which already fits six. Offset, the cuts with their Pre/Post switch, Spread and Channels go in the EDIT drawer, which gets a second page (**Shape | Tone and stereo**) as Comp's drawer has. A mockup follows approval.
+  - **B.** Everything in one longer drawer page.
+
+### 7. Tests
+
+1. Legacy: every existing Type, Character, Tone and Oversampling setting renders exactly as v1.7.0, the outer bands included.
+2. Offset 0.25 on Tape at the model's level: H2 at −21 ± 2 dB, and no DC at the output (under −80 dBFS).
+3. Diode and Fold: harmonic levels within 2 dB of the table above, and ADAA keeps their aliasing at 1x under the existing curves' limit.
+4. Low cut 200 Hz Pre: the intermodulation around 2 kHz falls by at least 12 dB on the model's input. Post leaves the added part's spectrum unchanged above the cut.
+5. Spread: at 50 % the added part's correlation is 0 ± 0.05, and the fundamental's isn't changed.
+6. Mid only: with a side-only input, the output equals the input bit for bit.
+
+### 8. Build order
+
+Approval, then the mockup (`reference/phase4/61__sature_w2b_mockup.png`): the Type segment with Diode and Fold, and the drawer's two pages. Then one push, with tests, manual and checklist.
