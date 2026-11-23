@@ -1181,8 +1181,8 @@ TEST_CASE ("the gate editor opens at its size", "[gate]")
     const std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditorAndMakeActive());
 
     REQUIRE (editor != nullptr);
-    CHECK (editor->getWidth() == 740);
-    CHECK (editor->getHeight() == 421 + fancy::ui::ShellEditor::titleHeight);
+    CHECK (editor->getWidth() == 790);   // Phase 4 Wave 2, v1.7.1: mockups 53 and 54
+    CHECK (editor->getHeight() == 445 + fancy::ui::ShellEditor::titleHeight);
 
     processor.editorBeingDeleted (editor.get());
 }
