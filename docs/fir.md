@@ -348,3 +348,54 @@ One push.
 - **Graph:** Resonance edits curve 3 (`FirGraph::curve`), drawn where the ceiling lands: `yForValue` and `valueAt` convert between percent and the graph's dB with Depth and Tilt at that frequency. The ceiling is dashed in the mode colour between Low and High, with a light fill from 0 dB and the nodes on it. Editing is the curves' own: a click on the line adds a node, drag moves it, Alt-click deletes it and right-click types it (Depth in %), Ctrl-drag moves the whole curve; double-click puts a node back to 100 %. **Changed from the mockup's notes:** they said double-click adds and right-click deletes; the Gate and Compressor curves add on click, delete with Alt-click and type with right-click, and the depth curve works the same way.
 - **Reset curve** sits in the Range card's top row, beside RANGE, in Resonance mode only.
 - **Tests:** `tests/FirW2Tests.cpp`; FirW1Tests' legacy test covers the flat curve.
+
+## Phase 4 Wave 2: ratio curve, Mid/Side, and EQ-mode dynamics
+
+**Draft for approval (23 November 2026).** Items 27, 28 and 29 of the Wave 2 order (`docs/enhancements.md`; backlog items 4, 5 and 6 of section 8), for v1.7.1, in one note because 27 and 29 turn out to be the same feature. Modelled first: `docs/research/fir-w2-model.py`.
+
+### 1. A ratio curve for Compressor mode (item 27)
+
+Compressor mode has a threshold curve and one **Ratio** for every frequency. A second curve, **Ratio**, drawn like the threshold (from 1:1 to 20:1, and 0.5:1 for upward), sets the ratio at each frequency. A new project's ratio curve is flat at the Ratio knob's value, and moving the knob moves the whole curve. A saved project loads with its curve flat at its Ratio, so it renders as before, bit for bit.
+
+What the model found: a mix whose 2.5–3.6 kHz gets 15 dB louder in the chorus and whose bass gets 6 dB louder, with the threshold curve 3 dB over the verse (as Learn places it):
+
+| | 3 kHz, verse | 3 kHz, chorus | 100 Hz, verse | 100 Hz, chorus |
+|---|---|---|---|---|
+| One Ratio, 4:1 | 0 dB | 9.2 dB | 0 dB | 2.3 dB |
+| Ratio curve: 4:1 from 2 to 5 kHz, 1:1 elsewhere | 0 dB | 9.2 dB | 0 dB | 0 dB |
+
+The curve tames the harsh band only when it's loud and leaves the bass alone, which one ratio can't do.
+
+### 2. EQ-mode dynamics (item 29)
+
+The backlog asked for Attack and Release in EQ mode "when the curve is a threshold": a cut per frequency that appears only while that frequency is loud. With item 27 that is Compressor mode: the threshold curve says where, the ratio curve says how hard, and Attack and Release are already there. The model's run above is exactly that, a dynamic cut at 3 kHz in the chorus only. Building it again inside EQ mode would give two ways to do one thing (decision 1).
+
+### 3. Mid/Side (item 28)
+
+`msMode` (off by default): the spectral process runs on mid and side instead of left and right. Every mode keeps its curves, with a **Mid | Side** switch over the graph choosing which domain's curve you draw. Each domain has its own curve, Learn profile and gains, and the output is turned back into left and right. Off, FIR is as it was, bit for bit.
+
+What the model found: Subtract on a voice in the centre with hiss mostly in the side (a wide room mic). In L/R, the side's hiss came down 4.0 dB, and the voice in the centre was changed by artefacts about 30 dB under itself. In Mid/Side with only the side processed, the side's hiss came down 4.6 dB and the centre wasn't touched at all. Processing only the side keeps the centre clean.
+
+### 4. Decisions
+
+- **Decision 1: item 29.**
+  - **A (R).** Fold it into item 27: Compressor mode with the ratio curve is the per-frequency dynamic EQ. The manual will show it as "a dynamic EQ", with the model's example as a preset (**Dynamic de-harsh**).
+  - **B.** Build Attack and Release into EQ mode too, with a threshold curve of its own: a second route to the same result.
+- **Decision 2: the ratio curve's editing.**
+  - **A (R).** A **Threshold | Ratio** switch over the graph in Compressor mode, choosing which curve the points edit. The other curve stays drawn, dimmed. A mockup follows approval.
+  - **B.** Both curves always editable at once, the ratio's points on a second scale at the right.
+- **Decision 3: Mid/Side's scope.**
+  - **A (R).** Every mode (EQ, Gate, Compressor, Subtract, Resonance; Convolve L/R stays left and right by its nature), each with a curve per domain. A **Mid | Side** switch beside the mode row picks the domain shown.
+  - **B.** EQ and Subtract only, the two where mid/side is most often wanted.
+
+### 5. Tests
+
+1. Legacy: projects saved with v1.7.0 render exactly as before in every mode: a flat ratio curve at Ratio's value, Mid/Side off.
+2. The model's mix: with the ratio curve, the chorus's 3 kHz is reduced by 9 ± 1.5 dB and the 100 Hz by under 0.2 dB. With one Ratio of 4:1, the 100 Hz is reduced by over 1.5 dB.
+3. Mid/Side: with only the side's curve changed, the mid passes bit for bit (within the FFT's own rounding, −120 dB) and the side is changed.
+4. A mono input in Mid/Side gives the same output as L/R within −120 dB, with the side silent.
+5. CPU: Mid/Side costs no more than L/R (the same two analyses), and the ratio curve adds under 5 %.
+
+### 6. Build order
+
+Approval, then the mockup (`reference/phase4/59__fir_w2_mockup.png`): the Threshold | Ratio switch and the Mid | Side switch. Then one push with the ratio curve, Mid/Side, the preset, tests, manual and checklist.
