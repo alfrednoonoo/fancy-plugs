@@ -295,3 +295,55 @@ Mockup 52 approved by the user on 22 November 2026, with yellow (`accentYellow`,
 - Test 4 uses tones and absolute thresholds (-16 dB) so each band's filter skirt stays under the other's threshold; test 7 (Learn) is the editor's and is in the checklist.
 - CPU (§0.4, median of five): run 45064371266 measured Dual band 61 % over DS at its defaults (target under 60 %); Low's displayed reduction now comes from its followers instead of two `log10` a sample, and run 45068210426 (commit `0dae4f9`) measured **58 %** (DS 0.480 %, Dual band 0.760 %, 1.67 x Comp). Green on Windows and Mac. The history's top edge keeps High's green where Low isn't reducing (fixed with the v1.7.0 push).
 - REAPER check passed by the user on 22 November 2026.
+
+## Phase 4 Wave 2: Mid/Side reduction and Hiss mode (and DS-Mini's Hiss profile)
+
+**Draft for approval (23 November 2026).** Items 32, 33 and 34 of the Wave 2 order (`docs/enhancements.md`; backlog items 4 and 6 of section 11, and item 2 of section 12 for DS-Mini), for v1.7.1. Modelled first: `docs/research/ds-w2b-model.py`.
+
+### 1. Mid/Side reduction (item 32)
+
+The Detector can already listen to Main Mid or Main Side, but the cut always lands on both channels. **Reduce** (`reduceChan`): **Both** (today, the default), **Mid** or **Side**. With Mid, the input is split into mid and side, only the mid is cut, and the two are joined again, so wide material keeps its highs while a centre vocal is de-essed. Both is today's path, bit for bit.
+
+What the model found: a centre vocal's "s" sounds with wide cymbals (Split, Threshold −30 dB, Range −12). Cutting both channels, the "s" came down 2.8 dB and the cymbals dipped 0.7 dB on every "s". Cutting the mid only, the "s" came down the same 2.8 dB and the cymbals didn't move. The effect is modest on this mix and larger with brighter, louder cymbals, where it's audible as the cymbals ducking with the singer.
+
+### 2. Hiss mode (item 33)
+
+A de-esser cuts when the highs are loud. Hiss is the opposite problem: you hear it when the music is quiet. **Hiss** is a third choice beside Band and Shelf in the Detection switch. It uses the shelf (everything above Freq) and turns it down when its level falls *below* Threshold, by up to Range at 1 dB per dB. Attack is how fast it opens and Release how fast it closes, so the controls keep their meaning. Pauses lose their hiss, and loud passages keep their highs. Band and Shelf are unchanged.
+
+What the model found: a vocal with tape hiss at −54 dBFS, the shelf at 4 kHz, Threshold −38 dB (above the hiss's peaks, under the voice's highs), Range −12 dB, measured above 8 kHz:
+
+| | Hiss in the pauses | The voice's highs in loud parts |
+|---|---|---|
+| **Hiss mode** (Release 60 ms, DS's default) | **−6.8 dB** | **−0.2 dB** |
+| Hiss mode, Release 150 ms | −3.7 dB | −0.9 dB |
+| A static −12 dB high shelf | −8.6 dB | −8.6 dB |
+
+Hiss mode takes most of the hiss out of the gaps and leaves the singing bright, where a static shelf dulls everything. It's a quick fix for a hissy take. For steady noise under the music too, Fancy FIR's Subtract mode does more, which the manual will say.
+
+### 3. DS-Mini's Hiss profile (item 34)
+
+A fifth profile, **Hiss**, beside DS-Mini's voice and instrument profiles: Hiss mode with the shelf at 5 kHz and Threshold placed by Amount (higher Amount, higher threshold and deeper Range), Release 60 ms. **Save as Fancy DS preset** carries it over as Hiss mode with the same settings, as the other profiles do.
+
+### 4. Decisions
+
+- **Decision 1: Mid/Side's control.**
+  - **A (R).** A **Reduce: Both | Mid | Side** dropdown in the EDIT drawer, under Filter slope. The main window doesn't change.
+  - **B.** Two small segments in the top row by Mode, which changes the main layout.
+- **Decision 2: Hiss mode.**
+  - **A (R).** A third segment, **Band | Shelf | Hiss**, in the DETECTION card. In Hiss, Width dims (as in Shelf) and the history shows the reduction growing in the gaps. A mockup follows approval.
+  - **B.** Leave hiss to FIR's Subtract and drop items 33 and 34.
+- **Decision 3: DS-Mini.**
+  - **A (R).** Add the Hiss profile, as above.
+  - **B.** No Hiss profile in DS-Mini, keeping its profiles to sibilance.
+
+### 5. Tests
+
+1. Legacy: Reduce Both, Band and Shelf render exactly as v1.7.0, and DS-Mini's existing profiles likewise.
+2. Reduce Mid: with a side-only input, the output equals the input bit for bit while the mid is cut; Side likewise the other way round.
+3. Hiss mode on the model's signal: the hiss in the pauses comes down by at least 5 dB, and the highs in loud parts by under 0.5 dB.
+4. Hiss mode with Range 0: the output equals the input bit for bit.
+5. DS-Mini Hiss: its saved DS preset loads in DS as Hiss mode and renders the same within −100 dB.
+
+### 6. Build order
+
+Approval, then the mockup (`reference/phase4/60__ds_w2b_mockup.png`): the three-way Detection switch and the drawer's Reduce row, and DS-Mini's profile list with Hiss. Then one push, with tests, manuals and checklists for both plugins.
