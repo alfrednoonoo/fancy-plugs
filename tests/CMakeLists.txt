@@ -75,7 +75,7 @@ if("FANCY_HAS_CHORUS=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_ROOM=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE RoomTests.cpp RoomW1Tests.cpp LegacyRoomDsp.cpp)
+    target_sources(fancy-tests PRIVATE RoomTests.cpp RoomW1Tests.cpp RoomW2Tests.cpp LegacyRoomDsp.cpp LegacyRoomW1Dsp.cpp)
 endif()
 
 # Headers generated during the build, such as Fancy Sature's auto-gain table.

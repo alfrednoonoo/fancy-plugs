@@ -77,6 +77,19 @@ private:
     fancy::ui::ParamCheckbox gateCheckbox, autoGainCheckbox;
     fancy::ui::Knob gateThresholdKnob, gateHoldKnob, gateDecayKnob;
 
+    // Phase 4 Wave 2 (reference/phase4/56__room_w2_mockup.png): Duck from with the temporary
+    // Listen to ducking switch beside Ducking, and the Decay shape group under Auto gain.
+    juce::Label duckFromTitle, shapeTitle;
+    fancy::ui::ParamDropdown duckFromDropdown;
+    fancy::ui::ListenCheckbox listenCheckbox;
+    fancy::ui::Knob lowDecayKnob, attackKnob;
+
+    // The I/O pill counts the sidechain's two pins.
+    int getShownInputs() override
+    {
+        return juce::jmax (getFancyProcessor().getTotalNumInputChannels(), getFancyProcessor().getMainBusNumInputChannels() + 2);
+    }
+
     bool lastCapped = false;
     juce::String lastNoteTip;
 

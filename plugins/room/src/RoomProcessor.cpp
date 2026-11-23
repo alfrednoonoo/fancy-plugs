@@ -143,6 +143,22 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (milliseconds ("gateHold", "Gate hold", 10.0f, 500.0f, 80.0f));
     layout.add (milliseconds ("gateDecay", "Gate decay", 5.0f, 500.0f, 40.0f));
     layout.add (toggle ("autoGain", "Auto gain", false));
+
+    // Phase 4 Wave 2 (docs/room.md, items 19 to 21), appended. Every default is v1.7.0's sound.
+    layout.add (fancy::floatParameter ("lowDecay", "Low decay", fancy::logRange (0.25f, 4.0f, 0.01f), 1.0f,
+                                       Attributes {}
+                                           .withLabel ("x")
+                                           .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::CharPointer_UTF8 ("\xc3\x97")) + fancy::formatFixed (value, 2); })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
+    juce::NormalisableRange<float> attackRange (0.0f, (float) RoomDsp::maxAttackMs, 1.0f);
+    attackRange.setSkewForCentre (100.0f);
+    layout.add (fancy::floatParameter ("attack", "Attack", attackRange, 0.0f,
+                                       Attributes {}
+                                           .withLabel ("ms")
+                                           .withStringFromValueFunction ([] (float value, int) { return msText (value); })
+                                           .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "duckFrom", 1 }, "Duck from", juce::StringArray { "Input", "Sidechain" }, 0));
     return layout;
 }
 
@@ -194,7 +210,8 @@ RoomProcessor::RoomProcessor()
     : FancyProcessor ("Fancy Room", "FancyRoom",
                       BusesProperties()
                           .withInput ("Input", juce::AudioChannelSet::stereo(), true)
-                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true),
+                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                          .withInput ("Sidechain", juce::AudioChannelSet::stereo(), false), // Phase 4 Wave 2
                       createLayout(), createPresets())
 {
 }
@@ -273,6 +290,12 @@ RoomDsp::Targets RoomProcessor::readTargets() const
     targets.gateHoldMs = (double) read ("gateHold");
     targets.gateDecayMs = (double) read ("gateDecay");
     targets.autoGain = isOn ("autoGain");
+
+    // Phase 4 Wave 2. Listen to ducking is the temporary switch, never a parameter (§0.3).
+    targets.lowDecay = (double) read ("lowDecay");
+    targets.attackMs = (double) read ("attack");
+    targets.duckSidechain = isOn ("duckFrom");
+    targets.listenDucking = isListening();
     return targets;
 }
 
@@ -303,26 +326,44 @@ bool RoomProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     if (out != juce::AudioChannelSet::mono() && out != juce::AudioChannelSet::stereo())
         return false;
 
-    return out == layouts.getMainInputChannelSet();
+    if (out != layouts.getMainInputChannelSet())
+        return false;
+
+    // Phase 4 Wave 2: the optional sidechain, off, mono or stereo.
+    if (layouts.inputBuses.size() < 2)
+        return true;
+
+    const auto sidechain = layouts.getChannelSet (true, 1);
+    return sidechain.isDisabled() || sidechain == juce::AudioChannelSet::mono() || sidechain == juce::AudioChannelSet::stereo();
 }
 
 void RoomProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     const juce::ScopedNoDenormals noDenormals;
 
-    const auto numChannels = juce::jmin (getMainBusNumInputChannels(), buffer.getNumChannels(), 2);
+    // Phase 4 Wave 2: the main bus and the optional sidechain, as their own buffers.
+    auto mainBuffer = getBusBuffer (buffer, true, 0);
+    const auto numChannels = juce::jmin (mainBuffer.getNumChannels(), 2);
     const auto numSamples = buffer.getNumSamples();
 
     if (numChannels == 0)
         return;
 
-    const auto channels = buffer.getArrayOfWritePointers();
+    const auto channels = mainBuffer.getArrayOfWritePointers();
+    auto sidechainBuffer = getBusCount (true) > 1 ? getBusBuffer (buffer, true, 1) : juce::AudioBuffer<float>();
+    const auto numSidechain = juce::jmin (sidechainBuffer.getNumChannels(), 2);
+    const float* sidechain[2] { numSidechain > 0 ? sidechainBuffer.getReadPointer (0) : nullptr,
+                                numSidechain > 1 ? sidechainBuffer.getReadPointer (1) : nullptr };
 
     inputMeter.push (channels, numChannels, numSamples);
 
+    // The notice shows only while Ducking is keyed by a sidechain that's silent.
+    sidechainWatch.update (channels, numChannels, sidechain, numSidechain, numSamples, getSampleRate(),
+                           isOn ("duckFrom") && read ("ducking") > 0.0f);
+
     updateTempo();
     dsp.setTargets (readTargets());
-    dsp.process (channels, numChannels, numSamples);
+    dsp.process (channels, numChannels, numSamples, sidechain, numSidechain);
 
     outputMeter.push (channels, numChannels, numSamples);
 }

@@ -53,6 +53,12 @@ public:
         bool gate = false;                                  // gates the wet signal from the input
         double gateThresholdDb = -30.0, gateHoldMs = 80.0, gateDecayMs = 40.0;
         bool autoGain = false;                              // trims Wet as Size and Decay change
+
+        // Phase 4 Wave 2 (docs/room.md, items 19 to 21). At these defaults the output is v1.7.0's.
+        double lowDecay = 1.0;                              // 0.25 to 4: the lows decay for this x Decay
+        double attackMs = 0.0;                              // 0 to 500: the late tail swells in
+        bool duckSidechain = false;                         // Ducking keyed by the sidechain
+        bool listenDucking = false;                         // plays what Ducking takes away (never saved)
     };
 
     // Phase 4 Wave 1: the wet trim Auto gain applies, in dB, for a Size and Decay. 0 at the
@@ -68,6 +74,9 @@ public:
     static constexpr int modStep = 16;
     static constexpr double maxPredelayMs = 250.0;
     static constexpr double maxRate = 384000.0;
+    static constexpr double maxAttackMs = 500.0;
+    static constexpr int attackTaps = 16;
+    static constexpr double lowShelfHz = 250.0;
 
     RoomDsp();
 
@@ -79,7 +88,18 @@ public:
     // Jumps straight to the targets, for use before processing starts.
     void snapToTargets (const Targets& targets);
 
-    void process (float* const* channels, int numChannels, int numSamples) noexcept;
+    // Phase 4 Wave 2: an optional sidechain keys Ducking when Duck from is Sidechain. Without
+    // sidechain channels, Ducking reads the main input as before.
+    void process (float* const* channels, int numChannels, int numSamples,
+                  const float* const* sidechain = nullptr, int numSidechain = 0) noexcept;
+
+    // Phase 4 Wave 2: the Attack taps' delays (fractions of Attack) and their weights, scaled to
+    // keep the energy, for the tests.
+    static double attackTapPosition (int index) noexcept { return (double) index / (attackTaps - 1); }
+    static double attackTapWeight (int index) noexcept;
+
+    // The reduction Ducking applies now, in dB, for the tests.
+    double getDuckingDb() const noexcept { return duckEnvelope; }
 
     // Decision 3: Pre-delay + the longest reflection + 1.5 x Decay, which is where the tail is
     // 90 dB down, with about 10 dB to spare (docs/room.md).
@@ -118,6 +138,9 @@ private:
 
         // Phase 4 Wave 1: keeps each line's sine continuous when Mod rate changes. 0 until it does.
         std::array<double, maxLines> modOffset {};
+
+        // Phase 4 Wave 2: Low decay's first-order low shelf per line, after its damping.
+        std::array<double, maxLines> shelfB0 {}, shelfB1 {}, shelfA1 {}, shelfState {};
     };
 
     void configure (Network& network, int quality);
@@ -194,4 +217,16 @@ private:
 
     // Auto gain's trim, as a gain, smoothed over 50 ms.
     fancy::dsp::Smoother autoTrim;
+
+    // Phase 4 Wave 2 ----------------------------------------------------------------------------
+
+    // Low decay: the shelves run while it isn't settled at x1.
+    fancy::dsp::Smoother lowDecay;
+    double lastLowDecay = -1.0;
+    bool shelfActive = false;
+
+    // Attack: 16 taps on the pre-delayed input, run while it isn't settled at 0.
+    fancy::dsp::Smoother attack;
+    std::array<double, attackTaps> attackWeight {};
+    double attackWeightSum = 0.0;
 };

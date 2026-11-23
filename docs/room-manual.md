@@ -50,6 +50,12 @@ The tail's level over 0 to 3 s, longer when Decay needs it, from 0 to −60 dB: 
 | Mod rate | 0.25× to 4× | 1.00× | Scales the speed of every line's modulation: slow for a lush chorus, fast for shimmer. Mod still sets the depth |
 | Gate the tail | on, off | off | When the input stays under Threshold (−60 to 0 dB, −30) for Hold (10 to 500 ms, 80), the reverb fades out over Decay (5 to 500 ms, 40): the gated drum sound |
 | Auto gain | on, off | off | Trims the wet level as Size and Decay change, so a longer decay doesn't make the reverb louder. 0 dB at Size 55 % and Decay 1.8 s |
+| Duck from | Input, Sidechain | Input | What Ducking listens to. Sidechain reads Room's optional stereo sidechain bus (pins 3/4 in REAPER), so a reverb on the drums can make room for the vocal: down while the vocal sings, back in its gaps. With nothing on the sidechain, Ducking has nothing to follow and leaves the reverb alone, and while Ducking is above 0 the main window shows "No sidechain signal". (A host that switches the sidechain bus off altogether gives Ducking the input instead) |
+| Listen to ducking | on, off | off | Plays only what Ducking takes away from the reverb, without the dry signal, to hear what it does. Temporary: it's never saved, and it switches off when the window closes. Dimmed while Ducking is 0 |
+| Decay shape: Low decay | ×0.25 to ×4 | ×1.00 | How long the lows (below about 250 Hz) ring compared with Decay: ×2 doubles their decay time, ×0.5 halves it. The change fades out by 1 kHz; Damping still sets the highs. At ×1 it's out of the path |
+| Decay shape: Attack | 0 to 500 ms | 0 ms | Makes the late tail swell in over this time instead of starting at full level, keeping its overall level. The early reflections still start at once. On sharp hits at long settings the swell can sound like a quick flam |
+
+The window is 64 px taller than before (529 px at 100 %) to fit the Decay shape group.
 
 CPU at 48 kHz is in `docs/measurements/room.txt`.
 

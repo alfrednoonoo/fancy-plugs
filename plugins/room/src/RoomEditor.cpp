@@ -11,7 +11,7 @@ namespace
 {
 // design/phase3-mockup-src/room.html at 100 %, with Sature's margins and right column.
 constexpr int baseWidth = 760;
-constexpr int bodyHeight = 392;
+constexpr int bodyHeight = 456; // Phase 4 Wave 2: 64 px taller, for the drawer's Decay shape group
 constexpr int baseHeight = ShellEditor::headerHeight + bodyHeight;
 constexpr int rightColumnX = 656;
 
@@ -19,20 +19,23 @@ constexpr int rightColumnX = 656;
 constexpr fancy::ui::Knob::Style drawerKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
 
 constexpr int leftX = 13, contentRight = 646;
-constexpr int displayX = leftX, displayY = 10, displayWidth = 610, displayHeight = 198;
-constexpr int cardY = 216, cardHeight = 127;
+// Phase 4 Wave 2: the window's extra 64 px are shared evenly, 32 to the display and 32 to the
+// cards, whose knobs stay centred under their titles' row.
+constexpr int displayX = leftX, displayY = 10, displayWidth = 610, displayHeight = 230;
+constexpr int cardY = 248, cardHeight = 159, cardKnobTop = cardY + 46;
 constexpr int spaceCardX = leftX, spaceCardWidth = 415;
 constexpr int toneCardX = spaceCardX + spaceCardWidth + 8, toneCardWidth = contentRight - toneCardX;
 constexpr int knobWidth = 68, knobHeight = 92; // docs/room.md, Phase 4: under the 69 px spacing
-constexpr int footerY = 362;
-constexpr int faderTop = 26, faderHeight = 331;
+constexpr int footerY = 426;
+constexpr int faderTop = 26, faderHeight = 395;
 
 constexpr float labelHeight = 12.0f;
 
 const juce::Colour purple = colours::accentPurple;
 const juce::Colour lightInk { 0xffededed };
 
-constexpr OutMeter::Geometry outGeometry { 14.5f, 16.0f, 316.0f, 26.0f, 4.9f, 324.0f, false, true };
+// The same 59 dB span as before, over the longer well.
+constexpr OutMeter::Geometry outGeometry { 14.5f, 16.0f, 380.0f, 26.0f, 5.98f, 388.0f, false, true };
 
 void setValue (juce::RangedAudioParameter& parameter, float value)
 {
@@ -350,7 +353,11 @@ RoomEditor::RoomEditor (RoomProcessor& processor)
       autoGainCheckbox (parameter ("autoGain"), "Auto gain", purple),
       gateThresholdKnob (parameter ("gateThr"), "Threshold", purple, drawerKnobStyle),
       gateHoldKnob (parameter ("gateHold"), "Hold", purple, drawerKnobStyle),
-      gateDecayKnob (parameter ("gateDecay"), "Decay", purple, drawerKnobStyle)
+      gateDecayKnob (parameter ("gateDecay"), "Decay", purple, drawerKnobStyle),
+      duckFromDropdown (parameter ("duckFrom")),
+      listenCheckbox (processor, "Listen to ducking", purple),
+      lowDecayKnob (parameter ("lowDecay"), "Low decay", purple, drawerKnobStyle, true),
+      attackKnob (parameter ("attack"), "Attack", purple, drawerKnobStyle)
 {
     auto& body = getBody();
 
@@ -365,8 +372,8 @@ RoomEditor::RoomEditor (RoomProcessor& processor)
     display.setBounds (displayX, displayY, displayWidth, displayHeight);
 
     // Cards.
-    cardKnobs ({ &predelayKnob, &sizeKnob, &decayKnob, &diffusionKnob, &modKnob, &widthKnob }, spaceCardX, spaceCardWidth, cardY + 30);
-    cardKnobs ({ &dampingKnob, &lowCutKnob, &highCutKnob }, toneCardX, toneCardWidth, cardY + 30);
+    cardKnobs ({ &predelayKnob, &sizeKnob, &decayKnob, &diffusionKnob, &modKnob, &widthKnob }, spaceCardX, spaceCardWidth, cardKnobTop);
+    cardKnobs ({ &dampingKnob, &lowCutKnob, &highCutKnob }, toneCardX, toneCardWidth, cardKnobTop);
     noteKnob.setBounds (predelayKnob.getBounds());
 
     predelayKnob.setTooltip ("A gap before the reverb starts, so the dry sound stays clear in front of it.");
@@ -396,7 +403,7 @@ RoomEditor::RoomEditor (RoomProcessor& processor)
     wetOnlyCheckbox.setTooltip ("For a send: only the reverb comes out, whatever Dry is set to. Dry comes back when this is off.");
 
     // Right column, as Sature's.
-    outMeter.setBounds (rightColumnX - 6, 10, 46, 350);
+    outMeter.setBounds (rightColumnX - 6, 10, 46, 414);
     setUpLabel (wetLabel, "Wet", juce::Justification::centred, 14.0f, colours::textPrimary);
     setUpLabel (dryLabel, "Dry", juce::Justification::centred, 14.0f, colours::textPrimary);
     wetLabel.setBounds (690, 10, 33, 17);
@@ -471,6 +478,31 @@ RoomEditor::RoomEditor (RoomProcessor& processor)
              &eqHighGainKnob, &modRateKnob, &gateCheckbox, &autoGainCheckbox, &gateThresholdKnob, &gateHoldKnob, &gateDecayKnob })
         drawer.addAndMakeVisible (item);
 
+    // Phase 4 Wave 2 (reference/phase4/56__room_w2_mockup.png), positions as measured: Duck from
+    // right of Early reflections, the Decay shape group in the 64 px the window grew by.
+    setUpLabel (duckFromTitle, "DUCK FROM", juce::Justification::centredLeft, 10.0f, colours::textSecondary);
+    setUpLabel (shapeTitle, "DECAY SHAPE", juce::Justification::centredLeft, 10.0f, colours::textSecondary);
+    duckFromTitle.setBounds (262, 143, 120, 12);
+    duckFromDropdown.setBounds (262, 159, 120, 24);
+    listenCheckbox.setBounds (262, 195, 140, 20);
+    listenCheckbox.setLabelHeight (labelHeight);
+    shapeTitle.setBounds (398, 345, 120, 12);
+    placeKnob (lowDecayKnob, 448, 359);
+    placeKnob (attackKnob, 538, 359);
+    lowDecayKnob.setShowDefaultMark (true);
+
+    duckFromDropdown.setTooltip ("What Ducking listens to: this track's input, or the sidechain (pins 3/4 in REAPER), "
+                                 "so a reverb on the drums can make room for the vocal. With nothing on the sidechain, Ducking has nothing to follow.");
+    listenCheckbox.setTooltip ("Plays only what Ducking takes away from the reverb, to hear what it does. "
+                               "It's temporary: it switches off when the window closes and is never saved.");
+    lowDecayKnob.setTooltip ("How long the lows ring compared with Decay: below 1 they die away sooner, above 1 they last longer. "
+                             "Damping sets the highs.");
+    attackKnob.setTooltip ("Makes the tail swell in over this time instead of starting at once. The early reflections aren't changed.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> {
+             &duckFromTitle, &shapeTitle, &duckFromDropdown, &listenCheckbox, &lowDecayKnob, &attackKnob })
+        drawer.addAndMakeVisible (item);
+
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
 
@@ -518,6 +550,12 @@ void RoomEditor::updateStates()
         dryFader.setLocked (wetOnly, "Off while Wet only (send) is on");
         dryFader.setAlpha (wetOnly ? 0.5f : 1.0f);
     }
+
+    // Phase 4 Wave 2: Listen to ducking dims while Ducking is 0, as there's nothing to hear.
+    const auto listenAlpha = processor.read ("ducking") > 0.0f ? 1.0f : 0.5f;
+
+    if (listenCheckbox.getAlpha() != listenAlpha)
+        listenCheckbox.setAlpha (listenAlpha);
 }
 
 void RoomEditor::onTick (float seconds)
@@ -561,5 +599,6 @@ std::vector<ShellEditor::PopupOpener> RoomEditor::getPopupOpeners()
     openers.push_back ({ "dropdown-quality", [this] { drawer.setVisible (true); qualityDropdown.click(); } });
     openers.push_back ({ "tooltip-freeze", [this] { showTip (freezeCheckbox, freezeCheckbox.getTooltip()); } });
     openers.push_back ({ "value-decay", [this] { decayKnob.openValueEditor(); } });
+    openers.push_back ({ "dropdown-duckfrom", [this] { drawer.setVisible (true); duckFromDropdown.click(); } });
     return openers;
 }

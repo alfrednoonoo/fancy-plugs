@@ -33,6 +33,10 @@ constexpr double twoPi = 2.0 * std::numbers::pi;
 constexpr double autoGainSize = 0.55, autoGainDecay = 1.8; // where Auto gain trims 0 dB
 constexpr double autoTrimMs = 50.0, gateOpenMs = 1.0;
 
+// Phase 4 Wave 2. Below attackEnergyMs the taps sit too close together to add as uncorrelated
+// copies, so their scaling moves from keeping the amplitude (at 0) to keeping the energy.
+constexpr double attackEnergyMs = 10.0;
+
 double frac (double x) noexcept
 {
     return x - std::floor (x);
@@ -63,11 +67,35 @@ RoomDsp::Tap RoomDsp::reflection (int channel, int index) noexcept
     return { ms, 0.9 * (1.0 - 0.75 * ms / 80.0) * polarity * 0.35 };
 }
 
+// Phase 4 Wave 2 (docs/room.md, item 20): a rising raised cosine, scaled so the 16 copies keep
+// the energy of one (docs/research/room-w2-model.py).
+double RoomDsp::attackTapWeight (int index) noexcept
+{
+    auto squares = 0.0;
+
+    for (int k = 0; k < attackTaps; ++k)
+    {
+        const auto w = 0.5 - 0.5 * std::cos (std::numbers::pi * (k + 1) / attackTaps);
+        squares += w * w;
+    }
+
+    const auto k = std::clamp (index, 0, attackTaps - 1);
+    return (0.5 - 0.5 * std::cos (std::numbers::pi * (k + 1) / attackTaps)) / std::sqrt (squares);
+}
+
 RoomDsp::RoomDsp()
 {
     for (int ch = 0; ch < 2; ++ch)
         for (int k = 0; k < erTaps; ++k)
             reflections[(size_t) ch][(size_t) k] = reflection (ch, k);
+
+    attackWeightSum = 0.0;
+
+    for (int k = 0; k < attackTaps; ++k)
+    {
+        attackWeight[(size_t) k] = attackTapWeight (k);
+        attackWeightSum += attackWeight[(size_t) k];
+    }
 }
 
 double RoomDsp::longestReflectionSeconds (double sizeValue) noexcept
@@ -111,7 +139,9 @@ void RoomDsp::prepare (double newSampleRate)
     const auto perMs = sampleRate * 0.001;
 
     // Sized for the longest settings at this rate, so nothing allocates while playing.
-    const auto historySize = powerOfTwoAbove ((maxPredelayMs + longestReflectionMs) * perMs + 4.0);
+    // Phase 4 Wave 2: Attack's taps reach Pre-delay + 500 ms back. A longer buffer reads the same
+    // samples, so the output doesn't change.
+    const auto historySize = powerOfTwoAbove ((maxPredelayMs + std::max (longestReflectionMs, maxAttackMs)) * perMs + 4.0);
     history.assign ((size_t) historySize * 2, 0.0f);
     historyMask = historySize - 1;
 
@@ -144,6 +174,11 @@ void RoomDsp::prepare (double newSampleRate)
         smoother->setTime (smoothingMs, sampleRate);
 
     autoTrim.setTime (autoTrimMs, sampleRate);
+
+    // Phase 4 Wave 2.
+    lowDecay.setTime (smoothingMs, sampleRate);
+    attack.setTime (smoothingMs, sampleRate);
+
     gateOpenStep = 1.0 / std::max (1.0, gateOpenMs * 0.001 * sampleRate);
 
     freezeRampSamples = std::max (1, (int) (freezeRampSeconds * sampleRate));
@@ -184,6 +219,7 @@ void RoomDsp::clear (Network& network)
 
     network.lp.fill (0.0);
     network.v.fill (0.0);
+    network.shelfState.fill (0.0);
     network.ringing = false;
     network.ringFade = 1.0;
     network.ringSamples = 0;
@@ -231,10 +267,14 @@ void RoomDsp::reset()
     updateLengths (size.isSettled(), predelay.isSettled());
     lastSize = size.getCurrent();
     lastPredelay = predelay.getCurrent();
+
+    // Phase 4 Wave 2: the shelves start clean (configure and clear), switched on as Low decay is.
+    shelfActive = ! (lowDecay.getCurrent() == 1.0 && lowDecay.isSettled());
     updateGains (network);
     lastDecay = decay.getCurrent();
     lastDamping = damping.getCurrent();
     gainsForScale = lastSize;
+    lastLowDecay = lowDecay.getCurrent();
     updateModulation (network, 0);
     updateFilters();
 }
@@ -251,7 +291,10 @@ void RoomDsp::setTargets (const Targets& newTargets)
         size.setTarget (std::clamp (targets.size, 0.0, 1.0));
         decay.setTarget (std::clamp (targets.decay, 0.1, 20.0));
         damping.setTarget (std::clamp (targets.damping, 0.0, 1.0));
+        lowDecay.setTarget (std::clamp (targets.lowDecay, 0.25, 4.0));
     }
+
+    attack.setTarget (std::clamp (targets.attackMs, 0.0, maxAttackMs));
 
     const auto nyquistLimit = 0.45 * sampleRate;
     diffusion.setTarget (std::clamp (targets.diffusion, 0.0, 1.0));
@@ -290,10 +333,12 @@ void RoomDsp::snapToTargets (const Targets& newTargets)
     size.setTarget (std::clamp (targets.size, 0.0, 1.0));
     decay.setTarget (std::clamp (targets.decay, 0.1, 20.0));
     damping.setTarget (std::clamp (targets.damping, 0.0, 1.0));
+    lowDecay.setTarget (std::clamp (targets.lowDecay, 0.25, 4.0));
 
     for (auto* smoother : { &predelay, &size, &decay, &diffusion, &mod, &width, &damping, &logLowCut, &logHighCut,
                             &erGain, &ducking, &wet, &dry, &output, &bypass,
-                            &modRate, &eqLogHz[0], &eqLogHz[1], &eqLogHz[2], &eqGain[0], &eqGain[1], &eqGain[2], &eqQ, &autoTrim })
+                            &modRate, &eqLogHz[0], &eqLogHz[1], &eqLogHz[2], &eqGain[0], &eqGain[1], &eqGain[2], &eqQ, &autoTrim,
+                            &lowDecay, &attack })
         smoother->snapToTarget();
 
     if (prepared)
@@ -377,6 +422,24 @@ void RoomDsp::updateGains (Network& network) noexcept
         const auto ratio = gh / g;
         network.g[(size_t) i] = g;
         network.bco[(size_t) i] = (1.0 - ratio) / (1.0 + ratio);
+    }
+
+    // Phase 4 Wave 2: Low decay's shelf, a bilinear first-order low shelf at 250 Hz with the extra
+    // gain per pass at DC that makes the lows decay for Low decay x Decay, and 1 at Nyquist.
+    if (! shelfActive)
+        return;
+
+    const auto multiplier = lowDecay.getCurrent();
+    const auto wc = std::tan (std::numbers::pi * std::min (lowShelfHz, 0.45 * sampleRate) / sampleRate);
+
+    for (int i = 0; i < network.numLines; ++i)
+    {
+        const auto d = network.length[(size_t) i];
+        const auto glow = std::pow (10.0, -3.0 * d / (sampleRate * t * multiplier)) / network.g[(size_t) i];
+        const auto a0 = 1.0 + wc;
+        network.shelfB0[(size_t) i] = (1.0 + glow * wc) / a0;
+        network.shelfB1[(size_t) i] = (glow * wc - 1.0) / a0;
+        network.shelfA1[(size_t) i] = (wc - 1.0) / a0;
     }
 }
 
@@ -473,7 +536,21 @@ void RoomDsp::runKnot() noexcept
     applyModRate();
     updateEq();
 
-    const auto gainsChanged = decay.getCurrent() != lastDecay || damping.getCurrent() != lastDamping || size.getCurrent() != gainsForScale;
+    // Phase 4 Wave 2: Low decay's shelves run until it settles back at x1, and leave clean.
+    const auto shelfWanted = ! (lowDecay.getCurrent() == 1.0 && lowDecay.isSettled());
+    const auto shelfChanged = shelfWanted != shelfActive;
+
+    if (shelfChanged)
+    {
+        shelfActive = shelfWanted;
+
+        if (! shelfActive)
+            for (auto& network : networks)
+                network.shelfState.fill (0.0);
+    }
+
+    const auto gainsChanged = decay.getCurrent() != lastDecay || damping.getCurrent() != lastDamping || size.getCurrent() != gainsForScale
+                              || (shelfActive && (shelfChanged || lowDecay.getCurrent() != lastLowDecay));
 
     for (auto& network : networks)
     {
@@ -489,6 +566,7 @@ void RoomDsp::runKnot() noexcept
     lastDecay = decay.getCurrent();
     lastDamping = damping.getCurrent();
     gainsForScale = size.getCurrent();
+    lastLowDecay = lowDecay.getCurrent();
 
     if (logLowCut.getCurrent() != lastLowLog || logHighCut.getCurrent() != lastHighLog)
         updateFilters();
@@ -543,8 +621,18 @@ double RoomDsp::runNetwork (Network& network, const double* diffused, double f, 
             bi *= 1.0 - f;
         }
 
-        const auto y = gi * (1.0 - bi) * read + bi * network.lp[index];
+        auto y = gi * (1.0 - bi) * read + bi * network.lp[index];
         network.lp[index] = y;
+
+        // Phase 4 Wave 2: Low decay's shelf after the damping. Freeze fades it out with the rest
+        // of the loop's loss, so a frozen tail holds.
+        if (shelfActive)
+        {
+            const auto shelved = network.shelfB0[index] * y + network.shelfState[index];
+            network.shelfState[index] = network.shelfB1[index] * y - network.shelfA1[index] * shelved;
+            y = frozen ? y + (1.0 - f) * (shelved - y) : shelved;
+        }
+
         network.v[index] = y;
 
         if ((i & 1) != 0)
@@ -581,7 +669,8 @@ double RoomDsp::runNetwork (Network& network, const double* diffused, double f, 
     return lateLeft * network.outGain;
 }
 
-void RoomDsp::process (float* const* channels, int numChannels, int numSamples) noexcept
+void RoomDsp::process (float* const* channels, int numChannels, int numSamples,
+                       const float* const* sidechain, int numSidechain) noexcept
 {
     if (! prepared || numChannels <= 0)
         return;
@@ -590,6 +679,11 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples) 
     const auto ringFadeStep = 1.0 / std::max (1.0, ringFadeSeconds * sampleRate);
     const auto quietLimit = (int) (quietSeconds * sampleRate);
     const auto stereo = numChannels > 1;
+
+    // Phase 4 Wave 2: Duck from Sidechain, when there's a sidechain to read.
+    const auto keyed = targets.duckSidechain && sidechain != nullptr && numSidechain > 0 && sidechain[0] != nullptr;
+    const auto keyedStereo = keyed && numSidechain > 1 && sidechain[1] != nullptr;
+    const auto listen = targets.listenDucking;
 
     for (int i = 0; i < numSamples; ++i)
     {
@@ -638,6 +732,10 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples) 
 
         const auto autoTrimNow = autoTrim.next();
 
+        // Phase 4 Wave 2.
+        lowDecay.next();
+        const auto attackNow = attack.next();
+
         freezeAmount = targets.freeze ? std::min (1.0, freezeAmount + freezeStep) : std::max (0.0, freezeAmount - freezeStep);
 
         if (sampleCount % modStep == 0)
@@ -674,7 +772,30 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples) 
 
         // Diffusers on the pre-delayed input.
         double diffused[2];
-        readHistory (predelaySamples, diffused[0], diffused[1]);
+
+        if (attackNow == 0.0 && attack.isSettled())
+        {
+            readHistory (predelaySamples, diffused[0], diffused[1]);
+        }
+        else
+        {
+            // Phase 4 Wave 2 (item 20): 16 taps spread over Attack, rising, before the diffusers,
+            // so the late tail swells in. Close together they add in phase, so their scaling
+            // moves from keeping the amplitude at 0 ms to keeping the energy from 10 ms.
+            const auto span = attackNow * sampleRate * 0.001;
+            const auto blend = std::min (1.0, attackNow / attackEnergyMs);
+            const auto scale = 1.0 / (blend + (1.0 - blend) * attackWeightSum);
+            diffused[0] = diffused[1] = 0.0;
+
+            for (int k = 0; k < attackTaps; ++k)
+            {
+                double hL, hR;
+                readHistory (predelaySamples + span * attackTapPosition (k), hL, hR);
+                const auto w = attackWeight[(size_t) k] * scale;
+                diffused[0] += w * hL;
+                diffused[1] += w * hR;
+            }
+        }
 
         for (size_t ch = 0; ch < 2; ++ch)
         {
@@ -758,7 +879,11 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples) 
         // goes, and the reduction follows it with 10 ms attack and 300 ms release, in dB, so the
         // reverb comes back 300 ms after the playing stops whatever the level was.
         const auto level = std::max (std::abs (inLeft), std::abs (inRight));
-        duckPeak = level > duckPeak ? level : duckPeak + (level - duckPeak) * duckPeakRelease;
+
+        // Phase 4 Wave 2 (item 21): the same ducker, keyed by the sidechain when chosen.
+        const auto key = keyed ? std::max (std::abs ((double) sidechain[0][i]), keyedStereo ? std::abs ((double) sidechain[1][i]) : 0.0)
+                               : level;
+        duckPeak = key > duckPeak ? key : duckPeak + (key - duckPeak) * duckPeakRelease;
 
         auto duckGain = 1.0;
 
@@ -804,16 +929,26 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples) 
         if (targets.autoGain || ! autoTrim.isSettled() || autoTrimNow != 1.0)
             wetGain *= autoTrimNow;
 
+        // Phase 4 Wave 2: Listen to ducking plays only what Ducking takes away from the wet
+        // signal, with the gate and Auto gain as they are. It's temporary (§0.3).
+        auto dryGain = dryNow;
+
+        if (listen)
+        {
+            wetGain = duckGain > 0.0 ? wetGain * (1.0 - duckGain) / duckGain : 0.0;
+            dryGain = 0.0;
+        }
+
         if (stereo)
         {
-            const auto outL = (wetL * wetGain + inLeft * dryNow) * outputNow;
-            const auto outR = (wetR * wetGain + inRight * dryNow) * outputNow;
+            const auto outL = (wetL * wetGain + inLeft * dryGain) * outputNow;
+            const auto outR = (wetR * wetGain + inRight * dryGain) * outputNow;
             channels[0][i] = (float) (outL + (inLeft - outL) * bypassNow);
             channels[1][i] = (float) (outR + (inRight - outR) * bypassNow);
         }
         else
         {
-            const auto out = (0.5 * (wetL + wetR) * wetGain + inLeft * dryNow) * outputNow;
+            const auto out = (0.5 * (wetL + wetR) * wetGain + inLeft * dryGain) * outputNow;
             channels[0][i] = (float) (out + (inLeft - out) * bypassNow);
         }
 

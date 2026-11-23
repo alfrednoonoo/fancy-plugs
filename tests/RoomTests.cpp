@@ -691,6 +691,19 @@ TEST_CASE ("room measurements", "[.measure]")
     std::printf ("room cpu (median of 5): Normal (target < 3 %%) %.3f %%, Eco %.3f %%, High %.3f %%, Normal with Freeze and Ducking %.3f %%\n",
                  cpuNormal, cpuEco, cpuHigh, cpuBusy);
 
+    // Phase 4 Wave 2: Low decay's shelves and Attack's 16 taps, each on its own and together.
+    auto shelved = normal;
+    shelved.lowDecay = 2.0;
+    auto swelled = normal;
+    swelled.attackMs = 150.0;
+    auto shaped = shelved;
+    shaped.attackMs = 150.0;
+    const auto cpuShelved = medianOfFive ([&] { return roomCpu (shelved); });
+    const auto cpuSwelled = medianOfFive ([&] { return roomCpu (swelled); });
+    const auto cpuShaped = medianOfFive ([&] { return roomCpu (shaped); });
+    std::printf ("room cpu W2 (median of 5): Normal with Low decay x2 %.3f %%, with Attack 150 ms %.3f %%, with both %.3f %%\n",
+                 cpuShelved, cpuSwelled, cpuShaped);
+
    #if FANCY_HAS_COMP
     const auto comp = medianOfFive ([]
     {

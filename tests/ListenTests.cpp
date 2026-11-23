@@ -46,6 +46,10 @@
  #include "ChorusEditor.h"
  #include "ChorusProcessor.h"
 #endif
+#if FANCY_HAS_ROOM
+ #include "RoomEditor.h"
+ #include "RoomProcessor.h"
+#endif
 
 namespace
 {
@@ -301,5 +305,13 @@ TEST_CASE ("Chorus: Listen to wet is temporary (§0.3)", "[listen][chorus]")
 TEST_CASE ("Sature: Listen to added harmonics is temporary (§0.3)", "[listen][sature]")
 {
     checkListenSwitch<SatureProcessor> ("listen", true);
+}
+#endif
+
+// Phase 4 Wave 2 (docs/room.md, item 21). At Ducking 0 it plays silence, which still differs.
+#if FANCY_HAS_ROOM
+TEST_CASE ("Room: Listen to ducking is temporary (§0.3)", "[listen][room]")
+{
+    checkListenSwitch<RoomProcessor> ("listenDucking", true);
 }
 #endif

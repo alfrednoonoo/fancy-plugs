@@ -44,6 +44,17 @@
 - [ ] Gate the tail on a snare, Decay 3 s: the reverb stops dead when the snare does; Threshold, Hold and Decay act as labelled.
 - [ ] Auto gain on: turning Decay from 1 to 6 s and Size up and down keeps the reverb at about the same level. Off: back to the old behaviour.
 
+## Low decay, Attack and Duck from (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy Room: it sounds as before, the window is 529 px tall, and the EDIT drawer shows Low decay ×1.00, Attack 0 ms and Duck from Input.
+- [ ] The main page: the display and both cards are a little taller, the meter and faders reach the footer, and nothing overlaps.
+- [ ] **Low decay** on a long hall (Decay 3 s): ×2 makes the low end boom on after the rest has gone, ×0.5 tightens it. The highs don't change. Turning it while a tail rings: no clicks.
+- [ ] Low decay ×4 with **Freeze** on: the frozen tail holds steady and doesn't grow.
+- [ ] **Attack** 150 ms on a vocal: the reverb swells in behind the voice. At 500 ms on a snare, listen for a flam; the early reflections still start at once. Sweeping Attack while playing: no clicks.
+- [ ] **Duck from Sidechain**: put Room on a drum bus, route a vocal into pins 3/4, Ducking 100 %: the drum reverb ducks while the vocal sings and blooms in the gaps. The I/O pill shows the sidechain's pins.
+- [ ] Duck from Sidechain with nothing routed and Ducking above 0: "No sidechain signal" shows after about 2 s, and the reverb isn't ducked until something is routed.
+- [ ] **Listen to ducking**: plays only what's taken away; it's dim at Ducking 0, off after closing and reopening the window, and not in the saved project.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:
