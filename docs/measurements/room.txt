@@ -44,3 +44,8 @@ room tail: Decay  8.0 s, reported tail 12.063 s; loudest 50 ms after it -100.4 d
 workflow cpu: Fancy Room         default 2.207 % (4.50 x Comp); editor open, Compare measuring 2.356 % (4.81 x); Compare on 2.322 % (4.74 x)
 room cpu (median of 5): Normal (target < 3 %) 1.951 %, Eco 1.551 %, High 2.587 %, Normal with Freeze and Ducking 2.203 %
 room cpu reference: Fancy Comp default 0.395 % in the same run; Normal / comp = 4.94, Eco / comp = 3.92, High / comp = 6.55
+
+Phase 4 Wave 2 (items 19 to 21), run 45200635372, commit 6b62097, 48 kHz, 128-sample blocks:
+room cpu (median of 5): Normal (target < 3 %) 1.644 %, Eco 1.251 %, High 2.058 %, Normal with Freeze and Ducking 1.946 %
+room cpu W2 (median of 5): Normal with Low decay x2 1.754 %, with Attack 150 ms 2.059 %, with both 2.164 %
+room cpu reference: Fancy Comp default 0.661 % in the same run; Normal / comp = 2.49, Eco / comp = 1.89, High / comp = 3.11
