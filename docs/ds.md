@@ -298,7 +298,7 @@ Mockup 52 approved by the user on 22 November 2026, with yellow (`accentYellow`,
 
 ## Phase 4 Wave 2: Mid/Side reduction and Hiss mode (and DS-Mini's Hiss profile)
 
-**Draft for approval (23 November 2026).** Items 32, 33 and 34 of the Wave 2 order (`docs/enhancements.md`; backlog items 4 and 6 of section 11, and item 2 of section 12 for DS-Mini), for v1.7.1. Modelled first: `docs/research/ds-w2b-model.py`.
+**Approved by the user on 23 November 2026: decisions 1 to 3 all A.** Items 32, 33 and 34 of the Wave 2 order (`docs/enhancements.md`; backlog items 4 and 6 of section 11, and item 2 of section 12 for DS-Mini), for v1.7.1. Modelled first: `docs/research/ds-w2b-model.py`.
 
 ### 1. Mid/Side reduction (item 32)
 

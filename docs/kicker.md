@@ -119,7 +119,7 @@ One push (`22b0e05`), with every recommended option; `tests/KickerW1Tests.cpp`.
 
 ## Phase 4 Wave 2: an oversampled clipper
 
-**Draft for approval (23 November 2026).** Item 45 of the Wave 2 order (`docs/enhancements.md`; backlog item 5 of section 1), for v1.7.1. Modelled first: `docs/research/exciter-kicker-w2-model.py` (part 45).
+**Approved by the user on 23 November 2026: decisions 1 and 2 both A.** Item 45 of the Wave 2 order (`docs/enhancements.md`; backlog item 5 of section 1), for v1.7.1. Modelled first: `docs/research/exciter-kicker-w2-model.py` (part 45).
 
 ### 1. What it adds
 
@@ -158,7 +158,7 @@ Approval, then one push: the parameter, the oversampler, the drawer row, tests, 
 
 ## Phase 4: sidechain Duck
 
-**Draft for approval (23 November 2026).** Kicker 7 of `docs/enhancements.md`, from Phase 3 Q2.2 ("an optional sidechain input ducks the added sub when a kick hits on the sidechain"), deferred to Phase 4 and now planned for v1.7.1 (user, 22 November 2026). Modelled first: `docs/research/kicker-duck-model.py`.
+**Approved by the user on 23 November 2026: decisions 1 to 3 all A.** Kicker 7 of `docs/enhancements.md`, from Phase 3 Q2.2 ("an optional sidechain input ducks the added sub when a kick hits on the sidechain"), deferred to Phase 4 and now planned for v1.7.1 (user, 22 November 2026). Modelled first: `docs/research/kicker-duck-model.py`.
 
 ### 1. What it does
 

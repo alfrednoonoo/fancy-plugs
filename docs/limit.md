@@ -340,7 +340,7 @@ Mockup 49 approved by the user on 22 November 2026; `tests/LimitW2Tests.cpp`.
 
 ## Phase 4 Wave 2: Mid/Side link and an external sidechain
 
-**Draft for approval (23 November 2026).** Items 30 and 31 of the Wave 2 order (`docs/enhancements.md`; backlog items 7 and 8 of section 10), for v1.7.1. Modelled first: `docs/research/limit-w2-model.py`. The model argues against building either; the decisions below let you choose.
+**Approved by the user on 23 November 2026: decisions 1 and 2 both A, both items dropped.** Items 30 and 31 of the Wave 2 order (`docs/enhancements.md`; backlog items 7 and 8 of section 10), for v1.7.1. Modelled first: `docs/research/limit-w2-model.py`. The model argues against building either; the decisions below let you choose.
 
 ### 1. Mid/Side and per-channel link (item 30)
 
@@ -369,6 +369,6 @@ A limiter keeps its own output under the ceiling, so it must hear itself. Keyed 
   - **A (R).** Drop it. Keyed limiting either breaks the ceiling or becomes ducking, which Comp does.
   - **B.** Build it as "the deeper of own and key", with an optional sidechain bus and the host checks run again.
 
-### 4. If both are dropped
+### 4. Both dropped
 
 `docs/enhancements.md` marks items 30 and 31 dropped with the reason, and Limit's manual says that Link 0 % is per-channel limiting. No code changes.

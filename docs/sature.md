@@ -253,7 +253,7 @@ Mockup 45 approved by the user on 22 November 2026; `tests/SatureW2Tests.cpp`, a
 
 ## Phase 4 Wave 2: curve shaping, curve families, cuts, harmonic spread and Mid/Side
 
-**Draft for approval (23 November 2026).** Items 35 to 39 of the Wave 2 order (`docs/enhancements.md`; backlog items 4, 3, 5, 7 and 8 of section 13), for v1.7.1, in one note because they all live in the EDIT drawer and the Type segment. Modelled first: `docs/research/sature-w2b-model.py`. Every new setting defaults to today's sound, bit for bit.
+**Approved by the user on 23 November 2026: decisions 1 to 3 all A (Offset only, no Knee; Spread 0 to 50 %).** Items 35 to 39 of the Wave 2 order (`docs/enhancements.md`; backlog items 4, 3, 5, 7 and 8 of section 13), for v1.7.1, in one note because they all live in the EDIT drawer and the Type segment. Modelled first: `docs/research/sature-w2b-model.py`. Every new setting defaults to today's sound, bit for bit.
 
 ### 1. Curve shaping (item 35)
 

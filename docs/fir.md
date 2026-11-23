@@ -351,7 +351,7 @@ One push.
 
 ## Phase 4 Wave 2: ratio curve, Mid/Side, and EQ-mode dynamics
 
-**Draft for approval (23 November 2026).** Items 27, 28 and 29 of the Wave 2 order (`docs/enhancements.md`; backlog items 4, 5 and 6 of section 8), for v1.7.1, in one note because 27 and 29 turn out to be the same feature. Modelled first: `docs/research/fir-w2-model.py`.
+**Approved by the user on 23 November 2026: decisions 1 to 3 all A.** Items 27, 28 and 29 of the Wave 2 order (`docs/enhancements.md`; backlog items 4, 5 and 6 of section 8), for v1.7.1, in one note because 27 and 29 turn out to be the same feature. Modelled first: `docs/research/fir-w2-model.py`.
 
 ### 1. A ratio curve for Compressor mode (item 27)
 

@@ -301,10 +301,10 @@ yet) go into **v1.7.1**, and Wave 3 into **v1.7.2**.
    22. Delay LFO waveform and per-tap phase,
    23. MultiComp per-band lookahead, 24. MultiComp per-band detector EQ, 25. MultiComp per-band
    crossover slope, 26. MultiComp per-band GR history,
-   27. FIR ratio curve for Compressor mode, 28. FIR Mid/Side mode, 29. FIR attack and release in EQ mode,
-   30. Limit M/S and per-channel link, 31. Limit external sidechain,
+   27. FIR ratio curve for Compressor mode, 28. FIR Mid/Side mode, 29. FIR attack and release in EQ mode (folded into 27, user, 23 November 2026),
+   30. Limit M/S and per-channel link (dropped: per-channel is Link 0 %, and M/S can't help under a true ceiling), 31. Limit external sidechain (dropped: it breaks the ceiling or becomes Comp's ducking; both user, 23 November 2026),
    32. DS per-channel M/S reduction, 33. DS hiss mode, 34. DS-Mini hiss profile,
-   35. Sature curve shaping (Offset, Knee), 36. Sature curve families (diode, fold), 37. Sature low and
+   35. Sature curve shaping (Offset; Knee dropped, user, 23 November 2026), 36. Sature curve families (diode, fold), 37. Sature low and
    high cut, 38. Sature harmonic spread, 39. Sature Mid/Side,
    40. Exciter two-band, 41. Exciter transient emphasis, 42. Exciter low and high cut, 43. Exciter
    harmonics width, 44. Exciter minimum-phase oversampling,

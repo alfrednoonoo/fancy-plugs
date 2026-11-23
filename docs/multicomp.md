@@ -326,7 +326,7 @@ One push, with Decisions 1 to 3 all A.
 
 ## Phase 4 Wave 2: per-band lookahead, detector EQ, crossover slope and GR history
 
-**Draft for approval (23 November 2026).** Items 23 to 26 of the Wave 2 order (`docs/enhancements.md`; backlog items 2, 6, 3 and 5 of section 7), for v1.7.1, in one note because they share the band row and the EDIT drawer. Modelled first: `docs/research/multicomp-w2-model.py` (items 23 to 25; item 26 is a display and doesn't change the sound).
+**Approved by the user on 23 November 2026: decisions 1 to 4 all A.** Items 23 to 26 of the Wave 2 order (`docs/enhancements.md`; backlog items 2, 6, 3 and 5 of section 7), for v1.7.1, in one note because they share the band row and the EDIT drawer. Modelled first: `docs/research/multicomp-w2-model.py` (items 23 to 25; item 26 is a display and doesn't change the sound).
 
 ### 1. Per-band lookahead (item 23)
 

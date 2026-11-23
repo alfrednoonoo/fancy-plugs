@@ -118,7 +118,7 @@ One push (`ff59906`), with every recommended option; `tests/ExciterW1Tests.cpp`.
 
 ## Phase 4 Wave 2: two bands, Punch, a high cut, harmonics width and minimum-phase oversampling
 
-**Draft for approval (23 November 2026).** Items 40 to 44 of the Wave 2 order (`docs/enhancements.md`; backlog items 3, 4, 5, 6 and 8 of section 2), for v1.7.1. Kicker's item 45 shares the model and is in `docs/kicker.md`. Modelled first: `docs/research/exciter-kicker-w2-model.py`. Every new setting defaults to today's sound, bit for bit.
+**Approved by the user on 23 November 2026: decisions 1 to 4 all A.** Items 40 to 44 of the Wave 2 order (`docs/enhancements.md`; backlog items 3, 4, 5, 6 and 8 of section 2), for v1.7.1. Kicker's item 45 shares the model and is in `docs/kicker.md`. Modelled first: `docs/research/exciter-kicker-w2-model.py`. Every new setting defaults to today's sound, bit for bit.
 
 ### 1. A second band (item 40)
 
