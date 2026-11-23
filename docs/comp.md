@@ -536,7 +536,7 @@ Today's slope is enough when the cut can sit well above the kick. When it has to
 3. Slopes: one octave below Highpass, 24 dB/oct is 12 ± 1 dB further down than 12 dB/oct, and 48 dB/oct is 36 ± 1.5 dB further down; the −3 dB point doesn't move.
 4. The model's case 2: at 24 dB/oct the reduction jumps by under 0.5 dB on each kick, against over 1 dB at 12.
 5. Preview filter plays the whole detector chain, the new bands and slopes included.
-6. CPU: six bands and 48 dB/oct slopes add under 15 % to Comp at its defaults.
+6. CPU: a typical use of what this item adds, one more band and a 24 dB/oct Highpass, over the most v1.7.0 could run (bands 1 to 3 on), costs under 15 % of Comp at its defaults. All six bands with 48 dB/oct on both cuts is recorded, not held to a target. **Changed by the user on 23 November 2026**, after the first measurement: the full load added 73 % (0.494 % to 0.856 %), about 3 ns per filter section per sample, which no design of this kind brings near 15 %.
 
 ### 5. Build order
 

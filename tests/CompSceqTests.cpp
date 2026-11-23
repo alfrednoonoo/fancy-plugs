@@ -747,6 +747,18 @@ TEST_CASE ("comp six-band detector EQ and Mid/Side CPU measurement", "[.measure]
     const CompDsp::Targets defaults;
     const auto reference = timeOf (defaults);
 
+    // The most v1.7.0 could run: bands 1 to 3 on. Then the typical use of item 13 over it.
+    auto threeBands = defaults;
+    threeBands.highpassHz = 80.0;
+
+    for (size_t b = 0; b < 3; ++b)
+        threeBands.eq[b].gainDb = 3.0;
+
+    auto typical = threeBands;
+    typical.eqTypes[3] = CompDsp::bandBell;
+    typical.eq[3].gainDb = -4.0;
+    typical.highPassSlope = CompDsp::slope24;
+
     auto bands = defaults;
     bands.highpassHz = 80.0;
     bands.lowpassHz = 12000.0;
@@ -762,11 +774,16 @@ TEST_CASE ("comp six-band detector EQ and Mid/Side CPU measurement", "[.measure]
     auto midSide = defaults;
     midSide.linkMode = CompDsp::linkMidSide;
 
+    const auto withThree = timeOf (threeBands);
+    const auto withTypical = timeOf (typical);
     const auto withBands = timeOf (bands);
     const auto withMidSide = timeOf (midSide);
 
     std::printf ("Comp six-band detector EQ and link modes CPU, 48 kHz, 128 samples, stereo, median of %d runs:\n", runs);
     std::printf ("  defaults                         %.3f %%\n", reference);
-    std::printf ("  six bands, 48 dB/oct cuts        %.3f %%, %+.1f %% (target < +15 %%)\n", withBands, 100.0 * (withBands / reference - 1.0));
+    std::printf ("  bands 1 to 3 on (v1.7.0's most)  %.3f %%\n", withThree);
+    std::printf ("  + band 4, Highpass 24 dB/oct     %.3f %%, adds %+.1f %% of the defaults (target < +15 %%)\n", withTypical,
+                 100.0 * (withTypical - withThree) / reference);
+    std::printf ("  six bands, 48 dB/oct cuts        %.3f %%, %+.1f %% (recorded)\n", withBands, 100.0 * (withBands / reference - 1.0));
     std::printf ("  Mid/Side                         %.3f %%, %+.1f %% (target < +10 %%)\n", withMidSide, 100.0 * (withMidSide / reference - 1.0));
 }
