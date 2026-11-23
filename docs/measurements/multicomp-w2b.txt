@@ -1,0 +1,8 @@
+Fancy MultiComp, Phase 4 Wave 2 items 23 to 26 (docs/multicomp.md), run 45273564701, commit cef70cc,
+windows-latest, 48 kHz, 128 samples, median of 5 runs in one build (section 0.4 of the Phase 2.1 brief).
+
+multicomp w2b cpu, 4 bands: defaults 1.740 %, with lookahead (1 to 4 ms per band), detector EQ (HP, LP and
+Tilt on every band) and 48 dB/oct slopes on every crossover 2.390 % (1.37x). Target in the note: under 1.20x.
+
+For scale, the same run's older measurement: LR 24 4 bands 2.31 %, LR 48 4 bands 2.66 % (48 dB/oct alone
+adds about 15 %). Fancy MultiComp at its defaults in the workflow bench: 1.821 % (2.22 x Fancy Comp).
