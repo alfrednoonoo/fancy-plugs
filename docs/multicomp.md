@@ -323,3 +323,76 @@ One push, with Decisions 1 to 3 all A.
 - **MultiComp:** `CrossoverType::dynamic`, appended. The main crossover runs as LR 24 for the detectors (and for Solo and Mute). Each band's gain, with Active's mix, is recorded per sample on L/R (Stereo, Left, Right bands) and M/S (Mid, Side bands); `processDynamic` runs the input, delayed by Lookahead, through an L/R cascade and, only while a band is Mid or Side, an M/S one. Dry is the delayed input. While any band is soloed or muted the output blends over 20 ms to the LR 24 bands (Decision 2 A).
 - **Changed from section 2:** Feedback needs no extra split. A Feedback band's detector already reads its LR 24 band times its own gain, which is that band of the output.
 - **Tests:** `tests/MultiCompW2Tests.cpp`. The legacy check for LR 24, LR 48 and Linear is MultiCompQ26Tests' test against the old DSP, which runs every crossover type.
+
+## Phase 4 Wave 2: per-band lookahead, detector EQ, crossover slope and GR history
+
+**Draft for approval (23 November 2026).** Items 23 to 26 of the Wave 2 order (`docs/enhancements.md`; backlog items 2, 6, 3 and 5 of section 7), for v1.7.1, in one note because they share the band row and the EDIT drawer. Modelled first: `docs/research/multicomp-w2-model.py` (items 23 to 25; item 26 is a display and doesn't change the sound).
+
+### 1. Per-band lookahead (item 23)
+
+Today one **Lookahead** (0 to 10 ms) delays every band's audio against its detector. Per band, each band gets its own **Lookahead** (`bNlook`, 0 to 10 ms). All the audio is delayed by the largest setting, so the bands stay lined up and the reported latency is that largest value, and each band's detector reads its own amount ahead. The global Lookahead becomes the default for new bands and sets all bands at once. A saved project loads with every band at its old global value, so it renders as before, bit for bit.
+
+What the model found (4:1, threshold −24 dB, attack 0.5 ms; "gets past" is how far the hit exceeds the target gain in its first 3 ms, "turned down early" is how much the sound just before it is reduced):
+
+| Band | Lookahead | Hit gets past by | Sound before it turned down early |
+|---|---|---|---|
+| High, a snare crack over hi-hats | 0 ms | 13.8 dB | 2.6 dB |
+| | 2 ms | 1.1 dB | 7.2 dB |
+| | 5 ms | 1.1 dB | 16.3 dB |
+| Low, a bass note swelling in | 0 ms | 0.1 dB | 0 dB |
+| | 5 ms | 0 dB | 0.5 dB |
+
+Lookahead helps a band with sharp transients, and 2 ms is enough there; longer only ducks what comes before. On a low band whose notes swell in it buys nothing. One value for every band is a compromise that per-band settings avoid.
+
+### 2. Per-band detector EQ (item 24)
+
+Each band's detector already hears only its band, but sometimes only part of the band should drive it. Per band: **Detector HP** and **Detector LP** (Off, or 20 Hz to 20 kHz, 24 dB/oct) and **Tilt** (−6 to +6 dB/oct around the band's centre), on the detector only, never on the audio. Off and 0 by default, and not run then.
+
+What the model found: a 20–150 Hz band with a 50 Hz kick and a 100 Hz bass. With the detector hearing the whole band, the kicks get 13.3 dB of reduction and the bass notes 9.0 dB. With the detector high-passed at 80 Hz, the kicks get 5.4 dB and the bass 8.4 dB, so the bass sets the gain and the kick passes.
+
+### 3. Per-band crossover slope (item 25)
+
+Each crossover gets its own **Slope**: LR 24 or LR 48 dB/oct, in minimum-phase mode. Today's single crossover type stays as the default for all of them. Linear phase and Dynamic phase keep their own shapes, so per-crossover slopes apply to the LR types only.
+
+What the model found, with crossovers at 150 Hz, 1.5 kHz and 6 kHz:
+
+| Slopes | Sum, each lower band through each crossover's own all-pass | Sum, if every lower band used a 24 dB all-pass |
+|---|---|---|
+| 24, 24, 24 | flat within 0.0000 dB | flat within 0.00 dB |
+| 48, 48, 48 | 0.0000 dB | 0.42 dB |
+| 48, 24, 48 | 0.0000 dB | 0.51 dB |
+| 24, 48, 24 | 0.0000 dB | 0.08 dB |
+
+Mixed slopes sum flat if each band below a crossover goes through that crossover's own all-pass: the all-pass of its own order. That's how the cascade is built already, so mixing needs no extra correction, only the right all-pass per crossover. Using one all-pass shape everywhere would leave up to 0.5 dB of ripple.
+
+### 4. Per-band GR history (item 26)
+
+The graph gets a **GR history** view: each band's gain reduction over the last 3 s as a trace in the band's colour, stacked under the spectrum, with each band's peak reduction beside its trace. It uses the shared `fancy::ui::LevelHistory` widget Comp's History page uses. It's a view switch (Spectrum | GR history), not a parameter, and draws only while the window is open.
+
+### 5. Decisions
+
+- **Decision 1: per-band lookahead's controls.**
+  - **A (R).** A small **Look** knob in each band row (0 to 10 ms), and the EDIT drawer's Lookahead becomes **Set all bands**, which moves every band's knob at once. A mockup follows approval.
+  - **B.** Per-band lookahead only in the band's drawer section, with the global value kept as an offset.
+- **Decision 2: the detector EQ's controls.**
+  - **A (R).** In the band's drawer section, under its Sidechain checkbox: HP and LP as small knobs, and Tilt. The band row doesn't change.
+  - **B.** A shared "detector EQ" page in the EDIT drawer showing all bands at once.
+- **Decision 3: crossover slopes.**
+  - **A (R).** Per crossover, from a right-click menu on the crossover line on the graph and in the EDIT drawer as a row per crossover. The Crossover type menu keeps its four choices, and picking LR 24 or LR 48 sets all of them.
+  - **B.** Per band (the slope of its upper crossover), in the band row.
+- **Decision 4: GR history.**
+  - **A (R).** A Spectrum | GR history switch at the graph's top left; the history replaces the spectrum while chosen.
+  - **B.** The traces drawn over the spectrum, always, in faded colours.
+
+### 6. Tests
+
+1. Legacy: a project saved with v1.7.0 (one Lookahead, one crossover type, no detector EQ) renders exactly as before.
+2. Per-band lookahead: with band 1 at 0 ms and band 3 at 5 ms, the reported latency is 5 ms, the bands sum flat at unity gain, and band 3's gain moves 5 ms ahead of its audio while band 1's moves with it.
+3. Detector EQ: the model's band, HP 80 Hz: the reduction during kicks is under half of what it is without, within 1 dB of the model's.
+4. Mixed slopes: crossovers 48, 24, 48 dB/oct sum flat within 0.01 dB from 20 Hz to 20 kHz at 0 dB gains, and a sweep across a slope change doesn't click.
+5. GR history: draws each active band's trace and peak; nothing runs while the window is closed (the editor-off CPU test).
+6. CPU: every band with lookahead, detector EQ and 48 dB/oct slopes adds under 20 % to MultiComp at its defaults.
+
+### 7. Build order
+
+Approval, then the mockup (`reference/phase4/58__multicomp_w2_mockup.png`): the band row's Look knob, the drawer's detector EQ and slope rows, and the GR history view. Then one push with the four items, tests, manual and checklist.
