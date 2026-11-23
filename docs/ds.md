@@ -322,7 +322,7 @@ Hiss mode takes most of the hiss out of the gaps and leaves the singing bright, 
 
 ### 3. DS-Mini's Hiss profile (item 34)
 
-A fifth profile, **Hiss**, beside DS-Mini's voice and instrument profiles: Hiss mode with the shelf at 5 kHz and Threshold placed by Amount (higher Amount, higher threshold and deeper Range), Release 60 ms. **Save as Fancy DS preset** carries it over as Hiss mode with the same settings, as the other profiles do.
+A seventh profile, **Hiss**, after DS-Mini's voice and instrument profiles: Hiss mode with the shelf at 5 kHz and Threshold placed by Amount (higher Amount, higher threshold and deeper Range), Release 60 ms. **Save as Fancy DS preset** carries it over as Hiss mode with the same settings, as the other profiles do.
 
 ### 4. Decisions
 
