@@ -4,13 +4,13 @@
 
 ## What this is
 
-Nine original VST3 effects with a shared UI library, for personal use on Windows 10/11 x64: five in Phase 1, three in Phase 2, and Fancy Gate in Phase 2.0.1. No installers, signing, licensing, updates or telemetry. Never copy or reference Cockos binaries or source. Bundle IDs are `com.fancyplugs.*`.
+Sixteen original effects with a shared UI library, for personal use: VST3 on Windows 10/11 x64, and VST3 and AU on macOS 11 and later (`docs/mac.md`). Five came in Phase 1, three in Phase 2, Fancy Gate in Phase 2.0.1, five in Phase 3 (Limit, DS, DS-Mini, Sature, Room) and two in Phase 4 (TS, Chorus). No installers beyond the Mac zip's install script, no paid signing (Mac builds are ad-hoc signed), no licensing, updates or telemetry. Never copy or reference Cockos binaries or source. Bundle IDs are `com.fancyplugs.*`.
 
 ## Build order
 
-Done: Phase 1 (Kicker, Exciter, Comp, EQ, Verb), Phase 2 (Delay, MultiComp, FIR), Phase 2.0.1 (Gate), Phase 2.1 (S, H, W, D, U, A) and, from Phase 3, the benchmark host, the preset browser, the design rules and the new plugins (Fancy Limit, Fancy DS, Fancy DS-Mini, Fancy Sature, Kicker's Sub mode, Fancy Room). `docs/PROGRESS.md` lists the releases and the next item.
+Done: Phase 1 (Kicker, Exciter, Comp, EQ, Verb), Phase 2 (Delay, MultiComp, FIR), Phase 2.0.1 (Gate), Phase 2.1 (S, H, W, D, U, A) and, from Phase 3, the benchmark host, the preset browser, the design rules and the new plugins (Fancy Limit, Fancy DS, Fancy DS-Mini, Fancy Sature, Kicker's Sub mode, Fancy Room), the Mac build, and from Phase 4 Wave 1, Wave 2 items 1 to 10, Fancy TS and Fancy Chorus (all released as v1.7.0). Now: v1.7.1 (Wave 2 items 11 to 46 and Kicker's Duck). `docs/PROGRESS.md` lists the releases and the next item.
 
-Phase 3 continues from `docs/BUILD_PROMPT_PHASE3.md`, approved by the user on 9 November 2026: EQ (Q2.4), Comp (Q2.5) and Verb (Q2.8), then MultiComp, Delay and FIR, confirming that part of the order with the user first. Phase 4 is `docs/enhancements.md` (user, 17 November 2026): Kicker's Duck, a transient shaper, a chorus and the reviewed enhancement backlog, after the Mac release, with its order confirmed with the user before the first item. Each item gets its design note approved before any code; a new plugin also goes through Q5's design rules (`docs/DESIGN_SYSTEM.md`) and an HTML mockup first. A listen or preview switch is temporary, never a parameter (`FancyProcessor::setListening`, `ListenCheckbox`), per §0.3 of `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md`.
+Phase 3 (`docs/BUILD_PROMPT_PHASE3.md`) is finished. Phase 4 is `docs/enhancements.md` (user, 17 November 2026), in the order and release plan written there. Phase 5 is Fancy Harmony (user). Each item gets its design note approved before any code; a new plugin also goes through Q5's design rules (`docs/DESIGN_SYSTEM.md`) and an HTML mockup first. A listen or preview switch is temporary, never a parameter (`FancyProcessor::setListening`, `ListenCheckbox`), per §0.3 of `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md`.
 
 Saved projects from the current release must load and render bit-identical after every item. New parameters are appended, with defaults that keep the old sound, and `stateVersion` is bumped with a migration. Measure CPU with §0.4 of the Phase 2.1 brief: five runs in one build, the median, and the ratio to Fancy Comp at its defaults.
 
@@ -21,6 +21,7 @@ Write `docs/<plugin>.md` before coding each plugin: DSP algorithm, parameters (r
 - Ask before changing the parameter list or visual layout, or adding a dependency not named in the brief.
 - Look at every image in `reference/` before building each plugin (index in §9). The Phase 1 images (`01__` to `10__`) show the old REAPER plugins, so they're kept outside the repo, which is public: `C:/dev/fancy-plugs-private/reference/`. Never commit them back. For Phase 2, look at the plugin's mockup in `reference/phase2/`, and for Fancy Gate at `reference/phase2_0_1/15__gate_mockup.png`.
 - Commit after each milestone.
+- Mockups: draw on the plugin's latest real screenshot, and measure each position from it before placing anything. When new controls don't fit, grow the window (and its minimum) or add a drawer page; never shrink, shorten or squeeze existing controls (user, 23 November 2026).
 
 ## Cloud-build workflow
 
@@ -32,6 +33,13 @@ There is no local compiler and there never will be one. Every build runs on GitH
 - UI: download `screens-<sha>` with `gh run download` and compare it to `reference/` before claiming a match.
 - Install on the PC with `scripts\get-latest.ps1`, into `%USERPROFILE%\VST3-Dev`. Never write to `C:\Program Files`.
 - The only test on the user's machine is listening in REAPER.
+- Before each push, from the failures of 21 and 22 November 2026:
+  - Read the whole `git diff`, not just the new code: an edit once dropped Sature's outer-band functions.
+  - Check every name the change touches against its header: legacy engine constructor names, tooltips only on tooltip clients (not `PillButton`), `fancy-core` uses its own `fancy/Decibels.h`, never `juce::Decibels`.
+  - Run each changed test's numbers through the item's Python model first, measuring what the test measures (after the same filters, at the same point).
+  - When a new bus or parameter is added, update the tests that count buses or parameters (host harness, mono-bus, legacy-state tests).
+  - Run `python tools/fix_eol.py` on script-edited text files only; it must never touch binaries (PDFs, images).
+  - Before a release, check every standing decision in `docs/PROGRESS.md` against what ships (the manual's "no More views" rule was missed once).
 
 ## Build the NEW redesign exactly
 
