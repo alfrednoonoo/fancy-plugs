@@ -594,7 +594,7 @@ Approval, then the Options page mockup (with item 13's), then one push: the mode
 
 ## v1.7.1: level history in dB
 
-**Awaiting the user's approval.** Asked for by the user on 23 November 2026, after a comparison with Woodstock Audio's Waveform Compressor. The History page (Wave 1, section 5) draws the waveforms on a linear scale, so anything under about −30 dBFS is a hairline at the centre, and a threshold of −24 dB sits 8 px from it. This note draws them in dB. Mockup: `reference/phase4/65__comp_db_history_mockup.png` (`design/phase4-mockup-src/w2b_mockups.py comp_db`): before, after, a quiet passage both ways, and Decision 1 B.
+**Approved by the user on 23 November 2026 with every recommended option (A).** Asked for by the user on 23 November 2026, after a comparison with Woodstock Audio's Waveform Compressor. The History page (Wave 1, section 5) draws the waveforms on a linear scale, so anything under about −30 dBFS is a hairline at the centre, and a threshold of −24 dB sits 8 px from it. This note draws them in dB. Mockup: `reference/phase4/65__comp_db_history_mockup.png` (`design/phase4-mockup-src/w2b_mockups.py comp_db`): before, after, a quiet passage both ways, and Decision 1 B.
 
 ### 1. What changes
 
@@ -630,3 +630,7 @@ A paint change in `fancy::ui::LevelHistory` only (`fancy-core/src/LevelHistory.c
 ### 5. Build order
 
 Approval of this note and mockup 65, then one push: the paint change, the tooltip, test 1, the `comp-history` screenshot, the manual's History section (the scale, with the new screenshot) and a line in `docs/comp-checklist.md`. Then the REAPER check, then the next item of `docs/enhancements.md`.
+
+### 6. As built
+
+One push. `fancy::ui::LevelHistory::levelDistance` (with `floorDb` = −60) maps a peak to its distance from the centre line and is used for the waveforms and the threshold; the level lines go under the waveforms and their labels over them, outlined in the well colour. The threshold pair is hidden when the threshold is at or under the floor. Test: "the history draws levels in dB…" in `tests/CompW1Tests.cpp`.

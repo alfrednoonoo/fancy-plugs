@@ -15,7 +15,8 @@ namespace fancy::ui
 
 // The level history (docs/comp.md, Phase 4 Wave 1, section 5;
 // reference/phase4/29__comp_w1_mockup.png): the input waveform in grey with the output in teal
-// over it, the gain reduction as a yellow line from the top, the threshold as a dashed pair of
+// over it, in dB from floorDb at the centre line to 0 dB at the edges (docs/comp.md, "v1.7.1:
+// level history in dB"; reference/phase4/65__comp_db_history_mockup.png), the gain reduction as a yellow line from the top, the threshold as a dashed pair of
 // lines, and beat and bar lines. Oldest on the left. A click pauses it and another goes on.
 class LevelHistory final : public juce::Component, public juce::SettableTooltipClient
 {
@@ -53,6 +54,11 @@ public:
 
     // The reduction scale, from 0 at the top to this at the bottom.
     static constexpr float reductionRangeDb = 24.0f;
+
+    // The waveform scale: a peak's distance from the centre line, linear in dB from floorDb (0)
+    // to 0 dBFS (amplitude). Silence and anything under the floor give 0; over 0 dBFS, amplitude.
+    static constexpr float floorDb = -60.0f;
+    static float levelDistance (float peak, float amplitude) noexcept;
 
 private:
     int shownColumns() const noexcept { return dsp::LevelHistoryRecorder::columnsPerSpan << zoom; }

@@ -91,7 +91,7 @@ The graph draws the whole static curve, downward in teal and upward in green, wi
 
 ### History
 
-The last seconds of what Comp did, oldest on the left: the input waveform in grey, the output in teal over it (before make-up, so the gap between them is what was taken off), the gain reduction as a yellow line from the top (0 to 24 dB, scale on the right; unlinked, the right channel is a lighter second line) and the threshold in use as a dashed pair of lines.
+The last seconds of what Comp did, oldest on the left: the input waveform in grey, the output in teal over it (before make-up, so the gap between them is what was taken off), both in dB, from −60 dB at the centre line to 0 dB at the top and bottom edges, with faint lines every 12 dB and their values at the left. On this scale quiet passages, breaths and room tone stay visible, and the gap between grey and teal is the reduction in dB. The gain reduction is a yellow line from the top (0 to 24 dB, scale on the right; unlinked, the right channel is a lighter second line), and the threshold in use is a dashed pair of lines on the same dB scale as the waveforms.
 
 - **1.5 s, 3 s, 6 s, 12 s** sets how much time is shown.
 - **Grid** draws beat lines, and bar lines brighter, from REAPER's tempo while it plays.

@@ -663,6 +663,19 @@ TEST_CASE ("the history's peak read-out is the largest reduction in view since t
     CHECK (history.getPeakReduction() == 2.5f);
 }
 
+TEST_CASE ("the history draws levels in dB from -60 at the centre to 0 dBFS at the edge", "[comp][w1]")
+{
+    using fancy::ui::LevelHistory;
+    constexpr float amplitude = 122.0f; // Comp's graph: 260 px high, 8 px margins
+
+    CHECK (LevelHistory::levelDistance (1.0f, amplitude) == Catch::Approx (amplitude).margin (0.5));
+    CHECK (LevelHistory::levelDistance (2.0f, amplitude) == Catch::Approx (amplitude).margin (0.5));
+    CHECK (LevelHistory::levelDistance (std::pow (10.0f, -30.0f / 20.0f), amplitude) == Catch::Approx (amplitude / 2.0f).margin (0.5));
+    CHECK (LevelHistory::levelDistance (std::pow (10.0f, -60.0f / 20.0f), amplitude) == Catch::Approx (0.0f).margin (0.5));
+    CHECK (LevelHistory::levelDistance (1.0e-5f, amplitude) == 0.0f);
+    CHECK (LevelHistory::levelDistance (0.0f, amplitude) == 0.0f);
+}
+
 // 10. CPU ---------------------------------------------------------------------------
 
 TEST_CASE ("comp Wave 1 CPU measurement", "[.measure]")

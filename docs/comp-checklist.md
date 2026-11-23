@@ -146,3 +146,6 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] With Host sync chosen, the Host sync group sits under the Optical checkbox without overlapping it.
 - [ ] Render offline twice: the renders match.
 
+## Level history in dB (v1.7.1)
+
+- [ ] EDIT > History on a vocal or a quiet passage: the waveforms are in dB (-60 at the centre line, 0 at the edges), with faint lines and grey labels -12 to -60 at the left. Breaths and quiet syllables are visible; the dashed threshold pair sits at its level (Threshold -24: well out from the centre). The yellow GR line, zoom, Grid, pause and peak work as before.

@@ -320,7 +320,7 @@ CompEditor::CompEditor (CompProcessor& processor)
     };
 
     levelHistory.setBounds (24, 90, 476, 260);
-    levelHistory.setTooltip ("Input in grey, output in teal before make-up, gain reduction in yellow. Click to pause.");
+    levelHistory.setTooltip ("Input in grey and output in teal, in dB (-60 at the centre), before make-up; gain reduction in yellow. Click to pause.");
     levelHistory.onPausedChange = [this] { updateHistoryCaption(); };
 
     tabContents[DrawerTabs::history] = { &zoomSwitch, &gridCheckbox, &historyCaption, &levelHistory };

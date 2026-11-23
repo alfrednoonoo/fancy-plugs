@@ -21,6 +21,15 @@ LevelHistory::LevelHistory()
     setOpaque (false);
 }
 
+float LevelHistory::levelDistance (float peak, float amplitude) noexcept
+{
+    if (! (peak > 0.0f))
+        return 0.0f;
+
+    const auto db = 20.0f * std::log10 (peak);
+    return juce::jlimit (0.0f, 1.0f, (db - floorDb) / -floorDb) * amplitude;
+}
+
 double LevelHistory::secondsFor (int zoomIndex) noexcept
 {
     return dsp::LevelHistoryRecorder::finestSeconds * (double) (1 << juce::jlimit (0, numZooms - 1, zoomIndex));
@@ -190,7 +199,19 @@ void LevelHistory::paint (juce::Graphics& g)
     g.saveState();
     g.reduceClipRegion (bounds.toNearestInt());
 
-    // The waveforms, mirrored about the centre line: input, then output over it.
+    // Level lines every 12 dB, faint, and the centre line at the floor.
+    g.setColour (juce::Colours::white.withAlpha (0.07f));
+
+    for (auto db = -12.0f; db > floorDb; db -= 12.0f)
+    {
+        const auto d = levelDistance (std::pow (10.0f, db / 20.0f), amplitude);
+        g.fillRect (0.0f, mid - d, width, 1.0f);
+        g.fillRect (0.0f, mid + d, width, 1.0f);
+    }
+
+    g.fillRect (0.0f, mid, width, 1.0f);
+
+    // The waveforms in dB, mirrored about the centre line: input, then output over it.
     for (int pass = 0; pass < 2; ++pass)
     {
         g.setColour (pass == 0 ? inputColour.withAlpha (0.9f) : colours::uiTeal.withAlpha (0.85f));
@@ -202,11 +223,29 @@ void LevelHistory::paint (juce::Graphics& g)
             if (! p.valid)
                 continue;
 
-            const auto peak = juce::jmin (1.0f, pass == 0 ? p.input : p.output) * amplitude;
+            const auto peak = levelDistance (pass == 0 ? p.input : p.output, amplitude);
 
             if (peak > 0.25f)
                 g.fillRect ((float) x, mid - peak, 1.0f, 2.0f * peak);
         }
+    }
+
+    // The level lines' values at the left edge, over the waveforms with a dark outline.
+    g.setFont (font (Weight::regular, 9.0f));
+
+    for (auto db = -12.0f; db >= floorDb; db -= 12.0f)
+    {
+        const auto d = levelDistance (std::pow (10.0f, db / 20.0f), amplitude);
+        const auto area = juce::Rectangle<float> (5.0f, mid - d - 12.0f, 30.0f, 11.0f);
+        const auto text = juce::String ((int) db);
+
+        g.setColour (colours::bgWell);
+
+        for (const auto offset : { juce::Point<float> (-1.0f, 0.0f), juce::Point<float> (1.0f, 0.0f), juce::Point<float> (0.0f, -1.0f), juce::Point<float> (0.0f, 1.0f) })
+            g.drawText (text, area + offset, juce::Justification::centredLeft, false);
+
+        g.setColour (juce::Colour (0xffb0b0b0));
+        g.drawText (text, area, juce::Justification::centredLeft, false);
     }
 
     // Beat and bar lines, over the waveforms and faint.
@@ -225,9 +264,9 @@ void LevelHistory::paint (juce::Graphics& g)
     }
 
     // The threshold in use, a dashed pair at its level.
-    if (threshold > -100.0f)
+    if (threshold > floorDb)
     {
-        const auto level = juce::jmin (1.0f, std::pow (10.0f, threshold / 20.0f)) * amplitude;
+        const auto level = levelDistance (std::pow (10.0f, threshold / 20.0f), amplitude);
         const float dashes[] { 4.0f, 4.0f };
         g.setColour (juce::Colours::white.withAlpha (0.45f));
 
