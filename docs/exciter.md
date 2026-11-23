@@ -115,3 +115,54 @@ One push (`ff59906`), with every recommended option; `tests/ExciterW1Tests.cpp`.
 - **Listen to added harmonics:** a temporary listen (`ListenCheckbox`), never saved; it plays the output minus the dry signal.
 - **THD read-out:** at the bottom of the body, for a tone one octave above Freq at -12 dBFS through the current settings, worked out on a background thread (synchronously in an offline render).
 - **Ceiling:** `ceiling`, Off or -12 to 0 dBTP, in the drawer; **Auto gain:** `autoGain`, turns the output down by the level the harmonics add, from the same background analysis, smoothed.
+
+## Phase 4 Wave 2: two bands, Punch, a high cut, harmonics width and minimum-phase oversampling
+
+**Draft for approval (23 November 2026).** Items 40 to 44 of the Wave 2 order (`docs/enhancements.md`; backlog items 3, 4, 5, 6 and 8 of section 2), for v1.7.1. Kicker's item 45 shares the model and is in `docs/kicker.md`. Modelled first: `docs/research/exciter-kicker-w2-model.py`. Every new setting defaults to today's sound, bit for bit.
+
+### 1. A second band (item 40)
+
+Today the harmonics come from one band, everything above Freq. **Band 2** adds a second, lower one: its own **Freq 2** (100 Hz up to Freq) and **Harmonics 2** (0 to 100 %, default 0, when it isn't run), through the same shaper and Character, with the band running from Freq 2 to Freq. On a 150 Hz voice-like tone stack, today's band at 3 kHz adds almost nothing between 400 Hz and 3 kHz. A second band from 400 Hz fills that region with harmonics, the "warmth" or "body" two-band exciters are for, while the top band keeps the air.
+
+### 2. Punch (item 41)
+
+**Punch** (0 to 100 %, default 0): the harmonics' level follows a transient detector on the excited band, so attacks get more and sustains less. At 100 % the added part is raised up to 6 dB on attacks and lowered up to 6 dB in sustains. On a plucked note, the attack gains 6 dB of harmonics against its sustain. Pick and stick sounds come forward without the tail getting fizzy.
+
+### 3. A high cut on the harmonics (item 42)
+
+The excited path is already high-passed at Freq, before and after the shaper, which is its low cut. What's missing is control of the top: **High cut** (Off, or 4 to 20 kHz, 12 dB/oct, default Off) on the added harmonics only, to tame fizz on bright sources. The dry path is never filtered.
+
+### 4. Harmonics width (item 43)
+
+**Width** (0 to 150 %, default 100) scales the side of the added part only. Below 100 % the harmonics narrow towards the centre; above it they spread wider than the source. The model gives the same trade-off as Verb's Extra width: a mono fold-down is unchanged, and each side rises by up to 1.6 dB at 150 %, where the added part's correlation reaches −0.09. Above 150 % it would be more opposed than alike.
+
+### 5. Minimum-phase oversampling (item 44)
+
+**Oversampling filter**: Linear phase (today, the default) or **Minimum phase**, as Comp and Limit have. Minimum phase cuts the latency (today 69 samples at 4x) to a few samples, but Exciter is parallel. Its excited path carries the input above Freq as well as the new harmonics, and is added to a delayed dry path, so a minimum-phase path's phase shift combs the sum slightly. The model, at Harmonics 100 % and Mix Back −6 dB, shows today's sum flat at +3.53 dB above Freq. With minimum phase and the dry delayed by its best match, the sum ranges from +2.82 to +3.51 dB, with up to 0.7 dB less near the top. The manual will say to use it where latency matters more than the last fraction of a dB.
+
+### 6. Decisions
+
+- **Decision 1: the second band's controls.**
+  - **A (R).** In the EDIT drawer (**Band 2**: Freq 2 and Harmonics 2), keeping the main window's four knobs as they are. A mockup follows approval.
+  - **B.** On the main window, which grows by a row.
+- **Decision 2: the cuts.**
+  - **A (R).** A High cut on the added harmonics only, as above. The low cut is Freq.
+  - **B.** Full Low cut and High cut, pre or post, as Sature gets: more controls for what Freq already does at the bottom.
+- **Decision 3: Width's range.**
+  - **A (R).** 0 to 150 %.
+  - **B.** 0 to 200 %, with the manual's mono warning.
+- **Decision 4: minimum-phase oversampling.**
+  - **A (R).** Offer it as an option, with Linear phase the default, and state the 0.7 dB.
+  - **B.** Drop it: Exciter's whole job is the top end, where minimum phase costs a little.
+
+### 7. Tests
+
+1. Legacy: Harmonics 2 at 0, Punch 0, High cut Off, Width 100 %, Linear phase render exactly as v1.7.0.
+2. Band 2 at 400 Hz: on the model's tone stack, the added energy from 400 Hz to 3 kHz rises by over 30 dB, and nothing changes above Freq.
+3. Punch 100 %: on a plucked note, the added part's attack-to-sustain difference grows by 10 to 14 dB.
+4. Width 0 %: the added part is mono, with left equal to right.
+5. Minimum phase: the latency is under 8 samples at 4x and reported; the small-signal sum stays within 1 dB of linear phase from Freq to 20 kHz.
+
+### 8. Build order
+
+Approval, then the drawer mockup (`reference/phase4/62__exciter_w2_mockup.png`), then one push with all five items, tests, manual and checklist.

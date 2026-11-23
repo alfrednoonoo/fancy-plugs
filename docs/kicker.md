@@ -116,3 +116,42 @@ One push (`22b0e05`), with every recommended option; `tests/KickerW1Tests.cpp`.
 - **Make-room:** `roomCut` and `roomFreq` (20 to 200 Hz, 60), a high-pass on the source kick in Sub mode. **Invert sub:** `subPolarity`.
 - **Sub meter:** a 6 px bar between the In and Out meters.
 - **Auto gain** (`autoGain`) and **Ceiling** (`ceiling`, Off or -12 to 0 dBTP) in the drawer. `KickerDsp`'s sub peak is a copyable atomic, so the tests can build an engine by value (fixed after run 44935591606).
+
+## Phase 4 Wave 2: an oversampled clipper
+
+**Draft for approval (23 November 2026).** Item 45 of the Wave 2 order (`docs/enhancements.md`; backlog item 5 of section 1), for v1.7.1. Modelled first: `docs/research/exciter-kicker-w2-model.py` (part 45).
+
+### 1. What it adds
+
+Kicker's output soft clipper runs at the base rate today, so a loud kick's click aliases. **Clip oversampling** (`clipOs`): **Off** (today, the default, bit for bit), **2x** or **4x**, through the shared `SwitchedOversampler` that Sature and Comp use, with its latency reported only while it's on.
+
+### 2. What the model found
+
+On a 0 dBFS kick with a 3 ms click pushed into the clipper, the aliasing and error under the signal measured:
+
+| Clip oversampling | Alias and error |
+|---|---|
+| Off (today) | −32.9 dB |
+| 2x | −49.5 dB |
+| 4x | −75.4 dB |
+
+At 1x the click's aliasing sits only 33 dB under the kick, which is audible as grit on bright kicks. 4x puts it 75 dB down.
+
+### 3. Decisions
+
+- **Decision 1: the default.**
+  - **A (R).** Off, so saved projects are bit-identical. The manual recommends 4x when the clipper is working hard.
+  - **B.** 4x for new instances only, with saved projects loading Off.
+- **Decision 2: where it goes.**
+  - **A (R).** A **Clip oversampling** dropdown in the EDIT drawer, under Ceiling, in both Boost and Sub mode. No mockup is needed beyond a drawer screenshot.
+  - **B.** Tied to the existing **Soft clip** checkbox, so ticking it also oversamples at 4x.
+
+### 4. Tests
+
+1. Legacy: Off renders exactly as v1.7.0 in Boost and Sub mode.
+2. 4x on the model's kick: alias and error at least 35 dB lower than Off.
+3. The latency is reported and the dry path matched while it's on, and it drops back to 0 when Off.
+
+### 5. Build order
+
+Approval, then one push: the parameter, the oversampler, the drawer row, tests, manual and checklist.
