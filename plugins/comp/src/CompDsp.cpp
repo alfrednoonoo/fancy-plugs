@@ -924,10 +924,12 @@ void CompDsp::compress (float* const* signal, const float* const* key, int numSa
 
             const auto reductionGain = std::pow (10.0, -reduction / 20.0);
             const auto unityGain = lift == 0.0 ? reductionGain : std::pow (10.0, (lift - reduction) / 20.0);
-            const auto gain = passive ? 1.0 : unityGain * makeupGain; // the untouched channel gets no make-up
+            // The channel M>S or S>M leaves alone gets no reduction or lift (its unityGain is 1),
+            // but make-up and Character as the other does (user, 23 November 2026).
+            const auto gain = unityGain * makeupGain;
             auto compressed = delayed * gain;
 
-            if (characterOn && activeCharacterPost && ! passive)
+            if (characterOn && activeCharacterPost)
                 compressed = state.character.process (compressed, driveGain, characterMix);
 
             state.previousOutput = compressed;

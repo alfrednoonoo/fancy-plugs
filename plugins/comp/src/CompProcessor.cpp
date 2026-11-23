@@ -154,16 +154,18 @@ fancy::FancyProcessor::Layout createLayout()
 
     layout.add (toggle ("autoThr", "Auto threshold", false));
 
-    layout.add (hzParameter ("scLowFreq", "SC low freq", 20.0f, 1000.0f, 100.0f));
+    // Phase 4 Wave 2 (user, 23 November 2026): every band's Freq covers 20 Hz to 20 kHz, so any
+    // band can take any Type. States store hertz, so saved projects keep their frequencies.
+    layout.add (hzParameter ("scLowFreq", "SC low freq", 20.0f, 20000.0f, 100.0f));
     layout.add (gainParameter ("scLowGain", "SC low gain", -18.0f, 18.0f, 0.0f));
-    layout.add (hzParameter ("scMidFreq", "SC mid freq", 100.0f, 10000.0f, 1000.0f));
+    layout.add (hzParameter ("scMidFreq", "SC mid freq", 20.0f, 20000.0f, 1000.0f));
     layout.add (gainParameter ("scMidGain", "SC mid gain", -18.0f, 18.0f, 0.0f));
     layout.add (fancy::floatParameter (
         "scMidQ", "SC mid Q", fancy::logRange (0.3f, 8.0f, 0.01f), 1.0f,
         juce::AudioParameterFloatAttributes {}
             .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2); })
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
-    layout.add (hzParameter ("scHighFreq", "SC high freq", 1000.0f, 20000.0f, 8000.0f));
+    layout.add (hzParameter ("scHighFreq", "SC high freq", 20.0f, 20000.0f, 8000.0f));
     layout.add (gainParameter ("scHighGain", "SC high gain", -18.0f, 18.0f, 0.0f));
 
     // Phase 4 Wave 1, appended (docs/comp.md). Hold 0 and Range Off leave the sound as it was.

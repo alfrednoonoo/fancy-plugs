@@ -650,7 +650,33 @@ TEST_CASE ("Comp link 4: M>S passes the mid and turns the side down by the mid's
     }
 }
 
-TEST_CASE ("Comp link 5: Sidechain L+R in Mid/Side: the key's mid drives the mid and its side the side", "[comp][w2][link]")
+TEST_CASE ("Comp link 4: M>S gives the mid it leaves alone Auto make-up as well", "[comp][w2][link]")
+{
+    // Auto make-up adds half of what the curve takes at 0 dBFS: 0.5 x 0.75 x 24 = 9 dB.
+    const VocalMix mix;
+    auto t = VocalMix::targets (CompDsp::linkMidToSide, false);
+    t.autoMakeup = true;
+
+    CompDsp dsp;
+    prepare (dsp, t);
+
+    auto signal = mix.input;
+    signal.process (dsp, nullptr, VocalMix::block);
+
+    auto inPower = 0.0, outPower = 0.0;
+
+    for (int i = (int) rate; i < signal.size(); ++i)
+    {
+        const auto in = 0.5 * ((double) mix.input.left[(size_t) i] + (double) mix.input.right[(size_t) i]);
+        const auto out = 0.5 * ((double) signal.left[(size_t) i] + (double) signal.right[(size_t) i]);
+        inPower += in * in;
+        outPower += out * out;
+    }
+
+    CHECK (10.0 * std::log10 (outPower / inPower) == Catch::Approx (9.0).margin (0.1));
+}
+
+TEST_CASE ("Comp link 5:Sidechain L+R in Mid/Side: the key's mid drives the mid and its side the side", "[comp][w2][link]")
 {
     const auto keyInSide = GENERATE (false, true);
 
