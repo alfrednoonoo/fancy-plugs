@@ -17,7 +17,8 @@ const char* const linkedSuffixes[] { "thr", "ratio", "att", "rel", "gain", "uthr
 
 // Every parameter of a band except its top frequency, which belongs to the crossover.
 const char* const bandSuffixes[] { "on", "solo", "thr", "ratio", "knee", "att", "rel", "rms", "gain", "mk", "ar", "fb", "sc",
-                                   "up", "uthr", "uratio", "lift", "floor", "chan", "mute" };
+                                   "up", "uthr", "uratio", "lift", "floor", "chan", "mute",
+                                   "look", "dhp", "dlp", "tilt" }; // Phase 4 Wave 2
 
 juce::NormalisableRange<float> skewedRange (float high, float interval, float centre)
 {
@@ -213,6 +214,51 @@ fancy::FancyProcessor::Layout createLayout (const fancy::SwitchableFrequencyPara
         layout.add (std::make_unique<Bool> (juce::ParameterID { MultiCompProcessor::id (band, "mute"), 1 },
                                             "Band " + juce::String (band + 1) + " Mute", false));
 
+    // Phase 4 Wave 2, items 23 to 25 (docs/multicomp.md), appended. A state saved before them
+    // takes each band's Look from its Lookahead and each slope from its Crossover
+    // (MultiCompProcessor::migrateParameters), so it renders as it was saved.
+    for (int band = 0; band < maxBands; ++band)
+    {
+        const auto prefix = "Band " + juce::String (band + 1) + " ";
+        const auto id = [band] (const char* suffix) { return MultiCompProcessor::id (band, suffix); };
+
+        layout.add (fancy::floatParameter (
+            id ("look"), prefix + "Lookahead", juce::NormalisableRange<float> (0.0f, (float) MultiCompDsp::maxLookaheadMs, 0.1f), 0.0f,
+            FloatAttributes {}
+                .withLabel ("ms")
+                .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 1) + " ms"; })
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
+
+        // At the end of its travel each filter is Off and isn't run: HP at 20 Hz, LP at 20 kHz.
+        const auto hpOff = (float) MultiCompDsp::detectorOffHpHz, lpOff = (float) MultiCompDsp::detectorOffLpHz;
+
+        layout.add (fancy::floatParameter (
+            id ("dhp"), prefix + "Detector HP", fancy::logRange (hpOff, lpOff, 0.1f), hpOff,
+            FloatAttributes {}
+                .withLabel ("Hz")
+                .withStringFromValueFunction ([hpOff] (float value, int) { return value <= hpOff ? juce::String ("Off") : fancy::formatHz (value); })
+                .withValueFromStringFunction ([hpOff] (const juce::String& text) { return text.trim().startsWithIgnoreCase ("off") ? hpOff : fancy::parseHz (text); })));
+
+        layout.add (fancy::floatParameter (
+            id ("dlp"), prefix + "Detector LP", fancy::logRange (hpOff, lpOff, 0.1f), lpOff,
+            FloatAttributes {}
+                .withLabel ("Hz")
+                .withStringFromValueFunction ([lpOff] (float value, int) { return value >= lpOff ? juce::String ("Off") : fancy::formatHz (value); })
+                .withValueFromStringFunction ([lpOff] (const juce::String& text) { return text.trim().startsWithIgnoreCase ("off") ? lpOff : fancy::parseHz (text); })));
+
+        layout.add (fancy::floatParameter (
+            id ("tilt"), prefix + "Detector tilt", juce::NormalisableRange<float> (-(float) MultiCompDsp::maxTilt, (float) MultiCompDsp::maxTilt, 0.1f), 0.0f,
+            FloatAttributes {}
+                .withLabel ("dB/oct")
+                .withStringFromValueFunction ([] (float value, int) { return (value > 0.0f ? "+" : "") + fancy::formatFixed (value, 1) + " dB/oct"; })
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+    }
+
+    for (int crossover = 0; crossover < multicomp::maxCrossovers; ++crossover)
+        layout.add (std::make_unique<Choice> (juce::ParameterID { MultiCompProcessor::slopeId (crossover), 1 },
+                                              "Crossover " + juce::String (crossover + 1) + " slope",
+                                              juce::StringArray { "LR 24 dB/oct", "LR 48 dB/oct" }, 0));
+
     return layout;
 }
 
@@ -256,7 +302,9 @@ std::vector<fancy::FactoryPreset> createPresets()
                               { { "bands", 3.0f }, { "b1top", 88.0f }, { "b2top", 2500.0f }, { "depth", 100.0f } }) },
 
         // Phase 3 Q2.6.
-        { "Lookahead Glue", with (everyBand ({ { "thr", -20.0f }, { "ratio", 2.0f }, { "knee", 9.0f }, { "att", 5.0f }, { "rel", 150.0f }, { "mk", 1.0f } }),
+        // Phase 4 Wave 2: each band's Look, which is what sets the lookahead now.
+        { "Lookahead Glue", with (everyBand ({ { "thr", -20.0f }, { "ratio", 2.0f }, { "knee", 9.0f }, { "att", 5.0f }, { "rel", 150.0f }, { "mk", 1.0f },
+                                               { "look", 2.0f } }),
                                   { { "lookahead", 2.0f } }) },
         { "Mid/Side Master", with (everyBand ({ { "thr", -18.0f }, { "ratio", 1.5f }, { "knee", 12.0f }, { "att", 30.0f }, { "rel", 250.0f } }),
                                    { { "b1chan", 3.0f }, { "b1thr", -20.0f }, { "b1ratio", 2.0f },
@@ -306,10 +354,19 @@ MultiCompProcessor::MultiCompProcessor (SharedFlag logScaleFlag)
         upwardValues[(size_t) band] = { value ("up"), value ("uthr"), value ("uratio"), value ("lift"), value ("floor") };
         channelValues[(size_t) band] = value ("chan");
         muteValues[(size_t) band] = value ("mute");
+        detectorValues[(size_t) band] = { value ("look"), value ("dhp"), value ("dlp"), value ("tilt") };
 
         for (const auto* suffix : linkedSuffixes)
             apvts.getParameter (id (band, suffix))->addListener (this);
     }
+
+    for (int crossover = 0; crossover < multicomp::maxCrossovers; ++crossover)
+        slopeValues[(size_t) crossover] = apvts.getRawParameterValue (slopeId (crossover));
+
+    // Phase 4 Wave 2: a person turning Lookahead ("Set all bands") moves every band's Look, and
+    // picking LR 24 or LR 48 in the Crossover menu sets every crossover's slope.
+    for (const auto* parameterId : { "lookahead", "crossover" })
+        apvts.getParameter (parameterId)->addListener (this);
 
     apvts.addParameterListener ("logFreq", this);
 }
@@ -319,6 +376,9 @@ MultiCompProcessor::~MultiCompProcessor()
     auto& apvts = getApvts();
 
     apvts.removeParameterListener ("logFreq", this);
+
+    for (const auto* parameterId : { "lookahead", "crossover" })
+        apvts.getParameter (parameterId)->removeListener (this);
 
     for (int band = 0; band < maxBands; ++band)
         for (const auto* suffix : linkedSuffixes)
@@ -359,6 +419,32 @@ void MultiCompProcessor::parameterValueChanged (int parameterIndex, float newVal
     // moving a control counts.
     if (propagating || parameterIndex != gestureParameter || ! juce::MessageManager::existsAndIsCurrentThread())
         return;
+
+    // Phase 4 Wave 2: Set all bands and the Crossover menu.
+    if (auto* ranged = dynamic_cast<juce::RangedAudioParameter*> (getParameters()[parameterIndex]))
+    {
+        const auto changedId = ranged->getParameterID();
+
+        if (changedId == "lookahead" || changedId == "crossover")
+        {
+            gestureValue = newValue;
+            const auto value = ranged->convertFrom0to1 (newValue);
+            const juce::ScopedValueSetter<bool> guard (propagating, true);
+
+            if (changedId == "lookahead")
+            {
+                for (int band = 0; band < maxBands; ++band)
+                    writeLinked (id (band, "look"), value);
+            }
+            else if (juce::roundToInt (value) <= 1) // LR 24 or LR 48; Linear and Dynamic keep the slopes
+            {
+                for (int crossover = 0; crossover < multicomp::maxCrossovers; ++crossover)
+                    writeLinked (slopeId (crossover), (float) juce::roundToInt (value));
+            }
+
+            return;
+        }
+    }
 
     const auto delta = newValue - gestureValue;
     gestureValue = newValue;
@@ -441,6 +527,13 @@ MultiCompDsp::BandSpec MultiCompProcessor::readBand (int band) const
 
     spec.channel = juce::jlimit (0, 4, juce::roundToInt (load (channelValues[(size_t) band])));
 
+    // Phase 4 Wave 2.
+    const auto& detector = detectorValues[(size_t) band];
+    spec.lookaheadMs = (double) load (detector.look);
+    spec.detectorHpHz = (double) load (detector.hp);
+    spec.detectorLpHz = (double) load (detector.lp);
+    spec.detectorTilt = (double) load (detector.tilt);
+
     return spec;
 }
 
@@ -462,7 +555,12 @@ MultiCompDsp::Targets MultiCompProcessor::readTargets() const
     targets.bypass = isOn ("bypass");
     targets.depth = (double) read ("depth") / 100.0;
     targets.time = (double) read ("time") / 100.0;
-    targets.lookaheadMs = (double) read ("lookahead");
+    targets.lookaheadMs = (double) read ("lookahead"); // unused: every band has its own (Phase 4 Wave 2)
+
+    targets.perCrossoverSlopes = true;
+
+    for (int crossover = 0; crossover < multicomp::maxCrossovers; ++crossover)
+        targets.steepSlopes[(size_t) crossover] = slopeValues[(size_t) crossover]->load (std::memory_order_relaxed) >= 0.5f;
 
     return targets;
 }
@@ -636,6 +734,54 @@ void MultiCompProcessor::resetBand (int band)
     {
         auto& parameter = *getApvts().getParameter (id (band, suffix));
         parameter.setValueNotifyingHost (parameter.getDefaultValue());
+    }
+
+    // Phase 4 Wave 2: Set all bands is a new band's lookahead.
+    writeValue (id (band, "look"), read ("lookahead"));
+}
+
+void MultiCompProcessor::writeLinked (const juce::String& parameterId, float value)
+{
+    auto& parameter = *getApvts().getParameter (parameterId);
+
+    parameter.beginChangeGesture();
+    parameter.setValueNotifyingHost (parameter.convertTo0to1 (value));
+    parameter.endChangeGesture();
+}
+
+// Phase 4 Wave 2 (docs/multicomp.md): a state from before items 23 and 25 has one Lookahead and
+// one Crossover type. Every band takes that Lookahead as its Look, and every crossover the
+// type's slope, so it renders as it was saved.
+void MultiCompProcessor::migrateParameters (juce::ValueTree& parameters) const
+{
+    const auto valueOf = [&parameters] (const juce::String& parameterId, float fallback)
+    {
+        const auto child = parameters.getChildWithProperty ("id", parameterId);
+        return child.isValid() ? (float) (double) child.getProperty ("value") : fallback;
+    };
+
+    const auto add = [&parameters] (const juce::String& parameterId, float value)
+    {
+        juce::ValueTree child ("PARAM");
+        child.setProperty ("id", parameterId, nullptr);
+        child.setProperty ("value", value, nullptr);
+        parameters.appendChild (child, nullptr);
+    };
+
+    if (! parameters.getChildWithProperty ("id", id (0, "look")).isValid())
+    {
+        const auto lookahead = juce::jlimit (0.0f, (float) MultiCompDsp::maxLookaheadMs, valueOf ("lookahead", 0.0f));
+
+        for (int band = 0; band < maxBands; ++band)
+            add (id (band, "look"), lookahead);
+    }
+
+    if (! parameters.getChildWithProperty ("id", slopeId (0)).isValid())
+    {
+        const auto steep = juce::roundToInt (valueOf ("crossover", 0.0f)) == (int) multicomp::CrossoverType::lr48;
+
+        for (int crossover = 0; crossover < multicomp::maxCrossovers; ++crossover)
+            add (slopeId (crossover), steep ? 1.0f : 0.0f);
     }
 }
 

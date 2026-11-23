@@ -23,6 +23,9 @@ public:
     // Phase 3 Q2.6: band 2 on Mid, for the channel chip and the graph's letter.
     void showChannelPreview();
 
+    // Phase 4 Wave 2 (item 26): the graph in GR history, with mockup 58's lanes.
+    void showHistoryPreview();
+
 private:
     class Panels final : public juce::Component
     {
@@ -72,6 +75,7 @@ private:
         fancy::ui::GainReductionMeter reductionMeter;
 
         fancy::ui::Knob ratioKnob, kneeKnob, attackKnob, releaseKnob, rmsKnob, gainKnob;
+        fancy::ui::Knob lookKnob; // Phase 4 Wave 2 (item 23)
         fancy::ui::ParamCheckbox makeupCheckbox, autoReleaseCheckbox, feedbackCheckbox, sidechainCheckbox;
 
         fancy::ui::ChannelChip channelChip; // Phase 3 Q2.6
@@ -124,9 +128,31 @@ private:
     fancy::ui::ParamCheckbox attack90Checkbox, logCheckbox;
     fancy::ui::Knob drawerOutputKnob;
 
-    // Phase 3 Q2.6.
+    // Phase 3 Q2.6. Phase 4 Wave 2 makes it Set all bands.
     fancy::ui::Knob lookaheadKnob;
-    juce::Label latencyLabel;
+    juce::Label latencyLabel, setAllCaption;
+
+    // Phase 4 Wave 2 (items 24 and 25; reference/phase4/58__multicomp_w2_mockup.png, panel 3):
+    // the selected band's detector EQ and a row per crossover for its slope, in the drawer.
+    class DrawerNotes final : public juce::Component
+    {
+    public:
+        explicit DrawerNotes (MultiCompEditor& owner) : editor (owner) { setInterceptsMouseClicks (false, false); }
+        void paint (juce::Graphics&) override;
+
+    private:
+        MultiCompEditor& editor;
+    };
+
+    void layoutSlopes();
+
+    DrawerNotes drawerNotes { *this };
+    std::vector<std::unique_ptr<fancy::ui::Knob>> detectorKnobs; // band * 3 + (HP, LP, Tilt)
+    std::vector<std::unique_ptr<fancy::ui::ParamDropdown>> slopeDropdowns;
+    int shownCrossovers = -1;
+    bool slopesEnabled = true;
+
+    std::vector<MultiCompDsp::HistoryColumn> historyScratch;
 
     int selectedBand = 0;
     std::array<float, multicomp::maxBands> displayed {};

@@ -32,6 +32,10 @@ double gainOf (double db) noexcept
 {
     return std::pow (10.0, db / 20.0);
 }
+
+// Phase 4 Wave 2 (item 24): the detector EQ's two Butterworth sections make 24 dB/oct.
+constexpr double butterworth4a = 1.3065629648763766, butterworth4b = 0.54119610014619698;
+constexpr double pi = 3.141592653589793;
 } // namespace
 
 double MultiCompDsp::slopeFor (double ratio) noexcept
@@ -69,6 +73,20 @@ void MultiCompDsp::prepare (double newSampleRate)
         for (auto& ring : rings)
             ring.assign ((size_t) lookaheadLength, 0.0);
 
+    // Phase 4 Wave 2: each band's detector waits the difference to the largest lookahead.
+    for (auto& state : bandStates)
+    {
+        for (auto& ring : state.detectorRing)
+            ring.assign ((size_t) lookaheadLength, 0.0);
+
+        for (auto* smoother : { &state.logHp, &state.logLp, &state.tilt })
+            smoother->setTime (parameterMs, sampleRate);
+
+        state.logHp.snapTo (std::log (detectorOffHpHz));
+        state.logLp.snapTo (std::log (detectorOffLpHz));
+        state.tilt.snapTo (0.0);
+    }
+
     bypassLength = linearCrossover.getLatencySamples() + lookaheadLength + maxChunk + 1;
 
     for (int ch = 0; ch < 2; ++ch)
@@ -78,6 +96,13 @@ void MultiCompDsp::prepare (double newSampleRate)
         dryMix[ch].assign ((size_t) maxChunk, 0.0);
         dynamicOut[ch].assign ((size_t) maxChunk, 0.0); // Phase 4 Wave 2
     }
+
+    // Phase 4 Wave 2 (item 26).
+    historyReduction.assign ((size_t) (maxBands * maxChunk), 0.0);
+    historyFifo.assign ((size_t) historyCapacity, HistoryColumn {});
+    samplesPerHistoryColumn = sampleRate * historySeconds / (double) historyColumns;
+    historyCurrent = {};
+    historyPosition = 0.0;
 
     gainsLR.assign ((size_t) (maxBands * 2 * maxChunk), 1.0);
     gainsMS.assign ((size_t) (maxBands * 2 * maxChunk), 1.0);
@@ -112,6 +137,18 @@ void MultiCompDsp::resetCore() noexcept
         state.upFollower.reset();
         state.meanSquare[0] = state.meanSquare[1] = 0.0;
         state.previousOutput[0] = state.previousOutput[1] = 0.0;
+
+        // Phase 4 Wave 2.
+        for (auto& ring : state.detectorRing)
+            std::fill (ring.begin(), ring.end(), 0.0);
+
+        for (auto* filters : { &state.hpFilters, &state.lpFilters })
+            for (auto& channel : *filters)
+                for (auto& section : channel)
+                    section.reset();
+
+        state.tiltX = {};
+        state.tiltY = {};
     }
 
     for (auto& line : bypassDelay)
@@ -143,7 +180,26 @@ MultiCompDsp::Config MultiCompDsp::configFor (const Targets& targets) const noex
     config.bands = std::clamp (targets.numBands, 1, maxBands);
     config.crossover = targets.crossover;
     config.limiter = targets.limitOutput;
-    config.lookahead = std::clamp ((int) std::lround (targets.lookaheadMs * 0.001 * sampleRate), 0, lookaheadLength - 1);
+
+    // Phase 4 Wave 2 (item 23): the audio waits for the band that looks furthest ahead.
+    config.lookahead = 0;
+
+    for (int b = 0; b < config.bands; ++b)
+    {
+        const auto& band = targets.bands[(size_t) b];
+        const auto ms = band.lookaheadMs >= 0.0 ? band.lookaheadMs : targets.lookaheadMs;
+        config.lookahead = std::max (config.lookahead, std::clamp ((int) std::lround (ms * 0.001 * sampleRate), 0, lookaheadLength - 1));
+    }
+
+    // Phase 4 Wave 2 (item 25): the LR types' slopes, per crossover in use. Linear and Dynamic
+    // phase keep their own shapes (Dynamic's detectors use LR 24).
+    config.steepMask = 0;
+
+    if (targets.crossover == CrossoverType::lr24 || targets.crossover == CrossoverType::lr48)
+        for (int i = 0; i < config.bands - 1; ++i)
+            if (targets.perCrossoverSlopes ? targets.steepSlopes[(size_t) i] : targets.crossover == CrossoverType::lr48)
+                config.steepMask |= 1u << i;
+
     return config;
 }
 
@@ -196,6 +252,11 @@ void MultiCompDsp::setTargets (const Targets& targets) noexcept
         state.activeMix.setTarget (band.active ? 1.0 : 0.0);
         state.soloGain.setTarget ((! anySolo || band.solo) && ! band.mute ? 1.0 : 0.0);
 
+        // Phase 4 Wave 2 (item 24).
+        state.logHp.setTarget (std::log (std::clamp (band.detectorHpHz, detectorOffHpHz, detectorOffLpHz)));
+        state.logLp.setTarget (std::log (std::clamp (band.detectorLpHz, detectorOffHpHz, detectorOffLpHz)));
+        state.tilt.setTarget (std::clamp (band.detectorTilt, -maxTilt, maxTilt));
+
         if (band.attackMs != state.lastAttack || band.releaseMs != state.lastRelease
             || band.autoRelease != state.lastAuto || targets.attack90 != state.lastAttack90 || targets.time != state.lastTime)
         {
@@ -233,6 +294,10 @@ void MultiCompDsp::applyConfig (const Config& config) noexcept
     mainCrossover.setBandCount (config.bands);
     keyCrossover.setBandCount (config.bands);
 
+    // Phase 4 Wave 2 (item 25). Without per-crossover slopes the mask is what setType set.
+    mainCrossover.setSlopes (config.steepMask);
+    keyCrossover.setSlopes (config.steepMask);
+
     resetCore();
 
     pushCrossovers();
@@ -263,11 +328,15 @@ void MultiCompDsp::snapToTargets (const Targets& targets) noexcept
     for (auto& state : bandStates)
     {
         for (auto* smoother : { &state.threshold, &state.slope, &state.knee, &state.gainDb, &state.rms, &state.activeMix, &state.soloGain,
-                                &state.upThreshold, &state.upSlope, &state.maxLift, &state.floor, &state.depth })
+                                &state.upThreshold, &state.upSlope, &state.maxLift, &state.floor, &state.depth,
+                                &state.logHp, &state.logLp, &state.tilt })
             smoother->snapToTarget();
 
         state.rmsCoefficient = fancy::dsp::timeCoefficient (state.rms.getCurrent(), sampleRate);
     }
+
+    for (int b = 0; b < maxBands; ++b)
+        updateDetectorEq (b, true);
 
     for (auto* smoother : { &wet, &dry, &output, &bypass, &limiterAmount, &bandPath })
         smoother->snapToTarget();
@@ -387,6 +456,100 @@ double MultiCompDsp::staticChangeDb (double levelDb, const BandSpec& band, doubl
     return depth * (lift - reduction);
 }
 
+int MultiCompDsp::bandLookahead (int b) const noexcept
+{
+    const auto& band = current.bands[(size_t) b];
+    const auto ms = band.lookaheadMs >= 0.0 ? band.lookaheadMs : current.lookaheadMs;
+    return std::clamp ((int) std::lround (ms * 0.001 * sampleRate), 0, lookaheadLength - 1);
+}
+
+// Phase 4 Wave 2 (item 24): a first-order tilt, 0 dB at the band's centre fc, whose slope there
+// is the tilt in dB/oct. A zero and a pole a factor R apart around fc give a slope at fc of
+// 6.02 (R - 1) / (R + 1) dB/oct, so R = (6.02 + |tilt|) / (6.02 - |tilt|). Bilinear, warped at fc.
+void MultiCompDsp::designTilt (BandState& state, double tilt, double bottomHz, double topHz) noexcept
+{
+    state.tiltDesigned = tilt;
+    state.tiltBottomHz = bottomHz;
+    state.tiltTopHz = topHz;
+
+    constexpr double octaveDb = 6.020599913279624;
+    const auto size = std::min (std::abs (tilt), maxTilt);
+    const auto root = std::sqrt ((octaveDb + size) / (octaveDb - size));
+
+    const auto fc = std::min (std::sqrt (bottomHz * topHz), 0.45 * sampleRate);
+    const auto wc = 2.0 * pi * fc;
+    const auto k = wc / std::tan (pi * fc / sampleRate);
+
+    // Tilting up, the zero sits below fc and the pole above; tilting down, the other way round.
+    const auto zero = tilt >= 0.0 ? wc / root : wc * root;
+    const auto pole = tilt >= 0.0 ? wc * root : wc / root;
+    const auto level = tilt >= 0.0 ? root : 1.0 / root; // 0 dB at fc
+
+    state.tiltB0 = level * (k + zero) / (k + pole);
+    state.tiltB1 = level * (zero - k) / (k + pole);
+    state.tiltA1 = (pole - k) / (k + pole);
+}
+
+void MultiCompDsp::updateDetectorEq (int b, bool force) noexcept
+{
+    auto& state = bandStates[(size_t) b];
+
+    const auto hpHz = std::exp (state.logHp.getCurrent());
+    const auto lpHz = std::exp (state.logLp.getCurrent());
+
+    const auto hpOn = hpHz > detectorOffHpHz * 1.0001;
+    const auto lpOn = lpHz < detectorOffLpHz * 0.9999;
+
+    if (hpOn)
+    {
+        const auto hz = std::min (hpHz, 0.45 * sampleRate);
+        state.hpSections[0].set (hz, butterworth4a, sampleRate);
+        state.hpSections[1].set (hz, butterworth4b, sampleRate);
+    }
+    else if (state.hpOn || force)
+    {
+        for (auto& channel : state.hpFilters)
+            for (auto& section : channel)
+                section.reset();
+    }
+
+    if (lpOn)
+    {
+        const auto hz = std::min (lpHz, 0.45 * sampleRate);
+        state.lpSections[0].set (hz, butterworth4a, sampleRate);
+        state.lpSections[1].set (hz, butterworth4b, sampleRate);
+    }
+    else if (state.lpOn || force)
+    {
+        for (auto& channel : state.lpFilters)
+            for (auto& section : channel)
+                section.reset();
+    }
+
+    state.hpOn = hpOn;
+    state.lpOn = lpOn;
+
+    // The tilt pivots on the band's centre, so it follows the crossovers too.
+    const auto count = activeConfig.bands;
+    const auto bottomHz = b == 0 ? multicomp::lowestHz : crossoverHz[(size_t) b - 1];
+    const auto topHz = b >= count - 1 ? multicomp::highestHz : crossoverHz[(size_t) b];
+    const auto tilt = state.tilt.getCurrent();
+    const auto tiltOn = std::abs (tilt) > 1.0e-4;
+
+    if (tiltOn)
+    {
+        if (force || ! state.tiltOn || tilt != state.tiltDesigned || bottomHz != state.tiltBottomHz || topHz != state.tiltTopHz)
+            designTilt (state, tilt, std::max (bottomHz, multicomp::lowestHz), std::max (topHz, multicomp::lowestHz));
+    }
+    else if (state.tiltOn || force)
+    {
+        state.tiltX = {};
+        state.tiltY = {};
+    }
+
+    state.tiltOn = tiltOn;
+}
+
 void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexcept
 {
     const auto& spec = current.bands[(size_t) b];
@@ -404,6 +567,18 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
     const auto channel = spec.channel;
     auto& ringLeft = lookaheadRings[(size_t) b][0];
     auto& ringRight = lookaheadRings[(size_t) b][1];
+
+    // Phase 4 Wave 2 (item 23): the audio waits the largest lookahead and this band's detector
+    // waits the difference, so it reads its own amount ahead. Equal lookaheads leave it undelayed.
+    // A Feedback detector reads the band's output, which is already where the audio is.
+    const auto delaysDetector = listensToKey || ! spec.feedback;
+    const auto detectorDelay = std::clamp (lookahead - bandLookahead (b), 0, lookahead);
+    auto& detectorRingLeft = state.detectorRing[0];
+    auto& detectorRingRight = state.detectorRing[1];
+
+    // Phase 4 Wave 2 (item 24): off and settled, the detector EQ isn't run.
+    updateDetectorEq (b, false);
+    const auto eqMoving = ! state.logHp.isSettled() || ! state.logLp.isSettled() || ! state.tilt.isSettled();
 
     auto inputPeak = 0.0;
     auto peakReduction = 0.0;
@@ -469,6 +644,60 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
         {
             sourceLeft = inLeft;
             sourceRight = inRight;
+        }
+
+        // Phase 4 Wave 2 (item 23). The ring is kept filled whenever there's lookahead, so a
+        // change to this band's own amount reads real history.
+        if (lookahead > 0 && delaysDetector)
+        {
+            const auto write = (lookaheadPosition + i) % lookaheadLength;
+
+            detectorRingLeft[(size_t) write] = sourceLeft;
+            detectorRingRight[(size_t) write] = sourceRight;
+
+            if (detectorDelay > 0)
+            {
+                const auto read = (write + lookaheadLength - detectorDelay) % lookaheadLength;
+                sourceLeft = detectorRingLeft[(size_t) read];
+                sourceRight = detectorRingRight[(size_t) read];
+            }
+        }
+
+        // Phase 4 Wave 2 (item 24): the detector EQ, on what the detector hears only.
+        if (eqMoving)
+        {
+            state.logHp.next();
+            state.logLp.next();
+            state.tilt.next();
+            updateDetectorEq (b, false);
+        }
+
+        if (state.hpOn || state.lpOn || state.tiltOn)
+        {
+            double* sources[] { &sourceLeft, &sourceRight };
+
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                auto x = *sources[ch];
+
+                if (state.hpOn)
+                    for (int section = 0; section < 2; ++section)
+                        x = state.hpFilters[(size_t) ch][(size_t) section].tick (state.hpSections[(size_t) section], x).high;
+
+                if (state.lpOn)
+                    for (int section = 0; section < 2; ++section)
+                        x = state.lpFilters[(size_t) ch][(size_t) section].tick (state.lpSections[(size_t) section], x).low;
+
+                if (state.tiltOn)
+                {
+                    const auto y = state.tiltB0 * x + state.tiltB1 * state.tiltX[(size_t) ch] - state.tiltA1 * state.tiltY[(size_t) ch];
+                    state.tiltX[(size_t) ch] = x;
+                    state.tiltY[(size_t) ch] = y;
+                    x = y;
+                }
+
+                *sources[ch] = x;
+            }
         }
 
         const auto detectorLeft = channelMode == 2 ? sourceRight : sourceLeft;
@@ -568,6 +797,9 @@ void MultiCompDsp::compressBand (int b, int numSamples, bool keyAvailable) noexc
 
         peakReduction = std::max (peakReduction, reduction * activeMix);
 
+        if (recordingHistory)
+            historyReduction[(size_t) (b * maxChunk + i)] = reduction * activeMix;
+
         wetLeft[i] += (audioLeft + (compressedLeft - audioLeft) * activeMix) * soloGain;
         wetRight[i] += (audioRight + (compressedRight - audioRight) * activeMix) * soloGain;
 
@@ -642,6 +874,53 @@ void MultiCompDsp::processDynamic (int numSamples, int lookahead) noexcept
     }
 }
 
+// Phase 4 Wave 2 (item 26): each column is the largest reduction of every band in its span.
+// The leftover fraction carries over, so columns keep exact time on average.
+void MultiCompDsp::recordHistory (int numSamples) noexcept
+{
+    const auto count = activeConfig.bands;
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        for (int b = 0; b < count; ++b)
+            historyCurrent.reductionDb[(size_t) b] = std::max (historyCurrent.reductionDb[(size_t) b], (float) historyReduction[(size_t) (b * maxChunk + i)]);
+
+        historyPosition += 1.0;
+
+        if (historyPosition >= samplesPerHistoryColumn)
+        {
+            const auto write = historyWrite.load (std::memory_order_relaxed);
+            const auto next = (write + 1) % historyCapacity;
+
+            // A full FIFO (no reader for a while) drops the column rather than overrun the reader.
+            if (next != historyRead.load (std::memory_order_acquire))
+            {
+                historyFifo[(size_t) write] = historyCurrent;
+                historyWrite.store (next, std::memory_order_release);
+            }
+
+            historyCurrent = {};
+            historyPosition -= samplesPerHistoryColumn;
+        }
+    }
+}
+
+int MultiCompDsp::popHistory (HistoryColumn* destination, int maxColumns) noexcept
+{
+    const auto write = historyWrite.load (std::memory_order_acquire);
+    auto read = historyRead.load (std::memory_order_relaxed);
+    auto count = 0;
+
+    while (read != write && count < maxColumns)
+    {
+        destination[count++] = historyFifo[(size_t) read];
+        read = (read + 1) % historyCapacity;
+    }
+
+    historyRead.store (read, std::memory_order_release);
+    return count;
+}
+
 void MultiCompDsp::process (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int numSamples) noexcept
 {
     for (int done = 0; done < numSamples;)
@@ -696,8 +975,13 @@ void MultiCompDsp::processChunk (float* const* main, int numMain, const float* c
         std::fill_n (dryMix[ch].begin(), numSamples, 0.0);
     }
 
+    recordingHistory = historyActive.load (std::memory_order_relaxed); // Phase 4 Wave 2
+
     for (int b = 0; b < activeConfig.bands; ++b)
         compressBand (b, numSamples, keyAvailable);
+
+    if (recordingHistory)
+        recordHistory (numSamples);
 
     lookaheadPosition = (lookaheadPosition + numSamples) % lookaheadLength;
 

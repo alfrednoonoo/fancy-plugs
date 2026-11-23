@@ -349,7 +349,7 @@ TEST_CASE ("one-channel bands and lookahead stay finite on a mono bus and with a
     auto& apvts = processor.getApvts();
 
     for (const auto& [id, value] : { std::pair { "b1chan", 3.0f }, std::pair { "b2chan", 4.0f }, std::pair { "b3chan", 1.0f },
-                                     std::pair { "b4chan", 2.0f }, std::pair { "lookahead", 7.5f }, std::pair { "b2sc", 1.0f } })
+                                     std::pair { "b4chan", 2.0f }, std::pair { "b3look", 7.5f }, std::pair { "b2sc", 1.0f } })
         apvts.getParameter (id)->setValueNotifyingHost (apvts.getParameter (id)->convertTo0to1 (value));
 
     processor.prepareToPlay (rate, 512);

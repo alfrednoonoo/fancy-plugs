@@ -75,6 +75,11 @@ public:
         return defaultValue;
     }
 
+    // Runs on the PARAM children of a saved state, user preset or A/B slot before missing
+    // parameters are filled in, so a new parameter can take its value from an old one (MultiComp's
+    // per-band Look from the old global Lookahead, Phase 4 Wave 2). Values are in real units.
+    virtual void migrateParameters (juce::ValueTree& parameters) const { juce::ignoreUnused (parameters); }
+
     // Adds state that isn't kept in the value tree, such as data the audio thread writes, to
     // a copy that's about to be saved.
     virtual void addToState (juce::ValueTree& state) { juce::ignoreUnused (state); }

@@ -123,6 +123,16 @@
 - [ ] Learn on a full mix: after 5 s the crossovers spread sensibly; on a bass-heavy track the lowest one moves down. Undo puts them back.
 - [ ] M on a band: that band disappears from the mix; the others are unchanged.
 
+## Per-band lookahead, detector EQ, slopes and GR history (Phase 4 Wave 2, items 23 to 26)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy MultiComp with Lookahead above 0 and LR 48: it sounds as before; every band's **Look** shows the old Lookahead, and EDIT's slopes all read LR 48. The same for its B slot.
+- [ ] **Look** on the high band at 2 ms, the rest at 0, on a drum bus with a fast attack: the snare's crack is held without a click, and the kick and bass don't duck early. The latency (EDIT) is the largest Look; REAPER keeps the track in time.
+- [ ] EDIT > **Set all bands**: turning it moves every band's Look; adding a band starts it there.
+- [ ] EDIT > detector EQ on the low band of a kick-and-bass loop: **HP** at 80 Hz lets the kick through with less reduction, and the sound of the band itself isn't filtered. **LP** fully right and **HP** fully left read Off. **Tilt** up makes the band react more to its highs. The section follows the band tab.
+- [ ] Right-click a crossover line: its slope menu opens; pick LR 48 for one crossover only: no click beyond a brief fade, and the sum is still flat (a null against the dry track at 1:1 everywhere, as before). The EDIT rows match. In Linear or Dynamic phase the menu and rows are dimmed.
+- [ ] Crossover menu > LR 48, then LR 24: every slope follows.
+- [ ] **GR history**: each band's lane moves with its reduction, the peaks at the right read sensibly, and switching back to **Spectrum** brings back the graph and Learn. With 8 bands the lanes still fit.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

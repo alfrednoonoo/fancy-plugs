@@ -26,6 +26,19 @@ public:
     // For rendered screenshots: stops the analyzer and draws a fixed spectrum instead.
     void showPreviewSpectrum();
 
+    // Phase 4 Wave 2 (item 26): the Spectrum | GR history switch. Not a parameter. The editor
+    // feeds the history with every band's columns; it keeps the last 3 s.
+    void setHistoryShown (bool shouldShow);
+    bool isHistoryShown() const noexcept { return historyShown; }
+    void pushHistory (const MultiCompDsp::HistoryColumn* newColumns, int count);
+    std::function<void (bool)> onHistoryShown;
+
+    // For rendered screenshots: the mockup's made-up history, fixed.
+    void showPreviewHistory();
+
+    // Opens a crossover's slope menu as a right-click on its line would, halfway down.
+    void showSlopeMenuFor (int crossover);
+
     std::function<void (int)> onBandSelected;
 
     void paint (juce::Graphics&) override;
@@ -67,6 +80,23 @@ private:
 
     void paintGrid (juce::Graphics&);
     void paintSpectrum (juce::Graphics&);
+    void paintHistory (juce::Graphics&);
+    void showSlopeMenu (int crossover, juce::Point<float> position);
+
+    // Phase 4 Wave 2: Spectrum | GR history, styled as Comp's drawer tabs.
+    class ViewSwitch final : public juce::Component
+    {
+    public:
+        void setSelected (int index);
+        void paint (juce::Graphics&) override;
+        void mouseDown (const juce::MouseEvent&) override;
+
+        std::function<void (int)> onChange;
+
+    private:
+        juce::Rectangle<float> segmentBounds (int index) const;
+        int selected = 0;
+    };
 
     MultiCompProcessor& processor;
     AnalyzerThread analyzerThread;
@@ -83,6 +113,12 @@ private:
     std::vector<float> spectrum;
     std::atomic<int> columns { 0 };
     bool frozenSpectrum = false;
+
+    // Phase 4 Wave 2 (item 26): the GR history, a ring of the last 3 s of columns.
+    ViewSwitch viewSwitch;
+    std::vector<MultiCompDsp::HistoryColumn> history;
+    int historyWrite = 0;
+    bool historyShown = false, frozenHistory = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BandGraph)
 };

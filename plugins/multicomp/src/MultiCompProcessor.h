@@ -31,6 +31,11 @@ public:
 
     static juce::String id (int band, const char* suffix) { return "b" + juce::String (band + 1) + suffix; }
 
+    // Phase 4 Wave 2 (item 25): crossover N's slope, LR 24 or LR 48 dB/oct.
+    static juce::String slopeId (int crossover) { return "x" + juce::String (crossover + 1) + "slope"; }
+
+    void migrateParameters (juce::ValueTree& parameters) const override;
+
     MultiCompDsp::BandSpec readBand (int band) const;
     MultiCompDsp::Targets readTargets() const;
     int getNumBands() const;
@@ -41,6 +46,10 @@ public:
 
     float takeGainReduction (int band) noexcept { return dsp.takeGainReduction (band); }
     fancy::dsp::MeterTap& getBandInput (int band) noexcept { return dsp.getBandInput (band); }
+
+    // Phase 4 Wave 2 (item 26): the GR history, recorded while an editor is open.
+    void setHistoryActive (bool shouldRecord) noexcept { dsp.setHistoryActive (shouldRecord); }
+    int popHistory (MultiCompDsp::HistoryColumn* destination, int maxColumns) noexcept { return dsp.popHistory (destination, maxColumns); }
 
     // Message thread.
     void setParameter (const juce::String& parameterId, float value);
@@ -91,6 +100,7 @@ private:
     bool isOn (const char* parameterId) const;
     void copyBand (int from, int to);
     void writeValue (const juce::String& parameterId, float value);
+    void writeLinked (const juce::String& parameterId, float value);
 
     struct BandValues
     {
@@ -107,6 +117,15 @@ private:
     std::array<UpwardValues, multicomp::maxBands> upwardValues {};
     std::array<std::atomic<float>*, multicomp::maxBands> channelValues {}; // Phase 3 Q2.6
     std::array<std::atomic<float>*, multicomp::maxBands> muteValues {};    // Phase 4 Wave 1
+
+    // Phase 4 Wave 2: each band's Look and detector EQ, and each crossover's slope.
+    struct DetectorValues
+    {
+        std::atomic<float>* look, *hp, *lp, *tilt;
+    };
+
+    std::array<DetectorValues, multicomp::maxBands> detectorValues {};
+    std::array<std::atomic<float>*, multicomp::maxCrossovers> slopeValues {};
 
     // Phase 4 Wave 1: Learn crossovers.
     void learnFrom (const float* const* main, int numChannels, int numSamples) noexcept;

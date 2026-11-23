@@ -34,6 +34,12 @@ constexpr GainReductionMeter::Geometry reductionGeometry { 15.0f, 17.0f, 80.0f, 
 
 const juce::Identifier selectedBandProperty ("selectedBand");
 
+// Phase 4 Wave 2 (reference/phase4/58__multicomp_w2_mockup.png, panel 3), in the drawer's own
+// coordinates (it starts at body y 207, window y 280 in the mockup).
+constexpr int detectorTitleY = 148, detectorKnobY = 160, detectorCaptionY = 260;
+constexpr int slopeX = 340, slopeTitleY = 206, slopeRowY = 223, slopeRowStep = 27, slopeRowWidth = 270;
+constexpr int slopeDropdownWidth = 128, slopeCompactDropdownWidth = 98, slopeRowHeight = 22;
+
 void setValue (juce::RangedAudioParameter& parameter, float value)
 {
     parameter.setValueNotifyingHost (parameter.convertTo0to1 (value));
@@ -184,6 +190,7 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
       releaseKnob (bandParameter (processor, bandIndex, "rel"), "Release", multiBandColour (bandIndex), Knob::tightStyle),
       rmsKnob (bandParameter (processor, bandIndex, "rms"), "RMS size", multiBandColour (bandIndex), Knob::tightStyle),
       gainKnob (bandParameter (processor, bandIndex, "gain"), "Gain", multiBandColour (bandIndex), Knob::tightStyle, true),
+      lookKnob (bandParameter (processor, bandIndex, "look"), "Look", multiBandColour (bandIndex), Knob::tightStyle),
       makeupCheckbox (bandParameter (processor, bandIndex, "mk"), "Auto make-up"),
       autoReleaseCheckbox (bandParameter (processor, bandIndex, "ar"), "Auto release"),
       feedbackCheckbox (bandParameter (processor, bandIndex, "fb"), "Feedback detect"),
@@ -255,6 +262,10 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
     // Wider than the rest, for the make-up amount after its value.
     gainKnob.setBounds (gainKnob.getBounds().withSizeKeepingCentre (108, knobHeight));
 
+    // Phase 4 Wave 2 (item 23; mockup 58, panel 1): after Gain, in the row's free space.
+    lookKnob.setBounds (574 - knobWidth / 2, knobTop, knobWidth, knobHeight);
+    lookKnob.setTooltip ("Lookahead: this band's detector hears its audio this much early. The audio of every band waits for the largest, which is the latency.");
+
     constexpr int checkboxY = cardY + 110;
 
     makeupCheckbox.setBounds (138, checkboxY, 108, 20);
@@ -278,7 +289,7 @@ MultiCompEditor::BandEditor::BandEditor (MultiCompProcessor& processor, int band
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &inputMeter, &thresholdLabel, &thresholdFader, &reductionMeter,
-             &ratioKnob, &kneeKnob, &attackKnob, &releaseKnob, &rmsKnob, &gainKnob,
+             &ratioKnob, &kneeKnob, &attackKnob, &releaseKnob, &rmsKnob, &gainKnob, &lookKnob,
              &makeupCheckbox, &autoReleaseCheckbox, &feedbackCheckbox, &sidechainCheckbox,
              &channelChip, &soloButton, &muteButton, &powerIcon, &closeButton })
         addAndMakeVisible (item);
@@ -368,7 +379,7 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
       attack90Checkbox (parameter ("attack90"), "Attack = 90 % rise"),
       logCheckbox (parameter ("logFreq"), "Log-scale automated freq."),
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
-      lookaheadKnob (parameter ("lookahead"), "Lookahead", colours::uiTeal, Knob::smallStyle)
+      lookaheadKnob (parameter ("lookahead"), "Set all bands", colours::uiTeal, Knob::smallStyle)
 {
     // The title strip keeps one colour while the accent follows the selection.
     setTitleColour (multiBandColour (0));
@@ -385,6 +396,10 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
 
     graph.setBounds (graphX, graphY, graphWidth, graphHeight);
     graph.onBandSelected = [this] (int band) { selectBand (band); };
+
+    // Phase 4 Wave 2 (item 26): Learn works on the spectrum, so it steps aside for the history.
+    graph.onHistoryShown = [this] (bool shown) { learnButton.setVisible (! shown); };
+    historyScratch.resize ((size_t) MultiCompDsp::historyColumns);
     body.addAndMakeVisible (graph);
 
     // Phase 4 Wave 1: Learn crossovers, at the graph's top right.
@@ -463,15 +478,53 @@ MultiCompEditor::MultiCompEditor (MultiCompProcessor& processor)
     logCheckbox.setBounds (24, 92, 220, 20);
     drawerOutputKnob.setBounds (300, 56, 90, 99);
 
-    // Phase 3 Q2.6 (reference/phase3/26__multicomp_q26_mockup.png).
-    lookaheadKnob.setBounds (406, 56, 90, 99);
+    // Phase 3 Q2.6 (reference/phase3/26__multicomp_q26_mockup.png). Phase 4 Wave 2 (mockup 58,
+    // panel 3): Set all bands, wider for its label, on the same centre.
+    lookaheadKnob.setBounds (396, 56, 110, 99);
     styleLabel (latencyLabel, {}, colours::textSecondary, juce::Justification::centred, 11.0f);
-    latencyLabel.setBounds (396, 160, 110, 16);
-    lookaheadKnob.setTooltip ("The bands' audio waits this long, so each band's gain moves before a transient arrives. It adds latency.");
+    latencyLabel.setBounds (386, 160, 130, 14);
+    styleLabel (setAllCaption, "moves every band's Look", colours::textSecondary, juce::Justification::centred, 11.0f);
+    setAllCaption.setBounds (376, 174, 150, 14);
+    lookaheadKnob.setTooltip ("Sets every band's Look at once. Each band's detector hears its audio that much early; the latency is the largest Look.");
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &attack90Checkbox, &logCheckbox, &drawerOutputKnob,
-                                                                           &lookaheadKnob, &latencyLabel })
+                                                                           &lookaheadKnob, &latencyLabel, &setAllCaption })
         drawer.addAndMakeVisible (item);
+
+    // Phase 4 Wave 2 (item 24): every band's detector EQ knobs; the selected band's show.
+    for (int band = 0; band < maxBands; ++band)
+    {
+        const auto colour = multiBandColour (band);
+        detectorKnobs.push_back (std::make_unique<Knob> (bandParameter (processor, band, "dhp"), "HP", colour, Knob::smallStyle));
+        detectorKnobs.push_back (std::make_unique<Knob> (bandParameter (processor, band, "dlp"), "LP", colour, Knob::smallStyle));
+        detectorKnobs.push_back (std::make_unique<Knob> (bandParameter (processor, band, "tilt"), "Tilt", colour, Knob::smallStyle, true));
+
+        auto& hp = *detectorKnobs[(size_t) band * 3];
+        auto& lp = *detectorKnobs[(size_t) band * 3 + 1];
+        auto& tilt = *detectorKnobs[(size_t) band * 3 + 2];
+
+        hp.setBounds (60, detectorKnobY, 70, 99);
+        lp.setBounds (136, detectorKnobY, 70, 99);
+        tilt.setBounds (216, detectorKnobY, 84, 99);
+
+        hp.setTooltip ("Detector high-pass, 24 dB/oct, on what this band's detector hears only. Fully left is Off.");
+        lp.setTooltip ("Detector low-pass, 24 dB/oct, on what this band's detector hears only. Fully right is Off.");
+        tilt.setTooltip ("Detector tilt around the band's centre: up makes its highs drive the band more, down its lows.");
+
+        for (auto* knob : { &hp, &lp, &tilt })
+            drawer.addChildComponent (knob);
+    }
+
+    // Phase 4 Wave 2 (item 25): a slope per crossover.
+    for (int crossover = 0; crossover < multicomp::maxCrossovers; ++crossover)
+    {
+        slopeDropdowns.push_back (std::make_unique<ParamDropdown> (parameter (MultiCompProcessor::slopeId (crossover))));
+        slopeDropdowns.back()->setTextHeight (12.0f);
+        drawer.addChildComponent (*slopeDropdowns.back());
+    }
+
+    drawerNotes.setBounds (0, 0, rightColumnX, bodyHeight - tabRowY + 2);
+    drawer.addAndMakeVisible (drawerNotes);
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
@@ -498,6 +551,10 @@ bool MultiCompEditor::listsParameter (const juce::AudioProcessorParameter& item)
 
     const auto parameterId = ranged->getParameterID();
     const auto isBandParameter = parameterId[0] == 'b' && juce::CharacterFunctions::isDigit (parameterId[1]);
+
+    // Phase 4 Wave 2: a crossover's slope, listed while the crossover is in use.
+    if (parameterId[0] == 'x' && juce::CharacterFunctions::isDigit (parameterId[1]))
+        return parameterId.substring (1).getIntValue() <= multiProcessor().getNumBands() - 1;
 
     return ! isBandParameter || parameterId.substring (1).getIntValue() <= multiProcessor().getNumBands();
 }
@@ -570,6 +627,103 @@ void MultiCompEditor::updateSelection()
 
     for (int band = 0; band < maxBands; ++band)
         bandEditors[(size_t) band]->setVisible (band == selectedBand);
+
+    // Phase 4 Wave 2: the drawer's detector EQ follows the selected band tab.
+    for (int i = 0; i < (int) detectorKnobs.size(); ++i)
+        detectorKnobs[(size_t) i]->setVisible (i / 3 == selectedBand);
+
+    layoutSlopes();
+    drawerNotes.repaint();
+}
+
+// Phase 4 Wave 2 (item 25): up to 4 crossovers in mockup 58's column; more in two columns.
+void MultiCompEditor::layoutSlopes()
+{
+    auto& processor = multiProcessor();
+    const auto count = processor.getNumBands() - 1;
+    const auto type = juce::roundToInt (processor.getApvts().getRawParameterValue ("crossover")->load());
+    const auto enabled = type == (int) multicomp::CrossoverType::lr24 || type == (int) multicomp::CrossoverType::lr48;
+
+    if (count != shownCrossovers)
+    {
+        shownCrossovers = count;
+        const auto compact = count > 4;
+
+        for (int i = 0; i < multicomp::maxCrossovers; ++i)
+        {
+            auto& dropdown = *slopeDropdowns[(size_t) i];
+
+            if (compact)
+            {
+                const auto column = i / 4, row = i % 4;
+                const auto right = slopeX + (column + 1) * (slopeRowWidth / 2);
+                dropdown.setBounds (right - slopeCompactDropdownWidth, slopeRowY + row * slopeRowStep, slopeCompactDropdownWidth, slopeRowHeight);
+            }
+            else
+            {
+                dropdown.setBounds (slopeX + slopeRowWidth - slopeDropdownWidth, slopeRowY + i * slopeRowStep, slopeDropdownWidth, slopeRowHeight);
+            }
+
+            dropdown.setVisible (i < count);
+        }
+
+        drawerNotes.repaint();
+    }
+
+    if (enabled != slopesEnabled)
+    {
+        slopesEnabled = enabled;
+
+        for (auto& dropdown : slopeDropdowns)
+        {
+            dropdown->setEnabled (enabled);
+            dropdown->setAlpha (enabled ? 1.0f : 0.4f);
+            dropdown->setTooltip (enabled ? juce::String {} : juce::String ("Linear and Dynamic phase keep their own shapes"));
+        }
+
+        drawerNotes.repaint();
+    }
+}
+
+void MultiCompEditor::DrawerNotes::paint (juce::Graphics& g)
+{
+    auto& processor = editor.multiProcessor();
+    const auto band = editor.selectedBand;
+    const auto colour = multiBandColour (band);
+    const auto dot = " " + juce::String::charToString (0x00b7) + " ";
+    const auto titleFont = font (Weight::semiBold, 10.5f).withExtraKerningFactor (0.06f);
+
+    // BAND N, DETECTOR EQ, its caption, and CROSSOVER SLOPES with each row's crossover.
+    juce::AttributedString title;
+    title.append ("BAND " + juce::String (band + 1), titleFont, colour);
+    title.append (dot + "DETECTOR EQ", titleFont, colours::textSecondary);
+    title.draw (g, juce::Rectangle<float> (24.0f, (float) detectorTitleY, 260.0f, 14.0f));
+
+    g.setColour (colours::textSecondary);
+    g.setFont (font (Weight::regular, 11.0f));
+    g.drawFittedText ("Shapes only what band " + juce::String (band + 1) + "'s detector hears, never its audio. Follows the selected band tab.",
+                      juce::Rectangle<int> (24, detectorCaptionY, 260, 30), juce::Justification::topLeft, 2, 1.0f);
+
+    const auto count = processor.getNumBands() - 1;
+
+    if (count <= 0)
+        return;
+
+    g.setFont (titleFont);
+    g.drawText ("CROSSOVER SLOPES", juce::Rectangle<float> ((float) slopeX, (float) slopeTitleY, 260.0f, 14.0f), juce::Justification::centredLeft, false);
+
+    g.setFont (font (Weight::regular, 13.0f));
+    g.setColour (colours::textSecondary.withAlpha (editor.slopesEnabled ? 1.0f : 0.5f));
+
+    for (int i = 0; i < count; ++i)
+    {
+        const auto& dropdown = *editor.slopeDropdowns[(size_t) i];
+        const auto pair = juce::String (i + 1) + juce::String::charToString (0x2013) + juce::String (i + 2);
+        const auto text = count > 4 ? pair : pair + dot + fancy::formatHz ((float) processor.bandTopHz (i));
+        const auto left = count > 4 ? dropdown.getX() - 38 : slopeX;
+
+        g.drawText (text, juce::Rectangle<int> (left, dropdown.getY(), dropdown.getX() - left - 4, slopeRowHeight), juce::Justification::centredLeft, true);
+    }
 }
 
 void MultiCompEditor::onTick (float seconds)
@@ -608,8 +762,15 @@ void MultiCompEditor::onTick (float seconds)
     graph.update (displayed);
     outMeter.update (processor.outputMeter, seconds);
 
+    // Phase 4 Wave 2 (item 26): read every tick, so the FIFO never fills while the spectrum shows.
+    if (const auto count = processor.popHistory (historyScratch.data(), (int) historyScratch.size()); count > 0)
+        graph.pushHistory (historyScratch.data(), count);
+
     if (drawer.isVisible())
+    {
         latencyLabel.setText ("latency " + juce::String (processor.getLatencySamples()) + " samples", juce::dontSendNotification);
+        drawerNotes.repaint(); // the crossover frequencies can move
+    }
 }
 
 void MultiCompEditor::showPreview (bool drawerOpen)
@@ -626,6 +787,13 @@ void MultiCompEditor::showPreview (bool drawerOpen)
     bandValue (1, "ratio", 3.0f);
     bandValue (1, "gain", 2.0f);
     bandValue (1, "mk", 1.0f);
+
+    // Phase 4 Wave 2 (mockup 58): band 2 looks 2 ms ahead, with its detector high-passed at
+    // 80 Hz and tilted up 1.5 dB/oct, and crossover 2 is LR 48.
+    bandValue (1, "look", 2.0f);
+    bandValue (1, "dhp", 80.0f);
+    bandValue (1, "tilt", 1.5f);
+    setValue (parameter (MultiCompProcessor::slopeId (1)), 1.0f);
 
     // Phase 2.1 U: panel 4's upward row, Depth and Time.
     bandValue (1, "up", 1.0f);
@@ -654,7 +822,14 @@ void MultiCompEditor::showPreview (bool drawerOpen)
         latencyLabel.setText ("latency 96 samples", juce::dontSendNotification);
     }
 
+    updateSelection();
     drawer.setVisible (drawerOpen);
+}
+
+void MultiCompEditor::showHistoryPreview()
+{
+    showPreview (false);
+    graph.showPreviewHistory();
 }
 
 void MultiCompEditor::showChannelPreview()
@@ -679,5 +854,6 @@ std::vector<ShellEditor::PopupOpener> MultiCompEditor::getPopupOpeners()
     openers.push_back ({ "delete-band", [this] { confirmThen ("Delete band " + juce::String (selectedBand + 1) + "?", "Its settings will be lost.", "Delete", true, [] {}); } });
     openers.push_back ({ "tooltip-ratio", [this] { auto& knob = bandEditors[(size_t) selectedBand]->getRatioKnob(); showTip (knob, knob.getTooltip()); } });
     openers.push_back ({ "value-threshold", [this] { bandEditors[(size_t) selectedBand]->getThresholdFader().openValueEditor(); } });
+    openers.push_back ({ "slope-menu", [this] { graph.showSlopeMenuFor (1); } }); // Phase 4 Wave 2, mockup 58 panel 1
     return openers;
 }

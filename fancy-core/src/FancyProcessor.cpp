@@ -128,6 +128,8 @@ bool FancyProcessor::applyState (const juce::ValueTree& tree)
         child.setProperty ("value", juce::jlimit ((double) range.start, (double) range.end, value), nullptr);
     }
 
+    migrateParameters (clean);
+
     // Migration (version 3): a parameter the state doesn't mention takes its default, so an
     // older state, or a preset saved before a parameter existed, sounds as it was saved.
     for (auto* parameter : getParameters())

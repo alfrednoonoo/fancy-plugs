@@ -446,10 +446,12 @@ void Workflow::restoreSlots (const juce::ValueTree& tree)
     activeSlot = tree.getProperty (activeProperty).toString() == slotNames[1] ? 1 : 0;
     otherSlot = {};
 
-    const auto slot = tree.getChildWithName (slotType);
+    auto slot = tree.getChildWithName (slotType).createCopy();
 
     if (! slot.isValid())
         return;
+
+    owner.migrateParameters (slot);
 
     // Like the main state: unknown parameters are dropped, and missing ones keep their default.
     Snapshot snapshot;

@@ -79,7 +79,16 @@ public:
 
     void setType (CrossoverType type) noexcept
     {
-        steep = type == CrossoverType::lr48;
+        steep.fill (type == CrossoverType::lr48);
+    }
+
+    // Phase 4 Wave 2 (item 25): each crossover's own slope, bit k for crossover k (set: LR 48).
+    // Each lower band goes through the all-pass of each crossover above it at that crossover's
+    // own order, so mixed slopes still sum flat.
+    void setSlopes (unsigned steepMask) noexcept
+    {
+        for (int i = 0; i < maxCrossovers; ++i)
+            steep[(size_t) i] = ((steepMask >> i) & 1u) != 0;
     }
 
     void setBandCount (int bands) noexcept
@@ -108,7 +117,6 @@ public:
         const float* const inputs[] { left, right };
 
         const auto numCrossovers = numBands - 1;
-        const auto numSections = steep ? 2 : 1;
 
         for (int i = 0; i < numSamples; ++i)
         {
@@ -129,6 +137,7 @@ public:
                 for (int j = 0; j < numCrossovers; ++j)
                 {
                     const auto& sections = coefficients[(size_t) j];
+                    const auto numSections = steep[(size_t) j] ? 2 : 1;
 
                     auto low = rest, high = rest;
 
@@ -146,8 +155,9 @@ public:
                         for (int above = j + 1; above < numCrossovers; ++above)
                         {
                             const auto& upper = coefficients[(size_t) above];
+                            const auto upperSections = steep[(size_t) above] ? 2 : 1;
 
-                            for (int section = 0; section < numSections; ++section)
+                            for (int section = 0; section < upperSections; ++section)
                             {
                                 const auto& c = upper[(size_t) section];
                                 const auto band = state.allPasses[(size_t) j][(size_t) above][(size_t) section].tick (c, low).band;
@@ -187,7 +197,7 @@ private:
         const auto hz = std::min (std::exp (logHz[(size_t) crossover].getCurrent()), 0.45 * rate);
         auto& sections = coefficients[(size_t) crossover];
 
-        if (steep)
+        if (steep[(size_t) crossover])
         {
             sections[0].set (hz, butterworth4a, rate);
             sections[1].set (hz, butterworth4b, rate);
@@ -200,7 +210,8 @@ private:
 
     double rate = 48000.0;
     int numBands = 4;
-    bool steep = false, compensate = true;
+    std::array<bool, maxCrossovers> steep {};
+    bool compensate = true;
 
     std::array<fancy::dsp::Smoother, maxCrossovers> logHz;
     std::array<std::array<Coefficients, 2>, maxCrossovers> coefficients;

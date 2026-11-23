@@ -11,8 +11,15 @@ Frequency runs from left to right. The vertical scale is level, from 0 to -60 dB
 | Drag a band's handle up or down | Sets Threshold |
 | Mouse wheel on a handle, or Alt-drag it | Sets Ratio |
 | Drag a blue line | Moves the crossover. It stops 1/3 octave from its neighbours |
+| Right-click a blue line | Picks that crossover's slope, LR 24 or LR 48 dB/oct (see Crossover). Dimmed in Linear and Dynamic phase |
 | Double-click a handle | Resets the band, keeping its frequency range |
 | Double-click an empty spot | Splits the band there. Both halves keep its settings, so the sound doesn't change |
+
+The **Spectrum | GR history** switch at the graph's top left swaps the graph for the GR history (see below) and back. It's a view, not a setting: it isn't saved and can't be automated.
+
+## GR history
+
+With **GR history** chosen, the graph shows each band's gain reduction over the last 3 seconds, one lane per band in its colour, newest on the right. The trace hangs down from the lane's top line as the band turns the level down (12 dB fills a lane with four bands), and the number at the right of each lane is that band's largest reduction in the 3 seconds shown. It's recorded only while the plugin window is open, so it costs nothing when it's closed. **Learn** steps aside while the history shows, and the handles and crossover lines can't be dragged until you switch back to **Spectrum**.
 
 ## Bands
 
@@ -29,6 +36,7 @@ The numbered tabs select a band, and `+` splits the selected band in half. On th
 | Release | 0-5000 ms | How fast it goes away |
 | RMS size | 0-250 ms | How long the detector averages. 0 is peak detection |
 | Gain | -24 to +24 dB | The band's make-up gain |
+| Look | 0-10 ms | The band's lookahead: its detector hears the audio this much early, so its gain starts moving before a transient arrives. Every band's audio waits for the largest Look, so the bands stay lined up and the latency is the largest Look. A band with sharp hits (a snare in the highs) gains most from 1 to 2 ms; a band whose notes swell in (the bass) needs none, and more than it needs turns the sound before each hit down early |
 | Auto make-up | off/on | Adds half the gain reduction a 0 dBFS level would get. It comes from Threshold, Ratio and Knee, so it can't pump. The amount shows in brackets after Gain |
 | Auto release | off/on | Recovers fast from transients and slowly from sustained compression |
 | Feedback detect | off/on | The detector listens to the band's output |
@@ -84,6 +92,8 @@ Moving Threshold, Ratio, Attack, Release or Gain on one band moves the others by
 | Linear phase | 2559 samples, 53 ms | For mastering. No phase shift at all |
 | Dynamic phase | None | The audio isn't split: while the bands aren't changing anything it passes untouched, with no phase shift at all, and phase appears only around crossovers whose bands differ, only while they do |
 
+With LR 24 or LR 48, each crossover can have its own slope: right-click its blue line on the graph, or use the **Crossover slopes** rows in EDIT. Mixed slopes still sum flat. Picking LR 24 or LR 48 in the Crossover menu sets every crossover to that slope; Linear and Dynamic phase keep their own shapes and leave the slopes as they were, ready for when you go back.
+
 All four sum flat. In **Dynamic phase** the band gains are applied as gentle shelves at the crossovers, so a band's shape is within about 0.5 dB of LR 24's for moves of 6 dB, and Dry is the input itself. A shelf can't silence a band, so while a band is soloed or muted MultiComp uses the LR 24 bands, switching over 20 ms. Below about 150 Hz, Linear phase's bands overlap more than the LR types, because its transition is about 75 Hz wide at any frequency.
 
 ## Wet and Dry
@@ -113,9 +123,13 @@ Crossovers are drawn on the graph, so they're dragged rather than typed. The hea
 
 ## EDIT
 
-The `EDIT` link at the bottom right holds Attack = 90 % rise, Log-scale automated freq., Output and Lookahead.
+The `EDIT` link at the bottom right holds Attack = 90 % rise, Log-scale automated freq., Output, Set all bands, the selected band's detector EQ and the crossover slopes.
 
-- **Lookahead** (0 to 10 ms): the bands' audio waits this long while their detectors don't, so each band's gain starts moving before a transient arrives. Fast attacks then catch peaks without clipping their start. It adds its time to the latency, shown under the knob, and REAPER compensates it.
+- **Set all bands** (0 to 10 ms): turning it sets every band's **Look** to its value at once, and a band you add or reset starts there. The latency in samples is shown under it. Each band's own Look, in the band row, is what counts; host automation of this knob doesn't move the bands.
+- **Detector EQ** (the selected band, named in its colour): **HP** and **LP** filter what the band's detector hears, at 24 dB/oct, never the band's audio. HP fully left and LP fully right are Off, and Off isn't run. **Tilt** (-6 to +6 dB/oct) tips the detector's hearing around the middle of the band's range: up makes its highs drive the compression more, down its lows. Example: in a low band with a kick at 50 Hz and a bass at 100 Hz, HP at 80 Hz lets the bass set the gain, so the kick passes with about half the reduction. It follows the band tab you select.
+- **Crossover slopes**: a row per crossover, named by the bands it splits and its frequency, with its slope, LR 24 or LR 48 dB/oct. The same choice as right-clicking the crossover's line. With more than four crossovers the rows go into two columns. Dimmed in Linear and Dynamic phase.
+
+Projects saved before these settings existed open with every band's Look at their old Lookahead and every slope at their old Crossover type, so they sound as they did.
 
 ## Channel
 
@@ -133,7 +147,7 @@ The chip on the band row, left of **S**, picks what the band compresses: **ST** 
 | LR 24, LR 48 | 0 | 104 samples at 48 kHz |
 | Linear phase | 2559 samples at 48 kHz | 2663 samples at 48 kHz |
 
-Lookahead adds its own time on top: 5 ms is 240 samples at 48 kHz.
+The largest band's Look adds its own time on top: 5 ms is 240 samples at 48 kHz.
 
 The plugin reports this to REAPER, and changing the crossover or Limit output fades the sound briefly.
 
@@ -154,7 +168,7 @@ If a sidechain source is chosen and nothing arrives for 2 s while the main input
 
 ### Latency
 
-Some settings change the plugin's latency: a Linear crossover, and Limit output. The plugin reports each change to the host, which delays the other tracks to match. Some hosts only read the new latency when playback stops and starts, so change these settings while stopped, or stop and start once after changing them; the tooltip says so too. In a host with no delay compensation, the track plays late by the latency, and nothing else goes wrong.
+Some settings change the plugin's latency: a Linear crossover, Limit output, and the largest band's Look. The plugin reports each change to the host, which delays the other tracks to match. Some hosts only read the new latency when playback stops and starts, so change these settings while stopped, or stop and start once after changing them; the tooltip says so too. In a host with no delay compensation, the track plays late by the latency, and nothing else goes wrong.
 
 ### Rendering and export
 

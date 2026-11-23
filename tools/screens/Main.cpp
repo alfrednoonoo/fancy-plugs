@@ -680,6 +680,18 @@ int main (int argc, char** argv)
             ok = writeBothScales (*editor, "multicomp-channel", outputDir) && ok;
         }
     }
+
+    {
+        // Phase 4 Wave 2 (item 26): the graph in GR history.
+        MultiCompProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<MultiCompEditor*> (base.get()))
+        {
+            editor->showHistoryPreview();
+            ok = writeBothScales (*editor, "multicomp-history", outputDir) && ok;
+        }
+    }
    #endif
 
    #if FANCY_HAS_FIR

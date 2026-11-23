@@ -41,7 +41,16 @@ public:
 
         // Phase 4 Wave 1 (docs/multicomp.md): out of the sum entirely. Off is the band as it was.
         bool mute = false;
+
+        // Phase 4 Wave 2 (items 23 and 24). The band's own lookahead; below 0 it takes the
+        // Targets' lookaheadMs, as before Wave 2. And its detector EQ, on the detector only: a
+        // 24 dB/oct high-pass (at or below detectorOffHpHz it's off), a 24 dB/oct low-pass (at or
+        // above detectorOffLpHz it's off) and a tilt in dB/oct around the band's centre.
+        double lookaheadMs = -1.0;
+        double detectorHpHz = 20.0, detectorLpHz = 20000.0, detectorTilt = 0.0;
     };
+
+    static constexpr double detectorOffHpHz = 20.0, detectorOffLpHz = 20000.0, maxTilt = 6.0;
 
     struct Targets
     {
@@ -57,6 +66,11 @@ public:
 
         // Phase 3 Q2.6.
         double lookaheadMs = 0.0;
+
+        // Phase 4 Wave 2 (item 25): with perCrossoverSlopes, the LR types use each crossover's own
+        // slope (steepSlopes, true for LR 48); without, every crossover follows the type, as before.
+        bool perCrossoverSlopes = false;
+        std::array<bool, multicomp::maxCrossovers> steepSlopes {};
     };
 
     // The upward part of a band's static curve, in dB, before ballistics and Depth: the lift
@@ -99,6 +113,20 @@ public:
 
     fancy::dsp::MeterTap& getBandInput (int band) noexcept { return bandStates[(size_t) band].input; }
 
+    // Phase 4 Wave 2 (item 26): every band's gain reduction, one column per 3 s / 952 (each the
+    // largest reduction in its span, in dB), for the GR history view. Recorded only while an
+    // editor turns it on; one reader.
+    static constexpr int historyColumns = 952;
+    static constexpr double historySeconds = 3.0;
+
+    struct HistoryColumn
+    {
+        std::array<float, multicomp::maxBands> reductionDb {};
+    };
+
+    void setHistoryActive (bool shouldRecord) noexcept { historyActive.store (shouldRecord, std::memory_order_relaxed); }
+    int popHistory (HistoryColumn* destination, int maxColumns) noexcept;
+
 private:
     static constexpr int maxChunk = 128;
 
@@ -107,7 +135,8 @@ private:
         int bands = 4;
         multicomp::CrossoverType crossover = multicomp::CrossoverType::lr24;
         bool limiter = false;
-        int lookahead = 0; // samples
+        int lookahead = 0; // samples: the largest band's, which the audio waits
+        unsigned steepMask = 0; // Phase 4 Wave 2: LR 48 crossovers, bit per crossover
 
         bool operator== (const Config&) const = default;
     };
@@ -127,12 +156,27 @@ private:
 
         std::atomic<float> gainReduction { 0.0f };
         fancy::dsp::MeterTap input;
+
+        // Phase 4 Wave 2 (item 23): the detector's source, waiting (largest lookahead - own).
+        std::array<std::vector<double>, 2> detectorRing;
+
+        // Phase 4 Wave 2 (item 24): the detector EQ. Frequencies are smoothed in log Hz.
+        fancy::dsp::Smoother logHp, logLp, tilt;
+        std::array<fancy::dsp::SvfCoefficients, 2> hpSections {}, lpSections {};
+        std::array<std::array<fancy::dsp::Svf, 2>, 2> hpFilters {}, lpFilters {}; // [channel][section]
+        bool hpOn = false, lpOn = false, tiltOn = false;
+        double tiltB0 = 1.0, tiltB1 = 0.0, tiltA1 = 0.0;
+        std::array<double, 2> tiltX {}, tiltY {};
+        double tiltBottomHz = 0.0, tiltTopHz = 0.0, tiltDesigned = 0.0;
     };
 
     double* bandBuffer (std::vector<double>& buffer, int band, int channel) noexcept { return buffer.data() + (band * 2 + channel) * maxChunk; }
 
     void processChunk (float* const* main, int numMain, const float* const* sidechain, int numSidechain, int offset, int numSamples) noexcept;
     void compressBand (int band, int numSamples, bool keyAvailable) noexcept;
+    int bandLookahead (int band) const noexcept;
+    void updateDetectorEq (int band, bool force) noexcept;
+    void designTilt (BandState& state, double tilt, double bottomHz, double topHz) noexcept;
     void updateConfig (int numSamples) noexcept;
     void applyConfig (const Config& config) noexcept;
     void pushCrossovers() noexcept;
@@ -184,4 +228,16 @@ private:
     // Phase 3 Q2.6: the bands' audio waits Lookahead behind their detectors.
     std::array<std::array<std::vector<double>, 2>, multicomp::maxBands> lookaheadRings;
     int lookaheadLength = 1, lookaheadPosition = 0;
+
+    // Phase 4 Wave 2 (item 26): the GR history's audio side.
+    static constexpr int historyCapacity = 4096;
+    void recordHistory (int numSamples) noexcept;
+
+    std::atomic<bool> historyActive { false };
+    bool recordingHistory = false;
+    std::vector<double> historyReduction; // band * maxChunk + sample
+    std::vector<HistoryColumn> historyFifo;
+    std::atomic<int> historyWrite { 0 }, historyRead { 0 };
+    HistoryColumn historyCurrent;
+    double historyPosition = 0.0, samplesPerHistoryColumn = 1.0;
 };

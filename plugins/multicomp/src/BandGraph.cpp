@@ -1,5 +1,7 @@
 #include "BandGraph.h"
 
+#include <fancy/plugin/ParamFormat.h>
+#include <fancy/ui/Popups.h>
 #include <fancy/ui/Style.h>
 
 #include <cmath>
@@ -19,6 +21,12 @@ constexpr float handleRadius = 8.0f, grabRadius = 12.0f, crossoverGrab = 5.0f;
 constexpr float ratioDragPixels = 200.0f, ratioWheelStep = 0.08f;
 
 constexpr int analyzerIntervalMs = 33;
+
+// Phase 4 Wave 2 (item 26; reference/phase4/58__multicomp_w2_mockup.png, panels 1 and 2): the
+// switch at the graph's top left, and the history's lanes, one per band under it.
+constexpr int switchX = 37, switchY = 29, switchWidth = 150, switchHeight = 18;
+constexpr float laneLeft = 26.0f, laneRight = 44.0f, laneTop = 54.0f, laneBottom = 8.0f;
+constexpr float laneFullScaleDb = 12.0f;
 } // namespace
 
 juce::Colour multiBandColour (int band)
@@ -54,12 +62,20 @@ BandGraph::BandGraph (MultiCompProcessor& processorToUse)
 {
     processor.analyzerActive.store (true);
     analyzerThread.startThread (juce::Thread::Priority::low);
+
+    // Phase 4 Wave 2 (item 26).
+    history.assign ((size_t) MultiCompDsp::historyColumns, MultiCompDsp::HistoryColumn {});
+    processor.setHistoryActive (true);
+
+    viewSwitch.onChange = [this] (int index) { setHistoryShown (index == 1); };
+    addAndMakeVisible (viewSwitch);
 }
 
 BandGraph::~BandGraph()
 {
     analyzerThread.stopThread (2000);
     processor.analyzerActive.store (false);
+    processor.setHistoryActive (false);
 }
 
 void BandGraph::AnalyzerThread::run()
@@ -114,6 +130,8 @@ void BandGraph::resized()
     }
 
     columns.store (width);
+
+    viewSwitch.setBounds (switchX, switchY, switchWidth, switchHeight);
 }
 
 void BandGraph::setSelectedBand (int band)
@@ -263,6 +281,12 @@ void BandGraph::paintSpectrum (juce::Graphics& g)
 
 void BandGraph::paint (juce::Graphics& g)
 {
+    if (historyShown)
+    {
+        paintHistory (g);
+        return;
+    }
+
     const auto bounds = getLocalBounds().toFloat();
     const auto width = bounds.getWidth(), height = bounds.getHeight();
     const auto bottom = height - plotBottom;
@@ -366,6 +390,18 @@ void BandGraph::mouseDown (const juce::MouseEvent& event)
 {
     drag = Drag::none;
 
+    if (historyShown)
+        return;
+
+    // Phase 4 Wave 2 (item 25): a crossover's slope, from a right-click on its line.
+    if (event.mods.isPopupMenu())
+    {
+        if (const auto crossover = crossoverAt (event.position); crossover >= 0)
+            showSlopeMenu (crossover, event.position);
+
+        return;
+    }
+
     const auto band = bandAt (event.position);
 
     if (band >= 0)
@@ -389,6 +425,9 @@ void BandGraph::mouseDown (const juce::MouseEvent& event)
 
 void BandGraph::mouseDrag (const juce::MouseEvent& event)
 {
+    if (historyShown)
+        return;
+
     if (drag == Drag::threshold)
     {
         const auto db = juce::jlimit (floorDb, 0.0f, dbForY (event.position.y, (float) getHeight()));
@@ -414,6 +453,9 @@ void BandGraph::mouseUp (const juce::MouseEvent&)
 
 void BandGraph::mouseDoubleClick (const juce::MouseEvent& event)
 {
+    if (historyShown)
+        return;
+
     const auto band = bandAt (event.position);
 
     if (band >= 0)
@@ -433,8 +475,216 @@ void BandGraph::mouseDoubleClick (const juce::MouseEvent& event)
 
 void BandGraph::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
 {
+    if (historyShown)
+        return;
+
     const auto band = bandAt (event.position);
 
     if (band >= 0)
         changeRatio (band, wheel.deltaY * ratioWheelStep);
+}
+
+// Phase 4 Wave 2 (items 25 and 26) ---------------------------------------------
+
+void BandGraph::showSlopeMenu (int crossover, juce::Point<float> position)
+{
+    const auto type = juce::roundToInt (processor.getApvts().getRawParameterValue ("crossover")->load());
+    const auto lrType = type == (int) multicomp::CrossoverType::lr24 || type == (int) multicomp::CrossoverType::lr48;
+    const auto steep = processor.getApvts().getRawParameterValue (MultiCompProcessor::slopeId (crossover))->load() >= 0.5f;
+
+    // Linear and Dynamic phase keep their own shapes, so the choices are dimmed there.
+    fancy::ui::Menu menu;
+    menu.addTitle ("Crossover " + juce::String (crossover + 1));
+    menu.addItem (1, "LR 24 dB/oct", lrType, ! steep);
+    menu.addItem (2, "LR 48 dB/oct", lrType, steep);
+
+    menu.showAt (*this, position, [safeThis = juce::Component::SafePointer<BandGraph> (this), crossover] (int chosen)
+    {
+        if (safeThis != nullptr && chosen > 0)
+            safeThis->processor.setParameter (MultiCompProcessor::slopeId (crossover), (float) (chosen - 1));
+    });
+}
+
+void BandGraph::showSlopeMenuFor (int crossover)
+{
+    if (crossover < processor.getNumBands() - 1)
+        showSlopeMenu (crossover, { xForHz (processor.bandTopHz (crossover), (float) getWidth()) + 4.0f, (float) getHeight() * 0.62f });
+}
+
+void BandGraph::setHistoryShown (bool shouldShow)
+{
+    if (shouldShow == historyShown)
+        return;
+
+    historyShown = shouldShow;
+    viewSwitch.setSelected (shouldShow ? 1 : 0);
+    repaint();
+
+    if (onHistoryShown != nullptr)
+        onHistoryShown (shouldShow);
+}
+
+void BandGraph::pushHistory (const MultiCompDsp::HistoryColumn* newColumns, int count)
+{
+    if (frozenHistory || history.empty())
+        return;
+
+    for (int i = 0; i < count; ++i)
+    {
+        history[(size_t) historyWrite] = newColumns[i];
+        historyWrite = (historyWrite + 1) % (int) history.size();
+    }
+}
+
+void BandGraph::showPreviewHistory()
+{
+    frozenHistory = true;
+
+    // The lanes of mockup 58 (design/phase4-mockup-src/w2b_mockups.py, multicomp): six hits in
+    // 3 s, each band recovering at its own rate.
+    constexpr float depth[] { 3.0f, 9.0f, 6.0f, 2.0f };
+    const auto total = (int) history.size();
+
+    for (int k = 0; k < total; ++k)
+    {
+        const auto t = (float) k / (float) (total - 1);
+        const auto beat = std::fmod (t * 6.0f, 1.0f);
+        auto& column = history[(size_t) k];
+        column = {};
+
+        for (int band = 0; band < 4; ++band)
+            column.reductionDb[(size_t) band] = depth[band] * std::exp (-beat * (4.0f + (float) band)) * (0.75f + 0.25f * std::sin (7.0f * t + (float) band));
+    }
+
+    historyWrite = 0;
+    setHistoryShown (true);
+}
+
+void BandGraph::paintHistory (juce::Graphics& g)
+{
+    const auto bounds = getLocalBounds().toFloat();
+
+    g.setColour (colours::bgWell);
+    g.fillRoundedRectangle (bounds, 6.0f);
+
+    g.setFont (font (Weight::regular, 10.0f));
+    g.setColour (colours::textSecondary);
+    g.drawText ("last 3 s " + juce::String::charToString (0x00b7) + " peak dB at right",
+                juce::Rectangle<float> (bounds.getRight() - 210.0f, (float) switchY, 196.0f, (float) switchHeight), juce::Justification::centredRight, false);
+
+    const auto numBands = processor.getNumBands();
+    const auto total = (int) history.size();
+    const auto left = laneLeft, right = bounds.getRight() - laneRight;
+    const auto laneHeight = (bounds.getBottom() - laneBottom - laneTop) / (float) numBands;
+    const auto pixels = juce::jmax (1, (int) (right - left));
+    const auto pixelsPerDb = juce::jmax (0.5f, (laneHeight - 6.0f) / laneFullScaleDb);
+
+    for (int band = 0; band < numBands; ++band)
+    {
+        const auto top = laneTop + laneHeight * (float) band;
+        const auto colour = multiBandColour (band);
+
+        g.setColour (colours::grey5);
+        g.fillRect (left, top, right - left, 1.0f);
+
+        g.setColour (colour);
+        g.setFont (font (Weight::semiBold, 11.0f));
+        g.drawText (juce::String (band + 1), juce::Rectangle<float> (6.0f, top, 16.0f, 14.0f), juce::Justification::centredLeft, false);
+
+        // Oldest on the left. Each pixel shows the largest reduction among its columns.
+        juce::Path line, area;
+        auto peak = 0.0f;
+
+        for (int x = 0; x <= pixels; ++x)
+        {
+            const auto first = juce::jmin (total - 1, x * total / (pixels + 1));
+            const auto last = juce::jmin (total - 1, (x + 1) * total / (pixels + 1));
+            auto db = 0.0f;
+
+            for (int c = first; c <= last; ++c)
+                db = juce::jmax (db, history[(size_t) ((historyWrite + c) % total)].reductionDb[(size_t) band]);
+
+            peak = juce::jmax (peak, db);
+
+            const auto px = left + (float) x * (right - left) / (float) pixels;
+            const auto py = top + 1.0f + juce::jmin (db * pixelsPerDb, laneHeight - 3.0f);
+
+            if (x == 0)
+            {
+                line.startNewSubPath (px, py);
+                area.startNewSubPath (px, top);
+                area.lineTo (px, py);
+            }
+            else
+            {
+                line.lineTo (px, py);
+                area.lineTo (px, py);
+            }
+        }
+
+        area.lineTo (right, top);
+        area.closeSubPath();
+
+        g.setColour (colour.withAlpha (0.25f));
+        g.fillPath (area);
+        g.setColour (colour);
+        g.strokePath (line, juce::PathStrokeType (1.5f));
+
+        g.setFont (font (Weight::regular, 10.0f));
+        g.drawText (peak > 0.05f ? juce::String::charToString (0x2212) + fancy::formatFixed (peak, 1) : juce::String ("0.0"),
+                    juce::Rectangle<float> (right + 2.0f, top, laneRight - 4.0f, 14.0f), juce::Justification::centredLeft, false);
+    }
+}
+
+void BandGraph::ViewSwitch::setSelected (int index)
+{
+    if (index != selected)
+    {
+        selected = index;
+        repaint();
+    }
+}
+
+juce::Rectangle<float> BandGraph::ViewSwitch::segmentBounds (int index) const
+{
+    const auto area = getLocalBounds().toFloat().reduced (2.0f);
+    const auto width = area.getWidth() / 2.0f;
+    return area.withX (area.getX() + (float) index * width).withWidth (width);
+}
+
+void BandGraph::ViewSwitch::paint (juce::Graphics& g)
+{
+    static const char* const names[] { "Spectrum", "GR history" };
+
+    g.setColour (colours::bgHeader);
+    g.fillRoundedRectangle (getLocalBounds().toFloat(), 4.0f);
+    g.setFont (font (Weight::regular, 10.5f));
+
+    for (int i = 0; i < 2; ++i)
+    {
+        const auto area = segmentBounds (i);
+
+        if (i == selected)
+        {
+            g.setColour (colours::grey6);
+            g.fillRoundedRectangle (area, 3.0f);
+        }
+
+        g.setColour (i == selected ? colours::textPrimary : colours::textSecondary);
+        g.drawText (names[i], area, juce::Justification::centred, false);
+    }
+}
+
+void BandGraph::ViewSwitch::mouseDown (const juce::MouseEvent& event)
+{
+    for (int i = 0; i < 2; ++i)
+    {
+        if (segmentBounds (i).contains (event.position) && i != selected)
+        {
+            setSelected (i);
+
+            if (onChange != nullptr)
+                onChange (i);
+        }
+    }
 }
