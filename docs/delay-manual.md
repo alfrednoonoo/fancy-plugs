@@ -24,7 +24,7 @@ While any tap is soloed, the others are silent but keep running, so their tails 
 - **ms:** Length is a time, from 0 to 10,000 ms. 0 ms is one sample, because a loop can't be shorter.
 - **Note:** the Length knob or the dropdown picks a note value from 1/1 to 1/64. The switch below picks straight, dotted or triplet. The time follows the host's tempo, and the line under the switch shows the result. A multiplier from ×1 to ×16 is in EDIT.
 
-Note lengths stop at 10 seconds. If the host gives no tempo, the plugin keeps the last one it had, starting at 120 BPM.
+Note lengths stop at 10 seconds. If the host gives no tempo, the plugin keeps the last one it had, starting at 120 BPM. The header shows the tempo in use, such as **120.0 BPM (host)**; "(host)" means it comes from the host rather than the fallback.
 
 **Smooth time changes** decides what happens when a time moves. On, the old and new times crossfade over 30 ms, so there's no pitch change. Off, the delay glides to the new time, and the pitch bends like tape.
 

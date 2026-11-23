@@ -4,6 +4,8 @@ An algorithmic reverb, from a small room to a long hall. Decay sets the length i
 
 ## Controls
 
+The knobs sit in two cards: **SPACE** (Pre-delay, Size, Decay, Diffusion, Mod and Width) and **TONE** (Damping, Low cut and High cut). The rest are in the footer, the right column and the EDIT drawer.
+
 | Control | Range | Default | What it does |
 |---|---|---|---|
 | Pre-delay | 0 to 250 ms | 12 ms | A gap before the reverb starts. With Sync pre-delay on, a note length instead |

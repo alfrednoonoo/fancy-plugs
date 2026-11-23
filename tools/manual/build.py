@@ -129,8 +129,9 @@ def figures_html(items, narrow):
 
 
 def place_views(plugin, body, narrow):
-    # Each extra screenshot goes right under the heading of the section that explains it. Any
-    # without a heading (or whose heading isn't found) are left for a "More views" section.
+    # Each extra screenshot goes right under the heading of the section that explains it. There's
+    # no "More views" section (user): one without a heading, or whose heading isn't found, stops
+    # the build, so every screenshot sits beside the text that explains its controls.
     items = C.MORE.get(plugin, [])
     by_heading, left = {}, []
     for item in items:
@@ -147,6 +148,9 @@ def place_views(plugin, body, narrow):
     body = re.sub(r"<(h3|h4)[^>]*>(.*?)</(?:h3|h4)>", put, body)
     for group in by_heading.values():
         left.extend(group)
+    if left:
+        sys.exit(f"{plugin}: screenshots with no matching heading in its manual (no More views allowed): "
+                 + ", ".join(f"{item[0]} ({item[2] if len(item) > 2 else 'no heading'})" for item in left))
     return body, left
 
 

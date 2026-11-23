@@ -14,6 +14,10 @@ A chorus: copies of the sound, each slightly delayed and slowly moving in pitch,
 6. **Footer**: **Tempo sync** locks the LFO to the host's tempo and, while the host plays, to its position in the song. **Keep bass mono** keeps the chorus's lows below the Low cut frequency in the centre. **Listen to wet** plays only the chorus voices; it turns off when you close the window and is never saved. **EDIT** opens the drawer.
 7. **Right column**: the output meter, and the **Wet** (the voices, -3 dB by default) and **Dry** faders. Fancy Chorus adds no latency.
 
+## Listen to wet
+
+Tick **Listen to wet** in the footer to hear only the chorus voices, without the dry signal, to set Rate, Depth, Voices and the tone controls by ear. Wet and Dry stay where they are; Listen overrides them while it's on. The checkbox is filled pink and the title strip shows a **LISTENING** tag, as in the screenshot. It turns off when you close the window, and it's never saved in a project or preset.
+
 ## EDIT drawer
 
 ![EDIT drawer](images/chorus-edit.png)

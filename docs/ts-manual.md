@@ -17,6 +17,10 @@ A transient shaper: it makes the start of each hit louder or quieter (**Attack**
 
 At Attack 0, Sustain 0 and Pump 0 nothing changes: the audio passes through to the bit.
 
+## Listen to change
+
+Tick **Listen to change** in the footer to hear only what Fancy TS adds or takes away: the raised attacks, the lowered tails, Pump's dips. It's the shaped signal minus the dry one, so with Attack and Sustain at 0 you hear nothing. While it's on, the checkbox is filled orange and the title strip shows a **LISTENING** tag, as in the screenshot. It turns off when you close the window, and it's never saved in a project or preset.
+
 ## EDIT drawer
 
 ![EDIT drawer](images/ts-edit.png)

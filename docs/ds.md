@@ -202,7 +202,7 @@ Mockup: `reference/phase4/33__ds_w1_mockup.png` (source `design/phase4-mockup-sr
 
 One push (`365a133`), with every recommended option; `tests/DsW1Tests.cpp`.
 
-- **Learn:** a button in the footer after Link channels; it listens for 3 s and sets Threshold at the 90th percentile of the sibilance band's level.
+- **Learn:** a button in the footer after Link channels; it listens for 2 s (the note beside it says so) and sets Threshold at the 90th percentile of the sibilance band's level. (This line said 3 s until 23 November 2026; the code has always used 2 s.)
 - **Filter slope:** `slope`, 12, 24 or 48 dB/oct, in the drawer; the shared de-esser engine runs 1, 2 or 4 stages, 1 by default, which is the old detector.
 - **Ceiling:** `ceiling`, Off (at the bottom) or -12 to 0 dBTP, in the drawer; DS was moved onto the shared `fancy::dsp::OutputCeiling` (Delay's commit, `f276ab4`), out of the path while Off.
 

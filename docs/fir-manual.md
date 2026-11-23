@@ -120,7 +120,7 @@ Convolves the left channel with the right. The right channel acts as an impulse 
 
 ## FFT size and latency
 
-A larger FFT size gives finer frequency detail and smoother results, but more latency and slower reactions. Low latency halves the latency at the same frequency detail, with a little more smearing.
+The header shows the latency in use, such as **Latency 42.7 ms**, so you can see what an FFT size costs. A larger FFT size gives finer frequency detail and smoother results, but more latency and slower reactions. Low latency halves the latency at the same frequency detail, with a little more smearing.
 
 | FFT size | Latency | Latency, Low latency |
 |---|---|---|
