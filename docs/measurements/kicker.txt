@@ -11,3 +11,8 @@ Kicker CPU at 48 kHz, 128 samples, stereo: 0.1171 % (target < 0.5 %)
 test cases: 2 | 2 passed
 assertions: - none -
 
+
+Phase 4 (v1.7.1), run 45473290714, commit 4719d2f:
+kicker clip oversampling: error below 20 kHz Off -37.2, 2x -57.7, 4x -71.9 dB; latency 0, 55, 68
+kicker duck: under each kick -5.99 dB, the last 100 ms before the next -0.97 dB
+Kicker processor CPU at 48 kHz, 128 samples, stereo: defaults 0.1787 %, Duck + Soft clip + 4x 1.7986 % (10.06x)

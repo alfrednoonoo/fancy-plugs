@@ -89,7 +89,7 @@ Tell me "Kicker OK", or list which boxes failed. Once it's OK, I'll start the Ex
 - [ ] With Duck above 0 the red **DUCK** tag shows beside EDIT; clicking it opens the Duck and clip page. At Duck 0 it's gone.
 - [ ] Remove the send with Duck up: after about 2 s the main window says "No sidechain signal". Put it back: the notice goes.
 - [ ] **Duck from Host sync**, Rate 1/4, play: the bass dips on every beat, in time; **Rate** and **Shape** show only while Host sync is chosen.
-- [ ] **Soft clip** on, a loud bright kick driven into it: **Clip oversampling 4x** sounds cleaner on the click (less grit). REAPER's track shows the added latency (69 samples at 48 kHz) only while it's on, and the kick stays in time with the other tracks; Off removes it.
+- [ ] **Soft clip** on, a loud bright kick driven into it: **Clip oversampling 4x** sounds cleaner on the click (less grit). REAPER's track shows the added latency (68 samples at 48 kHz) only while it's on, and the kick stays in time with the other tracks; Off removes it.
 - [ ] Render with Duck and 4x on: the render matches playback.
 
 ## Mac (docs/mac.md, step 5)
