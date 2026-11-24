@@ -427,3 +427,74 @@ One push with item 15 (v1.7.1). The THD and level figures in section 1's table a
 - ADAA adds half a sample of delay while Subtle or Warm is on, which is not reported as latency (as Comp's Character).
 - **Switching:** a 10 ms linear crossfade from the old character to the new; a further change waits for it to finish. The newly faded-in stage starts from rest.
 - **Drawer:** a Character dropdown under Auto gain (third column, fifth row), with a tooltip. Screenshot `eq-brickwall` shows it set to Warm with a Brickwall high-pass selected.
+
+## Phase 4 Wave 2: band list and groups
+
+**Layout A approved by the user on 24 November 2026** (mockup 66, `reference/phase4/66__eq_band_list_mockup.png`, panels 1 and 2; B and C, a wider or taller window, drawn and not chosen). This note's decisions are waiting for approval. Item 46 of the Wave 2 order (`docs/enhancements.md`; backlog item 6 of section 4, ▲), the last item of v1.7.1. Checked in the code on 24 November 2026 before this note was written.
+
+### 1. What it adds
+
+- **A band list.** A **Bands | List** switch at the left end of the band-tab row (x 14, y 419, 112 x 20), empty today. **Bands** is today's band editor, unchanged. **List** puts a table in the same place (x 0 to 734, y 417 to 595): a header and one 22 px row per band in use, six rows showing, scrolling past six, up to 24. The window keeps its size; nothing on it moves or shrinks.
+- **Groups.** Each band can join group **A**, **B**, **C** or **D**, or none (the default). Moving one band of a group moves the others the same way: Freq by the same ratio, Gain by the same number of dB, Q by the same ratio. A grouped band's handle and tab carry its letter in a small grey tag (15 x 14, `grey6`, white 9.5 px semi-bold).
+
+The list's columns, from mockup 66's source (`design/phase4-mockup-src/w2b_mockups.py`, `EQ_COLS`):
+
+| Column | x, width | What it shows | What clicking does |
+|---|---|---|---|
+| Band | 16, 30 | The band's colour dot and number | Selects the band (its handle and tab), as clicking a handle does |
+| On | 50, 26 | The band's power, in its colour | Toggles `bNon` |
+| Type | 84, 104 | The type, as a menu box | Opens the band's Type menu, with its Slope submenu, as the editor's dropdown does |
+| Freq, Gain, Q | 196, 84; 288, 76; 372, 46 | The values, in the band's colour; Gain shows — for types without gain | Drag to change, click to type, double-click to reset: the shared value field (as Reach's) |
+| Ch | 426, 46 | ST, L, R, M or S | Opens the Channel menu, as the editor's chip does |
+| Dyn | 480, 64 | Range in dB while the band is dynamic, — otherwise | Opens the band in Bands with its DYN page showing |
+| Group | 552, 62 | —, A, B, C or D, as a menu box | Opens the group menu |
+| Solo | 622, 40 | An S button | Solos the band while the mouse is held, as Ctrl-drag on a handle does (temporary, §0.3) |
+| Delete | 670, 30 | × | Deletes the band after the same confirm as the editor's × |
+
+Double-clicking a row (outside its controls) opens that band in Bands. **+ Add band** under the last row adds a band as + does. The selected band's row is lighter (`#3A3A3A`) with a 3 px bar in its colour on the left.
+
+### 2. How a group moves
+
+Groups change only what the user does in the plugin's window: dragging a handle, turning a knob, the list's value fields, typed values, the mouse wheel on a handle, and the band menu's Set frequency and Set gain. Each move becomes the same move on every band of the group, as one undo step, with every changed parameter sent to the host inside its own gesture, so automation records each band.
+
+- **Freq:** every member's frequency times the same ratio. **Gain:** the same dB added to every member that has gain; cuts, notches, band-passes and all-passes have none, so they follow Freq and Q only. **Q:** every member's Q times the same ratio.
+- **At a limit:** the move stops where the first member reaches the end of its range, so the group keeps its shape.
+- **Not linked:** Type, Slope, Channel, power, the dynamic settings, Reset band and Delete band stay per band.
+
+### 3. Decisions
+
+- **Decision 1: host automation of a grouped band.**
+  - **A (R).** Automation and host edits move only the band they're written to; the group follows only edits made in the window. A host writing one band's Freq can't make others jump, there's no loop between linked parameters, and renders match playback.
+  - **B.** Automation moves the whole group too, by watching every grouped parameter. Simpler to describe, but automation already written on two members would fight.
+- **Decision 2: moving one grouped band on its own.** Every modifier on a handle is taken: Alt sets Q, Ctrl (Cmd) solos, Shift is fine control.
+  - **A (R).** No override: to move one band alone, set its Group to — in the list or its right-click menu, then back. One click each way.
+  - **B.** Ctrl+Shift-drag moves one band alone. Quicker, but a third modifier on the handle is easy to hit by mistake while fine-tuning a solo.
+- **Decision 3: the list's order.**
+  - **A (R).** By band number, as the tabs are, so a row doesn't jump while its band is dragged.
+  - **B.** By frequency, low to high, re-sorted when a drag ends.
+- **Decision 4: the switch's state.**
+  - **A (R).** Saved with the project as a view setting, `bandView` (Bands or List; not automatable, as Show grid is), so a project reopens on the view it was left on.
+  - **B.** Not saved: every window opens on Bands.
+- **Compact mode** (no decision): Compact mode replaces the band strip with the floating card and has no tab row, so the switch hides with it and the card shows the selected band as today. Groups still work from the handles and the card. The right-click menu on a handle gets a **Group** submenu (—, A, B, C, D) after Channel, in every mode.
+
+### 4. Parameters
+
+| ID | Name | Range | Default |
+|---|---|---|---|
+| `bNgroup` (24) | Band N Group | —, A, B, C, D | — |
+| `bandView` | Band view | Bands, List | Bands |
+
+All appended, after `character`; none automatable. A group doesn't touch the audio path, so every saved project renders as before, to the bit, and no migration is needed.
+
+### 5. Tests
+
+1. Legacy: a v1.7.0 state loads with every group — and Bands showing, and renders as v1.7.0's EQ, to the bit (the audio path is unchanged; this checks state loading).
+2. Group moves, on the link logic alone (a JUCE-free `EqGroups` with the rules of section 2): bands at 200 Hz and 2 kHz in group A, the first dragged to 400 Hz: the second goes to 4 kHz. Gain +3 dB on one: both gain 3 dB, and a high-pass in the group keeps its gain at none. Q by the same ratio. A move that would take a member past 20 kHz or past +24 dB stops where that member reaches its limit, with the shape kept.
+3. Through the editor: dragging a grouped handle changes every member's parameters as one undo step; Undo restores all of them.
+4. Automation: setting one grouped band's Freq from the host (parameter set without a gesture from the editor) moves only that band (Decision 1 A).
+5. The list: rows for the bands in use only, in band order; selecting a row selects the band; the switch's state survives a save and reload (Decision 4 A). Screenshots `eq-list` (List, mockup 66 panel 1's values) and `eq` with the switch and the group tags (panel 2).
+6. Host checks: the parameter count tests (`EqTests`' pre-Q2.4 state test, the host harness) count the 25 new parameters.
+
+### 6. Build order
+
+Approval of this note, then a short Python model of section 2's group arithmetic and limits (test 2's numbers), then one push: the parameters, `EqGroups`, the switch and the list in `EqEditor`, the group tags on `EqGraph`'s handles and the tabs, the menu's Group submenu, tests, manual (a "Band list and groups" heading with both screenshots) and checklist.

@@ -919,6 +919,163 @@ def comp_db():
 
 
 # ---------------------------------------------------------------------------------------------
+# Fancy EQ's band list and groups (Wave 2 item 46, ▲: layout approval before its design note).
+# Drawn on EQ's screenshot from run 45451969543 (commit 5c8681c), img/eq-w2b.png. The band strip
+# (tabs and editor) is y 417 to 595 at 1x, the tabs x 298 to 469, the fader column from x 734.
+EQ_BANDS = [  # colour, number, type, freq, gain, Q, channel, dyn, group
+    ("#E74D3D", 1, "High pass", "68 Hz", "&mdash;", "0.71", "ST", "&mdash;", "&mdash;"),
+    ("#9A59B5", 2, "Band", "487.7 Hz", "&minus;5.1 dB", "2.0", "ST", "&mdash;", "A"),
+    ("#3598DB", 3, "Band", "2.0 kHz", "+5.4 dB", "1.0", "ST", "&minus;6 dB", "A"),
+    ("#2DCC70", 4, "Low pass", "14.5 kHz", "&mdash;", "0.71", "ST", "&mdash;", "&mdash;"),
+]
+# Full columns (A and C): name, x, width, field index in EQ_BANDS (None: drawn specially).
+EQ_COLS = [("", 16, 30, None), ("On", 50, 26, "on"), ("Type", 84, 104, 2), ("Freq", 196, 84, 3), ("Gain", 288, 76, 4), ("Q", 372, 46, 5),
+           ("Ch", 426, 46, 6), ("Dyn", 480, 64, 7), ("Group", 552, 62, 8), ("Solo", 622, 40, "solo"), ("", 670, 30, "x")]
+# B's narrower list, 300 px: Channel, Dyn, Solo and delete stay in the band editor.
+EQ_COLS_NARROW = [("", 8, 20, None), ("On", 30, 18, "on"), ("Type", 50, 58, 2), ("Freq", 126, 58, 3), ("Gain", 186, 56, 4),
+                  ("Q", 244, 28, 5), ("Grp", 272, 26, 8)]
+
+
+def eq_switch(selected):
+    return seg(14, 419, 112, 20, ["Bands", "List"], selected, "#4C4C4C", fs=11.5, text="#fff")
+
+
+def eq_group_tag(x, y, letter="A"):
+    return (f'<div class="o new pill" style="left:{x}px;top:{y}px;width:15px;height:14px;background:#4C4C4C;color:#fff;'
+            f'font-size:9.5px;font-weight:700;border-radius:4px">{letter}</div>')
+
+
+def eq_rows(x0, y0, width, cols, note):
+    """The band table: a header at y0, then a 22 px row per band, then + Add band and a note."""
+    cells = ""
+    for name, x, w, _ in cols:
+        cells += f'<div class="o cap" style="left:{x0 + x}px;top:{y0}px;width:{w}px;font-size:10px;letter-spacing:.06em">{name.upper()}</div>'
+    for row, band in enumerate(EQ_BANDS):
+        colour, number = band[0], band[1]
+        y = y0 + 16 + row * 22
+        if number == 2:
+            cells += (f'<div class="o" style="left:{x0 + 4}px;top:{y}px;width:{width - 8}px;height:21px;background:#3A3A3A;border-radius:3px"></div>'
+                      f'<div class="o" style="left:{x0 + 4}px;top:{y}px;width:3px;height:21px;background:{colour};border-radius:2px"></div>')
+        for name, x, w, field in cols:
+            left = x0 + x
+            if field is None:
+                cells += (f'<div class="o pill" style="left:{left + 2}px;top:{y + 3}px;width:15px;height:15px;border-radius:8px;background:{colour};'
+                          f'color:#fff;font-size:10px;font-weight:700">{number}</div>')
+            elif field == "on":
+                cells += f'<div class="o" style="left:{left + 4}px;top:{y + 2}px;font-size:13px;color:{colour}">&#x23FB;</div>'
+            elif field == "solo":
+                cells += f'<div class="o btn" style="left:{left}px;top:{y + 1}px;width:22px;height:19px;font-size:11px;background:#262626;color:#8D8D8D">S</div>'
+            elif field == "x":
+                cells += f'<div class="o" style="left:{left + 6}px;top:{y + 1}px;font-size:14px;color:#8D8D8D">&times;</div>'
+            elif field in (2, 8) and w < 60:
+                # Too narrow for a menu box: the text alone, which opens the menu when clicked.
+                cells += f'<div class="o val" style="left:{left}px;top:{y + 3}px;width:{w}px;font-size:12.5px;color:#fff">{band[field]}</div>'
+            elif field in (2, 8):
+                cells += (f'<div class="o dd" style="left:{left}px;top:{y + 1}px;width:{w - 4}px;height:19px;font-size:12px;'
+                          f'background:#262626;padding:0 5px">{band[field]}</div>')
+            else:
+                text = band[field]
+                tint = "#8D8D8D" if text == "&mdash;" else "#fff" if field == 6 else colour
+                cells += f'<div class="o val" style="left:{left}px;top:{y + 3}px;width:{w}px;font-size:12.5px;color:{tint}">{text}</div>'
+    y = y0 + 16 + len(EQ_BANDS) * 22
+    cells += f'<div class="o" style="left:{x0 + 10}px;top:{y + 4}px;font-size:12px;color:#8D8D8D">+ Add band</div>'
+    cells += caption(x0 + 100, y + 5, note)
+    return cells
+
+
+def eq_list():
+    cells = cover(0, 417, 734, 178, "#303030") + eq_switch(1)
+    cells += '<div class="o" style="left:0;top:442px;width:734px;height:1px;background:#262626"></div>'
+    cells += eq_rows(0, 446, 734, EQ_COLS, "Six rows show; with more bands the list scrolls (up to 24).")
+    cells += outline(8, 417, 722, 176)
+    cells += eq_group_tag(273, 290) + eq_group_tag(412, 148)  # group A's handles carry its letter
+    return cells
+
+
+def eq_bands_view():
+    cells = cover(14, 419, 120, 20, "#303030") + eq_switch(0) + outline(14, 419, 112, 20)
+    cells += eq_group_tag(374, 420) + eq_group_tag(417, 420)  # group A's tabs
+    cells += eq_group_tag(273, 290) + eq_group_tag(412, 148)  # and handles
+    return cells
+
+
+EQ_B_GROW = 300   # B: a list column right of the graph
+EQ_C_GROW = 150   # C: a list under the band editor
+
+
+def eq_wide():
+    """B: 300 px wider. The header's gap after Compare and the graph's right edge are stretched; the
+    stretched graph strip is covered by the list, so the graph keeps its width."""
+    return grow("eq", "eq-wide", EQ_B_GROW, [(0, 19, 400), (19, 73, 538), (73, 645, 733)])
+
+
+def eq_tall():
+    """C: 150 px taller, rows repeated under the band editor; the fader's track lengthens."""
+    return grow("eq", "eq-tall", EQ_C_GROW, [(0, 734, 594), (734, 802, 560)], axis="y")
+
+
+def eq_list_b():
+    x0 = 734
+    cells = cover(x0, 73, EQ_B_GROW, 572, "#262626")
+    cells += f'<div class="o" style="left:{x0}px;top:73px;width:1px;height:572px;background:#141414"></div>'
+    cells += group_title(x0 + 12, 84, "BANDS")
+    cells += eq_rows(x0, 104, EQ_B_GROW, EQ_COLS_NARROW, "")
+    cells += caption(x0 + 12, 230, "With more bands the column fills: 23 rows show, then it scrolls. Type and Group open their menus when clicked. Channel, Dyn and Solo stay in the band editor.", EQ_B_GROW - 24)
+    cells += outline(x0 + 4, 76, EQ_B_GROW - 8, 566)
+    cells += eq_group_tag(273, 290) + eq_group_tag(412, 148) + eq_group_tag(374, 420) + eq_group_tag(417, 420)
+    return cells
+
+
+def eq_list_c():
+    y0 = 595
+    cells = cover(0, y0, 734, EQ_C_GROW, "#2A2A2A")
+    cells += f'<div class="o" style="left:0;top:{y0}px;width:734px;height:1px;background:#141414"></div>'
+    cells += eq_rows(0, y0 + 6, 734, EQ_COLS, "Six rows show; with more bands the list scrolls (up to 24).")
+    cells += outline(6, y0 + 2, 722, EQ_C_GROW - 6)
+    cells += eq_group_tag(273, 290) + eq_group_tag(412, 148) + eq_group_tag(374, 420) + eq_group_tag(417, 420)
+    return cells
+
+
+@plugin("eq_list", "66__eq_band_list_mockup.png")
+def eq_band_list():
+    W, H = 802, 645
+    WB, HB = eq_wide()
+    WC, HC = eq_tall()
+    groups = ("<b>Groups</b> (A to D, or none) link bands: moving one moves the rest of its group the same way, Freq by the same ratio, Gain by the same dB and Q by the same ratio, "
+              "from the handle, the knobs or the list. Hold Alt to move one band on its own. Each grouped handle and tab carries its letter in a small grey tag. "
+              "Group is a new parameter per band, appended (24), default none, so saved projects load and render as before, to the bit. "
+              "The handle's right-click menu gets a <b>Group</b> submenu too. Solo is the existing temporary band solo, never saved (&sect;0.3).")
+    return w1.page("Fancy EQ: Phase 4 mockup, band list and groups (item 46, layout approval)",
+                   lead("docs/eq.md, Phase 4 Wave 2 item 46 (&#9650;, a visible layout change), for your approval before the design note: three ways, A, B and C", "no decisions yet"), [
+        ("1 · A (recommended): a Bands | List switch; List shows every band in a table where the band editor is (802 x 645, as today)",
+         "The window keeps its size and nothing on it moves. A small <b>Bands | List</b> switch goes at the left end of the tab row, which is empty today. "
+         "<b>Bands</b> is today's editor, unchanged. <b>List</b> puts a table in the same place: one row per band, with its colour and number, power, Type, Freq, Gain, Q, "
+         "Channel, Dyn (its dynamic range, or &mdash;), <b>Group</b>, a temporary <b>Solo</b> and delete. Each value is the shared control: drag it, or click it to type, as on the knobs. "
+         "Clicking a row selects that band on the graph; double-clicking it opens it in Bands.",
+         shot("eq", W, H, eq_list(), groups)),
+        ("2 · A, the Bands view: the switch and the group tags",
+         "Today's editor with the switch at the left of the tab row; bands 2 and 3 are in group A, so their tabs and handles carry an A.",
+         shot("eq", W, H, eq_bands_view(),
+              "Compact mode hides the band strip today; there the switch hides with it, and groups still work from the handles.")),
+        (f"3 · B: the window grows {EQ_B_GROW} px wider ({WB} x {HB}) and the list is a column right of the graph, always visible",
+         "The graph, the band editor and the fader keep their sizes; the header's right-hand buttons move right with the window's edge. "
+         "Both the editor and the list show at once, so there's no switch. In 300 px the list fits the number, power, Type, Freq, Gain, Q and Group; "
+         "Channel, Dyn and Solo stay in the band editor only. Groups work as in A.",
+         shot("eq-wide", WB, HB, eq_list_b(),
+              f"The EQ's minimum width becomes {WB} px (724 today). The column shows 23 bands before it scrolls.")),
+        (f"4 · C: the window grows {EQ_C_GROW} px taller ({WC} x {HC}) and the list sits under the band editor, always visible",
+         "Everything above stays as it is; the checkbox row moves down under the list and the Gain fader grows with the window. "
+         "The list has every column, as A's; no switch. Groups work as in A.",
+         shot("eq-tall", WC, HC, eq_list_c(),
+              f"The EQ's minimum height becomes {HC} px. With a host's own title bar, track list and transport around it, that's more than many laptop screens show "
+              "at 100 %, so it would often need the 'Prm' menu's smaller UI size.")),
+    ])
+
+
+# ---------------------------------------------------------------------------------------------
+PAGE_HEIGHTS = {"eq_list": 4400}  # pages taller than the default render window (1x px)
+
+
 def render(key):
     filename, fn = PLUGINS[key]
     html = w1.SRC / f"w2b-{key.replace('_', '-')}.html"
@@ -926,7 +1083,7 @@ def render(key):
     png = w1.OUT / filename
     w1.OUT.mkdir(parents=True, exist_ok=True)
     subprocess.run([w1.EDGE, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=2",
-                    "--window-size=1548,2600", f"--screenshot={png}", html.as_uri()], capture_output=True)
+                    f"--window-size=1548,{PAGE_HEIGHTS.get(key, 2600)}", f"--screenshot={png}", html.as_uri()], capture_output=True)
     from PIL import Image
     image = Image.open(png).convert("RGB")
     pixels = image.load()
