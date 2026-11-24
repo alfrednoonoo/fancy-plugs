@@ -32,13 +32,17 @@ public:
 
     static Analysis analyse (const ExciterDsp::Targets& targets);
 
+    // Phase 4 Wave 2: Freq 2's floor, and the High cut's range, Off past its top.
+    static constexpr float freq2MinHz = 100.0f;
+    static constexpr float highCutMinHz = 4000.0f, highCutMaxHz = 20000.0f, highCutOffHz = 25000.0f;
+
     float getThdPercent() const noexcept { return thdPercent.load (std::memory_order_relaxed); }
 
 private:
     ExciterDsp::Targets readTargets() const;
 
     // The settings the analysis depends on, to know when to run it again.
-    using AnalysisKey = std::array<double, 6>;
+    using AnalysisKey = std::array<double, 10>;
     static AnalysisKey keyFor (const ExciterDsp::Targets& targets) noexcept;
     void runAnalysis();
 
@@ -75,6 +79,13 @@ private:
     std::atomic<float>& character;
     std::atomic<float>& output;
     std::atomic<float>& bypass;
+
+    // Phase 4 Wave 2.
+    std::atomic<float>& freq2;
+    std::atomic<float>& harmonics2;
+    std::atomic<float>& punch;
+    std::atomic<float>& highCut;
+    std::atomic<float>& width;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ExciterProcessor)
 };

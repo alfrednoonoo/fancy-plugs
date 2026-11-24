@@ -81,6 +81,17 @@ Tell me "Exciter OK", or list which items failed and what you saw. Once it's OK,
 - [ ] Auto gain on: bypass-switching sounds about equally loud.
 - [ ] Ceiling -1 dBTP with Clip Boost high: the output stays under it.
 
+## Band 2, Punch, High cut and Width (Phase 4 Wave 2)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy Exciter: it loads and sounds as before. On the drawer's **Harmonics** page, Harmonics 2 is 0 %, Punch 0 %, High cut Off and Width 100 %.
+- [ ] The drawer's switch reads **Main | Harmonics**; Main has today's controls, Harmonics the five new knobs and two captions.
+- [ ] On a vocal, with Freq at 3 kHz: raise Harmonics 2 with Freq 2 at 400 Hz. The low mids get fuller while the air above 3 kHz stays. No click as it comes in or goes back to 0.
+- [ ] Freq 2 at or above Freq: Harmonics 2 adds nothing.
+- [ ] On a plucked guitar or drums: Punch at 100 % makes the attacks brighter and the tails less fizzy than at 0 %.
+- [ ] High cut at about 8 kHz takes the fizz off the added part; the dry signal's top end stays (check with Harmonics at 0: High cut changes nothing). Turning it Off and on while playing doesn't click.
+- [ ] Width at 0 % with **Listen to added harmonics** on: the added part is in the centre. At 150 % it's wider than the source. Switching the track to mono: the added part's level doesn't change with Width.
+- [ ] Type values: `2.5k` into Freq 2 and High cut, `off` into High cut.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

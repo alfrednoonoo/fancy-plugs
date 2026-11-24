@@ -16,6 +16,16 @@ void setValue (juce::RangedAudioParameter& parameter, float value)
 {
     parameter.setValueNotifyingHost (parameter.convertTo0to1 (value));
 }
+
+void setUpCaption (juce::Label& label, const juce::String& text, float height)
+{
+    label.setText (text, juce::dontSendNotification);
+    label.setFont (font (Weight::regular, height));
+    label.setColour (juce::Label::textColourId, colours::textSecondary);
+    label.setJustificationType (juce::Justification::topLeft);
+    label.setBorderSize ({});
+    label.setInterceptsMouseClicks (false, false);
+}
 } // namespace
 
 ExciterEditor::ExciterEditor (ExciterProcessor& processor)
@@ -32,7 +42,12 @@ ExciterEditor::ExciterEditor (ExciterProcessor& processor)
       drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
       oversamplingDropdown (parameter ("oversampling")),
       ceilingKnob (parameter ("ceiling"), "Ceiling", colours::uiTeal, Knob::smallStyle),
-      autoGainCheckbox (parameter ("autoGain"), "Auto gain")
+      autoGainCheckbox (parameter ("autoGain"), "Auto gain"),
+      freq2Knob (parameter ("freq2"), "Freq 2", colours::uiRed, Knob::smallStyle),
+      harmonics2Knob (parameter ("harmonics2"), "Harmonics 2", colours::uiRed, Knob::smallStyle),
+      punchKnob (parameter ("punch"), "Punch", colours::uiRed, Knob::smallStyle),
+      highCutKnob (parameter ("highCut"), "High cut", colours::uiRed, Knob::smallStyle),
+      widthKnob (parameter ("width"), "Width", colours::uiRed, Knob::smallStyle)
 {
     auto& body = getBody();
 
@@ -78,9 +93,45 @@ ExciterEditor::ExciterEditor (ExciterProcessor& processor)
     autoGainCheckbox.setBounds (142, 262, 110, 20);
     autoGainCheckbox.setTooltip ("Turns the output down by as much as the harmonics add, so you hear the colour, not the level.");
 
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &characterKnob, &drawerOutputKnob, &oversamplingLabel, &oversamplingDropdown,
-                                                                           &ceilingKnob, &autoGainCheckbox })
+    mainItems = { &characterKnob, &drawerOutputKnob, &oversamplingLabel, &oversamplingDropdown, &ceilingKnob, &autoGainCheckbox };
+
+    // Phase 4 Wave 2, items 40 to 43 (mockup 62; drawer coordinates are the mockup's window
+    // coordinates less 73). The page switch takes the drawer title's place. Main keeps today's
+    // drawer as it is: item 44's Oversampling filter row was dropped (Decision 4 B).
+    drawerTabs.setBounds (22, 13, 150, 22);
+    drawerTabs.onChange = [this] (int page) { showDrawerPage (page); };
+    drawer.addAndMakeVisible (drawerTabs);
+
+    setUpCaption (band2Title, "BAND 2", 10.0f);
+    setUpCaption (band2Note, "Adds harmonics from Freq 2 up to Freq: warmth and body under today's band.", 11.0f);
+    setUpCaption (shapeTitle, "SHAPE", 10.0f);
+    setUpCaption (shapeNote, "Punch lifts the harmonics on attacks; High cut and Width act on the added harmonics only.", 11.0f);
+
+    band2Title.setBounds (24, 53, 200, 12);
+    freq2Knob.setBounds (27, 63, 90, 99);
+    harmonics2Knob.setBounds (132, 63, 96, 99);
+    band2Note.setBounds (24, 169, 230, 32);
+    shapeTitle.setBounds (24, 211, 200, 12);
+    punchKnob.setBounds (20, 221, 72, 99);
+    highCutKnob.setBounds (102, 221, 72, 99);
+    widthKnob.setBounds (184, 221, 72, 99);
+    shapeNote.setBounds (24, 313, 230, 48);
+
+    freq2Knob.setTooltip ("Where Band 2 starts. It runs up to Freq, so above Freq it does nothing.");
+    harmonics2Knob.setTooltip ("How much Band 2 adds: harmonics from Freq 2 up to Freq, for warmth and body. 0 turns it off.");
+    punchKnob.setTooltip ("Lifts the harmonics on attacks, by up to 6 dB, and lowers them in sustains, by up to 6 dB.");
+    highCutKnob.setTooltip ("A low-pass on the added harmonics only, to tame fizz. The dry signal is never filtered. Off at the top.");
+    widthKnob.setTooltip ("Below 100 % the added harmonics narrow towards the centre; above it they spread wider. Mono keeps them as they are.");
+
+    harmonicsItems = { &band2Title, &freq2Knob, &harmonics2Knob, &band2Note, &shapeTitle, &punchKnob, &highCutKnob, &widthKnob, &shapeNote };
+
+    for (auto* item : mainItems)
         drawer.addAndMakeVisible (item);
+
+    for (auto* item : harmonicsItems)
+        drawer.addChildComponent (item);
+
+    showDrawerPage (mainPage);
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (true); };
@@ -105,6 +156,31 @@ void ExciterEditor::showPreview (bool drawerOpen)
 
     meter.show (-5.2f, -6.0f, -5.4f, -6.1f);
     drawer.setVisible (drawerOpen);
+    showDrawerPage (mainPage);
+}
+
+void ExciterEditor::showDrawerPage (int page)
+{
+    drawerTabs.setSelected (page);
+
+    for (auto* item : mainItems)
+        item->setVisible (page == mainPage);
+
+    for (auto* item : harmonicsItems)
+        item->setVisible (page == harmonicsPage);
+}
+
+void ExciterEditor::showHarmonicsPreview()
+{
+    showPreview (true);
+
+    setValue (parameter ("freq2"), 400.0f);
+    setValue (parameter ("harmonics2"), 30.0f);
+    setValue (parameter ("punch"), 50.0f);
+    setValue (parameter ("highCut"), 12000.0f);
+    setValue (parameter ("width"), 120.0f);
+
+    showDrawerPage (harmonicsPage);
 }
 
 juce::Colour ExciterEditor::getAccentColour()
@@ -115,7 +191,7 @@ juce::Colour ExciterEditor::getAccentColour()
 std::vector<ShellEditor::PopupOpener> ExciterEditor::getPopupOpeners()
 {
     auto openers = ShellEditor::getPopupOpeners();
-    openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); oversamplingDropdown.click(); } });
+    openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); showDrawerPage (mainPage); oversamplingDropdown.click(); } });
     openers.push_back ({ "value-freq", [this] { freqKnob.openValueEditor(); } });
     return openers;
 }

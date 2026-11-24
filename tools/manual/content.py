@@ -102,7 +102,8 @@ PLUGINS = {
 # plugin's manual; a view without a heading goes under "More views".
 MORE = {
     "Kicker": [("kicker-edit", "Boost mode's EDIT drawer", "EDIT drawer"), ("kicker-sub-edit", "Sub mode's EDIT drawer", "Sub mode")],
-    "Exciter": [("exciter-edit", "The EDIT drawer", "EDIT drawer")],
+    "Exciter": [("exciter-edit", "The EDIT drawer", "EDIT drawer"),
+                ("exciter-harmonics", "The EDIT drawer's Harmonics page", "Band 2, Punch, High cut and Width (Phase 4)")],
     "Comp": [("comp-history", "EDIT drawer: History page", "History"), ("comp-sync", "Host sync as the detector input, with its Rate and Shape", "Host sync (Phase 4)"),
              ("comp-options", "EDIT drawer: Options page", "Options"), ("comp-detector", "EDIT drawer: Detector page (detector EQ)", "Detector"),
              ("comp-character", "EDIT drawer: Character page", "Character"),

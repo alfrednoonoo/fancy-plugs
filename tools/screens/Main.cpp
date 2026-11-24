@@ -640,6 +640,18 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_EXCITER
     ok = renderPlugin<ExciterProcessor, ExciterEditor> ("exciter", outputDir) && ok;
+
+    {
+        // Phase 4 Wave 2 (items 40 to 43): the drawer's Harmonics page, mockup 62 panel 2.
+        ExciterProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<ExciterEditor*> (base.get()))
+        {
+            editor->showHarmonicsPreview();
+            ok = writeBothScales (*editor, "exciter-harmonics", outputDir) && ok;
+        }
+    }
    #endif
 
    #if FANCY_HAS_COMP

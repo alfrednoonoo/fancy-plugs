@@ -17,7 +17,7 @@ Harmonics starts at 0 %, so the plugin is silent in effect until you raise it.
 
 ### EDIT drawer
 
-Click **EDIT** to open it and **Done** to close it.
+Click **EDIT** to open it and **Done** to close it. Its switch at the top left has two pages: **Main**, with the controls below, and **Harmonics**, with Band 2, Punch, High cut and Width (see "Band 2, Punch, High cut and Width" below).
 
 | Control | Range | Default | What it does |
 |---|---|---|---|
@@ -58,6 +58,20 @@ Use the dropdown to load a preset and **+** to save your own. User presets are s
 - **THD** (bottom of the window): the harmonics these settings add to a tone an octave above Freq, so you can compare settings by number.
 - **Auto gain** (drawer): turns the output down by as much as the harmonics add, so you hear the colour, not the level.
 - **Ceiling** (drawer): holds the output's true peak under this level, so Clip Boost can't pass it. Off at the bottom.
+
+## Band 2, Punch, High cut and Width (Phase 4)
+
+On the EDIT drawer's **Harmonics** page. Each one's default leaves Exciter sounding exactly as before, and a project saved with an older version opens with all of them there.
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Freq 2 | 100 Hz up to Freq | 400 Hz | Where Band 2 starts. Band 2 runs from here up to Freq, so at or above Freq it has nothing to work on |
+| Harmonics 2 | 0–100 % | 0 % | How much Band 2 adds. It drives the band from Freq 2 to Freq through the same clipper, Clip Boost and Character as the main band, for warmth and body under the air the main band adds. At 0 % Band 2 doesn't run. Mix Back sets both bands' level |
+| Punch | 0–100 % | 0 % | Follows the attacks of the part above Freq. At 100 % the added part rises by up to 6 dB on attacks and falls by up to 6 dB in sustains, so picks and sticks come forward without the tails getting fizzy |
+| High cut | Off, 4–20 kHz | Off | A 12 dB/oct low-pass on what Exciter adds, both bands, to tame fizz on bright sources. The dry signal is never filtered. Off at the top of the knob |
+| Width | 0–150 % | 100 % | The width of what Exciter adds, not of the dry signal. Below 100 % the added part narrows towards the centre, and at 0 % it's mono. Above 100 % it spreads wider than the source. A mono fold-down hears the same added part at any setting |
+
+The two captions on the page say the same in short: Band 2 adds harmonics from Freq 2 up to Freq, and Punch lifts the harmonics on attacks while High cut and Width act on the added harmonics only.
 
 ## Using it in other hosts
 

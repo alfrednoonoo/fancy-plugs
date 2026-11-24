@@ -45,6 +45,48 @@ fancy::FancyProcessor::Layout createLayout()
                                           { return text.trim().equalsIgnoreCase ("off") ? (float) fancy::dsp::OutputCeiling::offDb : juce::jlimit (-12.0f, 0.0f, fancy::parseNumber (text)); })));
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "autoGain", 1 }, "Auto gain", false));
 
+    // Phase 4 Wave 2 (docs/exciter.md, items 40 to 43), appended. The defaults are v1.7.0's
+    // sound, bit for bit: Harmonics 2 at 0 isn't run, nor Punch at 0, High cut Off, Width 100 %.
+    layout.add (fancy::floatParameter (
+        "freq2", "Freq 2", fancy::logRange (ExciterProcessor::freq2MinHz, 16000.0f, 1.0f), 400.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("Hz")
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFilterHz (value); })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); })));
+    layout.add (fancy::percentParameter ("harmonics2", "Harmonics 2", 0.0f));
+    layout.add (fancy::percentParameter ("punch", "Punch", 0.0f));
+
+    // Log-scaled, with Off past the top, as Sature's High.
+    layout.add (fancy::floatParameter (
+        "highCut", "High cut",
+        juce::NormalisableRange<float> (
+            ExciterProcessor::highCutMinHz, ExciterProcessor::highCutOffHz,
+            [] (float start, float end, float normalised) { return start * std::pow (end / start, normalised); },
+            [] (float start, float end, float value) { return std::log (juce::jlimit (start, end, value) / start) / std::log (end / start); },
+            [] (float, float, float value)
+            {
+                return value > ExciterProcessor::highCutMaxHz ? ExciterProcessor::highCutOffHz
+                                                              : juce::jlimit (ExciterProcessor::highCutMinHz, ExciterProcessor::highCutMaxHz, std::round (value));
+            }),
+        ExciterProcessor::highCutOffHz,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("Hz")
+            .withStringFromValueFunction ([] (float value, int)
+                                          { return value > ExciterProcessor::highCutMaxHz ? juce::String ("Off") : fancy::formatFilterHz (value); })
+            .withValueFromStringFunction ([] (const juce::String& text)
+                                          {
+                                              return text.trim().startsWithIgnoreCase ("off")
+                                                       ? ExciterProcessor::highCutOffHz
+                                                       : juce::jlimit (ExciterProcessor::highCutMinHz, ExciterProcessor::highCutMaxHz, fancy::parseHz (text));
+                                          })));
+
+    layout.add (fancy::floatParameter (
+        "width", "Width", juce::NormalisableRange<float> (0.0f, 150.0f, 1.0f), 100.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("%")
+            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
     return layout;
 }
 
@@ -83,7 +125,12 @@ ExciterProcessor::ExciterProcessor()
       oversampling (*getApvts().getRawParameterValue ("oversampling")),
       character (*getApvts().getRawParameterValue ("character")),
       output (*getApvts().getRawParameterValue ("output")),
-      bypass (*getApvts().getRawParameterValue ("bypass"))
+      bypass (*getApvts().getRawParameterValue ("bypass")),
+      freq2 (*getApvts().getRawParameterValue ("freq2")),
+      harmonics2 (*getApvts().getRawParameterValue ("harmonics2")),
+      punch (*getApvts().getRawParameterValue ("punch")),
+      highCut (*getApvts().getRawParameterValue ("highCut")),
+      width (*getApvts().getRawParameterValue ("width"))
 {
     analysisThread.startThread (juce::Thread::Priority::low);
 }
@@ -105,6 +152,15 @@ ExciterDsp::Targets ExciterProcessor::readTargets() const
     targets.oversampling = juce::roundToInt (oversampling.load (std::memory_order_relaxed));
     targets.bypass = bypass.load (std::memory_order_relaxed) >= 0.5f;
     targets.listen = isListening();
+
+    // Phase 4 Wave 2.
+    const auto highCutHz = (double) highCut.load (std::memory_order_relaxed);
+    targets.frequency2Hz = (double) freq2.load (std::memory_order_relaxed);
+    targets.harmonics2 = (double) harmonics2.load (std::memory_order_relaxed) * 0.01;
+    targets.punch = (double) punch.load (std::memory_order_relaxed) * 0.01;
+    targets.highCutOn = highCutHz <= (double) highCutMaxHz;
+    targets.highCutHz = std::min (highCutHz, (double) highCutMaxHz);
+    targets.width = (double) width.load (std::memory_order_relaxed) * 0.01;
     return targets;
 }
 
@@ -201,7 +257,8 @@ juce::AudioProcessorEditor* ExciterProcessor::createEditor()
 
 ExciterProcessor::AnalysisKey ExciterProcessor::keyFor (const ExciterDsp::Targets& targets) noexcept
 {
-    return { targets.frequencyHz, targets.boostGain, targets.harmonics, targets.mixBackGain, targets.character, (double) targets.oversampling };
+    return { targets.frequencyHz, targets.boostGain, targets.harmonics, targets.mixBackGain, targets.character, (double) targets.oversampling,
+             targets.frequency2Hz, targets.harmonics2, targets.punch, targets.highCutOn ? targets.highCutHz : -1.0 };
 }
 
 ExciterProcessor::Analysis ExciterProcessor::analyse (const ExciterDsp::Targets& settings)
