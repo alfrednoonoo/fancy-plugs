@@ -303,7 +303,15 @@ jobs:
           $exe = Get-ChildItem -Path build/tools/screens -Recurse -File -Filter 'fancy-screens.exe' | Select-Object -First 1
           & $exe.FullName --demos demo-frames
           if ($LASTEXITCODE -ne 0) { throw "fancy-screens --demos exited with $LASTEXITCODE" }
-          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress | Out-Null }
+          # The windows-2025-vs2026 image (November 2026) has no ffmpeg: install it, show why if
+          # that fails, and put Chocolatey's shims on this session's PATH.
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
+            choco install ffmpeg -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "choco install ffmpeg exited with $LASTEXITCODE" }
+            $chocoBin = if ($env:ChocolateyInstall) { Join-Path $env:ChocolateyInstall 'bin' } else { 'C:\ProgramData\chocolatey\bin' }
+            $env:Path = "$chocoBin;$env:Path"
+          }
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { throw "ffmpeg is not on the PATH after installing it" }
           New-Item -ItemType Directory -Force -Path demos | Out-Null
           # 2x frames scaled to 1.5x: sharp in the hero on a 2x screen, small enough for a tile.
           $scale = 'scale=trunc(iw*0.375)*2:-2:flags=lanczos'

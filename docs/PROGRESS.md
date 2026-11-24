@@ -76,6 +76,8 @@ Mac (`docs/mac.md`) is approved and in progress. Then Phase 4 (`docs/enhancement
 
 ## Known warnings
 
+- Run 45509105696's Windows job failed only at the demo clips: the new `windows-2025-vs2026` runner image has no ffmpeg, and the step's `choco install` hid its output. The step now shows Chocolatey's output, checks it, and puts its shims on the PATH.
+
 - Run 45485209546's Mac job failed one test under Rosetta (the Intel half), seed 3589446228: DS-Mini's "six earlier profiles render exactly as on the v1.7.0 engine", Bowed strings at Amount 2 only. The native Apple silicon pass and Windows passed it; DS and DS-Mini are unchanged since run 45451969543, where it passed; its input is fixed (seed 17) and the profile has no linear-phase worker, so the likely cause is state left by an earlier test (a thread or freed memory), not the engine. If it fails again, rerun that seed under Rosetta to find the test before it.
 
 - Run 45200635372's Mac job was cancelled twice by GitHub before any step, then failed once on FancyBench's Delay CPU ratio check (bench 0.40x against Catch2 0.25x; Delay unchanged) and passed on its next re-run. If that check fails again, ask the user before widening its 50 % allowance.
