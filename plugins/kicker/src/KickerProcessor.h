@@ -87,6 +87,12 @@ private:
     std::array<std::vector<float>, 2> dryDelay;
     std::vector<float> bypassDelay;
     int delayWrite = 0;
+
+    // The oversampled signal's padding to a whole latency (SwitchedOversampler::getPadding), in
+    // place of JUCE's allpass: at most a few oversampled samples.
+    static constexpr int padLength = 16;
+    std::array<std::array<float, padLength>, 2> padLines {};
+    int padWrite = 0;
     bool clipStageIdle = true;
     std::atomic<float> duckDb { 0.0f };
 

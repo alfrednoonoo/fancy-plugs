@@ -114,7 +114,7 @@ The drawer's second page, **Duck and clip**.
 
 While Duck is above 0, a red **DUCK** tag shows beside EDIT on the main window, so a ducking Kicker is never a surprise; click it to open this page. With Duck from Sidechain and nothing routed to the sidechain, the main window shows "No sidechain signal".
 
-**Clip oversampling** only matters with **Soft clip** ticked on the Main page. On a typical kick driven into the clipper, 4x leaves the aliasing and error about 35 dB lower than Off, and 2x about 20 dB lower. It reports its latency while it's on (about 70 samples at 4x, at 48 kHz), so hosts keep the track in time. Off is Kicker as it was.
+**Clip oversampling** only matters with **Soft clip** ticked on the Main page. On a typical kick driven into the clipper, 4x leaves the aliasing and error about 35 dB lower than Off, and 2x about 20 dB lower. It reports its latency while it's on (55 samples at 2x and 69 at 4x, at 48 kHz), so hosts keep the track in time. Off is Kicker as it was.
 
 ## Credits
 

@@ -27,7 +27,13 @@ public:
     using Oversampler = juce::dsp::Oversampling<float>;
 
     // Allocates. Builds the linear-phase oversamplers, and the minimum-phase ones too if asked.
-    void prepare (double sampleRate, int maxChunk, int copies, bool withMinimumPhase);
+    //
+    // With integerLatency (the default), JUCE rounds a fractional latency up with a Thiran
+    // allpass delay at the base rate, which shifts the phase of the top octaves. Without it
+    // (Fancy Kicker, docs/kicker.md), the latency is rounded up instead by a whole number of
+    // samples at the oversampled rate, getPadding(), which the caller delays the oversampled
+    // signal by between processSamplesUp and processSamplesDown. Linear phase only.
+    void prepare (double sampleRate, int maxChunk, int copies, bool withMinimumPhase, bool integerLatency = true);
 
     // Clears the active setting's oversamplers.
     void reset();
@@ -51,6 +57,10 @@ public:
     int latencyFor (int factor, bool minimumPhase) const noexcept;
     int getMaxLatency() const noexcept { return maxLatency; }
 
+    // Oversampled samples to delay by for the active setting, when prepared without integer
+    // latency; 0 otherwise and for Off.
+    int getPadding() const noexcept { return activeFactor == off ? 0 : paddings[(size_t) indexFor (activeFactor, activeMinimumPhase)]; }
+
     // The active setting's oversampler. Not for Off.
     Oversampler& get (int copy) noexcept;
 
@@ -58,7 +68,7 @@ private:
     static int indexFor (int factor, bool minimumPhase) noexcept { return (minimumPhase ? numFactors : 0) + factor - 1; }
 
     std::array<std::array<std::unique_ptr<Oversampler>, 2 * numFactors>, maxCopies> oversamplers;
-    std::array<int, 2 * numFactors> latencies {};
+    std::array<int, 2 * numFactors> latencies {}, paddings {};
 
     double sampleRate = 48000.0;
     int numCopies = 1;

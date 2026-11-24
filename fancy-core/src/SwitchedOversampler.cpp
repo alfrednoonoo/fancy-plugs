@@ -9,7 +9,7 @@ constexpr double switchFadeMs = 2.0;
 constexpr double switchSettleSeconds = 0.003;
 } // namespace
 
-void SwitchedOversampler::prepare (double newSampleRate, int maxChunk, int copies, bool withMinimumPhase)
+void SwitchedOversampler::prepare (double newSampleRate, int maxChunk, int copies, bool withMinimumPhase, bool integerLatency)
 {
     sampleRate = newSampleRate;
     numCopies = juce::jlimit (1, maxCopies, copies);
@@ -24,7 +24,7 @@ void SwitchedOversampler::prepare (double newSampleRate, int maxChunk, int copie
             for (int copy = 0; copy < numCopies; ++copy)
             {
                 auto oversampler = std::make_unique<Oversampler> (2);
-                oversampler->setUsingIntegerLatency (true);
+                oversampler->setUsingIntegerLatency (integerLatency || minimumPhase);
 
                 for (int stage = 0; stage <= factor; ++stage)
                 {
@@ -39,7 +39,21 @@ void SwitchedOversampler::prepare (double newSampleRate, int maxChunk, int copie
                 oversampler->initProcessing ((size_t) maxChunk);
 
                 const auto index = (size_t) indexFor (factor + 1, minimumPhase);
-                latencies[index] = juce::roundToInt (oversampler->getLatencyInSamples());
+
+                if (integerLatency || minimumPhase)
+                {
+                    latencies[index] = juce::roundToInt (oversampler->getLatencyInSamples());
+                    paddings[index] = 0;
+                }
+                else
+                {
+                    // The filters' own latency is a whole number of oversampled samples; pad it
+                    // to a whole number of base samples at the oversampled rate.
+                    const auto ratio = 1 << (factor + 1);
+                    const auto oversampled = juce::roundToInt ((double) oversampler->getLatencyInSamples() * ratio);
+                    latencies[index] = (oversampled + ratio - 1) / ratio;
+                    paddings[index] = latencies[index] * ratio - oversampled;
+                }
                 maxLatency = juce::jmax (maxLatency, latencies[index]);
                 oversamplers[(size_t) copy][index] = std::move (oversampler);
             }

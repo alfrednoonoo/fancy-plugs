@@ -221,7 +221,11 @@ void KickerProcessor::prepareAudio (double sampleRate, int)
     trigger.setPulse (true);
 
     const auto clipFactor = juce::jlimit (0, 2, juce::roundToInt (read ("clipOs")));
-    clipOversampler.prepare (sampleRate, maxChunk, 1, false);
+    // Without JUCE's integer latency: its Thiran allpass would shift the phase of the click's
+    // top octaves. The latency is padded at the oversampled rate instead (docs/kicker.md).
+    clipOversampler.prepare (sampleRate, maxChunk, 1, false, false);
+    padLines = {};
+    padWrite = 0;
     clipOversampler.select (clipFactor, false);
     clipStageIdle = clipFactor == fancy::dsp::SwitchedOversampler::off;
 
@@ -251,6 +255,7 @@ void KickerProcessor::reset()
         std::fill (line.begin(), line.end(), 0.0f);
 
     std::fill (bypassDelay.begin(), bypassDelay.end(), 0.0f);
+    padLines = {};
 }
 
 bool KickerProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -421,6 +426,7 @@ void KickerProcessor::processChunk (float* const* channels, int numChannels, int
             std::fill (line.begin(), line.end(), 0.0f);
 
         std::fill (bypassDelay.begin(), bypassDelay.end(), 0.0f);
+        padLines = {};
     }
 
     for (int ch = 0; ch < numChannels; ++ch)
@@ -459,6 +465,30 @@ void KickerProcessor::processChunk (float* const* channels, int numChannels, int
 
         for (size_t ch = 0; ch < up.getNumChannels(); ++ch)
             clipSamples (up.getChannelPointer (ch), (int) up.getNumSamples(), ratio, numSamples);
+
+        // Pad the latency to whole base samples, exactly, at the oversampled rate.
+        const auto padding = juce::jmin (padLength - 1, clipOversampler.getPadding());
+        const auto upSamples = (int) up.getNumSamples();
+
+        if (padding > 0)
+        {
+            for (size_t ch = 0; ch < juce::jmin ((size_t) 2, up.getNumChannels()); ++ch)
+            {
+                auto* samples = up.getChannelPointer (ch);
+                auto& line = padLines[ch];
+                auto write = padWrite;
+
+                for (int i = 0; i < upSamples; ++i)
+                {
+                    const auto in = samples[i];
+                    samples[i] = line[(size_t) ((write - padding + padLength) % padLength)];
+                    line[(size_t) write] = in;
+                    write = (write + 1) % padLength;
+                }
+            }
+
+            padWrite = (padWrite + upSamples) % padLength;
+        }
 
         oversampler.processSamplesDown (block);
     }
