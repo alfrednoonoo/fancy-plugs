@@ -28,6 +28,7 @@ A one-knob de-esser. Pick what you're de-essing, then turn **Amount**. It runs t
 | Harshness | 2.3-5.3 kHz | slower (2 ms, 120 ms) |
 | Acoustic guitar | string squeak, 2.1-4.2 kHz | medium (1 ms, 80 ms) |
 | Bowed strings | rosin, 2.4-6.7 kHz | slower |
+| Hiss | hiss above 5 kHz, in the gaps | opens in 0.5 ms, closes over 60 ms |
 
 The band is where the cut reaches half its depth; it's deepest in the middle. Switching profile while playing crossfades over 50 ms, so it never clicks.
 
@@ -57,6 +58,8 @@ The file goes in `%APPDATA%\Fancy Plugs\Fancy DS\Presets\From DS-Mini\`.
 | Vocals | Harsh vocal | Harshness, 4 |
 | Instruments | Acoustic guitar | Acoustic guitar, 5 |
 | Instruments | Strings | Bowed strings, 4 |
+
+**Hiss** (after the divider) is the other way round from the rest: it turns everything above 5 kHz down while it's quiet, in the gaps between phrases, and leaves loud passages bright. Amount sets how loud the highs may be and still count as a gap (-56 dBFS plus 4 dB per step, so -36 dBFS at 5) and how deep it cuts (1.8 dB per step). Raise Amount until the hiss in the pauses drops; if quiet singing starts to lose its air, lower it. Auto holds the knob in Hiss. Save as Fancy DS preset carries it over as Fancy DS's Hiss mode.
 
 ## Auto Amount (Phase 4)
 

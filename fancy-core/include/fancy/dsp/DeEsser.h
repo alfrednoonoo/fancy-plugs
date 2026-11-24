@@ -20,12 +20,14 @@ class DeEsser
 public:
     enum Detector { mainLR, mainMid, mainSide, mainL, mainR, sideLR, sideL, sideR };
     enum Lookahead { lookaheadOff, lookahead1, lookahead2, lookahead5 };
+    enum Reduce { reduceBoth, reduceMid, reduceSide };   // Phase 4 Wave 2, item 32
 
     static constexpr double minHz = 2000.0, maxHz = 16000.0;
     static constexpr double lowMinHz = 1000.0, lowMaxHz = 8000.0;   // Phase 4 Wave 2: the Low band
     static constexpr double ratioSlope = 0.875;    // 8:1
     static constexpr double kneeDb = 6.0;
     static constexpr double fullBandFloorDb = -60.0;
+    static constexpr double hissEnvelopeMs = 15.0;   // Hiss mode's detector (docs/ds.md, item 33)
 
     struct Targets
     {
@@ -48,6 +50,13 @@ public:
         // engine is as it was to the bit. DS-Mini never turns it on.
         bool dual = false;
         double lowFreqHz = 3500.0, lowWidthOctaves = 1.0, lowThresholdDb = -20.0, lowRangeDb = -9.0;
+
+        // Phase 4 Wave 2, items 32 and 33 (docs/ds.md). Reduce: which channels the cut lands on,
+        // L and R (Both, as it was), or only the mid or the side. Hiss: with shelf on, the shelf
+        // is turned down while its level is under Threshold, 1 dB per dB, up to Range; its own
+        // detector (a 15 ms envelope, always absolute) and Release closing, Attack opening.
+        int reduce = reduceBoth;
+        bool hiss = false;
     };
 
     static double lookaheadMs (int choice) noexcept;
@@ -125,6 +134,7 @@ private:
     bool activeLinear = false;
     bool activeShelf = false;
     bool activeDual = false;
+    int activeReduce = reduceBoth;
     int holdOffSamples = 0;
 
     // Filters: one detector per channel, and the minimum-phase split per audio channel.
@@ -152,7 +162,9 @@ private:
     std::array<int, 2> holdLeft { 0, 0 };
     double holdSamples = 48.0, fallPerSample = 0.0004, rmsCoefficient = 0.0004;
 
-    fancy::dsp::Ballistics ballistics;
+    fancy::dsp::Ballistics ballistics, hissBallistics;
+    std::array<double, 2> hissEnvelope { 0.0, 0.0 };
+    double hissCoefficient = 0.001;
     std::array<fancy::dsp::EnvelopeFollower, 2> followers;
 
     // Delays: the lookahead, the linear split's raw path, the gain and the dry path for bypass.

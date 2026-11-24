@@ -52,6 +52,9 @@ juce::String DsMiniEditor::captionFor (int profileIndex)
     const auto& profile = DsMiniProcessor::profiles[(size_t) juce::jlimit (0, (int) DsMiniProcessor::profiles.size() - 1, profileIndex)];
     const auto dot = juce::String::fromUTF8 (" \xc2\xb7 ");
 
+    if (profile.hiss)
+        return juce::String (profile.caption) + dot + "above " + fancy::formatFixed (profile.freqHz / 1000.0f, 1) + " kHz, in the gaps";
+
     if (profile.shelf)
         return juce::String (profile.caption) + dot + "above " + kilohertz (profile.freqHz) + " kHz";
 
@@ -142,6 +145,7 @@ DsMiniEditor::DsMiniEditor (DsMiniProcessor& processor)
 
     // Left: the profile, its band, the history and Amount.
     profileDropdown.setStepArrows (true);
+    profileDropdown.addSection (DsMiniProcessor::hissProfile, {});   // a divider before Hiss (mockup 60)
     profileDropdown.setBounds (18, 14, 240, 26);
     profileDropdown.setTooltip ("What you're de-essing. The arrows step through the profiles.");
 
@@ -321,6 +325,17 @@ std::vector<ShellEditor::PopupOpener> DsMiniEditor::getPopupOpeners()
     openers.push_back ({ "dialog-save-as-ds", [this] { drawer.setVisible (true); showSaveAsDsPreset(); } });
     openers.push_back ({ "tooltip-amount", [this] { showTip (amountKnob, amountKnob.getTooltip()); } });
     openers.push_back ({ "value-amount", [this] { amountKnob.openValueEditor(); } });
+
+    // Phase 4 Wave 2, mockup 60 panel 3: the Hiss profile chosen, with the list open. Last, as it
+    // leaves the profile on Hiss.
+    openers.push_back ({ "hiss", [this]
+    {
+        auto& profile = parameter ("profile");
+        profile.setValueNotifyingHost (profile.convertTo0to1 ((float) DsMiniProcessor::hissProfile));
+        shownProfile = DsMiniProcessor::hissProfile;
+        captionLabel.setText (captionFor (shownProfile), juce::dontSendNotification);
+        profileDropdown.click();
+    } });
     return openers;
 }
 

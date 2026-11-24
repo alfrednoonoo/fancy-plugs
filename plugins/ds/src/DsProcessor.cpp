@@ -26,7 +26,7 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (fancy::deesser::freq());
     layout.add (fancy::deesser::width());
 
-    layout.add (std::make_unique<Choice> (juce::ParameterID { "shape", 1 }, "Detection", juce::StringArray { "Band", "Shelf" }, 0));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "shape", 1 }, "Detection", juce::StringArray { "Band", "Shelf", "Hiss" }, 0));
     layout.add (fancy::deesser::range());
     layout.add (fancy::deesser::attack());
     layout.add (fancy::deesser::release());
@@ -77,6 +77,12 @@ fancy::FancyProcessor::Layout createLayout()
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
     layout.add (fancy::deesser::dbParameter ("lowThreshold", "Low threshold", -60.0f, 0.0f, -20.0f));
     layout.add (fancy::deesser::dbParameter ("lowRange", "Low range", -24.0f, 0.0f, -9.0f, 0));
+
+    // Phase 4 Wave 2, item 32 (docs/ds.md), appended: Both is DS as it was. A change fades out
+    // and in, so it's a deliberate setting, as Lookahead is. (Item 33's Hiss is the third
+    // choice of Detection, above: saved states store the choice's index, so they load as before.)
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "reduceChan", 1 }, "Reduce", juce::StringArray { "Both", "Mid", "Side" }, 0,
+                                          ChoiceAttributes {}.withAutomatable (false)));
 
     return layout;
 }
@@ -145,7 +151,8 @@ DsDsp::Targets DsProcessor::readTargets() const
     targets.thresholdDb = (double) read ("threshold");
     targets.freqHz = (double) read ("freq");
     targets.widthOctaves = (double) read ("width");
-    targets.shelf = isOn ("shape");
+    targets.shelf = isOn ("shape");   // Shelf and Hiss both use the shelf
+    targets.hiss = juce::roundToInt (read ("shape")) == 2;
     targets.rangeDb = (double) read ("range");
     targets.attackMs = (double) read ("attack");
     targets.releaseMs = (double) read ("release");
@@ -168,6 +175,9 @@ DsDsp::Targets DsProcessor::readTargets() const
     targets.lowWidthOctaves = (double) read ("lowWidth");
     targets.lowThresholdDb = (double) read ("lowThreshold");
     targets.lowRangeDb = (double) read ("lowRange");
+
+    // Phase 4 Wave 2, item 32.
+    targets.reduce = juce::jlimit (0, 2, juce::roundToInt (read ("reduceChan")));
 
     return targets;
 }

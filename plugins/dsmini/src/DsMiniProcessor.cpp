@@ -9,13 +9,17 @@
 // The brief's starting values (§6b.3), tuned on the test vocal: Female voice is 1.4 octaves
 // wide, not 1.0, so the default cuts its "s" bursts by 6 dB (docs/ds-mini.md). Captions name
 // what each profile catches; the editor adds the band.
-const std::array<DsMiniProcessor::Profile, 6> DsMiniProcessor::profiles { {
+const std::array<DsMiniProcessor::Profile, 7> DsMiniProcessor::profiles { {
     { "Female voice",    false, 7000.0f, 1.4f, 0.5f, 60.0f,  "Sibilance" },
     { "Male voice",      false, 5000.0f, 1.0f, 0.5f, 60.0f,  "Sibilance" },
     { "Sibilance",       true,  5000.0f, 1.0f, 0.5f, 60.0f,  "Sibilance" },
     { "Harshness",       false, 3500.0f, 1.2f, 2.0f, 120.0f, "Harshness" },
     { "Acoustic guitar", false, 3000.0f, 1.0f, 1.0f, 80.0f,  "String squeak" },
     { "Bowed strings",   false, 4000.0f, 1.5f, 2.0f, 120.0f, "Rosin" },
+
+    // Phase 4 Wave 2, item 34 (docs/ds-mini.md): Fancy DS's Hiss mode on the shelf above 5 kHz,
+    // opening at 0.5 ms and closing over 60 ms. Appended, so saved profiles load as before.
+    { "Hiss",            true,  5000.0f, 1.0f, 0.5f, 60.0f,  "Hiss", true },
 } };
 
 namespace
@@ -93,7 +97,11 @@ DsMiniProcessor::DsSettings DsMiniProcessor::mapProfile (int profileIndex, float
 {
     const auto& profile = profiles[(size_t) juce::jlimit (0, (int) profiles.size() - 1, profileIndex)];
 
-    return { -4.0f * amount, profile.freqHz, profile.widthOctaves, -1.8f * amount, profile.attackMs, profile.releaseMs, profile.shelf };
+    // Hiss: the higher the Amount, the louder the highs may be and still count as a gap, and the
+    // deeper the cut. At Amount 0, Range is 0 dB and it does nothing, as the other profiles.
+    const auto threshold = profile.hiss ? -56.0f + 4.0f * amount : -4.0f * amount;
+
+    return { threshold, profile.freqHz, profile.widthOctaves, -1.8f * amount, profile.attackMs, profile.releaseMs, profile.shelf, profile.hiss };
 }
 
 DsMiniProcessor::DsMiniProcessor()
@@ -140,12 +148,13 @@ DsMiniProcessor::DeEsser::Targets DsMiniProcessor::targetsFor (int profile) cons
     targets.freqHz = (double) roundAsParameter (*dsFreq, settings.freq);
     targets.widthOctaves = (double) roundAsParameter (*dsWidth, settings.width);
     targets.shelf = settings.shelf;
+    targets.hiss = settings.hiss;
     targets.rangeDb = (double) roundAsParameter (*dsRange, settings.range);
     targets.attackMs = (double) roundAsParameter (*dsAttack, settings.attack);
     targets.releaseMs = (double) roundAsParameter (*dsRelease, settings.release);
     targets.detector = DeEsser::mainLR;
     targets.wide = isOn ("mode");
-    targets.relative = true;
+    targets.relative = ! settings.hiss;   // Hiss mode is always absolute; Fancy DS's preset says so too
     targets.listen = isListening();
     targets.link = isOn ("link");
     targets.lookahead = isOn ("lookahead") ? DeEsser::lookahead2 : DeEsser::lookaheadOff;
@@ -322,13 +331,13 @@ juce::ValueTree DsMiniProcessor::createDsPresetState() const
     add ("threshold", settings.threshold);
     add ("freq", settings.freq);
     add ("width", settings.width);
-    add ("shape", settings.shelf ? 1.0f : 0.0f);
+    add ("shape", settings.hiss ? 2.0f : (settings.shelf ? 1.0f : 0.0f));
     add ("range", settings.range);
     add ("attack", settings.attack);
     add ("release", settings.release);
     add ("detector", 0.0f);
     add ("mode", isOn ("mode") ? 1.0f : 0.0f);
-    add ("relative", 1.0f);
+    add ("relative", settings.hiss ? 0.0f : 1.0f);
     add ("link", isOn ("link") ? 1.0f : 0.0f);
     add ("lookahead", isOn ("lookahead") ? (float) DeEsser::lookahead2 : (float) DeEsser::lookaheadOff);
     add ("splitPhase", 0.0f);
@@ -401,6 +410,14 @@ void DsMiniProcessor::updateAutoAmount (const float* const* main, int numChannel
     const auto rate = getSampleRate() > 0.0 ? getSampleRate() : 48000.0;
     const auto profileIndex = getProfile();
     const auto& profile = profiles[(size_t) profileIndex];
+
+    // Hiss (item 34) has no sibilance to measure: Auto holds the knob's Amount.
+    if (profile.hiss)
+    {
+        autoWasOn = false;
+        workingAmount.store (knob, std::memory_order_relaxed);
+        return;
+    }
 
     if (profileIndex != autoProfile || ! autoWasOn)
     {

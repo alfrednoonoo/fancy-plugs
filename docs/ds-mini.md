@@ -188,3 +188,14 @@ Mockup: `reference/phase4/34__dsmini_w1_mockup.png` (source `design/phase4-mocku
 One push (`a430630`), with every recommended option; `tests/DsMiniW1Tests.cpp`.
 
 - **Auto Amount:** `autoAmount` (off). While on, Amount rides up to 3 either side of the knob with the sibilance ratio (sibilance band against the whole voice); an Auto pill beside the knob, and the knob's arc shows the working value.
+
+## Phase 4 Wave 2: the Hiss profile
+
+Item 34, approved with DS's items 32 and 33 (`docs/ds.md`, "Phase 4 Wave 2: Mid/Side reduction and Hiss mode", Decision 3 A; mockup 60, panel 3).
+
+### As built
+
+- A seventh profile, **Hiss**, after a divider in the list (`ParamDropdown::addSection` with an empty label now draws a divider): Fancy DS's Hiss mode on the shelf above 5 kHz, Attack 0.5 ms (opening), Release 60 ms (closing). The caption reads "Hiss · above 5.0 kHz, in the gaps". Appended to `profile`, so saved projects load their profile as before.
+- **Amount:** Threshold = -56 + 4 x Amount dBFS (absolute) and Range = -1.8 x Amount. Amount 0 does nothing; Amount 5 is -36 dB and at most -9 dB. On the pre-push hiss signal (`docs/research/ds-hiss-build-check.py`) Amount 5 takes 5.9 dB of hiss out of the gaps and leaves the loud parts' highs alone; -60 + 4 x Amount, tried first, took only 3.9 dB.
+- **Auto Amount** holds the knob's value in Hiss: there's no sibilance to measure.
+- **Save as Fancy DS preset** writes Detection = Hiss and Relative threshold off; Fancy DS then sounds the same (test 5, `tests/DsMiniW2bTests.cpp`). The six earlier profiles render as on the v1.7.0 engine (test 1).

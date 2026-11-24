@@ -38,6 +38,13 @@
 - [ ] Open a project saved with v1.6.0 that uses Fancy DS-Mini: it loads and sounds as before, with every new setting off or at its default.
 - [ ] Auto on: harsh passages get more reduction and soft ones less, never more than 3 from the knob; the arc moves.
 
+## Hiss profile (Phase 4 Wave 2, v1.7.1)
+
+- [ ] The profile list shows **Hiss** after a divider; the caption reads "Hiss · above 5.0 kHz, in the gaps".
+- [ ] On a hissy take, Hiss at Amount 5: the pauses lose most of their hiss and the singing stays bright. Amount 0 leaves it untouched.
+- [ ] **Save as Fancy DS preset** with Hiss, load it in Fancy DS: Detection is Hiss and it sounds the same.
+- [ ] Open a project saved with v1.7.0 that uses Fancy DS-Mini: its profile and sound are unchanged.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

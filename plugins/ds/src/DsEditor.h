@@ -141,6 +141,11 @@ private:
     fancy::ui::PillButton learnButton { "Learn" };
     juce::Label learnNote, slopeLabel, ceilingLabel;
     fancy::ui::ParamDropdown slopeDropdown;
+
+    // Phase 4 Wave 2, items 32 and 33.
+    juce::Label reduceLabel;
+    fancy::ui::ParamDropdown reduceDropdown;
+    bool hissShown = false;
     fancy::ui::Knob ceilingKnob;
     std::vector<float> learnedLevels, learnedLowLevels;
     float learnSeconds = -1.0f;

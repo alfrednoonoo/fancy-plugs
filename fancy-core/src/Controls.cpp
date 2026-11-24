@@ -1170,7 +1170,12 @@ void ParamDropdown::clicked()
     {
         for (const auto& [index, label] : sections)
             if (index == i)
-                menu.addSection (label);
+            {
+                if (label.isEmpty())
+                    menu.addSeparator();
+                else
+                    menu.addSection (label);
+            }
 
         menu.addItem (i + 1, choices[i], true, choices[i] == getValueText());
     }

@@ -411,7 +411,8 @@ public:
 
     static constexpr int stepArrowWidth = 22;
 
-    // Puts a section label before the choice at this index, such as "Sidechain".
+    // Puts a section label before the choice at this index, such as "Sidechain". An empty label
+    // draws a divider instead (Fancy DS-Mini's Hiss profile).
     void addSection (int choiceIndex, const juce::String& label);
 
     // For a long choice in a narrow space. The default is the Figma body size.

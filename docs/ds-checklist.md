@@ -66,6 +66,13 @@
 - [ ] Slope 48 dB/oct ignores a bright guitar near the band that 12 dB/oct reacts to.
 - [ ] Ceiling at -1 dBTP holds the output under it; Off is the old path.
 
+## Reduce and Hiss mode (Phase 4 Wave 2, v1.7.1)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy DS: it loads and sounds as before (Detection, Reduce Both).
+- [ ] In the drawer, **Reduce** sits under Filter slope and Ceiling a row lower. On a mix with a centre vocal and wide cymbals (Detector Main Mid), Reduce **Mid**: the "s" sounds still come down and the cymbals no longer dip with them. **Side**: only the sides are cut. Switching while playing fades, with no click.
+- [ ] Detection reads **Band | Shelf | Hiss**. On a hissy take, choose **Hiss**, Freq about 4 kHz, Threshold a few dB above the hiss: the gaps lose their hiss and the singing keeps its highs. Width, Relative threshold and Learn dim.
+- [ ] In Hiss, a longer Release closes more slowly in the gaps; a longer Attack lets the highs back in more slowly.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

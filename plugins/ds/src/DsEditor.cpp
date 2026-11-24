@@ -88,7 +88,7 @@ void paintCardTitle (juce::Graphics& g, const char* text, int x, int y)
 }
 } // namespace
 
-const char* const DsEditor::widthHint = "Width only applies to Band. Shelf turns down everything above Freq.";
+const char* const DsEditor::widthHint = "Width only applies to Band. Shelf and Hiss work on everything above Freq.";
 
 // Panels ----------------------------------------------------------------------
 
@@ -438,6 +438,7 @@ DsEditor::DsEditor (DsProcessor& processor)
       linkCheckbox (parameter ("link"), "Link channels", dsGreen),
       editLink (dsGreen),
       slopeDropdown (parameter ("slope")),
+      reduceDropdown (parameter ("reduceChan")),
       ceilingKnob (parameter ("ceiling"), "Ceiling", dsGreen, Knob::tightStyle),
       lowThresholdMeter (parameter ("lowThreshold"), thresholdStyle (lowYellow)),
       lowFreqKnob (parameter ("lowFreq"), "Freq", colours::uiBlue, Knob::tightStyle),
@@ -483,9 +484,11 @@ DsEditor::DsEditor (DsProcessor& processor)
     display.setBounds (displayX, columnY, displayWidth, displayHeight);
 
     // Cards.
-    shapeSegments.setBounds (displayX + detectionWidth - 112, cardY + 8, 100, 20);
+    // Phase 4 Wave 2, item 33: a third choice, Hiss, so the switch grows 18 px to the left (mockup 60).
+    shapeSegments.setBounds (displayX + detectionWidth - 130, cardY + 8, 118, 20);
     shapeSegments.setTextHeight (11.0f);
-    shapeSegments.setTooltip ("Band listens to a band around Freq. Shelf listens to everything above it.");
+    shapeSegments.setTooltip ("Band listens to a band around Freq. Shelf listens to everything above it. "
+                              "Hiss turns everything above Freq down while it's quieter than Threshold, so the gaps lose their hiss.");
 
     cardKnobs ({ &freqKnob, &widthKnob }, displayX, detectionWidth, cardY + 30);
     cardKnobs ({ &rangeKnob, &attackKnob, &releaseKnob }, reductionX, reductionWidth, cardY + 30);
@@ -580,18 +583,25 @@ DsEditor::DsEditor (DsProcessor& processor)
     addLatencyNote (lookaheadDropdown);
     addLatencyNote (phaseDropdown);
 
-    // Phase 4 Wave 1: Filter slope and Ceiling.
+    // Phase 4 Wave 1: Filter slope and Ceiling; Wave 2 (item 32, mockup 60): Reduce under Filter
+    // slope, Ceiling a row lower.
     setUpLabel (slopeLabel, "Filter slope", juce::Justification::centredLeft, 14.0f);
+    setUpLabel (reduceLabel, "Reduce", juce::Justification::centredLeft, 14.0f);
     setUpLabel (ceilingLabel, "Ceiling", juce::Justification::centredLeft, 14.0f);
     slopeLabel.setBounds (24, 140, 170, 24);
     slopeDropdown.setBounds (200, 140, 170, 24);
-    ceilingLabel.setBounds (24, 180, 170, 24);
-    ceilingKnob.setBounds (200, 170, 66, 80);
+    reduceLabel.setBounds (24, 180, 170, 24);
+    reduceDropdown.setBounds (200, 180, 170, 24);
+    ceilingLabel.setBounds (24, 220, 170, 24);
+    ceilingKnob.setBounds (200, 210, 66, 80);
+    reduceDropdown.setTooltip ("Which part of the stereo image is turned down. Both: left and right. "
+                               "Mid: only the centre, so wide cymbals keep their highs. Side: only the sides.");
     slopeDropdown.setTooltip ("How sharply the detector picks out the band. Steeper ignores more of the voice around it.");
     ceilingKnob.setTooltip ("Holds the output's true peak under this level. Off at the bottom. Adds a little latency while on.");
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &lookaheadLabel, &lookaheadDropdown, &phaseLabel, &phaseDropdown,
-                                                                           &slopeLabel, &slopeDropdown, &ceilingLabel, &ceilingKnob })
+                                                                           &slopeLabel, &slopeDropdown, &reduceLabel, &reduceDropdown,
+                                                                           &ceilingLabel, &ceilingKnob })
         drawer.addAndMakeVisible (item);
 
     // Learn, in the footer after Link channels.
@@ -667,7 +677,23 @@ void DsEditor::updateLocks()
 
     widthKnob.setLocked (targets.shelf, widthHint);
     widthKnob.setAlpha (targets.shelf ? 0.5f : 1.0f);
-    thresholdMeter.setReadoutNote (targets.relative ? "relative" : juce::String {});
+
+    // Hiss mode (item 33) always measures in dBFS, and Learn's 90th percentile is for sibilance.
+    const auto hiss = targets.hiss && targets.shelf;
+    thresholdMeter.setReadoutNote (targets.relative && ! hiss ? "relative" : juce::String {});
+    relativeCheckbox.setAlpha (hiss ? 0.5f : 1.0f);
+
+    if (hiss != hissShown)
+    {
+        hissShown = hiss;
+        learnButton.setEnabled (! hiss);
+        learnButton.setAlpha (hiss ? 0.4f : 1.0f);
+        learnNote.setText (hiss ? "Band and Shelf" : "2 s of playback", juce::dontSendNotification);
+        attackKnob.setTooltip (hiss ? "How fast the highs come back when the music gets louder." : "How fast it turns down when an \"s\" starts.");
+        releaseKnob.setTooltip (hiss ? "How fast it turns the highs down in a gap." : "How fast it comes back after an \"s\".");
+        thresholdMeter.setTooltip (hiss ? "Threshold: the highs are turned down while they're quieter than this, in dBFS."
+                                        : "Threshold: how loud the sibilance band must get before it's turned down.");
+    }
 }
 
 void DsEditor::onTick (float seconds)
@@ -781,5 +807,15 @@ std::vector<ShellEditor::PopupOpener> DsEditor::getPopupOpeners()
     openers.push_back ({ "dropdown-lookahead", [this] { drawer.setVisible (true); lookaheadDropdown.click(); } });
     openers.push_back ({ "tooltip-relative", [this] { showTip (relativeCheckbox, relativeCheckbox.getTooltip()); } });
     openers.push_back ({ "value-freq", [this] { freqKnob.openValueEditor(); } });
+
+    // Phase 4 Wave 2, mockup 60: the drawer's Reduce menu (panel 2), then Hiss mode (panel 1),
+    // last, as it leaves Detection on Hiss.
+    openers.push_back ({ "dropdown-reduce", [this] { drawer.setVisible (true); reduceDropdown.click(); } });
+    openers.push_back ({ "hiss", [this]
+    {
+        auto& shape = parameter ("shape");
+        shape.setValueNotifyingHost (shape.convertTo0to1 (2.0f));
+        updateLocks();
+    } });
     return openers;
 }

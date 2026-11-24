@@ -29,8 +29,8 @@ When nothing is being cut, the output is the input, bit for bit.
 |---|---|---|---|
 | Threshold | -60 to 0 dB | -28 dB | How loud the band must get before it's turned down |
 | Freq | 2-16 kHz | 6.2 kHz | The centre of the band, or where the shelf starts. Typed values take `6200` or `6.2k` |
-| Width | 0.3-3 oct | 1.0 oct | How wide the band is. Locked in Shelf |
-| Band, Shelf | | Band | Band listens to a range around Freq. Shelf listens to everything above Freq, for cymbals and bright buses |
+| Width | 0.3-3 oct | 1.0 oct | How wide the band is. Locked in Shelf and Hiss |
+| Band, Shelf, Hiss | | Band | Band listens to a range around Freq. Shelf listens to everything above Freq, for cymbals and bright buses. Hiss turns everything above Freq down while it's *quieter* than Threshold: see Phase 4 additions |
 | Range | -24 to 0 dB | -12 dB | The most it ever turns down |
 | Attack | 0.1-20 ms | 0.5 ms | How fast the cut comes in |
 | Release | 5-500 ms | 60 ms | How fast it lets go |
@@ -49,6 +49,9 @@ When nothing is being cut, the output is the input, bit for bit.
 |---|---|---|---|
 | Lookahead | Off, 1, 2, 5 ms | Off | Delays the audio but not the detector, so the cut is already moving when an "s" arrives. Adds that much latency |
 | Split filter | Minimum phase, Linear phase | Minimum phase | Linear phase splits the band with linear-phase filters, so nothing around the band shifts in phase. Its band edges are steeper, so it takes a little less off the edges of an "s". Adds about 53 ms of latency |
+| Filter slope | 12, 24, 48 dB/oct | 12 dB/oct | See Phase 4 additions |
+| Reduce | Both, Mid, Side | Both | Where the cut lands. Both turns down left and right. Mid turns down only the centre, so a centre vocal is de-essed while wide cymbals keep their highs. Side turns down only the sides. Changing it fades out and back in |
+| Ceiling | Off, -12 to 0 dBTP | Off | See Phase 4 additions |
 
 ## Setting it up on a vocal
 
@@ -78,6 +81,8 @@ The presets are good starting points: **Bright female vocal** and **Deep male vo
 - **Filter slope** (drawer): how sharply the detector picks out the band. Steeper ignores more of the voice around it. 12 dB/oct is the old sound.
 - **Ceiling** (drawer): holds the output's true peak under this level. Off at the bottom; it adds a little latency while on.
 - **Dual band** (the **High | Low** tabs in the top row): a voice has two kinds of sibilance, "s" high up (about 5 to 10 kHz) and "sh" lower (about 2.5 to 5 kHz). **High** is the band above, unchanged. The switch on the **Low** tab turns on a second band for "sh", with its own Freq (1 to 8 kHz, 3.5 kHz by default), Width, Threshold (-20 dB) and Range (-9 dB). Click a tab's name to show that band's settings in the Threshold meter, GR bar and the DETECTION and REDUCTION knobs; Band | Shelf dims for Low, which is always a band. Attack, Release, Detector, Mode, Relative threshold, Link channels, Lookahead, Filter slope and Listen are shared. On the ruler Low's band is the yellow bar under High's; drag its handle or edges, and click either bar to select its tab. The history shows Low's reduction in yellow. Learn sets both thresholds. In Split each band cuts only its own band; in Wide the whole signal goes down by the deeper of the two. Two bands catch "sh" much better than one widened band, and dull the vowels far less.
+- **Reduce** (drawer, under Filter slope): Both, Mid or Side, as in the EDIT drawer table above. Pair Mid with Detector **Main Mid** to de-ess a centre vocal in a full mix without the cymbals dipping on every "s".
+- **Hiss** (the third choice of the DETECTION switch): a quick fix for a hissy take. Hiss is heard in the gaps, when the music is quiet, so Hiss mode works the other way round from a de-esser: it turns everything above Freq down while that band is quieter than Threshold, by 1 dB for every dB under it, up to Range. Loud passages keep their highs; the gaps lose their hiss. Threshold is always in dBFS here (Relative threshold dims): set it a few dB above the hiss and under the highs of the music, with the history as a guide. **Release** is how fast it closes in a gap and **Attack** how fast it opens when the music comes back. Width dims, as in Shelf, and Learn dims, since it's made for sibilance. For steady noise under the music too, Fancy FIR's Subtract mode does more.
 
 ## Latency
 

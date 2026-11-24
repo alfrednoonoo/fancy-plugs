@@ -18,9 +18,11 @@ public:
         bool shelf;
         float freqHz, widthOctaves, attackMs, releaseMs;
         const char* caption;
+        bool hiss = false;   // Phase 4 Wave 2, item 34: Fancy DS's Hiss mode
     };
 
-    static const std::array<Profile, 6> profiles;
+    static const std::array<Profile, 7> profiles;
+    static constexpr int hissProfile = 6;
 
     // Profile changes crossfade between two engines over this long.
     static constexpr double fadeMs = 50.0;
@@ -29,11 +31,13 @@ public:
     static constexpr const char* dsPresetFolder = "From DS-Mini";
 
     // Fancy DS's settings for a profile and Amount, as the values Fancy DS's parameters would
-    // be set to. Amount sets Threshold (-4 dB per step) and Range (-1.8 dB per step).
+    // be set to. Amount sets Threshold (-4 dB per step) and Range (-1.8 dB per step). For Hiss,
+    // Threshold is absolute and rises with Amount: -56 + 4 dB per step (docs/ds-mini.md).
     struct DsSettings
     {
         float threshold, freq, width, range, attack, release;
         bool shelf;
+        bool hiss = false;
     };
 
     static DsSettings mapProfile (int profile, float amount);

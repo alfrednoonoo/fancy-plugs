@@ -99,6 +99,7 @@ void DeEsser::prepare (double sampleRate)
     holdSamples = 0.001 * sampleRate;
     fallPerSample = 20.0 / sampleRate;
     rmsCoefficient = fancy::dsp::timeCoefficient (50.0, sampleRate);
+    hissCoefficient = fancy::dsp::timeCoefficient (hissEnvelopeMs, sampleRate);
 
     for (auto* smoother : { &logFreq, &width, &lowLogFreq, &lowWidth, &outputGain, &bypassMix })
         smoother->setTime (smoothingMs, sampleRate);
@@ -131,6 +132,8 @@ void DeEsser::reset()
     for (auto& follower : followers) follower.reset();
     resetLow();
 
+    hissEnvelope = { 0.0, 0.0 };
+
     peakDb = { -200.0, -200.0 };
     filterCountdown = 0;
     meanSquare = { 0.0, 0.0 };
@@ -148,6 +151,7 @@ void DeEsser::snapToTargets (const Targets& targets) noexcept
     activeLinear = targets.linearPhase;
     activeShelf = targets.shelf;
     activeDual = targets.dual;
+    activeReduce = targets.reduce;
 
     lowLogFreq.snapTo (std::log2 (std::clamp (targets.lowFreqHz, lowMinHz, lowMaxHz)));
     lowWidth.snapTo (targets.lowWidthOctaves);
@@ -177,6 +181,7 @@ void DeEsser::continueFrom (const DeEsser& other) noexcept
     meanSquare = other.meanSquare;
     holdLeft = other.holdLeft;
     filterCountdown = other.filterCountdown;
+    hissEnvelope = other.hissEnvelope;
     lowDetectors = other.lowDetectors;
     lowExtraDetectors = other.lowExtraDetectors;
     lowSplits = other.lowSplits;
@@ -273,7 +278,8 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
     // Lookahead, the split filter and, with the linear split, the shape change the latency or
     // the crossover: they fade out, swap and fade back in.
     const auto wantsSwitch = settings.lookahead != activeLookahead || settings.linearPhase != activeLinear
-                          || (activeLinear && settings.shelf != activeShelf) || (activeLinear && settings.dual != activeDual);
+                          || (activeLinear && settings.shelf != activeShelf) || (activeLinear && settings.dual != activeDual)
+                          || settings.reduce != activeReduce;
 
     if (wantsSwitch)
     {
@@ -285,6 +291,15 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
             activeLinear = settings.linearPhase;
             activeShelf = settings.shelf;
             activeDual = settings.dual;
+
+            // Phase 4 Wave 2, item 32: the split filters move between L and R and mid and side.
+            if (settings.reduce != activeReduce)
+            {
+                activeReduce = settings.reduce;
+
+                for (auto& filter : splits) filter.reset();
+                for (auto& filter : lowSplits) filter.reset();
+            }
 
             for (auto* lines : { &lookaheadLines, &rawLines, &dryLines })
                 for (auto& line : *lines)
@@ -317,6 +332,11 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
         updateLinearDesign (settings);
 
     ballistics.set (settings.attackMs, settings.releaseMs, false, false, false, rate);
+
+    // Hiss mode (item 33): the reduction grows as the shelf closes, over Release, and shrinks
+    // as it opens, over Attack: DS's ballistics with the two times swapped.
+    const auto hiss = settings.hiss && settings.shelf;
+    hissBallistics.set (settings.releaseMs, settings.attackMs, false, false, false, rate);
     logFreq.setTarget (std::log2 (std::clamp (settings.freqHz, minHz, maxHz)));
     width.setTarget (settings.widthOctaves);
     lowLogFreq.setTarget (std::log2 (std::clamp (settings.lowFreqHz, lowMinHz, lowMaxHz)));
@@ -412,7 +432,13 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
                 const auto more = extraDetectors[(size_t) c][(size_t) stage].tick (coefficients, filtered);
                 filtered = settings.shelf ? more.high : coefficients.k * more.band;
             }
-            const auto db = toDb (std::abs (filtered));
+            const auto magnitude = std::abs (filtered);
+            const auto db = toDb (magnitude);
+
+            // Hiss mode's detector: an envelope that rises at once and falls over 15 ms. Kept
+            // running in every mode, so switching to Hiss starts from the signal, not silence.
+            auto& envelope = hissEnvelope[(size_t) c];
+            envelope = magnitude > envelope ? magnitude : envelope + (magnitude - envelope) * hissCoefficient;
 
             // Peak, held for 1 ms, then falling at 20 dB/s.
             if (db >= peakDb[(size_t) c])
@@ -432,7 +458,10 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
             meanSquare[(size_t) c] += (sources[(size_t) c] * sources[(size_t) c] - meanSquare[(size_t) c]) * rmsCoefficient;
             const auto fullDb = std::max (fullBandFloorDb, 10.0 * std::log10 (meanSquare[(size_t) c] + 1.0e-30));
 
-            levels[(size_t) c] = settings.relative ? peakDb[(size_t) c] - fullDb : peakDb[(size_t) c];
+            if (hiss)
+                levels[(size_t) c] = toDb (envelope);   // always absolute: it's about the level of the gaps
+            else
+                levels[(size_t) c] = settings.relative ? peakDb[(size_t) c] - fullDb : peakDb[(size_t) c];
             fullLevels[(size_t) c] = fullDb;
         }
 
@@ -441,8 +470,10 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
 
         for (size_t c = 0; c < 2; ++c)
         {
-            const auto target = std::min (fancy::dsp::computeReduction (levels[c], settings.thresholdDb, ratioSlope, kneeDb, false), -settings.rangeDb);
-            const auto smoothed = followers[c].follow (ballistics, std::max (0.0, target));
+            // Hiss mode turns down 1 dB for each dB under Threshold; the de-esser, 8:1 over it.
+            const auto target = hiss ? std::min (std::max (0.0, settings.thresholdDb - levels[c]), -settings.rangeDb)
+                                     : std::min (fancy::dsp::computeReduction (levels[c], settings.thresholdDb, ratioSlope, kneeDb, false), -settings.rangeDb);
+            const auto smoothed = followers[c].follow (hiss ? hissBallistics : ballistics, std::max (0.0, target));
             gains[c][(size_t) i] = fromDb (-smoothed);
             chunkReduction = std::max (chunkReduction, smoothed);
         }
@@ -546,6 +577,29 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
         lookaheadPosition = (lookaheadPosition + 1) % lookaheadSize;
     }
 
+    // Phase 4 Wave 2, item 32: Reduce Mid or Side. The audio goes through as mid (channel 0)
+    // and side (1); the channel that's cut takes the deeper of the two gains, the other gain is
+    // exactly 1, so it passes untouched, and the two are joined again after the cut.
+    const auto midSide = activeReduce != reduceBoth;
+    const auto cutChannel = activeReduce == reduceSide ? 1 : 0;
+
+    if (midSide)
+    {
+        for (int i = 0; i < numSamples; ++i)
+        {
+            const auto l = delayed[0][(size_t) i], r = delayed[1][(size_t) i];
+            delayed[0][(size_t) i] = 0.5f * (l + r);
+            delayed[1][(size_t) i] = 0.5f * (l - r);
+
+            for (auto* g : { &gains, &lowGains })
+            {
+                const auto deepest = std::min ((*g)[0][(size_t) i], (*g)[1][(size_t) i]);
+                (*g)[(size_t) cutChannel][(size_t) i] = deepest;
+                (*g)[(size_t) (1 - cutChannel)][(size_t) i] = 1.0;
+            }
+        }
+    }
+
     // 2. The split, then Listen, Output, the switch fade and bypass.
     if (activeLinear)
         crossover.process (delayed[0].data(), delayed[1].data(), nullptr, nullptr, bandScratch.data(), nullptr, maxChunk, numSamples);
@@ -637,6 +691,9 @@ void DeEsser::processChunk (float* const* main, int numMain, const float* const*
             references[c] = reference;
             outputs[c] = settings.listen ? reference - processed : processed;
         }
+
+        if (midSide)
+            outputs = { outputs[0] + outputs[1], outputs[0] - outputs[1] };
 
         if (activeLinear)
         {
