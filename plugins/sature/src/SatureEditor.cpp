@@ -440,7 +440,16 @@ SatureEditor::SatureEditor (SatureProcessor& processor)
       lowDriveKnob (parameter ("lowDrive"), "Drive", orange, Knob::smallStyle),
       lowMixKnob (parameter ("lowMix"), "Mix", orange, Knob::smallStyle),
       highDriveKnob (parameter ("highDrive"), "Drive", orange, Knob::smallStyle),
-      highMixKnob (parameter ("highMix"), "Mix", orange, Knob::smallStyle)
+      highMixKnob (parameter ("highMix"), "Mix", orange, Knob::smallStyle),
+      offsetKnob (parameter ("offset"), "Offset", orange, Knob::smallStyle, true),
+      lowCutKnob (parameter ("lowCut"), "Freq", orange, Knob::smallStyle),
+      highCutKnob (parameter ("highCut"), "Freq", orange, Knob::smallStyle),
+      spreadKnob (parameter ("spread"), "Spread", orange, Knob::smallStyle),
+      lowSlopeDropdown (parameter ("lowCutSlope")),
+      highSlopeDropdown (parameter ("highCutSlope")),
+      channelsDropdown (parameter ("channels")),
+      lowPosSegments (parameter ("lowCutPos"), orange, colours::bgWell),
+      highPosSegments (parameter ("highCutPos"), orange, colours::bgWell)
 {
     auto& body = getBody();
 
@@ -455,7 +464,7 @@ SatureEditor::SatureEditor (SatureProcessor& processor)
     // The Type row.
     setUpLabel (typeLabel, "Type", juce::Justification::centredLeft);
     typeLabel.setBounds (leftX + 2, rowY, 34, rowHeight);
-    typeSegments.setBounds (50, rowY + 1, 240, 24);
+    typeSegments.setBounds (50, rowY + 1, 336, 24); // Phase 4 Wave 2: six Types (mockup 61)
     typeSegments.setTextHeight (labelHeight);
     typeSegments.setFitToText (true);
     typeSegments.setTooltip ("Tape: soft and warm, a little darker when driven hard. Tube: soft and uneven, rich in even harmonics. "
@@ -561,6 +570,81 @@ SatureEditor::SatureEditor (SatureProcessor& processor)
                                                                            &lowDriveKnob, &lowMixKnob, &highDriveKnob, &highMixKnob })
         drawer.addAndMakeVisible (item);
 
+    // Phase 4 Wave 2, items 35 to 39 (mockup 61; drawer coordinates are the mockup's window
+    // coordinates less 113). The page switch beside the drawer's title, as Comp's.
+    drawerTabs.setBounds (120, 13, 210, 22);
+    drawerTabs.onChange = [this] (int page) { showDrawerPage (page); };
+    drawer.addAndMakeVisible (drawerTabs);
+
+    // Shape: Offset under Input trim.
+    offsetKnob.setBounds (26, 245, 70, 99);
+    offsetKnob.setTooltip ("Shifts the signal before the curve and back after it, so even a symmetric curve adds even harmonics, the 2nd first.");
+    setUpLabel (offsetNote, "Bias before the curve: even harmonics, the 2nd first.", juce::Justification::topLeft, 11.0f);
+    offsetNote.setBounds (104, 272, 120, 48);
+
+    shapeItems = { &oversamplingLabel, &oversamplingDropdown, &aliasNote, &filterLabel, &filterDropdown, &trimKnob, &dcCheckbox,
+                   &outerCaption, &belowLowLabel, &aboveHighLabel, &outerNote, &lowDriveKnob, &lowMixKnob, &highDriveKnob, &highMixKnob,
+                   &offsetKnob, &offsetNote };
+
+    // Tone and stereo: the cuts, then Spread and Channels.
+    setUpLabel (lowCutTitle, "LOW CUT", juce::Justification::topLeft, 10.0f);
+    setUpLabel (highCutTitle, "HIGH CUT", juce::Justification::topLeft, 10.0f);
+    setUpLabel (stereoTitle, "STEREO", juce::Justification::topLeft, 10.0f);
+    setUpLabel (lowSlopeLabel, "Slope", juce::Justification::centredLeft, 12.0f);
+    setUpLabel (highSlopeLabel, "Slope", juce::Justification::centredLeft, 12.0f);
+    setUpLabel (channelsLabel, "Channels", juce::Justification::centredLeft, 13.0f);
+    setUpLabel (cutNote, "Pre shapes what's driven: a Low cut before the curve stops a heavy bass from muddying everything above it. "
+                         "Post shapes what's heard: only the added harmonics. Off (the default) isn't run.",
+                juce::Justification::topLeft, 11.0f);
+    setUpLabel (spreadNote, "Widens only the added harmonics; the fundamental stays centred. 0 to 50 %, so mono keeps them (-3 dB at most).",
+                juce::Justification::topLeft, 11.0f);
+    setUpLabel (channelsNote, "Stereo (today), Mid only or Side only.", juce::Justification::topLeft, 11.0f);
+
+    lowCutTitle.setBounds (24, 55, 200, 12);
+    lowCutKnob.setBounds (27, 67, 70, 99);
+    lowSlopeLabel.setBounds (118, 76, 40, 24);
+    lowSlopeDropdown.setBounds (160, 76, 110, 24);
+    lowPosSegments.setBounds (160, 111, 110, 22);
+
+    highCutTitle.setBounds (330, 55, 200, 12);
+    highCutKnob.setBounds (333, 67, 70, 99);
+    highSlopeLabel.setBounds (424, 76, 40, 24);
+    highSlopeDropdown.setBounds (466, 76, 110, 24);
+    highPosSegments.setBounds (466, 111, 110, 22);
+
+    cutNote.setBounds (24, 163, 560, 32);
+
+    stereoTitle.setBounds (24, 211, 200, 12);
+    spreadKnob.setBounds (27, 223, 70, 99);
+    spreadNote.setBounds (118, 239, 220, 48);
+    channelsLabel.setBounds (370, 238, 66, 24);
+    channelsDropdown.setBounds (440, 238, 136, 24);
+    channelsNote.setBounds (370, 271, 210, 16);
+
+    for (auto* segments : { &lowPosSegments, &highPosSegments })
+        segments->setTextHeight (12.0f);
+
+    lowCutKnob.setTooltip ("A high-pass on the saturation, Off at the bottom.");
+    highCutKnob.setTooltip ("A low-pass on the saturation, Off at the top.");
+    lowSlopeDropdown.setTooltip ("How steep the low cut is.");
+    highSlopeDropdown.setTooltip ("How steep the high cut is.");
+    lowPosSegments.setTooltip ("Pre cuts what's driven, so the cut lows pass clean. Post cuts the added harmonics.");
+    highPosSegments.setTooltip ("Pre cuts what's driven, so the cut highs pass clean. Post cuts the added harmonics, for less fizz.");
+    spreadKnob.setTooltip ("Spreads the added harmonics wide, the fundamental centred. Up to 50 %, so they survive in mono.");
+    channelsDropdown.setTooltip ("Stereo drives left and right. Mid only drives the centre and leaves the sides clean; Side only the reverse.");
+
+    toneStereoItems = { &lowCutTitle, &lowCutKnob, &lowSlopeLabel, &lowSlopeDropdown, &lowPosSegments,
+                        &highCutTitle, &highCutKnob, &highSlopeLabel, &highSlopeDropdown, &highPosSegments,
+                        &cutNote, &stereoTitle, &spreadKnob, &spreadNote, &channelsLabel, &channelsDropdown, &channelsNote };
+
+    for (auto* item : shapeItems)
+        drawer.addAndMakeVisible (item);
+
+    for (auto* item : toneStereoItems)
+        drawer.addChildComponent (item);
+
+    showDrawerPage (shapePage);
+
     updateOuter();
 
     body.addChildComponent (drawer);
@@ -599,11 +683,34 @@ void SatureEditor::updateOuter()
     panels.setOuterText (driven.joinIntoString (juce::String::fromUTF8 (" \xc2\xb7 ")));
 }
 
+void SatureEditor::showDrawerPage (int page)
+{
+    drawerPage = page;
+    drawerTabs.setSelected (page);
+
+    for (auto* item : shapeItems)
+        item->setVisible (page == shapePage);
+
+    for (auto* item : toneStereoItems)
+        item->setVisible (page == toneStereoPage);
+}
+
 void SatureEditor::onTick (float seconds)
 {
     auto& processor = satureProcessor();
 
     updateOuter(); // Phase 4 Wave 2
+
+    // Item 37: a cut's slope and position dim while it's Off.
+    {
+        const auto targets = processor.readTargets();
+
+        for (auto* item : std::initializer_list<juce::Component*> { &lowSlopeDropdown, &lowPosSegments })
+            item->setAlpha (targets.lowCutOn ? 1.0f : 0.5f);
+
+        for (auto* item : std::initializer_list<juce::Component*> { &highSlopeDropdown, &highPosSegments })
+            item->setAlpha (targets.highCutOn ? 1.0f : 0.5f);
+    }
 
     transferCurve.update();
     harmonicsCard.update();
@@ -641,6 +748,7 @@ void SatureEditor::showPreview (bool drawerOpen)
     aliasNote.setText ("(+" + juce::String (latency) + " samples latency)", juce::dontSendNotification);
 
     drawer.setVisible (drawerOpen);
+    showDrawerPage (shapePage);
     updateOuter();
 }
 
@@ -655,5 +763,31 @@ std::vector<ShellEditor::PopupOpener> SatureEditor::getPopupOpeners()
     openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); oversamplingDropdown.click(); } });
     openers.push_back ({ "tooltip-listen", [this] { showTip (listenCheckbox, listenCheckbox.getTooltip()); } });
     openers.push_back ({ "value-drive", [this] { driveKnob.openValueEditor(); } });
+
+    // Phase 4 Wave 2, mockup 61: the Shape page with Offset at 0.10 (panel 2), then the Tone and
+    // stereo page at the mockup's values (panel 3), and Fold chosen on the main window. Last, as
+    // they leave those settings in place.
+    openers.push_back ({ "page-shape", [this]
+    {
+        if (auto* editor = driveKnob.getValueEditor()) editor->setVisible (false);
+        setValue (parameter ("offset"), 0.1f);
+        drawer.setVisible (true);
+        showDrawerPage (shapePage);
+    } });
+    openers.push_back ({ "page-tone", [this]
+    {
+        setValue (parameter ("lowCut"), 200.0f);
+        setValue (parameter ("lowCutSlope"), 1.0f);
+        setValue (parameter ("spread"), 35.0f);
+        setValue (parameter ("channels"), 1.0f);
+        drawer.setVisible (true);
+        showDrawerPage (toneStereoPage);
+    } });
+    openers.push_back ({ "type-fold", [this]
+    {
+        drawer.setVisible (false);
+        setValue (parameter ("type"), (float) fancy::dsp::saturation::fold);
+        transferCurve.update();
+    } });
     return openers;
 }

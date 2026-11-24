@@ -44,62 +44,8 @@ DrawerTabs::DrawerTabs()
 }
 
 DrawerTabs::DrawerTabs (juce::StringArray tabNames)
-    : names (std::move (tabNames))
+    : ViewTabs (std::move (tabNames))
 {
-}
-
-void DrawerTabs::setSelected (int tab)
-{
-    tab = juce::jlimit (0, names.size() - 1, tab);
-
-    if (tab != selected)
-    {
-        selected = tab;
-        repaint();
-    }
-}
-
-juce::Rectangle<float> DrawerTabs::tabBounds (int index) const
-{
-    const auto area = getLocalBounds().toFloat().reduced (3.0f);
-    const auto width = area.getWidth() / (float) juce::jmax (1, names.size());
-    return area.withX (area.getX() + (float) index * width).withWidth (width);
-}
-
-void DrawerTabs::paint (juce::Graphics& g)
-{
-    g.setColour (colours::bgWell);
-    g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);
-
-    g.setFont (font (Weight::regular, 12.0f));
-
-    for (int i = 0; i < names.size(); ++i)
-    {
-        const auto area = tabBounds (i);
-
-        if (i == selected)
-        {
-            g.setColour (colours::grey5);
-            g.fillRoundedRectangle (area, 3.0f);
-        }
-
-        g.setColour (i == selected ? colours::textPrimary : colours::textSecondary);
-        g.drawText (names[i], area, juce::Justification::centred, false);
-    }
-}
-
-void DrawerTabs::mouseDown (const juce::MouseEvent& event)
-{
-    for (int i = 0; i < names.size(); ++i)
-    {
-        if (tabBounds (i).contains (event.position) && i != selected)
-        {
-            setSelected (i);
-
-            if (onChange != nullptr)
-                onChange (i);
-        }
-    }
 }
 
 // HistoryCaption --------------------------------------------------------------

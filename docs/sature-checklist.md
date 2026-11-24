@@ -53,3 +53,11 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] Auto gain on: turning Low drive up and down keeps the level steady within about 1 dB.
 - [ ] Listen to added harmonics plays all three bands' harmonics.
 
+## Diode, Fold, Offset, cuts, Spread and Channels (Phase 4 Wave 2, v1.7.1)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy Sature: it loads and sounds as before.
+- [ ] The Type row reads Tape, Tube, Transistor, Clip, **Diode**, **Fold**, all on one row. Diode buzzes; Fold turns metallic as Drive rises; Auto gain keeps both near the same loudness at 4x.
+- [ ] The drawer shows **Shape | Tone and stereo** beside EDIT. Shape has **Offset** under Input trim: on a bass at Drive 12, Offset 0.25 thickens it (more 2nd harmonic) with no thump of DC.
+- [ ] Tone and stereo: on a full mix, Low cut 200 Hz **Pre** cleans up the mud a loud bass adds at high Drive, and the bass is still there. **Post** keeps the drive and only thins the added part. High cut 8 kHz Post takes the fizz off.
+- [ ] **Spread** 50 % on a mono source widens the saturation while the note stays in the centre; in mono it's only a little thinner.
+- [ ] **Channels** Mid only on a mix with a centre bass and wide pads: the bass is driven, the pads stay clean. Switching while playing fades, no click.

@@ -257,6 +257,28 @@ private:
     Glyph iconGlyph;
 };
 
+// A view switch styled as ParamSegments, but not a parameter: Comp's drawer pages and history
+// zoom, Sature's drawer pages. Moved from Fancy Comp unchanged (Phase 4 Wave 2).
+class ViewTabs : public juce::Component
+{
+public:
+    explicit ViewTabs (juce::StringArray names);
+
+    void setSelected (int tab);
+    int getSelected() const noexcept { return selected; }
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+    std::function<void (int)> onChange;
+
+private:
+    juce::Rectangle<float> tabBounds (int index) const;
+
+    juce::StringArray names;
+    int selected = 0;
+};
+
 // Numbered tabs in their own colours, with a + at the end.
 class ColourTabs final : public juce::Component
 {

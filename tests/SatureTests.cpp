@@ -17,6 +17,7 @@
 #include <fancy/dsp/Saturation.h>
 
 #include <algorithm>
+#include <iterator>
 #include <chrono>
 #include <cmath>
 #include <complex>
@@ -31,7 +32,8 @@ namespace sat = fancy::dsp::saturation;
 namespace
 {
 constexpr double pi = std::numbers::pi;
-const char* const typeNames[] { "Tape", "Tube", "Transistor", "Clip" };
+const char* const typeNames[] { "Tape", "Tube", "Transistor", "Clip", "Diode", "Fold" };
+static_assert (std::size (typeNames) == sat::numTypes);
 const char* const factorNames[] { "Off", "2x", "4x", "8x" };
 
 double toDb (double gain) { return 20.0 * std::log10 (std::max (gain, 1.0e-15)); }
@@ -221,7 +223,12 @@ TEST_CASE ("Sature: every curve's antiderivative matches it, and every curve has
             }
 
             CHECK (curve.shape (0.0) == 0.0);
-            CHECK ((curve.shape (1.0e-6) - curve.shape (-1.0e-6)) / 2.0e-6 == Approx (1.0).margin (1.0e-6));
+
+            // Diode (1 above zero, 0.1 below) and Fold (pi / 2) bend from the start by design
+            // (docs/sature.md, Phase 4 Wave 2, item 36), unless Character's odd half replaces them.
+            if (type < sat::diode || character >= 1.0)
+                CHECK ((curve.shape (1.0e-6) - curve.shape (-1.0e-6)) / 2.0e-6 == Approx (1.0).margin (1.0e-6));
+
             CHECK (std::abs (curve.shape (100.0)) <= sat::tubeNegativeLimit);
         }
     }

@@ -29,7 +29,66 @@ double dbToGain (double db) noexcept
 {
     return std::pow (10.0, db / 20.0);
 }
+
+// Phase 4 Wave 2, item 38: Olli Niemitalo's 90-degree allpass pair, coefficients squared. The
+// first chain is delayed by a sample; the second then leads it by 90 degrees, within 1.65 degrees
+// from 20 Hz to 20 kHz at 48 kHz (docs/research/sature-w2b-build-check.py).
+constexpr std::array<double, 4> hilbertA { 0.6923878 * 0.6923878, 0.9360654322959 * 0.9360654322959,
+                                           0.9882295226860 * 0.9882295226860, 0.9987488452737 * 0.9987488452737 };
+constexpr std::array<double, 4> hilbertB { 0.4021921162426 * 0.4021921162426, 0.8561710882420 * 0.8561710882420,
+                                           0.9722909545651 * 0.9722909545651, 0.9952884791278 * 0.9952884791278 };
+
+constexpr double spreadFitMs = 50.0;     // the added part's linear fit to the clean signal
+constexpr double channelsFadeMs = 5.0;   // Channels' fade out and in
 } // namespace
+
+// Phase 4 Wave 2, items 37 and 38 -------------------------------------------------------------
+
+void SatureDsp::CutFilter::reset() noexcept
+{
+    one.reset();
+
+    for (auto& section : two)
+        section.reset();
+}
+
+double SatureDsp::CutFilter::process (const std::array<fancy::dsp::SvfCoefficients, 3>& c, double x, double steep, bool lowCut) noexcept
+{
+    const auto pick = [lowCut] (const fancy::dsp::Svf::Outputs& o) { return lowCut ? o.high : o.low; };
+
+    const auto gentle = pick (one.tick (c[0], x));
+    const auto steeper = pick (two[1].tick (c[2], pick (two[0].tick (c[1], x))));
+
+    return steep <= 0.0 ? gentle : (steep >= 1.0 ? steeper : gentle + steep * (steeper - gentle));
+}
+
+double SatureDsp::HilbertChain::process (const std::array<double, 4>& a2, double x) noexcept
+{
+    for (size_t k = 0; k < 4; ++k)
+    {
+        const auto y = a2[k] * (x + y2[k]) - x2[k];
+        x2[k] = x1[k];
+        x1[k] = x;
+        y2[k] = y1[k];
+        y1[k] = y;
+        x = y;
+    }
+
+    return x;
+}
+
+void SatureDsp::updateCutCoefficients (int cut, bool force)
+{
+    auto& state = cuts[(size_t) cut];
+
+    if (! force && state.logHz.isSettled())
+        return;
+
+    const auto hz = std::clamp (std::exp (state.logHz.next()), lowestHz, 0.45 * sampleRate);
+    state.coefficients[0].set (hz, 0.7071067811865476, sampleRate);
+    state.coefficients[1].set (hz, 0.5411961001461970, sampleRate);
+    state.coefficients[2].set (hz, 1.3065629648763766, sampleRate);
+}
 
 SatureDsp::SatureDsp()
 {
@@ -93,6 +152,17 @@ void SatureDsp::prepare (double newSampleRate)
     bypass.setTime (10.0, sampleRate);
     listen.setTime (10.0, sampleRate);
 
+    // Phase 4 Wave 2, items 35 to 39.
+    biasOffset.setTime (smoothingMs, sampleRate);
+    spreadAmount.setTime (smoothingMs, sampleRate);
+    spreadOn.setTime (smoothingMs, sampleRate);
+    channelsFade.setTime (channelsFadeMs, sampleRate);
+    spreadCoefficient = 1.0 - std::exp (-1.0 / (spreadFitMs * 0.001 * sampleRate));
+
+    for (auto& cut : cuts)
+        for (auto* smoother : { &cut.logHz, &cut.on, &cut.steep, &cut.postAmount })
+            smoother->setTime (smoothingMs, sampleRate);
+
     dcCoefficient = std::exp (-2.0 * std::numbers::pi * dcCutHz / sampleRate);
 
     snapToTargets (targets);
@@ -123,6 +193,15 @@ void SatureDsp::resetCore()
 
     for (int band = 0; band < 2; ++band)
         resetOuter (band);
+
+    for (auto& cut : cuts)
+    {
+        for (auto& filter : cut.pre) filter.reset();
+        for (auto& filter : cut.post) filter.reset();
+    }
+
+    for (auto& spreadState : spreadStates)
+        spreadState.reset();
 }
 
 void SatureDsp::resetOuter (int band)
@@ -215,6 +294,53 @@ void SatureDsp::setTargets (const Targets& newTargets)
         outerDriveDb[(size_t) band].setTarget (std::clamp (outerDb[band], 0.0, 36.0));
         outerMix[(size_t) band].setTarget (std::clamp (outerMixes[band], 0.0, 1.0));
     }
+    // Phase 4 Wave 2, items 35 to 39.
+    biasOffset.setTarget (std::clamp (targets.offset, -0.5, 0.5));
+
+    const bool cutOn[] { targets.lowCutOn, targets.highCutOn };
+    const double cutHz[] { targets.lowCutHz, targets.highCutHz };
+    const bool cutSteep[] { targets.lowCut24, targets.highCut24 };
+    const bool cutPost[] { targets.lowCutPost, targets.highCutPost };
+
+    for (int c = 0; c < 2; ++c)
+    {
+        auto& cut = cuts[(size_t) c];
+        const auto fullyOff = cut.on.isSettled() && cut.on.getCurrent() == 0.0;
+
+        if (cutOn[c])
+            cut.logHz.setTarget (std::log (std::clamp (cutHz[c], lowestHz, 0.45 * sampleRate)));
+
+        cut.steep.setTarget (cutSteep[c] ? 1.0 : 0.0);
+        cut.postAmount.setTarget (cutPost[c] ? 1.0 : 0.0);
+
+        // A cut that was fully off starts afresh, at its frequency and slope, as it fades in.
+        if (cutOn[c] && fullyOff)
+        {
+            for (auto& filter : cut.pre) filter.reset();
+            for (auto& filter : cut.post) filter.reset();
+
+            cut.logHz.snapToTarget();
+            cut.steep.snapToTarget();
+            cut.postAmount.snapToTarget();
+            updateCutCoefficients (c, true);
+        }
+
+        cut.on.setTarget (cutOn[c] ? 1.0 : 0.0);
+    }
+
+    const auto spreadTarget = std::clamp (targets.spread, 0.0, 0.5);
+
+    if (spreadTarget > 0.0 && spreadOn.isSettled() && spreadOn.getCurrent() == 0.0)
+    {
+        for (auto& spreadState : spreadStates)
+            spreadState.reset();
+
+        spreadAmount.snapTo (spreadTarget);
+    }
+
+    spreadAmount.setTarget (spreadTarget);
+    spreadOn.setTarget (spreadTarget > 0.0 ? 1.0 : 0.0);
+
     autoGain.setTarget (targets.autoGain ? 1.0 : 0.0);
     wet.setTarget (targets.wetGain);
     dry.setTarget (targets.dryGain);
@@ -258,6 +384,27 @@ void SatureDsp::snapToTargets (const Targets& newTargets)
             smoother->snapToTarget();
 
     typeFade.snapTo (1.0);
+
+    // Phase 4 Wave 2, items 35 to 39.
+    biasOffset.snapToTarget();
+    spreadAmount.snapToTarget();
+    spreadOn.snapToTarget();
+    activeChannels = std::clamp (targets.channels, (int) stereo, (int) sideOnly);
+    channelsFade.snapTo (1.0);
+    channelsHold = 0;
+
+    for (int c = 0; c < 2; ++c)
+    {
+        auto& cut = cuts[(size_t) c];
+
+        if (! (c == lowCutIndex ? targets.lowCutOn : targets.highCutOn))
+            cut.logHz.setTarget (std::log (c == lowCutIndex ? 20.0 : std::min (20000.0, 0.45 * sampleRate)));
+
+        for (auto* smoother : { &cut.logHz, &cut.on, &cut.steep, &cut.postAmount })
+            smoother->snapToTarget();
+
+        updateCutCoefficients (c, true);
+    }
 
     oversampling.select (requestedOversampling, requestedMinimumPhase);
     updateRateDependent();
@@ -326,12 +473,47 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
 
     const auto anyOuter = outerRunning[0] || outerRunning[1];
 
+    // Phase 4 Wave 2, item 39: Channels needs two channels. A change fades the added part out,
+    // switches, waits for the old setting to leave the oversampler, and fades back in.
+    {
+        const auto wanted = numChannels == 2 ? std::clamp (targets.channels, (int) stereo, (int) sideOnly) : (int) stereo;
+
+        if (wanted != activeChannels)
+        {
+            channelsFade.setTarget (0.0);
+
+            if (channelsFade.isSettled())
+            {
+                activeChannels = wanted;
+                channelsHold = latency + 2 * maxChunk;
+            }
+        }
+        else if (channelsHold > 0)
+        {
+            channelsHold -= numSamples;
+        }
+        else
+        {
+            channelsFade.setTarget (1.0);
+        }
+    }
+
+    const auto midSide = activeChannels != stereo;
+
+    // Items 37 and 38: the cuts and Spread run while on or fading; off and settled, they're skipped.
+    for (auto& cut : cuts)
+        cut.running = cut.on.getCurrent() != 0.0 || ! cut.on.isSettled();
+
+    const auto anyCut = cuts[0].running || cuts[1].running;
+    spreadRunning = spreadOn.getCurrent() != 0.0 || ! spreadOn.isSettled();
+
     // Settings for each input sample, and the band split.
     for (int i = 0; i < numSamples; ++i)
     {
         updateBandFilters (false);
 
-        const auto settled = typeFade.isSettled() && character.isSettled() && drive.isSettled() && tone.isSettled() && autoGain.isSettled();
+        const auto settled = typeFade.isSettled() && character.isSettled() && drive.isSettled() && tone.isSettled() && autoGain.isSettled()
+                          && biasOffset.isSettled();
 
         if (settled && settingsCached)
         {
@@ -350,9 +532,15 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
             const auto driveDb = drive.next();
             const auto toneDb = tone.next();
             const auto autoAmount = autoGain.next();
+            const auto offsetValue = biasOffset.next();
 
-            const auto curve = t >= 1.0 ? sat::makeCurve (activeType, characterValue)
-                                        : sat::blend (sat::makeCurve (previousType, characterValue), sat::makeCurve (activeType, characterValue), t);
+            auto curve = t >= 1.0 ? sat::makeCurve (activeType, characterValue)
+                                  : sat::blend (sat::makeCurve (previousType, characterValue), sat::makeCurve (activeType, characterValue), t);
+
+            // Item 35: Offset shifts the input as Character's even half does, and its DC comes
+            // off with the curve's own (chunkDc). At 0 the bias is unchanged, to the bit.
+            if (offsetValue != 0.0)
+                curve.bias += offsetValue;
 
             chunkShapeChanged[(size_t) i] = ! curve.sameShape (lastCurve);
             chunkDc[(size_t) i] = curve.shape (curve.bias);
@@ -389,7 +577,8 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
             lastAuto = autoAmount;
 
             // Cached only once the smoothers have landed, so it is what every later sample would compute.
-            settingsCached = typeFade.isSettled() && character.isSettled() && drive.isSettled() && tone.isSettled() && autoGain.isSettled();
+            settingsCached = typeFade.isSettled() && character.isSettled() && drive.isSettled() && tone.isSettled() && autoGain.isSettled()
+                          && biasOffset.isSettled();
             cachedCurve = curve;
             cachedDc = chunkDc[(size_t) i];
             cachedDrive = chunkDrive[(size_t) i];
@@ -427,25 +616,71 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
         }
         const auto writePosition = (delayWritePosition + i) % delayLength;
 
+        std::array<double, 2> inputs {}, driven {};
+
         for (int ch = 0; ch < 2; ++ch)
         {
             const auto raw = ch < numChannels ? channels[ch][offset + i] : 0.0f;
             const auto in = std::isfinite (raw) ? raw : 0.0f;
 
+            channelStates[(size_t) ch].dryDelay[(size_t) writePosition] = in;
+            inputs[(size_t) ch] = (double) in * trimGain;
+        }
+
+        driven = inputs;
+
+        // Item 39: only the mid or only the side is driven; the other gets nothing to add.
+        if (midSide)
+        {
+            const auto m = 0.5 * (inputs[0] + inputs[1]);
+            const auto sd = 0.5 * (inputs[0] - inputs[1]);
+            driven = { activeChannels == midOnly ? m : 0.0, activeChannels == sideOnly ? sd : 0.0 };
+        }
+
+        // Item 37: each cut's settings for this sample; Pre filters what's driven.
+        if (anyCut)
+        {
+            for (int c = 0; c < 2; ++c)
+            {
+                auto& cut = cuts[(size_t) c];
+
+                if (! cut.running)
+                    continue;
+
+                updateCutCoefficients (c, false);
+                const auto amount = cut.on.next();
+                const auto steep = cut.steep.next();
+                const auto post = cut.postAmount.next();
+
+                chunkCutCoefficients[(size_t) c][(size_t) i] = cut.coefficients;
+                chunkCutSteep[(size_t) c][(size_t) i] = steep;
+                chunkCutPost[(size_t) c][(size_t) i] = amount * post;
+
+                const auto pre = amount * (1.0 - post);
+
+                for (int ch = 0; ch < 2; ++ch)
+                {
+                    const auto filtered = cut.pre[(size_t) ch].process (cut.coefficients, driven[(size_t) ch], steep, c == lowCutIndex);
+                    driven[(size_t) ch] += pre * (filtered - driven[(size_t) ch]);
+                }
+            }
+        }
+
+        for (int ch = 0; ch < 2; ++ch)
+        {
             auto& state = channelStates[(size_t) ch];
-            state.dryDelay[(size_t) writePosition] = in;
+            const auto x = inputs[(size_t) ch];
+            const auto d = driven[(size_t) ch];
 
-            const auto x = (double) in * trimGain;
-
-            auto mid = x;
+            auto mid = d;
 
             if (lowAmount != 0.0)
             {
-                auto cut = x;
+                auto cut = d;
                 for (int k = 0; k < numSections; ++k)
                     cut = state.lowCut[(size_t) k].tick (lowCoefficients[(size_t) k], cut).high;
 
-                mid = x + lowAmount * (cut - x);
+                mid = d + lowAmount * (cut - d);
             }
 
             if (highAmount != 0.0)
@@ -470,7 +705,7 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
                         continue;
 
                     auto& outer = outerStates[(size_t) band][(size_t) ch];
-                    auto y = x;
+                    auto y = d;
 
                     for (int k = 0; k < numSections; ++k)
                         y = band == lowBand ? outer.split[(size_t) k].tick (lowCoefficients[(size_t) k], y).low
@@ -515,10 +750,10 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
         for (int band = 0; band < 2; ++band)
             outerAmount[band] = outerOn[(size_t) band].next() * outerMix[(size_t) band].next();
 
+        std::array<double, 2> addedParts {};
+
         for (int ch = 0; ch < 2; ++ch)
         {
-            auto& state = channelStates[(size_t) ch];
-
             auto added = (double) midBuffer.getSample (ch, i);
 
             // Phase 4 Wave 2: each outer band's own difference, by its Mix.
@@ -526,6 +761,74 @@ void SatureDsp::processChunk (float* const* channels, int numChannels, int offse
                 for (int band = 0; band < 2; ++band)
                     if (outerRunning[(size_t) band])
                         added += outerAmount[band] * (double) outerBuffers[(size_t) band].getSample (ch, i);
+
+            addedParts[(size_t) ch] = added;
+        }
+
+        // Item 39: back from mid and side to left and right; and Channels' fade.
+        if (midSide)
+            addedParts = { addedParts[0] + addedParts[1], addedParts[0] - addedParts[1] };
+
+        if (const auto fadeAmount = channelsFade.next(); fadeAmount != 1.0)
+            for (auto& part : addedParts)
+                part *= fadeAmount;
+
+        // Item 37: Post filters the added part.
+        if (anyCut)
+        {
+            for (int c = 0; c < 2; ++c)
+            {
+                auto& cut = cuts[(size_t) c];
+
+                if (! cut.running)
+                    continue;
+
+                const auto post = chunkCutPost[(size_t) c][(size_t) i];
+
+                for (int ch = 0; ch < 2; ++ch)
+                {
+                    auto& part = addedParts[(size_t) ch];
+                    const auto filtered = cut.post[(size_t) ch].process (chunkCutCoefficients[(size_t) c][(size_t) i], part,
+                                                                        chunkCutSteep[(size_t) c][(size_t) i], c == lowCutIndex);
+                    part += post * (filtered - part);
+                }
+            }
+        }
+
+        // Item 38: Spread turns the harmonics (the added part minus its linear fit to the clean
+        // signal) by +/- Spread x 90 degrees on each channel; the fit stays centred.
+        if (spreadRunning)
+        {
+            const auto angle = spreadAmount.next() * 0.5 * std::numbers::pi;
+            const auto on = spreadOn.next();
+            const auto c = std::cos (angle), s = std::sin (angle);
+
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                auto& spreadState = spreadStates[(size_t) ch];
+                auto& part = addedParts[(size_t) ch];
+                const auto clean = (double) matchedBuffer.getSample (ch, i);
+
+                spreadState.addedTimesClean += spreadCoefficient * (part * clean - spreadState.addedTimesClean);
+                spreadState.cleanSquared += spreadCoefficient * (clean * clean - spreadState.cleanSquared);
+
+                const auto fit = spreadState.cleanSquared > 1.0e-12 ? spreadState.addedTimesClean / spreadState.cleanSquared : 0.0;
+                const auto harmonics = part - fit * clean;
+
+                const auto a = spreadState.aDelay;
+                spreadState.aDelay = spreadState.a.process (hilbertA, harmonics);
+                const auto b = spreadState.b.process (hilbertB, harmonics);
+
+                const auto turned = fit * clean + c * a + (ch == 0 ? s : -s) * b;
+                part += on * (turned - part);
+            }
+        }
+
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            auto& state = channelStates[(size_t) ch];
+            const auto added = addedParts[(size_t) ch];
+
             const auto blocked = added - state.dcIn + dcCoefficient * state.dcOut;
             state.dcIn = added;
             state.dcOut = blocked;

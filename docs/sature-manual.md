@@ -6,7 +6,7 @@ A saturator with four characters. It adds harmonics, the warmth or grit of drivi
 
 | Control | Range | Default | What it does |
 |---|---|---|---|
-| Type | Tape, Tube, Transistor, Clip | Tape | The curve. See below |
+| Type | Tape, Tube, Transistor, Clip, Diode, Fold | Tape | The curve. See below |
 | Drive | 0 to 36 dB | +6 dB | How hard the signal is pushed into the curve |
 | Character | even 100 % to odd 100 % | even 30 % | Left: more even harmonics (2nd, 4th…), warm and full. Right: more odd ones (3rd, 5th…), edgier |
 | Tone | −6 to +6 dB | 0 dB | Tilts the saturated sound around 1 kHz: +6 is 3 dB brighter at the top and 3 dB less at the bottom |
@@ -52,6 +52,36 @@ Low and High set the band Sature saturates; below Low and above High pass clean.
 - **Mix**: how much of that band's added harmonics you hear, 0 to 100 %.
 
 The outer bands use the same Type, Character, Tone and Tape HF loss as the main band, and Auto gain keeps each at its level. Their edges are the same steep 48 dB/oct filters, so no frequency is driven twice. An outer band exists only while its edge is set: with Low at Off, the low pair dims. While either is driven, the BAND card takes a light tint and names it. Each driven outer band costs about as much CPU again as the main band.
+
+## Diode and Fold (Phase 4)
+
+Two more Types, after Clip:
+
+- **Diode** passes one polarity and holds the other down to a tenth, like a rectifier: even and odd harmonics together, a rectified, buzzy colour. It distorts even at low Drive, since it bends right from zero.
+- **Fold** folds the wave back past its ceiling instead of flattening it. Past a little Drive its 3rd harmonic is louder than the note itself: a metallic, synth-like sound for effects more than mixing.
+
+Both alias no more than Clip at the same settings. Auto gain for these two is measured at 4x, so at Off and 2x Fold can be louder than the other Types at very high Drive.
+
+## Shape and Tone and stereo (Phase 4)
+
+The EDIT drawer has two pages, switched beside its title.
+
+**Shape** has the oversampling settings, Input trim, DC filter and the outer bands, as before, and **Offset** (-0.5 to +0.5, 0 by default) under Input trim. Offset shifts the signal before the curve and back after it, so even a symmetric curve adds even harmonics, the 2nd first: on Tape at Drive 12 dB, 0.25 brings the 2nd harmonic up to about -21 dB while the 3rd stays where it was. The DC it adds is taken off after the curve. Character's even half does something similar but changes the curve too; Offset leaves it.
+
+**Tone and stereo:**
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| Low cut, Freq | Off, 20 Hz to 20 kHz | Off | A high-pass on the saturation |
+| Low cut, Slope | 12, 24 dB/oct | 12 dB/oct | |
+| Low cut, Pre / Post | | Pre | Pre cuts what's driven: the lows below the cut still pass, clean, but no longer drive the curve. On a bass-heavy mix a Low cut at about 200 Hz Pre stops the bass from muddying everything above it with intermodulation. Post cuts only the added harmonics |
+| High cut, Freq | 20 Hz to 20 kHz, Off | Off | A low-pass on the saturation |
+| High cut, Slope | 12, 24 dB/oct | 12 dB/oct | |
+| High cut, Pre / Post | | Post | Post takes the fizz off the added harmonics without dulling the source; Pre keeps the highs from being driven |
+| Spread | 0 to 50 % | 0 % | Widens the added harmonics on each side while the note itself stays centred. At 50 % the harmonics are fully decorrelated between left and right, and in mono they lose at most 3 dB |
+| Channels | Stereo, Mid only, Side only | Stereo | Mid only saturates the centre (a bass, a vocal) and leaves wide parts clean; Side only does the reverse. Changing it fades the saturation out and back in |
+
+Every new setting's default is the old sound, exactly.
 
 ## Presets
 

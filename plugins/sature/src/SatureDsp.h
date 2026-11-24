@@ -22,6 +22,7 @@ class SatureDsp
 {
 public:
     enum Oversampling { off, x2, x4, x8 };
+    enum Channels { stereo, midOnly, sideOnly };   // Phase 4 Wave 2, item 39
 
     struct Targets
     {
@@ -48,6 +49,20 @@ public:
         // the mid band's Type, Character, Tape HF loss and Tone. Drive 0 runs nothing.
         double lowDriveDb = 0.0, highDriveDb = 0.0;
         double lowMix = 1.0, highMix = 1.0;
+
+        // Phase 4 Wave 2, items 35 to 39 (docs/sature.md). Every default is the old sound, bit
+        // for bit. Offset: a bias before the curve, taken off after it (item 35). The cuts: a
+        // low cut (high-pass) and a high cut (low-pass), 12 or 24 dB/oct, Pre (on what's driven)
+        // or Post (on the added part) (item 37). Spread: the added harmonics turned +/- Spread x
+        // 90 degrees on each channel, 0 to 0.5 (item 38). Channels: Stereo, or only the mid or
+        // the side driven (item 39).
+        double offset = 0.0;
+        bool lowCutOn = false, lowCut24 = false, lowCutPost = false;
+        double lowCutHz = 20.0;
+        bool highCutOn = false, highCut24 = false, highCutPost = true;
+        double highCutHz = 20000.0;
+        double spread = 0.0;
+        int channels = stereo;
     };
 
     SatureDsp();
@@ -105,6 +120,46 @@ private:
     };
 
     enum Outer { lowBand, highBand };
+
+    // Phase 4 Wave 2, item 37: one cut on one signal, its 12 dB/oct section and its 24 dB/oct
+    // pair run side by side so the slope can crossfade.
+    struct CutFilter
+    {
+        fancy::dsp::Svf one;
+        std::array<fancy::dsp::Svf, 2> two;
+
+        void reset() noexcept;
+        double process (const std::array<fancy::dsp::SvfCoefficients, 3>& c, double x, double steep, bool lowCut) noexcept;
+    };
+
+    enum Cut { lowCutIndex, highCutIndex };
+
+    struct CutState
+    {
+        std::array<CutFilter, 2> pre, post;   // per channel
+        std::array<fancy::dsp::SvfCoefficients, 3> coefficients;   // Q 0.7071; then 0.5412 and 1.3066
+        fancy::dsp::Smoother logHz, on, steep, postAmount;
+        bool running = false;
+    };
+
+    void updateCutCoefficients (int cut, bool force);
+
+    // Phase 4 Wave 2, item 38: Olli Niemitalo's 90-degree allpass pair, and the added part's best
+    // linear fit to the clean signal, which Spread leaves where it is.
+    struct HilbertChain
+    {
+        std::array<double, 4> x1 {}, x2 {}, y1 {}, y2 {};
+        double process (const std::array<double, 4>& a2, double x) noexcept;
+        void reset() noexcept { x1.fill (0.0); x2.fill (0.0); y1.fill (0.0); y2.fill (0.0); }
+    };
+
+    struct SpreadState
+    {
+        HilbertChain a, b;
+        double aDelay = 0.0;
+        double addedTimesClean = 0.0, cleanSquared = 0.0;
+        void reset() noexcept { a.reset(); b.reset(); aDelay = addedTimesClean = cleanSquared = 0.0; }
+    };
 
     void resetOuter (int band);
     void saturateOuterBaseRate (int band, int numSamples);
@@ -175,4 +230,20 @@ private:
 
     // Phase 4 Wave 2.
     std::array<fancy::dsp::Smoother, 2> outerDriveDb, outerMix, outerOn;
+
+    // Phase 4 Wave 2, items 35 to 39.
+    fancy::dsp::Smoother biasOffset;
+    std::array<CutState, 2> cuts;
+    std::array<std::array<std::array<fancy::dsp::SvfCoefficients, 3>, maxChunk>, 2> chunkCutCoefficients {};
+    std::array<std::array<double, maxChunk>, 2> chunkCutSteep {}, chunkCutPost {};
+    std::array<SpreadState, 2> spreadStates;
+    fancy::dsp::Smoother spreadAmount, spreadOn;
+    bool spreadRunning = false;
+    double spreadCoefficient = 0.0;
+
+    // Channels: a change fades the added part out, switches once it's silent and the old setting
+    // has left the oversampler, then fades back in.
+    int activeChannels = stereo;
+    fancy::dsp::Smoother channelsFade;
+    int channelsHold = 0;
 };

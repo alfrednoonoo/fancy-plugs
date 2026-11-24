@@ -10,7 +10,8 @@
 namespace fancy::dsp::saturation
 {
 
-enum Type { tape, tube, transistor, clip, numTypes };
+// Diode and Fold: Phase 4 Wave 2, item 36 (docs/sature.md), appended.
+enum Type { tape, tube, transistor, clip, diode, fold, numTypes };
 
 constexpr double maxBias = 0.5;          // the input shift at even 100 %
 constexpr double tubeNegativeLimit = 1.4; // Tube's negative half saturates later and softer
@@ -18,6 +19,7 @@ constexpr double transistorKnee = 0.5;    // linear to 0.5, knee to 1.5
 constexpr double clipKnee = 0.9;          // linear to 0.9, knee to 1.1
 constexpr double hardKnee = 0.97;         // what odd 100 % blends towards
 constexpr double adaaThreshold = 1.0e-6;
+constexpr double diodeReverse = 0.1;      // Diode's negative half: a tenth of the soft curve
 
 // Tape's high-frequency loss: off up to Drive 12 dB, a one-pole low-pass at 12 kHz fully in
 // by Drive 36 dB.
@@ -71,11 +73,40 @@ inline double kneeIntegral (double u, double k) noexcept
     return result;
 }
 
+// Diode (item 36): the soft curve on the positive half, a tenth of it on the negative, so it
+// passes one polarity and holds the other down: even and odd harmonics together.
+inline double diodeShape (double u) noexcept
+{
+    const auto y = soft (u, 1.0);
+    return u < 0.0 ? diodeReverse * y : y;
+}
+
+inline double diodeIntegral (double u) noexcept
+{
+    const auto y = softIntegral (u, 1.0);
+    return u < 0.0 ? diodeReverse * y : y;
+}
+
+// Fold (item 36): sin (pi u / 2), so past the ceiling the wave folds back down.
+inline double foldShape (double u) noexcept
+{
+    return std::sin (0.5 * std::numbers::pi * u);
+}
+
+// Its antiderivative, (2 / pi)(1 - cos (pi u / 2)), written as (4 / pi) sin^2 (pi u / 4) so it
+// doesn't cancel near zero.
+inline double foldIntegral (double u) noexcept
+{
+    const auto s = std::sin (0.25 * std::numbers::pi * u);
+    return 4.0 / std::numbers::pi * s * s;
+}
+
 // A blend of the basic curves: what one Type at one Character is, or a crossfade between two
 // Types. Blending curves blends their antiderivatives the same way, so ADAA stays exact.
 struct Curve
 {
     double soft = 1.0, transistor = 0.0, clip = 0.0, hard = 0.0; // weights, summing to 1
+    double diode = 0.0, fold = 0.0;                              // with Diode and Fold (item 36)
     double negativeLimit = 1.0;                                  // the soft curve's limit below zero
     double bias = 0.0;                                           // added to the input, compensated after
     double tape = 1.0;                                           // how much of Tape's high-frequency loss applies
@@ -88,6 +119,8 @@ struct Curve
         if (transistor != 0.0) y += transistor * knee (u, transistorKnee);
         if (clip != 0.0)       y += clip * knee (u, clipKnee);
         if (hard != 0.0)       y += hard * knee (u, hardKnee);
+        if (diode != 0.0)      y += diode * diodeShape (u);
+        if (fold != 0.0)       y += fold * foldShape (u);
 
         return y;
     }
@@ -100,6 +133,8 @@ struct Curve
         if (transistor != 0.0) y += transistor * kneeIntegral (u, transistorKnee);
         if (clip != 0.0)       y += clip * kneeIntegral (u, clipKnee);
         if (hard != 0.0)       y += hard * kneeIntegral (u, hardKnee);
+        if (diode != 0.0)      y += diode * diodeIntegral (u);
+        if (fold != 0.0)       y += fold * foldIntegral (u);
 
         return y;
     }
@@ -107,7 +142,7 @@ struct Curve
     bool sameShape (const Curve& other) const noexcept
     {
         return soft == other.soft && transistor == other.transistor && clip == other.clip && hard == other.hard
-            && negativeLimit == other.negativeLimit;
+            && diode == other.diode && fold == other.fold && negativeLimit == other.negativeLimit;
     }
 };
 
@@ -120,6 +155,8 @@ inline Curve makeCurve (int type, double character) noexcept
     c.soft = (type == tape || type == tube) ? 1.0 : 0.0;
     c.transistor = type == transistor ? 1.0 : 0.0;
     c.clip = type == clip ? 1.0 : 0.0;
+    c.diode = type == diode ? 1.0 : 0.0;
+    c.fold = type == fold ? 1.0 : 0.0;
     c.hard = 0.0;
     c.negativeLimit = type == tube ? tubeNegativeLimit : 1.0;
     c.tape = type == tape ? 1.0 : 0.0;
@@ -130,6 +167,8 @@ inline Curve makeCurve (int type, double character) noexcept
     c.soft *= 1.0 - odd;
     c.transistor *= 1.0 - odd;
     c.clip *= 1.0 - odd;
+    c.diode *= 1.0 - odd;
+    c.fold *= 1.0 - odd;
     c.hard = odd;
     c.negativeLimit += (1.0 - c.negativeLimit) * odd;
     c.bias = maxBias * even;
@@ -149,6 +188,8 @@ inline Curve blend (const Curve& from, const Curve& to, double t) noexcept
     c.transistor = mix (from.transistor, to.transistor);
     c.clip = mix (from.clip, to.clip);
     c.hard = mix (from.hard, to.hard);
+    c.diode = mix (from.diode, to.diode);
+    c.fold = mix (from.fold, to.fold);
     c.negativeLimit = mix (from.negativeLimit, to.negativeLimit);
     c.bias = mix (from.bias, to.bias);
     c.tape = mix (from.tape, to.tape);

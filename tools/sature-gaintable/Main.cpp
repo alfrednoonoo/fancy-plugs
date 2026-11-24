@@ -6,6 +6,12 @@
 // renders fixed-seed pink noise at -18 dBFS RMS through the curve and Tape's loss and stores the gain that brings its BS.1770 loudness back to the
 // input's. Tone gets its own small table, measured on the same noise.
 //
+// Diode and Fold (Phase 4 Wave 2, item 36) are measured at 4x instead, through a windowed-sinc
+// up- and down-sampler: at high Drive they fill the spectrum, and at 1x their aliases would count
+// towards the loudness (Fold at Drive 36 would read 5.9 LU louder than the plugin plays it at 4x;
+// docs/research/sature-w2b-build-check.py). The first four Types are measured as they always were,
+// so their values don't change.
+//
 // Usage: sature-gaintable <output header>
 
 #include <fancy/dsp/LoudnessMeter.h>
@@ -68,6 +74,49 @@ std::vector<float> pinkNoise()
     return out;
 }
 
+// A 4x windowed-sinc low-pass (Blackman, 96 taps, cut at 22 kHz), for Diode and Fold.
+constexpr int factor = 4, taps = 96;
+
+std::vector<double> lowPass()
+{
+    std::vector<double> h (taps);
+    const auto cutoff = 22000.0 / (rate * factor);
+    auto sum = 0.0;
+
+    for (int k = 0; k < taps; ++k)
+    {
+        const auto m = k - 0.5 * (taps - 1);
+        const auto x = 2.0 * 3.14159265358979323846 * cutoff * m;
+        const auto sinc = x == 0.0 ? 1.0 : std::sin (x) / x;
+        const auto phase = 2.0 * 3.14159265358979323846 * k / (taps - 1);
+        h[(size_t) k] = sinc * (0.42 - 0.5 * std::cos (phase) + 0.08 * std::cos (2.0 * phase));
+        sum += h[(size_t) k];
+    }
+
+    for (auto& v : h)
+        v /= sum;
+
+    return h;
+}
+
+std::vector<double> upsample (const std::vector<float>& x, const std::vector<double>& h)
+{
+    std::vector<double> y (x.size() * factor, 0.0);
+
+    for (size_t j = 0; j < y.size(); ++j)
+    {
+        auto sum = 0.0;
+
+        // Only every factor-th stuffed sample is non-zero.
+        for (int k = (int) (j % factor); k < taps && (int) j - k >= 0; k += factor)
+            sum += h[(size_t) k] * (double) x[(j - (size_t) k) / factor];
+
+        y[j] = factor * sum;
+    }
+
+    return y;
+}
+
 double loudness (const std::vector<float>& signal)
 {
     fancy::dsp::LoudnessMeter meter;
@@ -94,6 +143,9 @@ int main (int argc, char** argv)
 
     const auto noise = pinkNoise();
     const auto inputLufs = loudness (noise);
+    const auto h = lowPass();
+    const auto noise4 = upsample (noise, h);
+    std::vector<double> shaped4 (noise4.size());
     const auto tapeCoefficient = sat::TapeLoss::coefficientFor (rate);
     std::vector<float> shaped (noise.size());
 
@@ -121,12 +173,32 @@ int main (int argc, char** argv)
                 const auto dc = curve.shape (curve.bias);
                 sat::TapeLoss loss;
 
-                // The bare curve, without ADAA: at 48 kHz its two-sample average would take about
-                // 1 dB off pink noise's top end, which the plugin's subtraction never hears.
-                for (size_t i = 0; i < noise.size(); ++i)
+                if (type >= sat::diode)
                 {
-                    const auto y = curve.shape (driveGain * (double) noise[i] + curve.bias) - dc;
-                    shaped[i] = (float) loss.process (y, tapeCoefficient, tapeAmount);
+                    // At 4x, then filtered and decimated (neither has Tape's loss).
+                    for (size_t j = 0; j < noise4.size(); ++j)
+                        shaped4[j] = curve.shape (driveGain * noise4[j] + curve.bias) - dc;
+
+                    for (size_t i = 0; i < noise.size(); ++i)
+                    {
+                        auto sum = 0.0;
+                        const auto j = i * factor;
+
+                        for (int k = 0; k < taps && (int) j - k >= 0; ++k)
+                            sum += h[(size_t) k] * shaped4[j - (size_t) k];
+
+                        shaped[i] = (float) sum;
+                    }
+                }
+                else
+                {
+                    // The bare curve, without ADAA: at 48 kHz its two-sample average would take about
+                    // 1 dB off pink noise's top end, which the plugin's subtraction never hears.
+                    for (size_t i = 0; i < noise.size(); ++i)
+                    {
+                        const auto y = curve.shape (driveGain * (double) noise[i] + curve.bias) - dc;
+                        shaped[i] = (float) loss.process (y, tapeCoefficient, tapeAmount);
+                    }
                 }
 
                 text += number (inputLufs - loudness (shaped));

@@ -67,7 +67,7 @@ fancy::FancyProcessor::Layout createLayout()
         return std::make_unique<Bool> (juce::ParameterID { id, 1 }, name, defaultValue);
     };
 
-    layout.add (std::make_unique<Choice> (juce::ParameterID { "type", 1 }, "Type", juce::StringArray { "Tape", "Tube", "Transistor", "Clip" }, 0));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "type", 1 }, "Type", juce::StringArray { "Tape", "Tube", "Transistor", "Clip", "Diode", "Fold" }, 0));
     layout.add (dbParameter ("drive", "Drive", 0.0f, 36.0f, 6.0f));
 
     layout.add (fancy::floatParameter (
@@ -105,6 +105,34 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (fancy::percentParameter ("lowMix", "Low mix", 100.0f));
     layout.add (dbParameter ("highDrive", "High drive", 0.0f, 36.0f, 0.0f));
     layout.add (fancy::percentParameter ("highMix", "High mix", 100.0f));
+
+    // Phase 4 Wave 2, items 35 to 39 (docs/sature.md), appended. Every default is the old sound.
+    // (Item 36's Diode and Fold are appended to Type above: saved states store its index.)
+    layout.add (fancy::floatParameter (
+        "offset", "Offset", juce::NormalisableRange<float> (-0.5f, 0.5f, 0.01f), 0.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withStringFromValueFunction ([] (float value, int) { return fancy::formatFixed (value, 2); })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
+    layout.add (bandParameter ("lowCut", "Low cut", SatureProcessor::lowOffHz, SatureProcessor::highMaxHz,
+                               SatureProcessor::lowMinHz, SatureProcessor::highMaxHz, SatureProcessor::lowOffHz));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "lowCutSlope", 1 }, "Low cut slope", juce::StringArray { "12 dB/oct", "24 dB/oct" }, 0));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "lowCutPos", 1 }, "Low cut position", juce::StringArray { "Pre", "Post" }, 0));
+    layout.add (bandParameter ("highCut", "High cut", SatureProcessor::lowMinHz, SatureProcessor::highOffHz,
+                               SatureProcessor::lowMinHz, SatureProcessor::highMaxHz, SatureProcessor::highOffHz));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "highCutSlope", 1 }, "High cut slope", juce::StringArray { "12 dB/oct", "24 dB/oct" }, 0));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "highCutPos", 1 }, "High cut position", juce::StringArray { "Pre", "Post" }, 1));
+
+    layout.add (fancy::floatParameter (
+        "spread", "Spread", juce::NormalisableRange<float> (0.0f, 50.0f, 1.0f), 0.0f,
+        juce::AudioParameterFloatAttributes {}
+            .withLabel ("%")
+            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
+            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
+    // A change fades the added part out and back in, so it's a deliberate setting.
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "channels", 1 }, "Channels", juce::StringArray { "Stereo", "Mid only", "Side only" }, 0,
+                                          ChoiceAttributes {}.withAutomatable (false)));
 
     return layout;
 }
@@ -216,6 +244,22 @@ SatureDsp::Targets SatureProcessor::readTargets() const
     targets.lowMix = (double) read ("lowMix") * 0.01;
     targets.highDriveDb = (double) read ("highDrive");
     targets.highMix = (double) read ("highMix") * 0.01;
+
+    // Phase 4 Wave 2, items 35 to 39.
+    const auto lowCut = read ("lowCut");
+    const auto highCut = read ("highCut");
+
+    targets.offset = (double) read ("offset");
+    targets.lowCutOn = lowCut >= lowMinHz;
+    targets.lowCutHz = (double) juce::jmax (lowCut, lowMinHz);
+    targets.lowCut24 = isOn ("lowCutSlope");
+    targets.lowCutPost = isOn ("lowCutPos");
+    targets.highCutOn = highCut <= highMaxHz;
+    targets.highCutHz = (double) juce::jmin (highCut, highMaxHz);
+    targets.highCut24 = isOn ("highCutSlope");
+    targets.highCutPost = isOn ("highCutPos");
+    targets.spread = (double) read ("spread") * 0.01;
+    targets.channels = juce::jlimit (0, 2, juce::roundToInt (read ("channels")));
 
     return targets;
 }

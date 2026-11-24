@@ -68,7 +68,7 @@ if("FANCY_HAS_DS=1" IN_LIST fancy_screen_defs OR "FANCY_HAS_DSMINI=1" IN_LIST fa
 endif()
 
 if("FANCY_HAS_SATURE=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE SatureTests.cpp SatureW2Tests.cpp LegacySatureDsp.cpp)
+    target_sources(fancy-tests PRIVATE SatureTests.cpp SatureW2Tests.cpp SatureW2bTests.cpp LegacySatureDsp.cpp LegacySatureW2Dsp.cpp)
 endif()
 
 if("FANCY_HAS_TS=1" IN_LIST fancy_screen_defs)

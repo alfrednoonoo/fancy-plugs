@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fancy/ui/Controls.h>
 #include <fancy/ui/Style.h>
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -12,27 +13,14 @@
 
 // Detector | Character | Upward | Options | History. Styled as ParamSegments, but a view switch,
 // not a parameter. Other names make other view switches, such as the history's zoom.
-class DrawerTabs final : public juce::Component
+// Its drawing and clicks are fancy::ui::ViewTabs (moved to fancy-core unchanged).
+class DrawerTabs final : public fancy::ui::ViewTabs
 {
 public:
     enum Tab { detector, character, upward, options, history, numTabs };
 
     DrawerTabs();
     explicit DrawerTabs (juce::StringArray names);
-
-    void setSelected (int tab);
-    int getSelected() const noexcept { return selected; }
-
-    void paint (juce::Graphics&) override;
-    void mouseDown (const juce::MouseEvent&) override;
-
-    std::function<void (int)> onChange;
-
-private:
-    juce::Rectangle<float> tabBounds (int index) const;
-
-    juce::StringArray names;
-    int selected = detector;
 };
 
 // The history page's read-out (docs/comp.md, Phase 4 Wave 1, section 5): the largest reduction

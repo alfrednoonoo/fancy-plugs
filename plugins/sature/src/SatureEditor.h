@@ -20,6 +20,10 @@ public:
     // For rendered screenshots: the mockup's values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
 
+    // Phase 4 Wave 2: the drawer's pages, Shape and Tone and stereo (mockup 61).
+    enum DrawerPage { shapePage, toneStereoPage };
+    void showDrawerPage (int page);
+
     // What the harmonics card shows: H1 to H10 relative to H1, in dB, and THD from H2 to H10.
     struct Harmonics
     {
@@ -116,6 +120,18 @@ private:
     // Phase 4 Wave 2 (reference/phase4/45__sature_w2_mockup.png): the OUTER BANDS group.
     juce::Label outerCaption, belowLowLabel, aboveHighLabel, outerNote;
     fancy::ui::Knob lowDriveKnob, lowMixKnob, highDriveKnob, highMixKnob;
+
+    // Phase 4 Wave 2, items 35 to 39 (reference/phase4/61__sature_w2b_mockup.png): the page switch,
+    // Offset on Shape, and the cuts, Spread and Channels on Tone and stereo.
+    fancy::ui::ViewTabs drawerTabs { juce::StringArray { "Shape", "Tone and stereo" } };
+    fancy::ui::Knob offsetKnob;
+    juce::Label offsetNote;
+    juce::Label lowCutTitle, highCutTitle, lowSlopeLabel, highSlopeLabel, cutNote, stereoTitle, spreadNote, channelsLabel, channelsNote;
+    fancy::ui::Knob lowCutKnob, highCutKnob, spreadKnob;
+    fancy::ui::ParamDropdown lowSlopeDropdown, highSlopeDropdown, channelsDropdown;
+    fancy::ui::ParamSegments lowPosSegments, highPosSegments;
+    std::vector<juce::Component*> shapeItems, toneStereoItems;
+    int drawerPage = shapePage;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SatureEditor)
 };
