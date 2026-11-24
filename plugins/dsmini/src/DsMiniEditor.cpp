@@ -330,6 +330,9 @@ std::vector<ShellEditor::PopupOpener> DsMiniEditor::getPopupOpeners()
     // leaves the profile on Hiss.
     openers.push_back ({ "hiss", [this]
     {
+        // Clears what the shots before it leave open: the drawer and Amount's typed value.
+        if (auto* editor = amountKnob.getValueEditor()) editor->setVisible (false);
+        drawer.setVisible (false);
         auto& profile = parameter ("profile");
         profile.setValueNotifyingHost (profile.convertTo0to1 ((float) DsMiniProcessor::hissProfile));
         shownProfile = DsMiniProcessor::hissProfile;

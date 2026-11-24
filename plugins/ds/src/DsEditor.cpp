@@ -810,9 +810,17 @@ std::vector<ShellEditor::PopupOpener> DsEditor::getPopupOpeners()
 
     // Phase 4 Wave 2, mockup 60: the drawer's Reduce menu (panel 2), then Hiss mode (panel 1),
     // last, as it leaves Detection on Hiss.
-    openers.push_back ({ "dropdown-reduce", [this] { drawer.setVisible (true); reduceDropdown.click(); } });
+    // Each first clears what the shots before it leave open: the drawer and Freq's typed value.
+    openers.push_back ({ "dropdown-reduce", [this]
+    {
+        if (auto* editor = freqKnob.getValueEditor()) editor->setVisible (false);
+        drawer.setVisible (true);
+        reduceDropdown.click();
+    } });
     openers.push_back ({ "hiss", [this]
     {
+        if (auto* editor = freqKnob.getValueEditor()) editor->setVisible (false);
+        drawer.setVisible (false);
         auto& shape = parameter ("shape");
         shape.setValueNotifyingHost (shape.convertTo0to1 (2.0f));
         updateLocks();
