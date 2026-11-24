@@ -572,7 +572,8 @@ TEST_CASE ("FIR W2b: switching Mid/Side crossfades to a new engine at the same l
     // Flat curves both ways: the output is the input, delayed, through the switch.
     auto worst = 0.0;
 
-    for (int i = latency; i < 48000; ++i)
+    // After the first engine's own start (a frame for its overlap-add to fill), through the switch.
+    for (int i = latency + size; i < 48000; ++i)
         worst = std::max (worst, std::abs ((double) outLeft[(size_t) i] - (double) left[(size_t) (i - latency)]));
 
     CHECK (worst < 1.0e-4);

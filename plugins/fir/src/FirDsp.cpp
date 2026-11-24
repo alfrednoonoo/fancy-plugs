@@ -207,7 +207,11 @@ void FirDsp::updateEngines() noexcept
     requested.store (-1, std::memory_order_release);
 
     incoming = arrived;
-    warmupLeft = incoming->getLatency();
+
+    // Its output is complete only once a whole frame has overlapped the first input it heard:
+    // the latency, then one more frame (Phase 4 Wave 2; fading in after the latency alone
+    // faded in the overlap-add's ramp, a short dip in level).
+    warmupLeft = incoming->getLatency() + incoming->getConfig().fftSize;
     fading = false;
     fade.snapTo (0.0);
 }
