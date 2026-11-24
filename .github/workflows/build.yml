@@ -80,8 +80,10 @@ jobs:
         id: build
         run: cmake --build build -- -k 0
 
-      # Run directly with each test case's name and time printed as it finishes, so a crash that
-      # names no test (heap corruption, 0xc0000374, runs 45175938464 and 45301827449) shows where.
+      # Run directly. tests/TestStartListener.cpp prints "START: <name>" to stderr before each test
+      # case, so a crash that names no test (heap corruption, 0xc0000374, runs 45175938464,
+      # 45301827449 and 45307395962) shows which one; the last START line is the culprit.
+      # Catch2 v3 runs tests in random order: the "Randomness seeded to" line repeats an order.
       - name: Run DSP tests
         shell: pwsh
         run: |
