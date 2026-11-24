@@ -562,8 +562,11 @@ TEST_CASE ("FIR W2b: switching Mid/Side crossfades to a new engine at the same l
             dsp.setTargets (targets);
         }
 
+        // 48000 isn't a multiple of 256: the last block is 128 samples. A full 256 there wrote past
+        // both vectors, the heap corruption (0xc0000374) of runs 45301827449 to 45368115988.
+        const auto count = std::min (256, 48000 - position);
         float* channels[] { outLeft.data() + position, outRight.data() + position };
-        dsp.process (channels, 2, nullptr, 0, 256);
+        dsp.process (channels, 2, nullptr, 0, count);
     }
 
     CHECK (dsp.getLatencySamples() == latency);
