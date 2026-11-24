@@ -8,18 +8,18 @@ A spectral processor. It splits the sound into thousands of narrow frequency ban
 |---|---|---|
 | EQ | Gain | Shapes the sound with any curve you draw |
 | Gate | Threshold | Lets through each frequency that's above its threshold, and turns the rest down to Floor |
-| Compressor | Threshold | Compresses each frequency above its threshold by Ratio |
+| Compressor | Threshold, and a ratio curve | Compresses each frequency above its threshold, by the ratio set for that frequency: a dynamic EQ |
 | Subtract | | Removes a learned noise, such as hiss, hum or air conditioning |
 | Convolve L/R | | Convolves the left input with the right one |
 | Resonance | | New in 1.6.0: finds narrow peaks, such as a ringing snare or a boxy vocal, and turns them down only while they're there |
 
-EQ, Gate and Compressor each keep their own curve, so changing mode doesn't lose them.
+EQ, Gate and Compressor each keep their own curve, so changing mode doesn't lose them. New in 1.7.1: Compressor also has a ratio curve, and with **Mid/Side** on, every mode works on mid and side, each with its own curves.
 
 ## The graph
 
 The grey fill is the input's spectrum, and the orange line is the output's, read the same way as Fancy EQ's analyzer. A -12 dBFS sine reads -12 dB.
 
-The coloured line is the mode's curve, or the noise profile in Subtract. In Compressor, yellow below the 0 dB line shows the gain reduction at each frequency.
+The coloured line is the mode's curve, or the noise profile in Subtract. In Compressor, yellow below the 0 dB line shows the gain reduction at each frequency, and the green line is the ratio curve (see Ratio curve). The legend at the top right names each line.
 
 Double-click the top or bottom number on the left to type the graph's range.
 
@@ -57,6 +57,21 @@ Attack and Release are time constants, the time to reach about 63 % of the chang
 **Learn** (top row, Gate and Compressor modes): play the track and click it. Over 3 s it measures each third of an octave and places the threshold curve: the Gate's just over the steady noise (6 dB above the quietest fifth of what it heard), the Compressor's at the loud parts (where the level is 80 % of the time). The points stay editable, and Undo takes the whole curve back. Click again to stop.
 
 Each frequency is judged by the loudest level within two of its neighbours. That way a tone opens or ducks as a whole, rather than losing its edges.
+
+## Ratio curve
+
+New in 1.7.1. In Compressor mode, the ratio can be different at each frequency, so Compressor mode becomes a dynamic EQ: the threshold curve says where to act, the ratio curve says how hard, and Attack and Release say how fast. A cut appears only at the frequencies that go over their threshold, and only while they do.
+
+The **Threshold | Ratio** switch at the graph's top left picks which curve the points edit. The other curve stays drawn, dimmed and dashed.
+
+- **Threshold** (teal): the threshold curve, as before.
+- **Ratio** (green): the ratio curve, on its own scale at the right of the graph, from 0.5:1 at the bottom to 20:1 at the top, with 1:1, 2:1, 4:1 and 20:1 marked. At 1:1 a frequency isn't compressed at all; below 1:1 it's raised above the threshold (upward expansion), as the Ratio knob does. Points are edited as on the threshold curve (see Drawing the curve). The point you click or drag shows its frequency and ratio, such as "3.00 kHz · 4.0:1". Double-click a point to put it back to the Ratio knob's value, and right-click it to type a ratio, such as `4`, `4:1` or `1:2`.
+
+The **Ratio** knob moves the whole ratio curve: a point at 4:1 with the knob at 4:1 goes to 8:1 when the knob goes to 8:1, and one at 1:1 goes to 2:1. With no points the curve is flat at the knob's value, which is how Compressor mode always worked; projects from before 1.7.1 open that way and sound exactly as they did. **Reset ratio curve** (left card) makes it flat again, at the knob's value.
+
+*Compressor mode with the threshold curve chosen. The threshold dips at 3 kHz, where the mix is harsh; the dimmed green ratio curve is 4:1 from 2 to 5 kHz and 1:1 elsewhere. Yellow shows the reduction at 3 kHz only. The left card holds Reset curve (the threshold) and Reset ratio curve; the note beside the knobs says that Ratio moves the whole ratio curve.*
+
+**Example:** the factory preset **Dynamic de-harsh** (Dynamics) is that: 4:1 from 2 to 5 kHz and 1:1 elsewhere, Attack 10 ms, Release 120 ms. A mix whose upper mids get 15 dB louder in the chorus comes down about 9 dB there in the chorus only, while the bass, which also gets louder, isn't touched. With one ratio of 4:1 everywhere, the bass would come down too. Click **Learn** in the top row with the chorus playing to fit the threshold to your mix.
 
 ## Subtract
 
@@ -100,7 +115,21 @@ Resonance listens for narrow peaks that stand above the spectrum around them, su
 - **Tilt:** leans Depth towards the highs (positive) or the lows (negative), -100 to +100 %. At +100 % the depth doubles at 16 kHz and halves at 62 Hz; at 0 % it's the same everywhere.
 - **Range (Low and High):** Resonance only works between these two, fading out over half an octave outside them. The graph dims what's outside. Low starts at 100 Hz: below that, a 4096-point FFT can't tell a resonance from the slope of the spectrum. For low resonances, raise the FFT size and lower Low.
 
-Both channels get the same cut, so the stereo image never moves. The graph shows the cut in green, hanging from the 0 dB line. **Listen to removed resonances** plays only what's taken out.
+Both channels get the same cut, so the stereo image never moves. (With Mid/Side on, the mid and the side each get their own cut instead, from their own peaks.) The graph shows the cut in green, hanging from the 0 dB line. **Listen to removed resonances** plays only what's taken out.
+
+## Mid/Side
+
+New in 1.7.1. With **Mid/Side** ticked in EDIT, every mode works on mid (what's the same in both channels, the centre) and side (the difference, the width) instead of left and right, and turns the result back into left and right at the output. Convolve L/R stays left and right, and a mono track is unchanged.
+
+A **Mid | Side** switch appears right after the Mode switch. It picks which one the graph shows and the points edit: the mid and the side each have their own curves in every mode (EQ, threshold, ratio and Resonance's depth curve), and the graph's spectra, reduction and **Learn** in the top row follow the side you're on. The two start as you'd expect: the mid keeps the curves you had in left and right, and the side starts from each mode's default (flat in EQ, -60 dB for the Gate's threshold, -30 dB for the Compressor's). The switch is a view: it isn't saved, and it changes nothing you hear.
+
+In Subtract, one **Learn** captures two noise profiles at once, the mid's and the side's, and Adaptive tracks each on its own. A profile learned before Mid/Side was on is used for the mid only: learn again after turning it on. In Resonance, the mid and the side are each searched for peaks of their own.
+
+Turning Mid/Side on or off changes how the plugin works inside, so it crossfades over the latency (as changing FFT size does) instead of switching at once. The latency doesn't change.
+
+*Mid/Side on, with Side chosen in the switch after the Mode switch, and Ratio chosen over the graph: the side's ratio curve, on its own scale at the right (1:1 to 20:1), with the selected point showing "3.00 kHz · 4.0:1". The side's threshold curve is dimmed and dashed.*
+
+**Example:** a voice in the centre with hiss mostly in the side, as from a wide room mic. In Subtract with Mid/Side on, learn on a section with only the hiss: the side's profile holds most of the hiss and the mid's much less, so the side is cleaned hard while the voice in the centre is judged against its own, much quieter noise and is barely touched. In left and right, both channels would carry the whole hiss, and the voice would pick up faint artefacts.
 
 ## Sidechain detector
 
@@ -109,6 +138,7 @@ In Gate, Compressor and Subtract, the plugin's channels 3 and 4 are used to make
 
 - **Gate and Compressor:** compare the sidechain with the thresholds at each frequency. For example, a vocal on the sidechain can carve space for itself in a pad, only at the vocal's frequencies.
 - **Subtract:** treats the sidechain as the noise, without a learned profile.
+- **With Mid/Side on,** the sidechain is turned into mid and side too, so the mid is compared with the sidechain's mid and the side with its side.
 
 ## Listen
 
@@ -142,12 +172,12 @@ The Gain fader sets the output level, from -24 to +24 dB.
 To type a value, click it, or Ctrl-click anywhere on a knob or fader. Enter or clicking away applies it, and Esc cancels. Units are optional. Text with no number in it changes nothing, and a number past the limits stops at the limit.
 
 - Ratio accepts `3`, `3:1`, `0.5:1` and `1:2`. Here `a:b` means `a / b`, as in Fancy MultiComp.
-- Curve points: right-click one to type its frequency and gain.
+- Curve points: right-click one to type its frequency and gain (a ratio on the ratio curve, a percentage on Resonance's depth curve).
 - The graph's range: double-click the top or bottom number.
 
 ## EDIT
 
-The `EDIT` link at the right of the footer holds Learn length and Output.
+The `EDIT` link at the right of the footer holds Learn length, Output and, new in 1.7.1, **Mid/Side** (off by default; see Mid/Side). The window is 70 px wider than before 1.7.1, to fit the Mid | Side switch; the graph takes the extra width.
 
 ## Using it in other hosts
 

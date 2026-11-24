@@ -11,16 +11,18 @@ namespace
 constexpr fancy::ui::Knob::Style tiltKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
 
 // design/phase2-mockup-src/fir.html at 100 %. The shared header is 16 px taller than the
-// mockup's, so the window is too.
-constexpr int baseWidth = 760;
+// mockup's, so the window is too. Phase 4 Wave 2 (mockup 59): 70 px wider for the Mid | Side
+// switch; the graph and the controls card take the width, and what's right of them moves over.
+constexpr int grow = 70;
+constexpr int baseWidth = 760 + grow;
 constexpr int bodyHeight = 392;
 constexpr int baseHeight = ShellEditor::headerHeight + bodyHeight;
-constexpr int rightColumnX = 660;
+constexpr int rightColumnX = 660 + grow;
 
-constexpr int graphX = 13, graphY = 43, graphWidth = 610, graphHeight = 196;
+constexpr int graphX = 13, graphY = 43, graphWidth = 610 + grow, graphHeight = 196;
 constexpr int cardY = 248, cardHeight = 111;
 constexpr int leftCardX = 13, leftCardWidth = 178;
-constexpr int controlsCardX = 199, controlsCardWidth = 450;
+constexpr int controlsCardX = 199, controlsCardWidth = 450 + grow;
 constexpr int footerY = 368;
 
 constexpr float labelHeight = 12.0f;
@@ -289,7 +291,8 @@ FirEditor::FirEditor (FirProcessor& processor)
       outMeter (outGeometry),
       gainFader (parameter ("gain"), colours::uiTeal),
       learnLengthKnob (parameter ("learnLength"), "Learn length", modeColour (subtract), Knob::smallStyle),
-      drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle)
+      drawerOutputKnob (parameter ("output"), "Output", colours::uiTeal, Knob::smallStyle),
+      midSideCheckbox (parameter ("midSide"), "Mid/Side")
 {
     // The title strip keeps one colour while the accent follows the selection.
     setTitleColour (modeColour (eq));
@@ -315,19 +318,31 @@ FirEditor::FirEditor (FirProcessor& processor)
     modeSwitch.setBounds (50, 10, 400, 25);
     modeSwitch.setTextHeight (labelHeight);
     modeSwitch.setFitToText (true);
-    editLabel.setBounds (484, 10, 40, 25);
+    editLabel.setBounds (484 + grow, 10, 40, 25);
+
+    // Phase 4 Wave 2: Mid | Side, right after the Mode switch, while Mid/Side is on.
+    midSideSwitch.setBounds (456, 10, 66, 25);
+    midSideSwitch.setColours (colours::uiTeal, colours::uiTeal);
+    midSideSwitch.setTextHeight (labelHeight);
+    midSideSwitch.onChange = [this] (int index)
+    {
+        firProcessor().setViewSide (index == 1);
+        graph.update();
+    };
+    midSideSwitch.setTooltip ("Which domain's curve you see and edit. Each has its own.");
+    getBody().addChildComponent (midSideSwitch);
 
     // Phase 4 Wave 1: Learn between the Mode switch and Edit, in Gate and Compressor modes.
-    curveLearnButton.setBounds (455, 10, 48, 25);
+    curveLearnButton.setBounds (455 + grow, 10, 48, 25);
     curveLearnButton.onClick = [this]
     {
         if (graph.isLearningCurve())
             graph.cancelLearn();
         else
-            graph.startLearn (firProcessor().getMode());
+            graph.startLearn (graph.thresholdCurve());
     };
     getBody().addChildComponent (curveLearnButton);
-    editDropdown.setBounds (530, 10, 119, 25);
+    editDropdown.setBounds (530 + grow, 10, 119, 25);
     editDropdown.setTextHeight (labelHeight);
 
     graph.setBounds (graphX, graphY, graphWidth, graphHeight);
@@ -346,10 +361,18 @@ FirEditor::FirEditor (FirProcessor& processor)
     convolveText.setBounds (leftCardX + 12, cardY + 10, leftCardWidth - 24, cardHeight - 20);
     convolveText.setMinimumHorizontalScale (1.0f);
 
-    resetButton.onClick = [this] { firProcessor().resetCurve (juce::jmin (firProcessor().getMode(), numCurves - 1)); };
-    flatButton.onClick = [this] { firProcessor().resetCurve (eq); };
-    tiltButton.onClick = [this] { firProcessor().setPoints (eq, { { 20.0, -3.0 }, { 20000.0, 3.0 } }); };
-    demudButton.onClick = [this] { firProcessor().setPoints (eq, { { 100.0, 0.0 }, { 250.0, -4.0 }, { 600.0, 0.0 } }); };
+    resetButton.onClick = [this] { firProcessor().resetCurve (graph.thresholdCurve()); };
+
+    // Phase 4 Wave 2: the ratio curve back to flat at the Ratio knob's value.
+    resetRatioButton.setBounds (leftCardX + 12, cardY + 64, leftCardWidth - 24, 24);
+    resetRatioButton.onClick = [this] { firProcessor().resetCurve (firProcessor().shownCurve (fir::ratioCurve)); };
+
+    styleLabel (ratioHint, "Ratio moves the whole ratio curve.", colours::textSecondary, juce::Justification::topLeft, 11.0f);
+    ratioHint.setBounds (410, cardY + 22, 124, 30);
+    ratioHint.setMinimumHorizontalScale (1.0f);
+    flatButton.onClick = [this] { firProcessor().resetCurve (firProcessor().shownCurve (eq)); };
+    tiltButton.onClick = [this] { firProcessor().setPoints (firProcessor().shownCurve (eq), { { 20.0, -3.0 }, { 20000.0, 3.0 } }); };
+    demudButton.onClick = [this] { firProcessor().setPoints (firProcessor().shownCurve (eq), { { 100.0, 0.0 }, { 250.0, -4.0 }, { 600.0, 0.0 } }); };
 
     constexpr int knobWidth = 70, knobHeight = 99, knobTop = cardY + 8, firstCentre = 239, spacing = 64;
 
@@ -379,7 +402,7 @@ FirEditor::FirEditor (FirProcessor& processor)
 
     // Phase 4 Wave 2 (reference/phase4/42__fir_w2_mockup.png): back to a flat depth curve.
     resetDepthButton.setBounds (leftCardX + 60, cardY + 5, 88, 20);
-    resetDepthButton.onClick = [this] { firProcessor().resetCurve (fir::depthCurve); };
+    resetDepthButton.onClick = [this] { firProcessor().resetCurve (firProcessor().shownCurve (fir::depthCurve)); };
     styleLabel (rangeLowLabel, "Low", colours::textPrimary, juce::Justification::centred);
     styleLabel (rangeHighLabel, "High", colours::textPrimary, juce::Justification::centred);
 
@@ -398,13 +421,13 @@ FirEditor::FirEditor (FirProcessor& processor)
     eqHint.setBounds (controlsCardX + 14, cardY + 40, 250, 20);
 
     styleLabel (fftLabel, "FFT size", colours::textSecondary, juce::Justification::centredLeft);
-    fftLabel.setBounds (471, cardY + 12, 100, 16);
-    fftDropdown.setBounds (471, cardY + 30, 100, 24);
+    fftLabel.setBounds (471 + grow, cardY + 12, 100, 16);
+    fftDropdown.setBounds (471 + grow, cardY + 30, 100, 24);
     fftDropdown.setTextHeight (labelHeight);
-    reduceCheckbox.setBounds (471, cardY + 64, 160, 20);
+    reduceCheckbox.setBounds (471 + grow, cardY + 64, 160, 20);
 
     // Phase 4 Wave 1: Tilt beside FFT size.
-    resTiltKnob.setBounds (584, cardY, 60, 66);
+    resTiltKnob.setBounds (584 + grow, cardY, 60, 66);
     resTiltKnob.setTooltip ("Leans Depth towards the highs (positive) or the lows (negative): at +100 %, twice the depth at 16 kHz "
                             "and half at 62 Hz.");
     reduceCheckbox.setLabelHeight (labelHeight);
@@ -415,7 +438,7 @@ FirEditor::FirEditor (FirProcessor& processor)
     listenNoiseCheckbox.setBounds (365, footerY, 180, 20);
     listenReducedCheckbox.setBounds (365, footerY, 200, 20);
     listenResonanceCheckbox.setBounds (365, footerY, 210, 20);
-    editLink.setBounds (586, footerY - 2, 64, 24);
+    editLink.setBounds (586 + grow, footerY - 2, 64, 24);
 
     for (auto* checkbox : { &analysisCheckbox, &lowLatencyCheckbox, &sidechainCheckbox })
         checkbox->setLabelHeight (labelHeight);
@@ -429,10 +452,10 @@ FirEditor::FirEditor (FirProcessor& processor)
     lowLatencyCheckbox.setTooltip ("Halves the latency, at the same frequency resolution, with a little more smearing.");
     ratioKnob.setTooltip ("Below 1:1 the level above the threshold is raised: upward expansion.");
 
-    outMeter.setBounds (668, 10, 46, 350);
+    outMeter.setBounds (668 + grow, 10, 46, 350);
     styleLabel (gainLabel, "Gain", colours::textSecondary, juce::Justification::centred, 14.0f);
-    gainLabel.setBounds (709, 10, 33, 17);
-    gainFader.setBounds (709, 26, 33, 331);
+    gainLabel.setBounds (709 + grow, 10, 33, 17);
+    gainFader.setBounds (709 + grow, 26, 33, 331);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &modeLabel, &modeSwitch, &editLabel, &editDropdown, &graph,
@@ -446,7 +469,8 @@ FirEditor::FirEditor (FirProcessor& processor)
              &reductionKnob, &offsetKnob, &smoothingKnob, &subReleaseKnob, &eqHint,
              &rangeCaption, &rangeLowLabel, &rangeHighLabel, &resLowKnob, &resHighKnob,
              &resDepthKnob, &resSharpnessKnob, &resAttackKnob, &resReleaseKnob, &resTiltKnob, &resetDepthButton,
-             &sidechainCheckbox, &listenNoiseCheckbox, &listenReducedCheckbox, &listenResonanceCheckbox })
+             &sidechainCheckbox, &listenNoiseCheckbox, &listenReducedCheckbox, &listenResonanceCheckbox,
+             &resetRatioButton, &ratioHint })
         body.addChildComponent (item);
 
     drawer.setBounds (0, cardY - 8, rightColumnX, bodyHeight - cardY + 8);
@@ -454,6 +478,18 @@ FirEditor::FirEditor (FirProcessor& processor)
     drawerOutputKnob.setBounds (150, 50, 90, 99);
     drawer.addAndMakeVisible (learnLengthKnob);
     drawer.addAndMakeVisible (drawerOutputKnob);
+
+    // Phase 4 Wave 2 (item 28, mockup 59): Mid/Side beside Learn length and Output.
+    midSideCheckbox.setBounds (270, 62, 120, 22);
+    midSideCheckbox.setTooltip ("Works on mid and side instead of left and right. Builds a new engine, so the sound crossfades.");
+    drawer.addAndMakeVisible (midSideCheckbox);
+
+    styleLabel (midSideText, "Every mode works on mid and side instead of left and right, each with its own curve, Learn and gains. "
+                             "The Mid | Side switch beside the Mode row picks which one you edit. Convolve L/R stays left and right.",
+                colours::textSecondary, juce::Justification::topLeft, 11.5f);
+    midSideText.setBounds (296, 88, 400, 48);
+    midSideText.setMinimumHorizontalScale (1.0f);
+    drawer.addAndMakeVisible (midSideText);
 
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
@@ -483,6 +519,8 @@ void FirEditor::updateMode()
 
     learnCard.setVisible (mode == subtract);
     curveCaption.setVisible (curveMode);
+    resetRatioButton.setVisible (mode == compressor);
+    ratioHint.setVisible (mode == compressor);
     resetButton.setVisible (curveMode);
     flatButton.setVisible (mode == eq);
     tiltButton.setVisible (mode == eq);
@@ -521,7 +559,7 @@ void FirEditor::updateMode()
     const auto learns = mode == gate || mode == compressor;
     graph.cancelLearn();
     curveLearnButton.setVisible (learns);
-    editLabel.setBounds (learns ? 504 : 484, 10, learns ? 26 : 40, 25);
+    editLabel.setBounds ((learns ? 504 : 484) + grow, 10, learns ? 26 : 40, 25);
 }
 
 void FirEditor::onTick (float seconds)
@@ -529,6 +567,11 @@ void FirEditor::onTick (float seconds)
     auto& processor = firProcessor();
 
     updateMode();
+
+    // Phase 4 Wave 2: Mid | Side while Mid/Side is on (never in Convolve L/R).
+    midSideSwitch.setVisible (processor.isMidSide());
+    midSideSwitch.setSelected (processor.getShared().viewSide.load() ? 1 : 0);
+
     graph.update();
     learnCard.update();
 
@@ -554,6 +597,40 @@ void FirEditor::showPreview (Preview preview)
     stopUpdates();
 
     setValue (parameter ("fft"), 4.0f);
+
+    // Phase 4 Wave 2 (mockup 59): Mid/Side in the drawer's panel and the side's ratio curve; off
+    // everywhere else, so the other screenshots stay as they were.
+    const auto sidePreview = preview == Preview::compressorRatioSide;
+    firProcessor().setListening (false);
+    setValue (parameter ("midSide"), preview == Preview::drawer || sidePreview ? 1.0f : 0.0f);
+    firProcessor().setViewSide (sidePreview);
+    graph.setEditsRatio (sidePreview);
+    midSideSwitch.setVisible (firProcessor().isMidSide());
+    midSideSwitch.setSelected (sidePreview ? 1 : 0);
+
+    if (preview == Preview::compressorThreshold || sidePreview)
+    {
+        // The mockup's harsh band: the threshold dips at 3 kHz, and the ratio is 4:1 from 2 to
+        // 5 kHz and 1:1 elsewhere, as the Dynamic de-harsh preset has it.
+        setValue (parameter ("mode"), (float) compressor);
+        setValue (parameter ("compRatio"), 4.0f);
+        setValue (parameter ("compAttack"), 20.0f);
+        setValue (parameter ("compRelease"), 200.0f);
+
+        auto& owner = firProcessor();
+        owner.setPoints (owner.shownCurve (compressor), { { 1200.0, -30.0 }, { 3000.0, -36.0 }, { 8000.0, -30.0 } });
+        owner.setPoints (owner.shownCurve (fir::ratioCurve), { { 1800.0, -2.0 }, { 2200.0, 0.0 }, { 3000.0, 0.0 }, { 5000.0, 0.0 }, { 6000.0, -2.0 } });
+
+        updateMode();
+        midSideSwitch.setVisible (owner.isMidSide());
+        graph.update();
+        graph.showHarshPreview();
+        graph.selectPoint (sidePreview ? 2 : -1);
+        outMeter.show (-10.4f, -9.8f);
+        latencyLabel.setText ("Latency 42.7 ms", juce::dontSendNotification);
+        drawer.setVisible (false);
+        return;
+    }
 
     if (preview == Preview::eqCurve)
     {
@@ -663,7 +740,14 @@ std::vector<ShellEditor::PopupOpener> FirEditor::getPopupOpeners()
     openers.push_back ({ "dropdown-edit", [this] { editDropdown.click(); } });
     openers.push_back ({ "dropdown-fft", [this] { fftDropdown.click(); } });
     openers.push_back ({ "sidechain-notice", [this] { forceSidechainNotice (true); } });
-    openers.push_back ({ "point-prompt", [this] { if (! firProcessor().getPoints (juce::jmin (firProcessor().getMode(), numCurves - 1)).empty()) graph.typePoint (0); } });
+    openers.push_back ({ "point-prompt", [this]
+                         {
+                             const auto mode = firProcessor().getMode();
+                             const auto curve = mode == resonance ? fir::depthCurve : juce::jmin (mode, (int) compressor);
+
+                             if (! firProcessor().getPoints (curve).empty())
+                                 graph.typePoint (0);
+                         } });
     openers.push_back ({ "axis-prompt", [this] { graph.typeAxis (true); } });
     openers.push_back ({ "clear-profile", [this] { confirmThen ("Clear the noise profile?", "The learned profile will be removed. You can learn it again from a section with only noise.", "Clear", true, [] {}); } });
     openers.push_back ({ "tooltip-low-latency", [this] { showTip (lowLatencyCheckbox, lowLatencyCheckbox.getTooltip()); } });

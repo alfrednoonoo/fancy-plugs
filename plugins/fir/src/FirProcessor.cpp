@@ -12,7 +12,7 @@ namespace
 constexpr float gateFloorDb = -90.0f;
 constexpr int buildIntervalMs = 20;
 
-const juce::Identifier curvesType ("Curves"), curveType ("Curve"), profileType ("Profile");
+const juce::Identifier curvesType ("Curves"), curveType ("Curve"), profileType ("Profile"), sideProfileType ("SideProfile");
 const juce::Identifier pointsProperty ("points"), freehandProperty ("freehand"), indexProperty ("index");
 const juce::Identifier dataProperty ("data"), secondsProperty ("seconds");
 
@@ -161,6 +161,9 @@ fancy::FancyProcessor::Layout createLayout()
             .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
             .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
 
+    // Phase 4 Wave 2 (item 28), appended: off is left and right, as before.
+    layout.add (toggle ("midSide", "Mid/Side", false));
+
     return layout;
 }
 
@@ -178,6 +181,9 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Resonance Tamer", { { "mode", (float) resonance }, { "resDepth", 6.0f }, { "resSharpness", 50.0f }, { "resAttack", 5.0f }, { "resRelease", 80.0f } } },
         { "Harsh Vocal", { { "mode", (float) resonance }, { "resDepth", 8.0f }, { "resSharpness", 60.0f }, { "resAttack", 2.0f }, { "resRelease", 60.0f },
                            { "resLow", 1500.0f }, { "resHigh", 10000.0f } } },
+
+        // Phase 4 Wave 2 (item 27, with 29 folded in): a dynamic EQ, 4:1 from 2 to 5 kHz only.
+        { "Dynamic de-harsh", { { "mode", (float) compressor }, { "compRatio", 4.0f }, { "compAttack", 10.0f }, { "compRelease", 120.0f } }, "deharsh" },
     };
 
     // Phase 3 Q2.1: the preset browser's categories.
@@ -189,6 +195,7 @@ std::vector<fancy::FactoryPreset> createPresets()
         { "Spectral Compressor", "Dynamics" },
         { "Resonance Tamer", "Restoration" },
         { "Harsh Vocal", "Restoration" },
+        { "Dynamic de-harsh", "Dynamics" },
     });
 
     return presets;
@@ -288,6 +295,7 @@ FirDsp::Targets FirProcessor::readTargets() const
 
     const auto ratio = (double) read ("compRatio");
     frame.compSlope = 1.0 - 1.0 / ratio;
+    frame.compRatio = ratio;
     frame.compAttackMs = (double) read ("compAttack");
     frame.compReleaseMs = (double) read ("compRelease");
 
@@ -312,6 +320,7 @@ FirDsp::Targets FirProcessor::readTargets() const
     targets.engine.fftSize = getFftSize();
     targets.engine.lowLatency = isOn ("lowLatency");
     targets.engine.convolve = frame.mode == convolve;
+    targets.engine.midSide = isOn ("midSide") && frame.mode != convolve;
 
     targets.gain = fancy::dbToGain ((double) read ("gain"));
     targets.outputGain = fancy::dbToGain ((double) read ("output"));
@@ -473,11 +482,41 @@ void FirProcessor::clearProfile()
     dsp.shared.learning.store (false);
     dsp.shared.hasProfile.store (false);
     dsp.shared.profileSeconds.store (0.0f);
+    dsp.shared.hasSideProfile.store (false);
+    dsp.shared.sideProfileSeconds.store (0.0f);
 
     for (auto& value : dsp.shared.profile)
         value.store (0.0f, std::memory_order_relaxed);
 
+    for (auto& value : dsp.shared.sideProfile)
+        value.store (0.0f, std::memory_order_relaxed);
+
     dsp.shared.profileVersion.fetch_add (1);
+}
+
+bool FirProcessor::isMidSide() const
+{
+    return isOn ("midSide") && getMode() != convolve;
+}
+
+bool FirProcessor::showsSide() const
+{
+    return isMidSide() && dsp.shared.viewSide.load();
+}
+
+void FirProcessor::setViewSide (bool side)
+{
+    dsp.shared.viewSide.store (side);
+}
+
+int FirProcessor::shownCurve (int curve) const
+{
+    return showsSide() ? sideCurve (curve) : curve;
+}
+
+double FirProcessor::getKnobRatio() const
+{
+    return (double) read ("compRatio");
 }
 
 float FirProcessor::getLearnProgress() const noexcept
@@ -488,48 +527,63 @@ float FirProcessor::getLearnProgress() const noexcept
 
 void FirProcessor::addToState (juce::ValueTree& state)
 {
-    state.removeChild (state.getChildWithName (profileType), nullptr);
-
-    juce::ValueTree profile (profileType);
-
-    if (dsp.shared.hasProfile.load())
+    // Phase 4 Wave 2 (item 28): the side's profile, from a Learn in Mid/Side, is its own child,
+    // which an older FIR ignores.
+    const auto save = [&state] (const juce::Identifier& type, const std::atomic<bool>& has, const std::atomic<float>& seconds,
+                                const std::array<std::atomic<float>, profilePoints>& source)
     {
-        std::vector<float> values ((size_t) profilePoints);
+        state.removeChild (state.getChildWithName (type), nullptr);
 
-        for (int i = 0; i < profilePoints; ++i)
-            values[(size_t) i] = dsp.shared.profile[(size_t) i].load (std::memory_order_relaxed);
+        juce::ValueTree profile (type);
 
-        juce::MemoryBlock block (values.data(), sizeof (float) * values.size());
+        if (has.load())
+        {
+            std::vector<float> values ((size_t) profilePoints);
 
-        profile.setProperty (dataProperty, block.toBase64Encoding(), nullptr);
-        profile.setProperty (secondsProperty, dsp.shared.profileSeconds.load(), nullptr);
-    }
+            for (int i = 0; i < profilePoints; ++i)
+                values[(size_t) i] = source[(size_t) i].load (std::memory_order_relaxed);
 
-    state.appendChild (profile, nullptr);
+            juce::MemoryBlock block (values.data(), sizeof (float) * values.size());
+
+            profile.setProperty (dataProperty, block.toBase64Encoding(), nullptr);
+            profile.setProperty (secondsProperty, seconds.load(), nullptr);
+        }
+
+        state.appendChild (profile, nullptr);
+    };
+
+    save (profileType, dsp.shared.hasProfile, dsp.shared.profileSeconds, dsp.shared.profile);
+    save (sideProfileType, dsp.shared.hasSideProfile, dsp.shared.sideProfileSeconds, dsp.shared.sideProfile);
 }
 
-void FirProcessor::loadProfile (const juce::ValueTree& tree)
+void FirProcessor::loadProfile (const juce::ValueTree& tree, const juce::ValueTree& sideTree)
 {
-    juce::MemoryBlock block;
+    clearProfile();
 
-    const auto valid = tree.isValid()
-                    && block.fromBase64Encoding (tree.getProperty (dataProperty).toString())
-                    && block.getSize() == sizeof (float) * (size_t) profilePoints;
-
-    if (! valid)
+    const auto load = [] (const juce::ValueTree& source, std::atomic<bool>& has, std::atomic<float>& seconds,
+                          std::array<std::atomic<float>, profilePoints>& target)
     {
-        clearProfile();
-        return;
-    }
+        juce::MemoryBlock block;
 
-    const auto* values = static_cast<const float*> (block.getData());
+        const auto valid = source.isValid()
+                        && block.fromBase64Encoding (source.getProperty (dataProperty).toString())
+                        && block.getSize() == sizeof (float) * (size_t) profilePoints;
 
-    for (int i = 0; i < profilePoints; ++i)
-        dsp.shared.profile[(size_t) i].store (std::isfinite (values[i]) && values[i] >= 0.0f ? values[i] : 0.0f, std::memory_order_relaxed);
+        if (! valid)
+            return;
 
-    dsp.shared.profileSeconds.store ((float) (double) tree.getProperty (secondsProperty, 0.0));
-    dsp.shared.learning.store (false);
-    dsp.shared.hasProfile.store (true);
+        const auto* values = static_cast<const float*> (block.getData());
+
+        for (int i = 0; i < profilePoints; ++i)
+            target[(size_t) i].store (std::isfinite (values[i]) && values[i] >= 0.0f ? values[i] : 0.0f, std::memory_order_relaxed);
+
+        seconds.store ((float) (double) source.getProperty (secondsProperty, 0.0));
+        has.store (true);
+    };
+
+    load (tree, dsp.shared.hasProfile, dsp.shared.profileSeconds, dsp.shared.profile);
+    load (sideTree, dsp.shared.hasSideProfile, dsp.shared.sideProfileSeconds, dsp.shared.sideProfile);
+
     dsp.shared.profileVersion.fetch_add (1);
 }
 
@@ -538,10 +592,11 @@ void FirProcessor::stateApplied()
     auto& state = getApvts().state;
 
     loadCurves (state.getChildWithName (curvesType));
-    loadProfile (state.getChildWithName (profileType));
+    loadProfile (state.getChildWithName (profileType), state.getChildWithName (sideProfileType));
 
-    // The profile lives in the engine's atomics, and goes back into the state when saved.
+    // The profiles live in the engine's atomics, and go back into the state when saved.
     state.removeChild (state.getChildWithName (profileType), nullptr);
+    state.removeChild (state.getChildWithName (sideProfileType), nullptr);
     storeCurves();
 }
 
@@ -561,6 +616,13 @@ void FirProcessor::factoryPresetLoaded (const juce::String& data)
         points[gate] = { { 20.0, -55.0 }, { 2000.0, -60.0 }, { 20000.0, -70.0 } };
     else if (data == "compressor")
         points[compressor] = { { 20.0, -24.0 }, { 20000.0, -36.0 } };
+    else if (data == "deharsh")
+    {
+        // The model's case (docs/research/fir-w2-model.py): the threshold dips where a mix gets
+        // harsh, and the ratio is the knob's 4:1 from 2 to 5 kHz and 1:1 (-2 octaves) elsewhere.
+        points[compressor] = { { 20.0, -40.0 }, { 1200.0, -40.0 }, { 3000.0, -46.0 }, { 8000.0, -40.0 }, { 20000.0, -40.0 } };
+        points[ratioCurve] = { { 20.0, -2.0 }, { 1800.0, -2.0 }, { 2200.0, 0.0 }, { 5000.0, 0.0 }, { 6000.0, -2.0 }, { 20000.0, -2.0 } };
+    }
 
     for (int curve = 0; curve < numCurves; ++curve)
         publishCurve (curve);
@@ -654,8 +716,17 @@ void FirProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuf
 
     inputMeter.push (main, numChannels, numSamples);
 
+    // Phase 4 Wave 2 (item 28): in Mid/Side the graph, and Learn for the curves, see the domain
+    // being edited. The mid is the mix of both channels, which is what the feed always was.
+    const auto sideFeed = numChannels > 1 && showsSide();
+
     if (analysing)
-        inputFifo.push (main, numChannels, numSamples);
+    {
+        if (sideFeed)
+            inputFifo.pushWeighted (main[0], main[1], 0.5f, -0.5f, numSamples);
+        else
+            inputFifo.push (main, numChannels, numSamples);
+    }
 
     sidechainWatch.update (main, numChannels, sidechainBuffer.getArrayOfReadPointers(), numSidechain, numSamples, getSampleRate(), isOn ("sidechain"));
 
@@ -666,7 +737,12 @@ void FirProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBuf
     outputMeter.push (main, numChannels, numSamples);
 
     if (analysing)
-        outputFifo.push (main, numChannels, numSamples);
+    {
+        if (sideFeed)
+            outputFifo.pushWeighted (main[0], main[1], 0.5f, -0.5f, numSamples);
+        else
+            outputFifo.push (main, numChannels, numSamples);
+    }
 
     if (getLatencySamples() != dsp.getLatencySamples())
         setLatencySamples (dsp.getLatencySamples());

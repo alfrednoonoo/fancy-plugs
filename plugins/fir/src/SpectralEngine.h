@@ -16,6 +16,7 @@ struct FrameSettings
     int mode = eq;
     double gateFloorGain = 0.01, gateAttackMs = 1.0, gateReleaseMs = 80.0;
     double compSlope = 0.5, compAttackMs = 5.0, compReleaseMs = 80.0;
+    double compRatio = 2.0; // Phase 4 Wave 2: the knob, which the ratio curve is relative to
     double reductionGain = 0.125, offsetPower = 1.0, smoothing = 0.35, subReleaseMs = 80.0;
     bool reduceArtifacts = true, listen = false, sidechain = false;
 
@@ -43,6 +44,11 @@ public:
         int fftSize = 4096;
         bool lowLatency = false;
         bool convolve = false;
+
+        // Phase 4 Wave 2 (item 28): mid and side instead of left and right. A change builds a
+        // new engine, as a size change does, so the switch crossfades. Ignored by Convolve L/R
+        // and on a mono input.
+        bool midSide = false;
 
         bool operator== (const Config&) const = default;
     };
@@ -77,14 +83,22 @@ private:
     void refreshProfile() noexcept;
     void learnFrame() noexcept;
 
-    // Phase 2.1 A: Martin's minimum statistics, once per frame. See docs/phase2_1-A.md.
-    void trackNoise (bool publishes) noexcept;
-    void startTracking() noexcept;
-    void publishTracking() noexcept;
-    void publishReduction() noexcept;
+    // Phase 4 Wave 2 (item 28): true while this frame is mid and side. A domain is 0 (both
+    // channels, or the mid) or 1 (the side).
+    bool midSideFrame() const noexcept { return engineConfig.midSide && ! engineConfig.convolve && frameChannels > 1; }
+    int domainOf (int channel) const noexcept { return midSideFrame() ? channel : 0; }
+    int curveFor (int curve, int channel) const noexcept { return domainOf (channel) == 1 ? sideCurve (curve) : curve; }
+    int shownDomain() const noexcept { return midSideFrame() && shared.viewSide.load (std::memory_order_relaxed) ? 1 : 0; }
 
-    // Phase 3 Q2.7: one linked gain for both channels, into resonanceGain.
-    void computeResonance (double* reductionColumns) noexcept;
+    // Phase 2.1 A: Martin's minimum statistics, once per frame. See docs/phase2_1-A.md. In
+    // Mid/Side each domain has its own tracker, on its own channel.
+    void trackNoise (int domain, bool publishes) noexcept;
+    void startTracking (int domain) noexcept;
+    void publishTracking (int domain) noexcept;
+
+    // Phase 3 Q2.7: one linked gain for both channels, into resonanceGain. In Mid/Side, one gain
+    // per domain, each from its own channel.
+    void computeResonance (int domain, double* reductionColumns) noexcept;
     void prepareResonanceWindows (double sharpness) noexcept;
     void prepareResonanceRange (double lowHz, double highHz) noexcept;
     void prepareResonanceTilt (double tilt) noexcept;
@@ -125,36 +139,45 @@ private:
 
     // Per bin, per channel.
     std::vector<float> gains[2], envelopes[2], priorSnr[2], smoothedKey[2], mask[2];
-    std::vector<float> binHz, curveDb[numCurves], profilePower, scratch, detectorLevels;
-    int seenCurveVersion[numCurves] { -1, -1, -1, -1 };
-    bool depthFlat = true; // Phase 4 Wave 2: the depth curve at 100 % everywhere
+    std::vector<float> binHz, curveDb[numCurves], profilePower[2], scratch, detectorLevels;
+    int seenCurveVersion[numCurves] { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    // Phase 4 Wave 2: per domain, the depth curve at 100 % and the ratio curve at 0 everywhere,
+    // which take the old paths, to the bit.
+    bool depthFlat[2] { true, true }, ratioFlat[2] { true, true };
     int seenProfileVersion = -1;
-    bool profileReady = false;
+    bool profileReady[2] { false, false };
 
-    std::vector<double> learnSum;
+    std::vector<double> learnSum[2];
     int learnFrames = 0;
 
     // The adaptive estimator's state, per bin. ring holds the last trackSubwindows sub-window
     // minima, bin after bin.
     static constexpr int trackSubwindows = 8;
-    std::vector<float> trackPower, trackSmoothed, trackNoise_, trackMoment1, trackMoment2, trackQInverse,
-        trackActMin, trackSubMin, trackRingMin, trackRing, trackRatio, trackSort, trackPresence;
-    std::vector<double> trackPrefix;
-    std::vector<int> trackHold;
-    double trackAlphaC = 1.0;
-    int trackSubFrames = 0, trackSubLength = 1, trackRingIndex = 0, trackPublishCountdown = 0;
-    bool trackStarted = false;
+
+    struct Tracker
+    {
+        std::vector<float> power, smoothed, noise, moment1, moment2, qInverse,
+            actMin, subMin, ringMin, ring, ratio, sort, presence;
+        std::vector<double> prefix;
+        std::vector<int> hold;
+        double alphaC = 1.0;
+        int subFrames = 0, subLength = 1, ringIndex = 0, publishCountdown = 0;
+        bool started = false;
+    };
+
+    Tracker trackers[2];
 
     std::vector<int> binColumn;
 
-    // Resonance mode's state, per bin. The detector is shared by both channels (linked).
-    std::vector<float> resDetector, resLevel, resClipped, resEnvelope, resReduction, resWeight, resonanceGain;
+    // Resonance mode's state, per bin. The detector is shared by both channels (linked), or in
+    // Mid/Side is one per domain.
+    std::vector<float> resDetector[2], resLevel, resClipped, resEnvelope, resReduction[2], resWeight, resonanceGain[2];
     std::vector<double> resPrefix;
     std::vector<int> resLow, resHigh;
     double resWindowSharpness = -1.0, resRangeLow = -1.0, resRangeHigh = -1.0;
     std::vector<float> resTiltFactor; // Phase 4 Wave 1, per bin
     double resTiltShown = 0.0;
-    bool resStarted = false;
+    bool resStarted[2] { false, false };
 };
 
 } // namespace fir

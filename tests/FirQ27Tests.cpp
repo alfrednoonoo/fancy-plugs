@@ -771,3 +771,113 @@ TEST_CASE ("fir Q2.7 CPU measurement", "[.measure]")
 
     SUCCEED();
 }
+
+// Phase 4 Wave 2, items 27 and 28 (docs/fir.md, "ratio curve, Mid/Side", section 5, test 5): the
+// ratio curve against a flat one, and Mid/Side against L/R, by the same paced method.
+TEST_CASE ("fir W2b CPU measurement", "[.measure]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    constexpr int blockSize = 128, numBlocks = 2000, runs = 5;
+
+    const auto cycleRate = cyclesPerSecond();
+
+    std::vector<float> noiseLeft ((size_t) blockSize * 64), noiseRight ((size_t) blockSize * 64);
+    std::mt19937 random (12);
+    std::uniform_real_distribution<float> noiseSource (-0.25f, 0.25f);
+
+    for (size_t i = 0; i < noiseLeft.size(); ++i)
+        noiseLeft[i] = noiseSource (random), noiseRight[i] = noiseSource (random);
+
+    const auto timeSetting = [&] (int mode, bool ratioCurve, bool midSide, int source)
+    {
+        std::vector<Timing> results;
+
+        for (int run = 0; run < runs; ++run)
+        {
+            FirDsp dsp;
+            dsp.setSynchronousBuilds (true);
+
+            FirDsp::Targets targets;
+            targets.frame.mode = mode;
+            targets.frame.source = source;
+            targets.frame.compRatio = 4.0;
+            targets.frame.compSlope = 0.75;
+            targets.engine = { 4096, false, false, midSide };
+            dsp.prepare (rate, targets);
+
+            for (const auto curve : { fir::compressor, fir::sideCurve (fir::compressor) })
+            {
+                for (auto& value : dsp.shared.curves[(size_t) curve])
+                    value.store (-30.0f);
+
+                dsp.shared.curveVersions[(size_t) curve].fetch_add (1);
+            }
+
+            if (ratioCurve)
+            {
+                for (const auto curve : { fir::ratioCurve, fir::sideCurve (fir::ratioCurve) })
+                {
+                    for (int i = 0; i < fir::curvePoints; ++i)
+                        dsp.shared.curves[(size_t) curve][(size_t) i].store (fir::curveHz (i) > 2000.0 && fir::curveHz (i) < 5000.0 ? 0.0f : -2.0f);
+
+                    dsp.shared.curveVersions[(size_t) curve].fetch_add (1);
+                }
+            }
+
+            float left[blockSize], right[blockSize];
+            float* channels[] { left, right };
+
+            results.push_back (timeRun ([&] (int block)
+                                        {
+                                            const auto offset = (size_t) ((block % 64) * blockSize);
+                                            std::copy_n (noiseLeft.begin() + (std::ptrdiff_t) offset, blockSize, left);
+                                            std::copy_n (noiseRight.begin() + (std::ptrdiff_t) offset, blockSize, right);
+                                            dsp.setTargets (targets);
+                                            dsp.process (channels, 2, nullptr, 0, blockSize);
+                                        },
+                                        numBlocks, blockSize, cycleRate));
+        }
+
+        return median (results);
+    };
+
+    struct Case
+    {
+        const char* name;
+        int mode;
+        bool ratioCurve, midSide;
+        int source;
+    };
+
+    const Case cases[] {
+        { "Compressor, flat ratio curve", fir::compressor, false, false, fir::learnedSource },
+        { "Compressor, ratio curve", fir::compressor, true, false, fir::learnedSource },
+        { "Compressor, ratio curve, Mid/Side", fir::compressor, true, true, fir::learnedSource },
+        { "EQ", fir::eq, false, false, fir::learnedSource },
+        { "EQ, Mid/Side", fir::eq, false, true, fir::learnedSource },
+        { "Subtract, Adaptive", fir::subtract, false, false, fir::adaptiveSource },
+        { "Subtract, Adaptive, Mid/Side", fir::subtract, false, true, fir::adaptiveSource },
+        { "Resonance", fir::resonance, false, false, fir::learnedSource },
+        { "Resonance, Mid/Side", fir::resonance, false, true, fir::learnedSource },
+    };
+
+    std::vector<double> means;
+
+    for (const auto& item : cases)
+    {
+        const auto timing = timeSetting (item.mode, item.ratioCurve, item.midSide, item.source);
+        means.push_back (timing.meanPercent);
+
+        std::printf ("fir w2b cpu, %s: mean %.3f %% (by thread cycles %.3f %%), p99 block %.1f %%, worst block %.1f %% of its time, %d preempted blocks\n",
+                     item.name, timing.meanPercent, timing.cyclesMeanPercent, timing.p99Percent, timing.worstPercent, timing.preempted);
+    }
+
+    const auto ratio = [&] (int a, int b) { return means[(size_t) b] > 0.0 ? means[(size_t) a] / means[(size_t) b] : 0.0; };
+
+    std::printf ("fir w2b cpu: 48 kHz, 128 samples, FFT 4096, median of %d paced runs; ratio curve %.3f x flat (target < 1.05 x); "
+                 "Mid/Side against L/R: Compressor %.3f x, EQ %.3f x, Subtract Adaptive %.3f x, Resonance %.3f x\n",
+                 runs, ratio (1, 0), ratio (2, 1), ratio (4, 3), ratio (6, 5), ratio (8, 7));
+
+    SUCCEED();
+}

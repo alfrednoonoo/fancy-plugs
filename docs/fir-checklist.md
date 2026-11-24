@@ -133,3 +133,17 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] The checks above, once, with the VST3 in Ableton Live.
 - [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
 - [ ] The Audio Unit in Live: automation follows, an export matches playback, and the Set reopens as it was. (Logic too, if someone has it.)
+
+## Ratio curve and Mid/Side (Phase 4 Wave 2, items 27 and 28)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy FIR in Compressor mode: it sounds as before; the ratio curve is flat at the Ratio knob's value and Mid/Side is off in EDIT.
+- [ ] The window is 70 px wider (830 px), the graph wider with it; nothing else has moved or shrunk.
+- [ ] Compressor mode: the **Threshold | Ratio** switch sits at the graph's top left; the legend reads input, output, threshold, ratio, reduction. Choose **Ratio**: the green line becomes editable on its own scale at the right (1:1, 2:1, 4:1, 20:1), the threshold dims and dashes.
+- [ ] Load **Dynamic de-harsh** (Dynamics) on a mix whose upper mids get harsh in a loud section, and click Learn there: the cut appears at 2 to 5 kHz only in the loud section; the bass is untouched. With a flat ratio curve at 4:1 the bass comes down too.
+- [ ] Drag a ratio point: it shows its frequency and ratio. Right-click types a ratio (`4`, `4:1`, `1:2`); double-click puts it back to the knob's value. Turning the Ratio knob moves the whole ratio curve. **Reset ratio curve** flattens it. Undo, A/B and a project reload keep it.
+- [ ] Tick **Mid/Side** in EDIT: the sound crossfades (no click), the latency doesn't change, and a **Mid | Side** switch appears after the Mode switch. With flat curves it sounds like bypass.
+- [ ] EQ mode, Side chosen: cut the side's curve by 6 dB: the stereo image narrows, the centre (a vocal) doesn't change. Mid chosen: the mid's curve is the one you had before. Each side keeps its own curve in every mode.
+- [ ] With Side chosen, the graph's spectra are the side's, and Learn (Gate, Compressor) learns from the side.
+- [ ] Subtract with Mid/Side on a stereo recording with hiss: one Learn captures both; the hiss comes down, and Clear removes both profiles. Adaptive works on each separately.
+- [ ] Resonance with Mid/Side: a ring panned to the centre is cut in the mid only.
+- [ ] On a mono track, Mid/Side changes nothing. Convolve L/R hides the Mid | Side switch.

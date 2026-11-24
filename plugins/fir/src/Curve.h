@@ -21,8 +21,8 @@ constexpr int maxCurvePoints = 64;
 
 inline double defaultCurveDb (int curve) noexcept
 {
-    constexpr double defaults[] { 0.0, -60.0, -30.0, 100.0 };
-    return defaults[std::clamp (curve, 0, numCurves - 1)];
+    constexpr double defaults[curvesPerDomain] { 0.0, -60.0, -30.0, 100.0, 0.0 };
+    return defaults[baseCurve (std::clamp (curve, 0, numCurves - 1))];
 }
 
 // The curve at a frequency. Points must be sorted by frequency. Smooth is monotone cubic in
@@ -89,10 +89,28 @@ inline double freehandAt (const std::array<float, curvePoints>& table, double hz
     return (double) table[(size_t) index] + fraction * (double) (table[(size_t) index + 1] - table[(size_t) index]);
 }
 
-// What a curve's values may be: dB for EQ, Gate and Compressor, percent for the depth curve.
+// What a curve's values may be: dB for EQ, Gate and Compressor, percent for the depth curve,
+// octaves of ratio over the Ratio knob for the ratio curve.
 inline double clampCurveValue (int curve, double value) noexcept
 {
-    return curve == depthCurve ? std::clamp (value, 0.0, maxDepthPercent) : std::clamp (value, -150.0, 48.0);
+    switch (baseCurve (curve))
+    {
+        case depthCurve: return std::clamp (value, 0.0, maxDepthPercent);
+        case ratioCurve: return std::clamp (value, -maxRatioOctaves, maxRatioOctaves);
+        default:         return std::clamp (value, -150.0, 48.0);
+    }
+}
+
+// Phase 4 Wave 2 (item 27): the ratio at a frequency, from the Ratio knob and the ratio curve's
+// value there, and back.
+inline double ratioFromCurve (double knobRatio, double octaves) noexcept
+{
+    return std::clamp (knobRatio * std::exp2 (octaves), minRatio, maxRatio);
+}
+
+inline double curveFromRatio (double knobRatio, double ratio) noexcept
+{
+    return clampCurveValue (ratioCurve, std::log2 (std::clamp (ratio, minRatio, maxRatio) / std::max (knobRatio, minRatio)));
 }
 
 inline void sortPoints (std::vector<CurvePoint>& points)

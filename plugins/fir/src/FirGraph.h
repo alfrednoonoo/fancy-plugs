@@ -9,6 +9,35 @@
 
 juce::Colour modeColour (int mode);
 
+// Phase 4 Wave 2 (reference/phase4/59__fir_w2_mockup.png): two choices, the selected one filled in
+// its colour. A view switch, not a parameter: Threshold | Ratio over the graph, Mid | Side beside
+// the Mode row.
+class TwoWaySwitch final : public juce::Component, public juce::SettableTooltipClient
+{
+public:
+    TwoWaySwitch (const juce::String& first, const juce::String& second);
+
+    void setColours (juce::Colour first, juce::Colour second);
+    void setTextHeight (float height) { textHeight = height; }
+    void setBackground (juce::Colour colour) { background = colour; }
+    void setSelected (int index);
+    int getSelected() const noexcept { return selected; }
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+    std::function<void (int)> onChange;
+
+private:
+    juce::Rectangle<float> segmentBounds (int index) const;
+
+    juce::String names[2];
+    juce::Colour fills[2];
+    juce::Colour background;
+    float textHeight = 12.0f;
+    int selected = 0;
+};
+
 // The graph: input spectrum, output spectrum, and the curve, profile or gain reduction of
 // the mode, with the curve's points to edit.
 class FirGraph final : public juce::Component
@@ -35,6 +64,17 @@ public:
     // resonances: Phase 3 Q2.7's mockup, two resonances and their reduction.
     void showPreviewSpectra (bool resonances = false);
 
+    // Phase 4 Wave 2: for rendered screenshots, a harsh band at 3 kHz and what Compressor mode's
+    // curves take from it; and the point whose frequency and ratio are shown.
+    void showHarshPreview();
+    void selectPoint (int index) { selectedPoint = index; repaint(); }
+
+    // Phase 4 Wave 2 (item 27): which of Compressor mode's curves the points edit.
+    void setEditsRatio (bool ratio);
+
+    // Phase 4 Wave 2: the threshold (Gate, Compressor) or EQ curve of the shown domain.
+    int thresholdCurve() const noexcept;
+
     void paint (juce::Graphics&) override;
     void resized() override;
     void mouseDown (const juce::MouseEvent&) override;
@@ -47,6 +87,11 @@ public:
     static double hzForX (float x, float width) noexcept;
     static float yForDb (float db, float height, float topDb, float floorDb) noexcept;
     static float dbForY (float y, float height, float topDb, float floorDb) noexcept;
+
+    // Phase 4 Wave 2: the ratio curve's own scale, log from 0.5:1 at the bottom to 20:1 at the
+    // top. Exposed for tests.
+    static float yForRatio (double ratio, float height) noexcept;
+    static double ratioForY (float y, float height) noexcept;
 
 private:
     class AnalyzerThread final : public juce::Thread
@@ -64,12 +109,17 @@ private:
 
     bool editsCurve() const noexcept;
 
-    // Phase 4 Wave 2: which curve the mode edits (Resonance: the depth curve), and its values on
-    // the graph, which for the depth curve depend on Depth, Tilt and the frequency.
+    // Phase 4 Wave 2: which curve the mode edits (Resonance: the depth curve; Compressor: the
+    // threshold or the ratio curve; the side's in Mid/Side), and a curve's values on the graph,
+    // which for the depth curve depend on Depth, Tilt and the frequency, and for the ratio curve
+    // on the Ratio knob.
     int curve() const noexcept;
     double ceilingScale (double hz) const noexcept;
-    float yForValue (double value, double hz) const noexcept;
-    double valueAt (float y, double hz) const noexcept;
+    float yForCurve (int curveIndex, double value, double hz) const noexcept;
+    double valueForCurve (int curveIndex, float y, double hz) const noexcept;
+    float yForValue (double value, double hz) const noexcept { return yForCurve (curve(), value, hz); }
+    double valueAt (float y, double hz) const noexcept { return valueForCurve (curve(), y, hz); }
+    juce::String formatValue (int curveIndex, double value) const;
     float yFor (float db) const noexcept;
     float dbAt (float y) const noexcept;
     int pointAt (juce::Point<float> position) const;
@@ -78,6 +128,9 @@ private:
     void paintGrid (juce::Graphics&);
     void paintAnalysis (juce::Graphics&);
     void paintModeLayer (juce::Graphics&);
+    void paintCurveLine (juce::Graphics&, int curveIndex, juce::Colour colour, bool edited, bool filled);
+    void paintPoints (juce::Graphics&, int curveIndex, juce::Colour colour);
+    void paintRatioScale (juce::Graphics&);
     void paintAdaptive (juce::Graphics&);
     bool showsAdaptive() const;
     void paintLegend (juce::Graphics&);
@@ -115,6 +168,12 @@ private:
     float resLowHz = 100.0f, resHighHz = 20000.0f;
     float resDepthDb = 6.0f, resTilt = 0.0f; // Phase 4 Wave 2
     std::vector<float> previewReduction;
+
+    // Phase 4 Wave 2 (items 27 and 28).
+    TwoWaySwitch curveSwitch { "Threshold", "Ratio" };
+    bool editsRatio = false, sideShown = false;
+    double knobRatio = 2.0;
+    int selectedPoint = -1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FirGraph)
 };

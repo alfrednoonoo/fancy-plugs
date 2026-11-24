@@ -309,7 +309,15 @@ bool renderFir (const juce::File& outputDir)
     ok = writeBothScales (*editor, "fir-resonance", outputDir) && ok;
 
     editor->showPreview (FirEditor::Preview::resonanceRange);
-    return writeBothScales (*editor, "fir-resonance-range", outputDir) && ok;
+    ok = writeBothScales (*editor, "fir-resonance-range", outputDir) && ok;
+
+    // Phase 4 Wave 2 (mockup 59): Compressor mode's threshold and ratio curves, and the side's
+    // ratio curve in Mid/Side.
+    editor->showPreview (FirEditor::Preview::compressorThreshold);
+    ok = writeBothScales (*editor, "fir-compressor", outputDir) && ok;
+
+    editor->showPreview (FirEditor::Preview::compressorRatioSide);
+    return writeBothScales (*editor, "fir-ratio", outputDir) && ok;
 }
 #endif
 

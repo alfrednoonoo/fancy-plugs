@@ -17,7 +17,8 @@ public:
     juce::Colour getAccentColour() override;
     std::vector<PopupOpener> getPopupOpeners() override;
 
-    enum class Preview { subtractLearning, eqCurve, drawer, subtractAdaptive, resonance, resonanceRange };
+    enum class Preview { subtractLearning, eqCurve, drawer, subtractAdaptive, resonance, resonanceRange,
+                         compressorThreshold, compressorRatioSide }; // Phase 4 Wave 2, mockup 59
 
     // For rendered screenshots.
     void showPreview (bool drawerOpen);
@@ -82,6 +83,13 @@ private:
     fancy::ui::PillButton resetDepthButton { "Reset curve" }; // Phase 4 Wave 2: the depth curve
     fancy::ui::Knob resTiltKnob;
 
+    // Phase 4 Wave 2 (reference/phase4/59__fir_w2_mockup.png): Mid | Side beside the Mode row
+    // while Mid/Side is on, Reset ratio curve and its note in Compressor mode, and the Mid/Side
+    // checkbox in the drawer.
+    TwoWaySwitch midSideSwitch { "Mid", "Side" };
+    fancy::ui::PillButton resetRatioButton { "Reset ratio curve" };
+    juce::Label ratioHint, midSideText;
+
     FirGraph graph;
 
     // Left card, one per mode.
@@ -112,6 +120,7 @@ private:
 
     fancy::ui::EditDrawer drawer;
     fancy::ui::Knob learnLengthKnob, drawerOutputKnob;
+    fancy::ui::ParamCheckbox midSideCheckbox;
 
     int shownMode = -1;
 

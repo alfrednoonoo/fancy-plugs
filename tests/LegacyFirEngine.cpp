@@ -675,7 +675,7 @@ void SpectralEngine::computeMasks() noexcept
     if (frameLearns)
         learnFrame();
 
-    for (int curve = 0; curve < numCurves; ++curve)
+    for (int curve = 0; curve < legacyNumCurves; ++curve)
         refreshCurve (curve);
 
     refreshProfile();

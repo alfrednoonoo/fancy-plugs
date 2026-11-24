@@ -994,7 +994,7 @@ TEST_CASE ("the fir editor opens", "[fir]")
     const std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditorAndMakeActive());
 
     REQUIRE (editor != nullptr);
-    CHECK (editor->getWidth() == 760);
+    CHECK (editor->getWidth() == 830); // Phase 4 Wave 2: 70 px wider for the Mid | Side switch
 
     processor.editorBeingDeleted (editor.get());
 }

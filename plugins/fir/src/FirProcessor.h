@@ -41,7 +41,8 @@ public:
 
     fir::Shared& getShared() noexcept { return dsp.shared; }
 
-    // Message thread. Curves exist for EQ, Gate and Compressor.
+    // Message thread. Curves exist for EQ, Gate and Compressor, Resonance's depth, Compressor's
+    // ratio, and the same for the side (fir::sideCurve).
     const std::vector<fir::CurvePoint>& getPoints (int curve) const { return points[(size_t) curve]; }
     const std::array<float, fir::curvePoints>& getFreehand (int curve) const { return freehand[(size_t) curve]; }
     void setPoints (int curve, std::vector<fir::CurvePoint> newPoints);
@@ -54,6 +55,18 @@ public:
     void clearProfile();
     bool isLearning() const noexcept { return dsp.shared.learning.load() || dsp.shared.learnRequested.load(); }
     float getLearnProgress() const noexcept;
+
+    // Phase 4 Wave 2 (item 28): Mid/Side is on (and the mode isn't Convolve L/R), and the editor
+    // shows the side. The view isn't saved. shownCurve gives the side's index of a curve then.
+    bool isMidSide() const;
+    bool showsSide() const;
+    void setViewSide (bool side);
+    int shownCurve (int curve) const;
+
+    // Phase 4 Wave 2 (item 27): the Ratio knob, which the ratio curve is relative to; and which
+    // of Compressor mode's curves the graph edits (a view, not saved).
+    double getKnobRatio() const;
+    std::atomic<bool> editRatio { false };
 
     // The analysis feeds. The editor turns them on only while it's open.
     fancy::dsp::SampleFifo inputFifo, outputFifo;
@@ -80,7 +93,7 @@ private:
     void publishCurve (int curve);
     void storeCurves();
     void loadCurves (const juce::ValueTree& tree);
-    void loadProfile (const juce::ValueTree& tree);
+    void loadProfile (const juce::ValueTree& tree, const juce::ValueTree& sideTree);
 
     std::array<std::vector<fir::CurvePoint>, fir::numCurves> points;
     std::array<std::array<float, fir::curvePoints>, fir::numCurves> freehand {};

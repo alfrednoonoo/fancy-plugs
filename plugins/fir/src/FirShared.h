@@ -19,9 +19,21 @@ enum EditMode { smoothPoints, flatPoints, freehand };
 
 // EQ, Gate and Compressor, in dB; then Phase 4 Wave 2's Resonance depth curve, in percent of
 // Depth (docs/fir.md), appended so saved indices keep their meaning.
-constexpr int numCurves = 4;
+//
+// Phase 4 Wave 2, items 27 and 28 (docs/fir.md): Compressor mode's ratio curve (4), in octaves
+// of ratio over the Ratio knob, so 0 everywhere is the knob's ratio and the knob moves the whole
+// curve; then the same five again for the side in Mid/Side (5 to 9). Without Mid/Side, 0 to 4
+// are the curves of both channels; with it, of the mid.
 constexpr int depthCurve = 3;
+constexpr int ratioCurve = 4;
+constexpr int curvesPerDomain = 5;
+constexpr int numCurves = 2 * curvesPerDomain;
 constexpr double maxDepthPercent = 200.0;
+constexpr double maxRatioOctaves = 8.0;
+constexpr double minRatio = 0.5, maxRatio = 100.0;
+
+constexpr int baseCurve (int curve) noexcept { return curve % curvesPerDomain; }
+constexpr int sideCurve (int curve) noexcept { return baseCurve (curve) + curvesPerDomain; }
 
 constexpr int numSizes = 9;
 constexpr int sizes[numSizes] { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768 };
@@ -66,11 +78,18 @@ struct Shared
             for (auto& value : curve)
                 value.store (0.0f);
 
-        // Phase 4 Wave 2: the depth curve starts flat at 100 %, today's Resonance.
-        for (auto& value : curves[(size_t) depthCurve])
-            value.store ((float) 100.0);
+        // Phase 4 Wave 2: the depth curves start flat at 100 %, today's Resonance.
+        for (const auto curve : { depthCurve, sideCurve (depthCurve) })
+            for (auto& value : curves[(size_t) curve])
+                value.store ((float) 100.0);
 
         for (auto& value : profile)
+            value.store (0.0f);
+
+        for (auto& value : sideProfile)
+            value.store (0.0f);
+
+        for (auto& value : sideAdaptive)
             value.store (0.0f);
 
         for (auto& value : reduction)
@@ -107,6 +126,19 @@ struct Shared
     // For the card: the estimate's average from 100 Hz to 8 kHz in the graph's dB, and the share
     // of bins below 8 kHz being held as signal.
     std::atomic<float> adaptiveFloorDb { -200.0f }, heldFraction { 0.0f };
+
+    // Phase 4 Wave 2 (item 28): in Mid/Side the side has its own learned profile and adaptive
+    // estimate; profile and adaptive above are then the mid's. A Learn in Mid/Side captures
+    // both. profileVersion and adaptiveVersion count changes to either.
+    std::array<std::atomic<float>, profilePoints> sideProfile;
+    std::atomic<bool> hasSideProfile { false };
+    std::atomic<float> sideProfileSeconds { 0.0f };
+    std::array<std::atomic<float>, profilePoints> sideAdaptive;
+    std::atomic<bool> hasSideAdaptive { false };
+
+    // The domain the editor shows in Mid/Side (a view, not saved): the reduction and the card's
+    // figures are the side's while it's set.
+    std::atomic<bool> viewSide { false };
 };
 
 } // namespace fir

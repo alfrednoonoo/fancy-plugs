@@ -40,6 +40,78 @@ juce::Colour modeColour (int mode)
     return colours[juce::jlimit (0, fir::numModes - 1, mode)];
 }
 
+namespace
+{
+// Phase 4 Wave 2: the ratio curve is drawn in green, the threshold in the mode's teal.
+juce::Colour ratioColour() { return colours::accentGreen; }
+constexpr double ratioAxisLow = 0.5, ratioAxisHigh = 20.0;
+} // namespace
+
+// TwoWaySwitch ------------------------------------------------------------------------------------
+
+TwoWaySwitch::TwoWaySwitch (const juce::String& first, const juce::String& second)
+    : names { first, second }, fills { colours::uiTeal, colours::uiTeal }, background (colours::bgWell)
+{
+}
+
+void TwoWaySwitch::setColours (juce::Colour first, juce::Colour second)
+{
+    fills[0] = first;
+    fills[1] = second;
+    repaint();
+}
+
+void TwoWaySwitch::setSelected (int index)
+{
+    if (index != selected)
+    {
+        selected = index;
+        repaint();
+    }
+}
+
+juce::Rectangle<float> TwoWaySwitch::segmentBounds (int index) const
+{
+    const auto area = getLocalBounds().toFloat().reduced (2.0f);
+    const auto width = area.getWidth() / 2.0f;
+    return area.withX (area.getX() + (float) index * width).withWidth (width);
+}
+
+void TwoWaySwitch::paint (juce::Graphics& g)
+{
+    g.setColour (background);
+    g.fillRoundedRectangle (getLocalBounds().toFloat(), 3.0f);
+    g.setFont (font (Weight::regular, textHeight));
+
+    for (int i = 0; i < 2; ++i)
+    {
+        const auto area = segmentBounds (i);
+
+        if (i == selected)
+        {
+            g.setColour (fills[i]);
+            g.fillRoundedRectangle (area, 2.0f);
+        }
+
+        g.setColour (i == selected ? colours::textPrimary : colours::textSecondary);
+        g.drawText (names[i], area, juce::Justification::centred, false);
+    }
+}
+
+void TwoWaySwitch::mouseDown (const juce::MouseEvent& event)
+{
+    for (int i = 0; i < 2; ++i)
+    {
+        if (segmentBounds (i).contains (event.position) && i != selected)
+        {
+            setSelected (i);
+
+            if (onChange != nullptr)
+                onChange (i);
+        }
+    }
+}
+
 float FirGraph::xForHz (double hz, float width) noexcept
 {
     return plotLeft + (width - plotLeft - plotRight) * (float) std::log10 (hz / 20.0) / 3.0f;
@@ -60,9 +132,32 @@ float FirGraph::dbForY (float y, float height, float top, float floor) noexcept
     return top - (y - plotTop) / (height - plotTop - plotBottom) * (top - floor);
 }
 
+float FirGraph::yForRatio (double ratio, float height) noexcept
+{
+    const auto bottom = height - plotBottom;
+    const auto t = std::log (std::max (ratio, 1.0e-3) / ratioAxisLow) / std::log (ratioAxisHigh / ratioAxisLow);
+    return bottom - (float) t * (bottom - plotTop);
+}
+
+double FirGraph::ratioForY (float y, float height) noexcept
+{
+    const auto bottom = height - plotBottom;
+    const auto t = (double) ((bottom - y) / (bottom - plotTop));
+    return ratioAxisLow * std::pow (ratioAxisHigh / ratioAxisLow, t);
+}
+
 FirGraph::FirGraph (FirProcessor& processorToUse)
     : processor (processorToUse), analyzerThread (*this)
 {
+    // Phase 4 Wave 2 (mockup 59): Threshold | Ratio at the graph's top left, in Compressor mode.
+    curveSwitch.setColours (modeColour (compressor), ratioColour());
+    curveSwitch.setTextHeight (10.5f);
+    curveSwitch.setBackground (colours::bgHeader);
+    curveSwitch.setBounds ((int) plotLeft + 7, 6, 128, 18);
+    curveSwitch.setSelected (processor.editRatio.load() ? 1 : 0);
+    curveSwitch.onChange = [this] (int index) { setEditsRatio (index == 1); };
+    addChildComponent (curveSwitch);
+
     processor.analyzerActive.store (true);
     analyzerThread.startThread (juce::Thread::Priority::low);
 }
@@ -170,6 +265,13 @@ void FirGraph::update()
     resDepthDb = value ("resDepth");
     resTilt = value ("resTilt");
 
+    // Phase 4 Wave 2.
+    knobRatio = processor.getKnobRatio();
+    sideShown = processor.showsSide();
+    editsRatio = processor.editRatio.load();
+    curveSwitch.setVisible (mode == compressor);
+    curveSwitch.setSelected (editsRatio ? 1 : 0);
+
     // Phase 4 Wave 1: a finished Learn sets the curve, as points or, in Freehand, as the table.
     if (learnState.load() == learnDone)
     {
@@ -195,6 +297,16 @@ void FirGraph::update()
         learnState.store (learnIdle);
     }
 
+    repaint();
+}
+
+void FirGraph::setEditsRatio (bool ratio)
+{
+    processor.editRatio.store (ratio);
+    editsRatio = ratio;
+    selectedPoint = -1;
+    dragPoint = -1;
+    curveSwitch.setSelected (ratio ? 1 : 0);
     repaint();
 }
 
@@ -292,16 +404,71 @@ void FirGraph::showPreviewSpectra (bool resonances)
     }
 }
 
+void FirGraph::showHarshPreview()
+{
+    // Mockup 59: a mix whose 2-5 kHz is loud, and what the threshold and ratio curves take from
+    // it: the reduction is the level over the threshold times (1 - 1 / ratio).
+    const juce::SpinLock::ScopedLockType lock (spectrumLock);
+
+    frozenSpectra = true;
+
+    const auto width = juce::jmax (1, getWidth() - (int) (plotLeft + plotRight));
+    const auto thresholdIndex = thresholdCurve(), ratioIndex = processor.shownCurve (fir::ratioCurve);
+
+    inputSpectrum.assign ((size_t) width, -200.0f);
+    outputSpectrum.assign ((size_t) width, -200.0f);
+    previewReduction.assign (displayColumns, 0.0f);
+
+    const auto levelAt = [] (double hz, int x)
+    {
+        const auto ripple = 1.4 * std::sin ((double) x * 0.71 + 1.0) + 1.0 * std::sin ((double) x * 1.93 + 2.0);
+        const auto base = -40.0 - 8.0 * std::pow (std::log10 (hz / 400.0), 2.0);
+        const auto bump = 12.0 * std::exp (-std::pow (std::log2 (hz / 3000.0) / 0.5, 2.0));
+        return base + bump + ripple;
+    };
+
+    const auto reductionAt = [&] (double hz, double level)
+    {
+        const auto threshold = processor.curveDbAt (thresholdIndex, hz);
+        const auto ratio = fir::ratioFromCurve (knobRatio, processor.curveDbAt (ratioIndex, hz));
+        return std::max (0.0, (level - threshold) * (1.0 - 1.0 / ratio));
+    };
+
+    for (int x = 0; x < width; ++x)
+    {
+        const auto hz = hzForX (plotLeft + (float) x, (float) getWidth());
+        const auto level = levelAt (hz, x);
+
+        inputSpectrum[(size_t) x] = (float) level;
+        outputSpectrum[(size_t) x] = (float) (level - reductionAt (hz, level));
+    }
+
+    for (int column = 0; column < displayColumns; ++column)
+    {
+        const auto hz = displayHz (column) * std::pow (1000.0, 0.5 / displayColumns);
+        previewReduction[(size_t) column] = (float) reductionAt (hz, levelAt (hz, 0) + 1.0);
+    }
+}
+
 bool FirGraph::editsCurve() const noexcept
 {
     return mode == eq || mode == gate || mode == compressor || mode == resonance;
 }
 
 // Phase 4 Wave 2: Resonance edits the depth curve, in percent of Depth, drawn where its ceiling
-// lands (Depth x the curve x Tilt, hanging from 0 dB). The other curves are in dB as drawn.
+// lands (Depth x the curve x Tilt, hanging from 0 dB). Compressor edits the threshold or, with
+// Ratio chosen, the ratio curve, on its own scale. The other curves are in dB as drawn. In
+// Mid/Side with Side shown, the side's.
 int FirGraph::curve() const noexcept
 {
-    return mode == resonance ? fir::depthCurve : mode;
+    const auto base = mode == resonance ? fir::depthCurve : (mode == compressor && editsRatio ? fir::ratioCurve : mode);
+    return sideShown ? fir::sideCurve (base) : base;
+}
+
+int FirGraph::thresholdCurve() const noexcept
+{
+    const auto base = juce::jlimit (0, (int) compressor, mode);
+    return sideShown ? fir::sideCurve (base) : base;
 }
 
 double FirGraph::ceilingScale (double hz) const noexcept
@@ -309,15 +476,34 @@ double FirGraph::ceilingScale (double hz) const noexcept
     return std::max (0.05, (double) resDepthDb * fir::SpectralEngine::tiltFactor (hz, (double) resTilt * 0.01)) * 0.01;
 }
 
-float FirGraph::yForValue (double value, double hz) const noexcept
+float FirGraph::yForCurve (int curveIndex, double value, double hz) const noexcept
 {
-    return mode == resonance ? yFor ((float) (-value * ceilingScale (hz))) : yFor ((float) value);
+    switch (fir::baseCurve (curveIndex))
+    {
+        case fir::depthCurve: return yFor ((float) (-value * ceilingScale (hz)));
+        case fir::ratioCurve: return yForRatio (fir::ratioFromCurve (knobRatio, value), (float) getHeight());
+        default:              return yFor ((float) value);
+    }
 }
 
-double FirGraph::valueAt (float y, double hz) const noexcept
+double FirGraph::valueForCurve (int curveIndex, float y, double hz) const noexcept
 {
-    return mode == resonance ? fir::clampCurveValue (fir::depthCurve, -(double) dbAt (y) / ceilingScale (hz))
-                             : (double) dbAt (y);
+    switch (fir::baseCurve (curveIndex))
+    {
+        case fir::depthCurve: return fir::clampCurveValue (curveIndex, -(double) dbAt (y) / ceilingScale (hz));
+        case fir::ratioCurve: return fir::curveFromRatio (knobRatio, ratioForY (y, (float) getHeight()));
+        default:              return (double) dbAt (y);
+    }
+}
+
+juce::String FirGraph::formatValue (int curveIndex, double value) const
+{
+    switch (fir::baseCurve (curveIndex))
+    {
+        case fir::depthCurve: return juce::String (juce::roundToInt (value)) + " %";
+        case fir::ratioCurve: return fancy::formatFixed ((float) fir::ratioFromCurve (knobRatio, value), 1) + ":1";
+        default:              return fancy::formatFixed ((float) value, 1) + " dB";
+    }
 }
 
 float FirGraph::yFor (float db) const noexcept
@@ -334,14 +520,16 @@ double FirGraph::profileDbAt (double hz) const
 {
     auto& shared = processor.getShared();
 
-    if (! shared.hasProfile.load())
+    // Phase 4 Wave 2: the side's profile while the side is shown.
+    if (! (sideShown ? shared.hasSideProfile : shared.hasProfile).load())
         return -200.0;
 
+    const auto& profile = sideShown ? shared.sideProfile : shared.profile;
     const auto position = juce::jlimit (0.0, (double) (profilePoints - 1), hz / (profileHighHz / (double) (profilePoints - 1)));
     const auto index = juce::jmin ((int) position, profilePoints - 2);
     const auto fraction = position - (double) index;
 
-    const auto power = (double) shared.profile[(size_t) index].load() + fraction * (double) (shared.profile[(size_t) index + 1].load() - shared.profile[(size_t) index].load());
+    const auto power = (double) profile[(size_t) index].load() + fraction * (double) (profile[(size_t) index + 1].load() - profile[(size_t) index].load());
     const auto offset = (double) processor.getApvts().getRawParameterValue ("offset")->load();
 
     return 10.0 * std::log10 (std::max (power * profileToLevelScale (processor.getFftSize()), 1.0e-20)) + offset;
@@ -492,7 +680,7 @@ void FirGraph::paintModeLayer (juce::Graphics& g)
         for (auto x = from; x <= to; x += 1.0f)
         {
             const auto hz = hzForX (x, width);
-            const auto y = juce::jlimit (plotTop, bottom, yForValue (processor.curveDbAt (fir::depthCurve, hz), hz));
+            const auto y = juce::jlimit (plotTop, bottom, yForValue (processor.curveDbAt (curve(), hz), hz));
 
             if (x == from)
                 ceiling.startNewSubPath (x, y);
@@ -519,7 +707,7 @@ void FirGraph::paintModeLayer (juce::Graphics& g)
 
         if (editMode != fir::freehand)
         {
-            for (const auto& point : processor.getPoints (fir::depthCurve))
+            for (const auto& point : processor.getPoints (curve()))
             {
                 const juce::Point<float> centre (xForHz (point.hz, width), yForValue (point.db, point.hz));
                 const auto circle = juce::Rectangle<float> (pointRadius * 2.0f, pointRadius * 2.0f).withCentre (centre);
@@ -544,7 +732,8 @@ void FirGraph::paintModeLayer (juce::Graphics& g)
 
         for (int column = 0; column < displayColumns; ++column)
         {
-            const auto reduction = shared.reduction[(size_t) column].load (std::memory_order_relaxed);
+            const auto reduction = previewReduction.empty() ? shared.reduction[(size_t) column].load (std::memory_order_relaxed)
+                                                            : previewReduction[(size_t) column];
 
             if (reduction <= 0.05f)
                 continue;
@@ -552,6 +741,21 @@ void FirGraph::paintModeLayer (juce::Graphics& g)
             const auto left = xForHz (displayHz (column), width), right = xForHz (displayHz (column + 1), width);
             g.fillRect (left, zero, right - left, yFor (-reduction) - zero);
         }
+
+        // Phase 4 Wave 2 (mockup 59): both curves, the one being edited bright and with its
+        // points, the other dimmed and dashed; the ratio's scale while it's edited.
+        const auto ratioIndex = processor.shownCurve (fir::ratioCurve);
+
+        paintCurveLine (g, thresholdCurve(), colour, ! editsRatio, ! editsRatio);
+        paintCurveLine (g, ratioIndex, ratioColour(), editsRatio, false);
+
+        if (editMode != fir::freehand)
+            paintPoints (g, curve(), editsRatio ? ratioColour() : colour);
+
+        if (editsRatio)
+            paintRatioScale (g);
+
+        return;
     }
 
     juce::Path line;
@@ -560,7 +764,7 @@ void FirGraph::paintModeLayer (juce::Graphics& g)
     for (auto x = plotLeft; x <= width - plotRight; x += 1.0f)
     {
         const auto hz = hzForX (x, width);
-        const auto db = mode == subtract ? (float) profileDbAt (hz) : (float) processor.curveDbAt (mode, hz);
+        const auto db = mode == subtract ? (float) profileDbAt (hz) : (float) processor.curveDbAt (thresholdCurve(), hz);
 
         if (mode == subtract && db < -190.0f)
             return;
@@ -589,15 +793,110 @@ void FirGraph::paintModeLayer (juce::Graphics& g)
     if (! editsCurve() || editMode == fir::freehand)
         return;
 
-    for (const auto& point : processor.getPoints (curve()))
+    paintPoints (g, curve(), colour);
+}
+
+void FirGraph::paintCurveLine (juce::Graphics& g, int curveIndex, juce::Colour colour, bool edited, bool filled)
+{
+    const auto width = (float) getWidth();
+    const auto bottom = (float) getHeight() - plotBottom;
+
+    juce::Path line;
+
+    for (auto x = plotLeft; x <= width - plotRight; x += 1.0f)
     {
-        const juce::Point<float> centre (xForHz (point.hz, width), yFor ((float) point.db));
+        const auto hz = hzForX (x, width);
+        const auto y = juce::jlimit (plotTop, bottom, yForCurve (curveIndex, processor.curveDbAt (curveIndex, hz), hz));
+
+        if (x == plotLeft)
+            line.startNewSubPath (x, y);
+        else
+            line.lineTo (x, y);
+    }
+
+    if (filled)
+    {
+        auto fill = line;
+        fill.lineTo (width - plotRight, bottom);
+        fill.lineTo (plotLeft, bottom);
+        fill.closeSubPath();
+
+        g.setColour (colour.withAlpha (0.14f));
+        g.fillPath (fill);
+    }
+
+    if (edited)
+    {
+        g.setColour (colour);
+        g.strokePath (line, juce::PathStrokeType (2.0f));
+        return;
+    }
+
+    juce::Path dashed;
+    const float dashes[] { 4.0f, 3.0f };
+    juce::PathStrokeType (1.2f).createDashedStroke (dashed, line, dashes, 2);
+    g.setColour (colour.withAlpha (0.45f));
+    g.fillPath (dashed);
+}
+
+void FirGraph::paintPoints (juce::Graphics& g, int curveIndex, juce::Colour colour)
+{
+    const auto width = (float) getWidth();
+    const auto& points = processor.getPoints (curveIndex);
+
+    for (const auto& point : points)
+    {
+        const juce::Point<float> centre (xForHz (point.hz, width), yForCurve (curveIndex, point.db, point.hz));
         const auto circle = juce::Rectangle<float> (pointRadius * 2.0f, pointRadius * 2.0f).withCentre (centre);
 
         g.setColour (colours::textPrimary);
         g.fillEllipse (circle);
         g.setColour (colour);
         g.drawEllipse (circle, 2.0f);
+    }
+
+    // Phase 4 Wave 2 (mockup 59): the selected ratio point shows its frequency and ratio.
+    if (fir::baseCurve (curveIndex) != fir::ratioCurve || selectedPoint < 0 || selectedPoint >= (int) points.size())
+        return;
+
+    const auto& point = points[(size_t) selectedPoint];
+    const auto text = fancy::formatHz ((float) point.hz) + juce::String::fromUTF8 (" \xc2\xb7 ") + formatValue (curveIndex, point.db);
+    const auto anchor = juce::Point<float> (xForHz (point.hz, width), yForCurve (curveIndex, point.db, point.hz));
+
+    g.setFont (font (Weight::regular, 11.0f));
+
+    juce::GlyphArrangement glyphs;
+    glyphs.addLineOfText (g.getCurrentFont(), text, 0.0f, 0.0f);
+
+    const auto boxWidth = std::ceil (glyphs.getBoundingBox (0, -1, true).getWidth()) + 14.0f;
+    auto box = juce::Rectangle<float> (anchor.x + 8.0f, anchor.y - 30.0f, boxWidth, 18.0f);
+
+    if (box.getRight() > width - plotRight)
+        box.setX (anchor.x - 8.0f - boxWidth);
+
+    box.setY (juce::jlimit (plotTop, (float) getHeight() - plotBottom - box.getHeight(), box.getY()));
+
+    g.setColour (colours::bgSection);
+    g.fillRoundedRectangle (box, 3.0f);
+    g.setColour (colours::grey5);
+    g.drawRoundedRectangle (box, 3.0f, 1.0f);
+    g.setColour (colours::textPrimary);
+    g.drawText (text, box.withTrimmedLeft (6.0f), juce::Justification::centredLeft, false);
+}
+
+void FirGraph::paintRatioScale (juce::Graphics& g)
+{
+    const auto right = (float) getWidth() - plotRight - 4.0f;
+    const auto height = (float) getHeight();
+
+    g.setFont (font (Weight::regular, 9.5f));
+    g.setColour (ratioColour());
+
+    for (const auto ratio : { 1.0, 2.0, 4.0, 20.0 })
+    {
+        const auto y = juce::jlimit (plotTop + 18.0f, height - plotBottom - 6.0f, yForRatio (ratio, height));
+        g.drawText (juce::String ((int) ratio) + ":1", juce::Rectangle<float> (right - 40.0f, y - 12.0f, 40.0f, 11.0f),
+                    juce::Justification::centredRight, false);
     }
 }
 
@@ -611,6 +910,9 @@ void FirGraph::paintLegend (juce::Graphics& g)
         items.push_back ({ "curve", modeColour (mode) });
     else if (mode == gate || mode == compressor)
         items.push_back ({ "threshold", modeColour (mode) });
+
+    if (mode == compressor)
+        items.push_back ({ "ratio", ratioColour() });
     else if (mode == subtract)
     {
         if (processor.getShared().hasProfile.load() || ! showsAdaptive())
@@ -666,7 +968,7 @@ void FirGraph::paint (juce::Graphics& g)
 bool FirGraph::showsAdaptive() const
 {
     return mode == subtract && processor.getApvts().getRawParameterValue ("source")->load() >= 0.5f
-        && processor.getShared().hasAdaptive.load();
+        && (sideShown ? processor.getShared().hasSideAdaptive : processor.getShared().hasAdaptive).load();
 }
 
 // Phase 2.1 A: the adaptive estimate, dashed in the mode colour, over the learned profile.
@@ -676,6 +978,7 @@ void FirGraph::paintAdaptive (juce::Graphics& g)
         return;
 
     auto& shared = processor.getShared();
+    const auto& adaptive = sideShown ? shared.sideAdaptive : shared.adaptive;
     const auto width = (float) getWidth();
     const auto bottom = (float) getHeight() - plotBottom;
     const auto offset = (double) processor.getApvts().getRawParameterValue ("offset")->load();
@@ -689,7 +992,7 @@ void FirGraph::paintAdaptive (juce::Graphics& g)
         const auto position = juce::jlimit (0.0, (double) (profilePoints - 1), hzForX (x, width) / step);
         const auto index = juce::jmin ((int) position, profilePoints - 2);
         const auto fraction = position - (double) index;
-        const auto power = (double) shared.adaptive[(size_t) index].load() + fraction * (double) (shared.adaptive[(size_t) index + 1].load() - shared.adaptive[(size_t) index].load());
+        const auto power = (double) adaptive[(size_t) index].load() + fraction * (double) (adaptive[(size_t) index + 1].load() - adaptive[(size_t) index].load());
         const auto db = (float) (10.0 * std::log10 (std::max (power * scale, 1.0e-20)) + offset);
         const auto y = juce::jlimit (plotTop, bottom, yFor (db));
 
@@ -738,6 +1041,7 @@ void FirGraph::mouseDown (const juce::MouseEvent& event)
     draggingCurve = false;
     drawing = false;
     lastMouse = event.position;
+    selectedPoint = -1;
 
     if (! editsCurve() || event.position.x < plotLeft || event.position.y > (float) getHeight() - plotBottom)
         return;
@@ -784,6 +1088,7 @@ void FirGraph::mouseDown (const juce::MouseEvent& event)
         }
 
         dragPoint = index;
+        selectedPoint = index;
         dragStartHz = points[(size_t) index].hz;
         return;
     }
@@ -800,6 +1105,7 @@ void FirGraph::mouseDown (const juce::MouseEvent& event)
     processor.setPoints (curve(), points);
 
     dragPoint = pointAt (event.position);
+    selectedPoint = dragPoint;
     dragStartHz = hz;
 }
 
@@ -863,7 +1169,7 @@ void FirGraph::mouseDrag (const juce::MouseEvent& event)
 
     for (int i = 0; i < (int) sorted.size(); ++i)
         if (sorted[(size_t) i] == moved)
-            dragPoint = i;
+            dragPoint = selectedPoint = i;
 }
 
 void FirGraph::mouseUp (const juce::MouseEvent&)
@@ -904,13 +1210,12 @@ void FirGraph::typePoint (int index)
     spec.title = "Point " + juce::String (index + 1);
     spec.action = "Set";
     spec.fields.push_back ({ "Frequency", fancy::formatHz ((float) point.hz) });
-    // Phase 4 Wave 2: the depth curve's points are a percentage of Depth.
-    if (mode == resonance)
-        spec.fields.push_back ({ "Depth", juce::String (juce::roundToInt (point.db)) + " %" });
-    else
-        spec.fields.push_back ({ "Gain", fancy::formatFixed ((float) point.db, 1) + " dB" });
-
+    // Phase 4 Wave 2: the depth curve's points are a percentage of Depth, and the ratio curve's
+    // a ratio, which is stored relative to the Ratio knob.
     const auto curve = this->curve();
+    const auto base = fir::baseCurve (curve);
+
+    spec.fields.push_back ({ base == fir::depthCurve ? "Depth" : base == fir::ratioCurve ? "Ratio" : "Gain", formatValue (curve, point.db) });
 
     fancy::ui::showDialog (*this, std::move (spec),
                            [safeThis = juce::Component::SafePointer<FirGraph> (this), index, curve] (bool accepted, const juce::StringArray& values)
@@ -927,7 +1232,12 @@ void FirGraph::typePoint (int index)
             points[(size_t) index].hz = (double) fancy::parseHz (values[0]);
 
         if (fancy::isValueText (values[1]))
-            points[(size_t) index].db = fir::clampCurveValue (curve, (double) fancy::parseNumber (values[1]));
+        {
+            if (fir::baseCurve (curve) == fir::ratioCurve)
+                points[(size_t) index].db = fir::curveFromRatio (safeThis->knobRatio, (double) fancy::parseExpansionRatio (values[1], (float) fir::maxRatio));
+            else
+                points[(size_t) index].db = fir::clampCurveValue (curve, (double) fancy::parseNumber (values[1]));
+        }
 
         safeThis->processor.setPoints (curve, points);
     });

@@ -31,14 +31,17 @@ FirDsp::~FirDsp()
 FirDsp::Config FirDsp::normalised (Config config) noexcept
 {
     if (config.convolve)
+    {
         config.lowLatency = false;
+        config.midSide = false;
+    }
 
     return config;
 }
 
 int FirDsp::pack (const Config& config) noexcept
 {
-    return config.fftSize | (config.lowLatency ? 1 << 20 : 0) | (config.convolve ? 1 << 21 : 0);
+    return config.fftSize | (config.lowLatency ? 1 << 20 : 0) | (config.convolve ? 1 << 21 : 0) | (config.midSide ? 1 << 22 : 0);
 }
 
 FirDsp::Config FirDsp::unpack (int packed) noexcept
@@ -47,6 +50,7 @@ FirDsp::Config FirDsp::unpack (int packed) noexcept
     config.fftSize = packed & ((1 << 20) - 1);
     config.lowLatency = (packed & (1 << 20)) != 0;
     config.convolve = (packed & (1 << 21)) != 0;
+    config.midSide = (packed & (1 << 22)) != 0;
     return config;
 }
 

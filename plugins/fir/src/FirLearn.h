@@ -77,8 +77,10 @@ public:
         if (frames.empty())
             return points;
 
-        const auto fraction = curve == 1 ? 0.2 : 0.8; // Gate, else Compressor
-        const auto lift = curve == 1 ? 6.0 : 0.0;
+        // Gate, else Compressor; the side's curves (Phase 4 Wave 2) learn as the mid's do.
+        const auto gating = baseCurve (curve) == gate;
+        const auto fraction = gating ? 0.2 : 0.8;
+        const auto lift = gating ? 6.0 : 0.0;
         std::vector<float> values;
 
         for (int band = 0; band < numBands; ++band)

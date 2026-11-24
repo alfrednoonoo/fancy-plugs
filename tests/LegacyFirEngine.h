@@ -10,6 +10,9 @@
 
 namespace fir::legacy
 {
+// v1.6.0 had three curves: EQ, Gate and Compressor.
+constexpr int legacyNumCurves = 3;
+
 
 // What the engine needs from the parameters, once per block.
 struct FrameSettings
@@ -115,8 +118,8 @@ private:
 
     // Per bin, per channel.
     std::vector<float> gains[2], envelopes[2], priorSnr[2], smoothedKey[2], mask[2];
-    std::vector<float> binHz, curveDb[numCurves], profilePower, scratch, detectorLevels;
-    int seenCurveVersion[numCurves] { -1, -1, -1 };
+    std::vector<float> binHz, curveDb[legacyNumCurves], profilePower, scratch, detectorLevels;
+    int seenCurveVersion[legacyNumCurves] { -1, -1, -1 };
     int seenProfileVersion = -1;
     bool profileReady = false;
 
