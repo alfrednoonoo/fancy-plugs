@@ -1,6 +1,6 @@
 # Fancy Sature measurements
 
-From CI run 43075498314 (commit 02ffb3f), 48 kHz, 128-sample blocks unless stated. See docs/sature.md.
+From CI run 43075498314 (commit 02ffb3f); the auto gain, cpu and workflow lines from run 45435263183 (commit 655667a, Wave 2 items 35 to 39). 48 kHz, 128-sample blocks unless stated. See docs/sature.md.
 
 PASS  Fancy Sature at defaults: reported latency matches the measured delay (reported 6, measured 7)
 PASS  Fancy Sature: loads
@@ -27,10 +27,12 @@ sature auto gain Tape      : Drive  0 -0.03 LU Drive 12 -0.05 LU Drive 24 -0.42 
 sature auto gain Tube      : Drive  0 -0.03 LU Drive 12 -0.05 LU Drive 24 -0.16 LU Drive 36 -0.47 LU
 sature auto gain Transistor: Drive  0 -0.02 LU Drive 12 -0.05 LU Drive 24 -0.26 LU Drive 36 -0.63 LU
 sature auto gain Clip      : Drive  0 -0.02 LU Drive 12 -0.05 LU Drive 24 -0.28 LU Drive 36 -0.65 LU
-sature cpu (median of 5): defaults, 4x minimum phase (target < 2 %) 1.723 %, 4x linear 4.471 %, off 0.225 %, 8x 3.363 %, 4x with Low and High 1.970 %
-sature cpu reference: Fancy Comp default 0.462 % in the same run; sature 4x / comp = 3.73, linear / comp = 9.68, off / comp = 0.49, 8x / comp = 7.28
+sature auto gain Diode     : Drive  0 +0.19 LU Drive 12 +0.03 LU Drive 24 -0.07 LU Drive 36 -0.09 LU
+sature auto gain Fold      : Drive  0 +0.16 LU Drive 12 +0.14 LU Drive 24 -0.35 LU Drive 36 -0.05 LU
+sature cpu (median of 5): defaults, 4x minimum phase (target < 2 %) 1.778 %, 4x linear 4.303 %, off 0.276 %, 8x 3.413 %, 4x with Low and High 2.516 %
+sature cpu reference: Fancy Comp default 0.750 % in the same run; sature 4x / comp = 2.37, linear / comp = 5.73, off / comp = 0.37, 8x / comp = 4.55
 Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 0: 0.1465 % (target without oversampling < 0.5 %)
 Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 1: 1.1229 % (target without oversampling < 0.5 %)
 Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 2: 2.1010 % (target without oversampling < 0.5 %)
 Exciter CPU at 48 kHz, 128 samples, stereo, oversampling index 3: 3.7460 % (target without oversampling < 0.5 %)
-workflow cpu: Fancy Sature       default 2.084 % (3.54 x Comp); editor open, Compare measuring 2.043 % (3.47 x); Compare on 2.139 % (3.63 x)
+workflow cpu: Fancy Sature       default 1.952 % (2.05 x Comp); editor open, Compare measuring 2.010 % (2.11 x); Compare on 2.129 % (2.24 x)
