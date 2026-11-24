@@ -1962,6 +1962,7 @@ private:
 EqEditor::BandList::BandList (EqProcessor& processor, EqEditor& ownerToUse) : eqProcessor (processor), owner (ownerToUse)
 {
     addAndMakeVisible (viewport);
+    viewport.setWantsKeyboardFocus (false); // the keyboard stays with the host (H.2)
     viewport.setViewedComponent (&content, false);
     viewport.setScrollBarsShown (true, false);
     viewport.setScrollBarThickness (6);
