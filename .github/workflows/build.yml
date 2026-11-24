@@ -80,8 +80,14 @@ jobs:
         id: build
         run: cmake --build build -- -k 0
 
+      # Run directly with each test case's name and time printed as it finishes, so a crash that
+      # names no test (heap corruption, 0xc0000374, runs 45175938464 and 45301827449) shows where.
       - name: Run DSP tests
-        run: ctest --test-dir build --output-on-failure --verbose
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path build/tests -Recurse -File -Filter 'fancy-tests.exe' | Select-Object -First 1
+          & $exe.FullName --durations yes
+          if ($LASTEXITCODE -ne 0) { throw "fancy-tests exited with $LASTEXITCODE" }
 
       - name: Record measurements
         shell: pwsh
