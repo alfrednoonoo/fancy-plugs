@@ -1,4 +1,5 @@
 #include "EqGraph.h"
+#include "EqGroups.h"
 
 #include <fancy/Decibels.h>
 #include <fancy/plugin/ParamFormat.h>
@@ -285,6 +286,16 @@ void EqGraph::update()
             lastSpecs[(size_t) b] = spec;
             lastUsed[(size_t) b] = used;
             needsRecalculation = true;
+        }
+
+        // Phase 4 Wave 2 item 46: a group's letter on the handle; only a repaint.
+        const auto group = juce::roundToInt (bandParameter (b, "group").convertFrom0to1 (bandParameter (b, "group").getValue()));
+
+        if (group != lastGroups[(size_t) b])
+        {
+            lastGroups[(size_t) b] = group;
+            bands[(size_t) b].group = group;
+            repaint();
         }
 
         // Dynamic bands redraw as their change moves, in 0.05 dB steps (Phase 2.1 D).
@@ -878,6 +889,18 @@ void EqGraph::paintHandles (juce::Graphics& g)
             {
                 g.drawText (juce::String (b + 1), circle, juce::Justification::centred, false);
             }
+
+            // Phase 4 Wave 2 item 46: a grouped band's letter in a small grey tag, up and right.
+            if (const auto letter = eq::groups::letter (band.group); letter != 0)
+            {
+                const auto tag = juce::Rectangle<float> (centre.x + 7.0f, centre.y - 17.0f, 15.0f, 14.0f);
+                g.setColour (colours::grey6);
+                g.fillRoundedRectangle (tag, 4.0f);
+                g.setColour (colours::textPrimary);
+                g.setFont (font (Weight::semiBold, 9.5f));
+                g.drawText (juce::String::charToString ((juce::juce_wchar) letter), tag, juce::Justification::centred, false);
+                g.setFont (font (Weight::semiBold, 11.0f));
+            }
         }
     }
 }
@@ -1056,13 +1079,15 @@ void EqGraph::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWh
     auto& q = bandParameter (band, "q");
     const auto step = wheel.deltaY * (event.mods.isShiftDown() ? 0.1f / fineDivisor : 0.1f);
 
-    const fancy::FancyProcessor::UserEdit edit (processor);
+    // A gesture, so a group follows (Phase 4 Wave 2 item 46); undo makes it a step as before.
+    q.beginChangeGesture();
     q.setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, q.getValue() + step));
+    q.endChangeGesture();
 }
 
 void EqGraph::showBandMenu (int band, juce::Point<float> position)
 {
-    constexpr int typeBase = 100, slopeBase = 200, channelBase = 300, freqItem = 1, gainItem = 2, powerItem = 3, resetItem = 4, deleteItem = 5;
+    constexpr int typeBase = 100, slopeBase = 200, channelBase = 300, groupBase = 400, freqItem = 1, gainItem = 2, powerItem = 3, resetItem = 4, deleteItem = 5;
 
     auto& type = bandParameter (band, "type");
     auto& slope = bandParameter (band, "slope");
@@ -1109,6 +1134,19 @@ void EqGraph::showBandMenu (int band, juce::Point<float> position)
         menu.addSubMenu ("Channel", std::move (channelMenu), processor.getMainBusNumInputChannels() >= 2);
     }
 
+    // Phase 4 Wave 2 item 46: the band's group, after Channel.
+    {
+        auto& group = bandParameter (band, "group");
+        const auto groups = group.getAllValueStrings();
+
+        fancy::ui::Menu groupMenu;
+
+        for (int i = 0; i < groups.size(); ++i)
+            groupMenu.addItem (groupBase + i, groups[i], true, groups[i] == group.getCurrentValueAsText());
+
+        menu.addSubMenu ("Group", std::move (groupMenu));
+    }
+
     menu.addItem (powerItem, "Enabled", true, spec.on);
     menu.addSeparator();
     menu.addItem (resetItem, "Reset band", true, false, "Double-click");
@@ -1138,6 +1176,13 @@ void EqGraph::showBandMenu (int band, juce::Point<float> position)
         {
             if (self.onDeleteBand != nullptr)
                 self.onDeleteBand (band);
+        }
+        else if (result >= groupBase)
+        {
+            auto& group = self.bandParameter (band, "group");
+            group.beginChangeGesture();
+            group.setValueNotifyingHost (group.convertTo0to1 ((float) (result - groupBase)));
+            group.endChangeGesture();
         }
         else if (result >= channelBase)
         {

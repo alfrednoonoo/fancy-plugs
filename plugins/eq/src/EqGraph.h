@@ -78,6 +78,7 @@ private:
         std::vector<float> db;
         juce::Point<float> handle;
         bool used = false;
+        int group = 0; // Phase 4 Wave 2 item 46: 0 is none, 1 to 4 are A to D
 
         // Phase 2.1 D: a dynamic band's reach (its curve at Gain + Range) and current change.
         bool dynamic = false;
@@ -141,6 +142,7 @@ private:
     std::array<eq::BandSpec, eq::maxBands> lastSpecs;
     std::array<bool, eq::maxBands> lastUsed {};
     std::array<DynamicState, eq::maxBands> lastDynamics {};
+    std::array<int, eq::maxBands> lastGroups {};
     double lastRate = 0.0;
     float rangeDb = 12.0f;
     bool needsRecalculation = true;

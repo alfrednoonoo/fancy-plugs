@@ -1,4 +1,5 @@
 #include "EqEditor.h"
+#include "EqGroups.h"
 
 #include <fancy/plugin/ParamHelpers.h>
 
@@ -184,8 +185,22 @@ void EqEditor::TabStrip::paint (juce::Graphics& g)
         g.setColour (bands[(size_t) i] == selected ? bandColour (bands[(size_t) i]) : colours::grey5);
         g.fillRect (area);
 
+        // Phase 4 Wave 2 item 46: a grouped band's tab carries its letter at the right.
+        const auto letter = i < (int) groups.size() ? eq::groups::letter (groups[(size_t) i]) : (char) 0;
+
         g.setColour (colours::textPrimary);
-        g.drawText (juce::String (bands[(size_t) i] + 1), area, juce::Justification::centred, false);
+        g.drawText (juce::String (bands[(size_t) i] + 1), letter != 0 ? area.withTrimmedRight (12) : area, juce::Justification::centred, false);
+
+        if (letter != 0)
+        {
+            const auto tag = juce::Rectangle<float> ((float) area.getRight() - 16.0f, (float) area.getY() + 4.5f, 14.0f, 14.0f);
+            g.setColour (colours::grey6);
+            g.fillRoundedRectangle (tag, 4.0f);
+            g.setColour (colours::textPrimary);
+            g.setFont (font (Weight::semiBold, 9.5f));
+            g.drawText (juce::String::charToString ((juce::juce_wchar) letter), tag, juce::Justification::centred, false);
+            g.setFont (font (Weight::regular, 14.0f));
+        }
     }
 }
 
@@ -206,6 +221,22 @@ EqEditor::BandEditor::TypeDropdown::TypeDropdown (juce::RangedAudioParameter& ty
 void EqEditor::BandEditor::TypeDropdown::paint (juce::Graphics& g)
 {
     const auto bounds = getLocalBounds().toFloat();
+
+    // Phase 4 Wave 2 item 46: the band list's menu box, the type's name in 12 px.
+    if (listStyle)
+    {
+        g.setColour (isMenuOpen() ? colours::menuHover : colours::bgSection);
+        g.fillRoundedRectangle (bounds, 3.0f);
+
+        g.setColour (colours::textPrimary);
+        g.setFont (font (Weight::regular, 12.0f));
+        g.drawText (getValueText(), bounds.withTrimmedLeft (6.0f).withTrimmedRight (14.0f), juce::Justification::centredLeft, true);
+
+        g.setColour (juce::Colours::white.withAlpha (0.4f));
+        g.strokePath (icons::chevrons (juce::Rectangle<float> (5.0f, 8.0f).withCentre ({ bounds.getRight() - 8.0f, bounds.getCentreY() })),
+                      juce::PathStrokeType (1.0f));
+        return;
+    }
 
     if (! compact || isMenuOpen())
     {
@@ -314,6 +345,9 @@ ValueField::ValueField (juce::RangedAudioParameter& parameter, const juce::Strin
 
 juce::Rectangle<int> ValueField::getValueArea() const
 {
+    if (labelText.isEmpty())
+        return getLocalBounds();
+
     return getLocalBounds().withTrimmedLeft (juce::jmin (46, getWidth() / 2));
 }
 
@@ -321,6 +355,15 @@ void ValueField::paint (juce::Graphics& g)
 {
     const auto bounds = getLocalBounds().toFloat();
     const auto valueArea = getValueArea().toFloat();
+
+    // Phase 4 Wave 2 item 46: the band list's bare value, or a dash for a value the band hasn't.
+    if (labelText.isEmpty())
+    {
+        g.setFont (font (Weight::regular, 12.5f));
+        g.setColour (showDash ? colours::textSecondary : colour);
+        g.drawText (showDash ? juce::String::charToString ((juce::juce_wchar) 0x2014) : getValueText(), bounds, juce::Justification::centredLeft, false);
+        return;
+    }
 
     g.setFont (font (Weight::regular, 12.0f));
     g.setColour (colours::textPrimary);
@@ -835,7 +878,8 @@ EqEditor::EqEditor (EqProcessor& processor)
       peakCheckbox (parameter ("anaPeak"), "Peak hold"),
       smoothingKnob (parameter ("anaSmooth"), "Smoothing", colours::uiTeal, Knob::smallStyle),
       autoGainCheckbox (parameter ("autoGain"), "Auto gain"),
-      characterDropdown (parameter ("character"))
+      characterDropdown (parameter ("character")),
+      viewSwitch (parameter ("bandView"), colours::grey6, colours::textPrimary)
 {
     // The title strip keeps one colour while the accent follows the selection.
     setTitleColour (bandColour (0));
@@ -968,6 +1012,15 @@ EqEditor::EqEditor (EqProcessor& processor)
     graph.setSelectedBand (selectedBand);
 
     compactMode = parameter ("compact").getValue() >= 0.5f;
+
+    // Phase 4 Wave 2 item 46: the Bands | List switch, the list and the group link.
+    viewSwitch.setTextHeight (11.5f);
+    viewSwitch.setTooltip ("Bands edits one band at a time; List shows every band in a table.");
+    body.addAndMakeVisible (viewSwitch);
+    bandList = std::make_unique<BandList> (processor, *this);
+    body.addChildComponent (*bandList);
+    groupLink = std::make_unique<GroupLink> (processor);
+    listShown = isListShown();
 
     enableResizing (minWidth, minHeight, maxWidth, maxHeight);
     updateSelection();
@@ -1124,16 +1177,32 @@ void EqEditor::updateSelection()
         graph.setSelectedBand (selectedBand);
     }
 
-    tabs.bands = std::move (used);
-    tabs.selected = selectedBand;
-    tabs.repaint();
+    // Phase 4 Wave 2 item 46: each tab's group letter.
+    std::vector<int> groups;
+
+    for (const auto band : used)
+        groups.push_back (juce::roundToInt (parameter (EqProcessor::id (band, "group")).convertFrom0to1 (parameter (EqProcessor::id (band, "group")).getValue())));
+
+    if (groups != tabs.groups || used != tabs.bands || selectedBand != tabs.selected)
+    {
+        tabs.groups = std::move (groups);
+        tabs.bands = std::move (used);
+        tabs.selected = selectedBand;
+        tabs.repaint();
+    }
 
     const auto anyBand = ! tabs.bands.empty();
+    const auto listing = listShown && ! compactMode;
+
+    if (bandList != nullptr)
+        bandList->setVisible (listing);
+
+    tabs.setVisible (! compactMode && ! listing);
 
     for (int band = 0; band < eq::maxBands; ++band)
     {
-        // In Compact mode the Match card takes the band card's place.
-        bandEditors[(size_t) band]->setVisible (anyBand && band == selectedBand && ! (compactMode && matchOpen));
+        // In Compact mode the Match card takes the band card's place; in List, the list does.
+        bandEditors[(size_t) band]->setVisible (anyBand && band == selectedBand && ! (compactMode && matchOpen) && ! listing);
         slopeDropdowns[(size_t) band]->setVisible (band == selectedBand);
     }
 }
@@ -1178,8 +1247,12 @@ void EqEditor::layoutEditors()
     phaseCheckbox.setBounds (rowLeft + 351, rowY, 103, 20);
     compactCheckbox.setBounds (rowLeft + 486, rowY, 123, 20);
 
-    tabs.setVisible (! compactMode);
-    tabs.setBounds (17, detailsTop, contentWidth, tabHeight);
+    tabs.setVisible (! compactMode && ! listShown);
+
+    // Phase 4 Wave 2 item 46: clear of the Bands | List switch (which ends at x 126), about the
+    // same centre as before, so a few tabs sit where they always did and 24 narrow to fit.
+    constexpr int tabsLeft = 134;
+    tabs.setBounds (tabsLeft, detailsTop, juce::jmax (100, contentWidth + 34 - 2 * tabsLeft), tabHeight);
 
     for (auto& editor : bandEditors)
     {
@@ -1193,6 +1266,16 @@ void EqEditor::layoutEditors()
 
         editor->layoutFor (compactMode);
         editor->toFront (false);
+    }
+
+    // Phase 4 Wave 2 item 46: the list in the band strip's place, the switch over its left end.
+    if (bandList != nullptr)
+    {
+        bandList->setBounds (0, detailsTop, contentWidth, detailsHeight);
+        bandList->toFront (false);
+        viewSwitch.setBounds (14, detailsTop + 2, 112, 20);
+        viewSwitch.setVisible (! compactMode);
+        viewSwitch.toFront (false);
     }
 
     // The Match card floats over the bottom of the graph, as the Compact-mode card does.
@@ -1244,7 +1327,17 @@ void EqEditor::onTick (float)
         layoutEditors();
     }
 
+    // Phase 4 Wave 2 item 46: Bands or List.
+    if (isListShown() != listShown)
+    {
+        listShown = ! listShown;
+        layoutEditors();
+    }
+
     updateSelection();
+
+    if (listShown && ! compactMode && bandList != nullptr)
+        bandList->update();
 
     bandEditors[(size_t) selectedBand]->update();
 
@@ -1301,6 +1394,57 @@ void EqEditor::applyPreviewValues()
 
     graph.showPreviewSpectrum();
     selectBand (1);
+}
+
+bool EqEditor::isListShown()
+{
+    return parameter ("bandView").getValue() >= 0.5f;
+}
+
+void EqEditor::openInBands (int band)
+{
+    auto& view = parameter ("bandView");
+    view.beginChangeGesture();
+    view.setValueNotifyingHost (0.0f);
+    view.endChangeGesture();
+
+    listShown = false;
+    selectBand (band);
+    layoutEditors();
+    updateSelection();
+}
+
+void EqEditor::showListPreview()
+{
+    applyPreviewValues();
+
+    auto& processor = eqProcessor();
+    processor.setParameter ("b2group", 1.0f);
+    processor.setParameter ("b3group", 1.0f);
+    processor.setParameter ("b3dyn", 1.0f);
+    processor.setParameter ("bandView", 1.0f);
+
+    parameter ("compact").setValueNotifyingHost (0.0f);
+    compactMode = false;
+    listShown = true;
+    layoutEditors();
+    updateSelection();
+    bandList->update();
+
+    drawer.setVisible (false);
+    graph.update();
+}
+
+void EqEditor::showGroupsPreview()
+{
+    showListPreview();
+
+    eqProcessor().setParameter ("bandView", 0.0f);
+    listShown = false;
+    layoutEditors();
+    updateSelection();
+    bandEditors[(size_t) selectedBand]->update();
+    graph.update();
 }
 
 void EqEditor::showPreview (bool drawerOpen)
@@ -1472,4 +1616,449 @@ std::vector<fancy::ui::ShellEditor::PopupOpener> EqEditor::getPopupOpeners()
     openers.push_back ({ "value-freq", [this] { bandEditors[(size_t) selectedBand]->getFrequencyKnob().openValueEditor(); } });
 
     return openers;
+}
+
+// GroupLink (Phase 4 Wave 2 item 46) -------------------------------------------------
+
+EqEditor::GroupLink::GroupLink (EqProcessor& processor) : eqProcessor (processor)
+{
+    for (int band = 0; band < eq::maxBands; ++band)
+    {
+        for (const auto suffix : { freq, gain, q })
+        {
+            auto& watchedParameter = parameter (band, suffix);
+            watched[watchedParameter.getParameterIndex()] = band * 3 + suffix;
+            watchedParameter.addListener (this);
+        }
+    }
+}
+
+EqEditor::GroupLink::~GroupLink()
+{
+    for (int band = 0; band < eq::maxBands; ++band)
+        for (const auto suffix : { freq, gain, q })
+            parameter (band, suffix).removeListener (this);
+}
+
+juce::RangedAudioParameter& EqEditor::GroupLink::parameter (int band, int suffix)
+{
+    static const char* const suffixes[] { "freq", "gain", "q" };
+    return *eqProcessor.getApvts().getParameter (EqProcessor::id (band, suffixes[suffix]));
+}
+
+int EqEditor::GroupLink::groupOf (int band)
+{
+    auto& group = *eqProcessor.getApvts().getParameter (EqProcessor::id (band, "group"));
+    return juce::roundToInt (group.convertFrom0to1 (group.getValue()));
+}
+
+void EqEditor::GroupLink::parameterGestureChanged (int parameterIndex, bool gestureIsStarting)
+{
+    // Only the editor's own edits, on the message thread, and never the link's own gestures.
+    if (applying || ! juce::MessageManager::existsAndIsCurrentThread())
+        return;
+
+    const auto found = watched.find (parameterIndex);
+
+    if (found == watched.end())
+        return;
+
+    if (! gestureIsStarting)
+    {
+        if (const auto session = sessions.find (parameterIndex); session != sessions.end())
+        {
+            const juce::ScopedValueSetter<bool> guard (applying, true);
+
+            for (const auto member : session->second.members)
+                parameter (member, session->second.suffix).endChangeGesture();
+
+            sessions.erase (session);
+        }
+
+        return;
+    }
+
+    if (sessions.count (parameterIndex) > 0)
+        return;
+
+    const auto band = found->second / 3, suffix = found->second % 3;
+    const auto group = groupOf (band);
+
+    if (group == 0 || ! eqProcessor.isBandUsed (band))
+        return;
+
+    Session session;
+    session.band = band;
+    session.suffix = suffix;
+    session.starts.push_back ((double) parameter (band, suffix).convertFrom0to1 (parameter (band, suffix).getValue()));
+
+    for (int other = 0; other < eq::maxBands; ++other)
+    {
+        if (other == band || ! eqProcessor.isBandUsed (other) || groupOf (other) != group)
+            continue;
+
+        // Cuts, notches, band-passes and all-passes have no gain to move.
+        if (suffix == gain && ! eq::hasGain (eqProcessor.readBand (other).type))
+            continue;
+
+        auto& memberParameter = parameter (other, suffix);
+        session.members.push_back (other);
+        session.starts.push_back ((double) memberParameter.convertFrom0to1 (memberParameter.getValue()));
+    }
+
+    if (session.members.empty())
+        return;
+
+    {
+        const juce::ScopedValueSetter<bool> guard (applying, true);
+
+        for (const auto member : session.members)
+            parameter (member, suffix).beginChangeGesture();
+    }
+
+    sessions[parameterIndex] = std::move (session);
+}
+
+void EqEditor::GroupLink::parameterValueChanged (int parameterIndex, float newValue)
+{
+    if (applying || ! juce::MessageManager::existsAndIsCurrentThread())
+        return;
+
+    const auto found = sessions.find (parameterIndex);
+
+    if (found == sessions.end())
+        return;
+
+    const auto& session = found->second;
+    auto& edited = parameter (session.band, session.suffix);
+    const auto kind = session.suffix == gain ? eq::groups::Kind::offset : eq::groups::Kind::ratio;
+    const auto range = edited.getNormalisableRange();
+
+    const auto wanted = eq::groups::moveFor (kind, session.starts.front(), (double) edited.convertFrom0to1 (newValue));
+    const auto move = eq::groups::limitMove (kind, wanted, session.starts, (double) range.start, (double) range.end);
+
+    const juce::ScopedValueSetter<bool> guard (applying, true);
+
+    // At a member's limit the edited band stops too, so the group keeps its shape.
+    if (move != wanted)
+        edited.setValueNotifyingHost (edited.convertTo0to1 ((float) eq::groups::apply (kind, session.starts.front(), move)));
+
+    for (size_t i = 0; i < session.members.size(); ++i)
+    {
+        auto& member = parameter (session.members[i], session.suffix);
+        member.setValueNotifyingHost (member.convertTo0to1 ((float) eq::groups::apply (kind, session.starts[i + 1], move)));
+    }
+}
+
+// BandList (Phase 4 Wave 2 item 46) --------------------------------------------------
+
+namespace
+{
+// Mockup 66's columns (design/phase4-mockup-src/w2b_mockups.py, EQ_COLS): header text and x.
+constexpr std::pair<const char*, int> listColumns[] { { "ON", 50 }, { "TYPE", 84 }, { "FREQ", 196 }, { "GAIN", 288 }, { "Q", 372 },
+                                                     { "CH", 426 }, { "DYN", 480 }, { "GROUP", 552 }, { "SOLO", 622 } };
+const juce::Colour listSelection { 0xff3a3a3a };
+} // namespace
+
+class EqEditor::BandList::Row final : public juce::Component
+{
+public:
+    Row (EqProcessor& processor, EqEditor& ownerToUse, int bandIndex)
+        : band (bandIndex),
+          eqProcessor (processor),
+          owner (ownerToUse),
+          power (bandParameter ("on"), bandColour (bandIndex)),
+          type (bandParameter ("type"), bandParameter ("slope")),
+          freqField (bandParameter ("freq"), {}, bandColour (bandIndex)),
+          gainField (bandParameter ("gain"), {}, bandColour (bandIndex)),
+          qField (bandParameter ("q"), {}, bandColour (bandIndex)),
+          channel (bandParameter ("chan"), bandColour (bandIndex)),
+          group (bandParameter ("group")),
+          remove (fancy::ui::IconButton::Glyph::cross)
+    {
+        type.listStyle = true;
+        dyn.colour = bandColour (bandIndex);
+        group.setTextHeight (12.0f);
+
+        dyn.onClick = [this] { owner.openInBands (band); };
+        solo.onPress = [this] (bool down)
+        {
+            // As Ctrl-drag on a handle: the band alone while the mouse is held (temporary, §0.3).
+            eqProcessor.setListenTarget (band + 1);
+            eqProcessor.setListening (down);
+        };
+        remove.onClick = [this]
+        {
+            owner.selectBand (band);
+            owner.removeSelectedBand();
+        };
+
+        dyn.setTooltip ("The band's dynamic Range, or a dash if it isn't dynamic. Click to open the band.");
+        solo.setTooltip ("Hold to hear only what this band works on.");
+        group.setTooltip ("Bands in the same group move together: Freq and Q by the same ratio, Gain by the same dB.");
+
+        for (juce::Component* item : std::initializer_list<juce::Component*> { &power, &type, &freqField, &gainField, &qField, &channel, &dyn, &group, &solo, &remove })
+            addAndMakeVisible (item);
+    }
+
+    void resized() override
+    {
+        power.setBounds (52, 2, 18, 18);
+        type.setBounds (84, 1, 100, 19);
+        freqField.setBounds (196, 1, 84, 20);
+        gainField.setBounds (288, 1, 76, 20);
+        qField.setBounds (372, 1, 46, 20);
+        channel.setBounds (426, 1, 40, 19);
+        dyn.setBounds (480, 1, 64, 20);
+        group.setBounds (552, 1, 58, 19);
+        solo.setBounds (622, 1, 22, 19);
+        remove.setBounds (672, 1, 20, 20);
+    }
+
+    void update (bool isSelected)
+    {
+        const auto spec = eqProcessor.readBand (band);
+        const auto hasGain = eq::hasGain (spec.type);
+
+        if (gainField.showDash == hasGain)
+        {
+            gainField.showDash = ! hasGain;
+            gainField.setInterceptsMouseClicks (hasGain, false);
+            gainField.repaint();
+        }
+
+        auto text = juce::String::charToString ((juce::juce_wchar) 0x2014);
+
+        if (eqProcessor.isDynamic (band))
+        {
+            const auto range = eqProcessor.readDynamics (band).rangeDb;
+            text = juce::String (range < 0.0 ? juce::String::charToString ((juce::juce_wchar) 0x2212) : juce::String ("+"))
+                 + juce::String (std::abs (range), 1) + " dB";
+        }
+
+        dyn.setText (text);
+
+        const auto on = spec.on;
+
+        if (isSelected != selected || on != wasOn)
+        {
+            selected = isSelected;
+            wasOn = on;
+            repaint();
+        }
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        const auto colour = wasOn ? bandColour (band) : colours::grey6;
+
+        if (selected)
+        {
+            g.setColour (listSelection);
+            g.fillRoundedRectangle (juce::Rectangle<float> (8.0f, 0.0f, (float) getWidth() - 16.0f, 21.0f), 3.0f);
+            g.setColour (bandColour (band));
+            g.fillRoundedRectangle (juce::Rectangle<float> (8.0f, 0.0f, 3.0f, 21.0f), 1.5f);
+        }
+
+        const auto dot = juce::Rectangle<float> (18.0f, 3.0f, 15.0f, 15.0f);
+        g.setColour (colour);
+        g.fillEllipse (dot);
+        g.setColour (colours::textPrimary);
+        g.setFont (font (Weight::semiBold, 10.0f));
+        g.drawText (juce::String (band + 1), dot, juce::Justification::centred, false);
+    }
+
+    void mouseDown (const juce::MouseEvent&) override { owner.selectBand (band); }
+    void mouseDoubleClick (const juce::MouseEvent&) override { owner.openInBands (band); }
+
+    const int band;
+
+private:
+    juce::RangedAudioParameter& bandParameter (const char* suffix)
+    {
+        return *eqProcessor.getApvts().getParameter (EqProcessor::id (band, suffix));
+    }
+
+    // The Dyn column: text that opens the band in Bands when clicked.
+    class DynCell final : public juce::Component, public juce::SettableTooltipClient
+    {
+    public:
+        void setText (const juce::String& newText)
+        {
+            if (newText != text)
+            {
+                text = newText;
+                repaint();
+            }
+        }
+
+        void paint (juce::Graphics& g) override
+        {
+            g.setFont (font (Weight::regular, 12.5f));
+            g.setColour (text.startsWithChar ((juce::juce_wchar) 0x2014) ? colours::textSecondary : colour);
+            g.drawText (text, getLocalBounds(), juce::Justification::centredLeft, false);
+        }
+
+        void mouseUp (const juce::MouseEvent& event) override
+        {
+            if (onClick != nullptr && contains (event.getPosition()))
+                onClick();
+        }
+
+        std::function<void()> onClick;
+        juce::Colour colour;
+
+    private:
+        juce::String text;
+    };
+
+    // The Solo column: plays the band alone while it's held.
+    class SoloButton final : public juce::Component, public juce::SettableTooltipClient
+    {
+    public:
+        void paint (juce::Graphics& g) override
+        {
+            const auto bounds = getLocalBounds().toFloat();
+            g.setColour (down ? colours::textPrimary : colours::bgSection);
+            g.fillRoundedRectangle (bounds, 3.0f);
+            g.setColour (down ? colours::bgWell : colours::textSecondary);
+            g.setFont (font (Weight::regular, 11.0f));
+            g.drawText ("S", bounds, juce::Justification::centred, false);
+        }
+
+        void mouseDown (const juce::MouseEvent&) override { press (true); }
+        void mouseUp (const juce::MouseEvent&) override { press (false); }
+
+        std::function<void (bool)> onPress;
+
+    private:
+        void press (bool isDown)
+        {
+            down = isDown;
+            repaint();
+
+            if (onPress != nullptr)
+                onPress (isDown);
+        }
+
+        bool down = false;
+    };
+
+    EqProcessor& eqProcessor;
+    EqEditor& owner;
+
+    fancy::ui::ParamPowerIcon power;
+    BandEditor::TypeDropdown type;
+    ValueField freqField, gainField, qField;
+    fancy::ui::ChannelChip channel;
+    DynCell dyn;
+    fancy::ui::ParamDropdown group;
+    SoloButton solo;
+    fancy::ui::IconButton remove;
+
+    bool selected = false, wasOn = true;
+};
+
+EqEditor::BandList::BandList (EqProcessor& processor, EqEditor& ownerToUse) : eqProcessor (processor), owner (ownerToUse)
+{
+    addAndMakeVisible (viewport);
+    viewport.setViewedComponent (&content, false);
+    viewport.setScrollBarsShown (true, false);
+    viewport.setScrollBarThickness (6);
+    viewport.getVerticalScrollBar().setColour (juce::ScrollBar::thumbColourId, colours::grey6);
+
+    for (int band = 0; band < eq::maxBands; ++band)
+    {
+        rows.push_back (std::make_unique<Row> (processor, ownerToUse, band));
+        content.addChildComponent (*rows.back());
+    }
+
+    addRow.onClick = [this] { owner.addBand(); };
+    content.addChildComponent (addRow);
+}
+
+EqEditor::BandList::~BandList() = default;
+
+void EqEditor::BandList::resized()
+{
+    viewport.setBounds (0, rowsTop, getWidth(), juce::jmax (0, getHeight() - rowsTop));
+    shown.clear(); // lay the rows out again at the new width
+    update();
+}
+
+void EqEditor::BandList::update()
+{
+    std::vector<int> used;
+
+    for (int band = 0; band < eq::maxBands; ++band)
+        if (eqProcessor.isBandUsed (band))
+            used.push_back (band);
+
+    if (used != shown || content.getWidth() != getWidth())
+    {
+        shown = used;
+
+        // Rows by band number, as the tabs are (Decision 3 A).
+        auto y = 0;
+
+        for (auto& row : rows)
+            row->setVisible (false);
+
+        for (const auto band : shown)
+        {
+            auto& row = *rows[(size_t) band];
+            row.setBounds (0, y, getWidth(), rowHeight);
+            row.setVisible (true);
+            y += rowHeight;
+        }
+
+        addRow.setVisible ((int) shown.size() < eq::maxBands);
+        addRow.setBounds (0, y, getWidth(), rowHeight);
+        content.setSize (getWidth(), y + rowHeight);
+    }
+
+    for (const auto band : shown)
+        rows[(size_t) band]->update (band == owner.selectedBand);
+
+    // Keep the selected row in view when it changes.
+    if (owner.selectedBand != shownSelected)
+    {
+        shownSelected = owner.selectedBand;
+        const auto& row = *rows[(size_t) juce::jlimit (0, eq::maxBands - 1, shownSelected)];
+
+        if (row.isVisible())
+        {
+            const auto top = viewport.getViewPositionY();
+
+            if (row.getY() < top)
+                viewport.setViewPosition (0, row.getY());
+            else if (row.getBottom() > top + viewport.getMaximumVisibleHeight())
+                viewport.setViewPosition (0, row.getBottom() - viewport.getMaximumVisibleHeight());
+        }
+    }
+}
+
+void EqEditor::BandList::paint (juce::Graphics& g)
+{
+    g.setColour (colours::bgSection);
+    g.fillRect (0, 25, getWidth(), 1);
+
+    g.setColour (colours::textSecondary);
+    g.setFont (font (Weight::regular, 10.0f).withExtraKerningFactor (0.06f));
+
+    for (const auto& [name, x] : listColumns)
+        g.drawText (name, x, headerY, 70, 12, juce::Justification::centredLeft, false);
+}
+
+void EqEditor::BandList::AddRow::paint (juce::Graphics& g)
+{
+    g.setColour (colours::textSecondary);
+    g.setFont (font (Weight::regular, 12.0f));
+    g.drawText ("+ Add band", 18, 0, 120, getHeight(), juce::Justification::centredLeft, false);
+}
+
+void EqEditor::BandList::AddRow::mouseUp (const juce::MouseEvent& event)
+{
+    if (onClick != nullptr && event.x < 140 && contains (event.getPosition()))
+        onClick();
 }

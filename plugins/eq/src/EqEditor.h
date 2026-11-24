@@ -5,7 +5,9 @@
 
 #include <fancy/ui/ShellEditor.h>
 
+#include <map>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 // A parameter's value as a small field with a label, for a row with no room for a knob (Phase 4
@@ -13,10 +15,13 @@
 class ValueField final : public fancy::ui::ParamControl
 {
 public:
+    // With no label (Phase 4 Wave 2: the band list), the value alone, with no box behind it.
     ValueField (juce::RangedAudioParameter& parameter, const juce::String& label, juce::Colour colour);
 
     void paint (juce::Graphics&) override;
     juce::Colour getAccentColour() const override { return colour; }
+
+    bool showDash = false; // bare only: a dash in place of the value
 
 protected:
     juce::Rectangle<int> getValueArea() const override;
@@ -51,6 +56,11 @@ public:
     // Panel 3 of the Q2.4 mockup: the Match card open over a learned reference and current.
     void showMatchPreview();
 
+    // Phase 4 Wave 2 item 46, mockup 66 panel 1: the band list, bands 2 and 3 in group A; and
+    // panel 2, the same in Bands, with the group tags.
+    void showListPreview();
+    void showGroupsPreview();
+
     // Opens or closes the Match card. While it's open the processor's Match engine runs.
     void setMatchOpen (bool shouldBeOpen);
     bool isMatchOpen() const noexcept { return matchOpen; }
@@ -72,6 +82,7 @@ private:
 
         std::function<void (int)> onSelect;
         std::vector<int> bands;
+        std::vector<int> groups; // Phase 4 Wave 2 item 46: each tab's group, 0 for none
         int selected = 0;
 
     private:
@@ -100,6 +111,7 @@ private:
             void paint (juce::Graphics&) override;
 
             bool compact = false;
+            bool listStyle = false; // Phase 4 Wave 2: the band list's small menu box, no icon
 
         private:
             void clicked() override;
@@ -216,6 +228,77 @@ private:
         juce::Rectangle<int> learningOutline;
     };
 
+    // Phase 4 Wave 2 item 46 (docs/eq.md, "band list and groups"): moves a group with the band
+    // being edited. Only edits made in this window start gestures, never a host, so automation
+    // moves its own band only (Decision 1 A). At an edit's start it takes every member's value
+    // and opens a gesture on each, so automation records them and undo makes one step; each
+    // change then moves them from those values (eq::groups), and the edit's end closes them.
+    class GroupLink final : private juce::AudioProcessorParameter::Listener
+    {
+    public:
+        explicit GroupLink (EqProcessor& processor);
+        ~GroupLink() override;
+
+    private:
+        enum Suffix { freq, gain, q };
+
+        struct Session
+        {
+            int band = 0, suffix = freq;
+            std::vector<int> members;   // the other bands of the group
+            std::vector<double> starts; // the edited band's value, then each member's
+        };
+
+        void parameterValueChanged (int parameterIndex, float newValue) override;
+        void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override;
+
+        juce::RangedAudioParameter& parameter (int band, int suffix);
+        int groupOf (int band);
+
+        EqProcessor& eqProcessor;
+        std::unordered_map<int, int> watched; // parameter index to band * 3 + suffix
+        std::map<int, Session> sessions;      // by the edited parameter's index
+        bool applying = false;
+    };
+
+    // Phase 4 Wave 2 item 46: every band in use as a row of a table, in the band strip's place
+    // (mockup 66 panel 1). Rows for all 24 bands are made once and shown as bands come into use.
+    class BandList final : public juce::Component
+    {
+    public:
+        BandList (EqProcessor& processor, EqEditor& owner);
+        ~BandList() override;
+
+        // 30 Hz, from the editor: which rows show, and the selection.
+        void update();
+
+        void paint (juce::Graphics&) override;
+        void resized() override;
+
+        static constexpr int rowHeight = 22, headerY = 29, rowsTop = 44;
+
+    private:
+        class Row;
+
+        class AddRow final : public juce::Component
+        {
+        public:
+            void paint (juce::Graphics&) override;
+            void mouseUp (const juce::MouseEvent&) override;
+
+            std::function<void()> onClick;
+        };
+
+        EqProcessor& eqProcessor;
+        EqEditor& owner;
+        juce::Component content; // declared first, so the viewport lets go of it before it goes
+        juce::Viewport viewport;
+        std::vector<std::unique_ptr<Row>> rows;
+        AddRow addRow;
+        std::vector<int> shown;
+        int shownSelected = -1;
+    };
+
     void bodyResized() override;
     void onTick (float seconds) override;
     void updateMatchOverlay();
@@ -233,6 +316,10 @@ private:
     void updateSelection();
     void layoutEditors();
     void applyPreviewValues();
+
+    // Phase 4 Wave 2 item 46: Bands or List, and opening a band in Bands (from the list).
+    bool isListShown();
+    void openInBands (int band);
 
     Panels panels;
     EqGraph graph;
@@ -264,6 +351,12 @@ private:
     // Phase 4 Wave 2 (docs/eq.md): the Character output stage, under Auto gain.
     fancy::ui::ParamDropdown characterDropdown;
     juce::Label characterLabel;
+
+    // Phase 4 Wave 2 item 46: the Bands | List switch, the list and the group link.
+    fancy::ui::ParamSegments viewSwitch;
+    std::unique_ptr<BandList> bandList;
+    std::unique_ptr<GroupLink> groupLink;
+    bool listShown = false;
 
     bool compactMode = false;
     float lastRange = -1.0f;

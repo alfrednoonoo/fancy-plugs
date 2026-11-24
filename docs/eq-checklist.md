@@ -175,6 +175,16 @@ Tell me "EQ OK", or list which items failed and what you saw. Once it's OK, I'll
 - [ ] Character Subtle, then Warm, on a mix bus: Subtle is barely there, Warm thickens peaks; quiet passages sound the same; switching while playing doesn't click. Clean is the EQ as before.
 - [ ] Character Warm with Oversampling 4x on bright material: no harshness that Off doesn't have.
 
+## Band list and groups (Phase 4 Wave 2, v1.7.1)
+
+- [ ] Open a project saved with v1.7.0 that uses Fancy EQ: it loads and sounds as before, on Bands, every band in no group.
+- [ ] Click **List**: every band shows as a row, in band order, where the band editor was. Drag a Freq, Gain and Q value, click one to type, double-click one to reset: the graph follows. Type, Ch and Group open their menus.
+- [ ] Click a row: its handle is selected. Double-click a row, or click its Dyn: Bands opens on that band. Hold **S**: only that band's region plays. **×** asks before deleting a changed band. **+ Add band** adds one. With more than six bands the list scrolls.
+- [ ] Put bands 2 and 3 in group A: their handles and tabs show an A. Drag band 2's handle: band 3 moves with it, the same way. Drag towards 24 kHz: both stop when band 3 reaches the top. One Undo puts both back.
+- [ ] The same with a knob, a typed value and the mouse wheel on a handle (Q). A high-pass in the group follows Freq but not Gain.
+- [ ] Write automation while dragging band 2: band 3's lane is written too. Play automation on band 2 alone: band 3 doesn't move.
+- [ ] Save on List and reopen: it opens on List. Compact mode hides the switch; groups still move from the handles.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

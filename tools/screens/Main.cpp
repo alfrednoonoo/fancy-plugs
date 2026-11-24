@@ -222,7 +222,14 @@ bool renderEq (const juce::File& outputDir)
 
     // Phase 4 Wave 2: a Brickwall high-pass in the drawer's Slope, and Character.
     editor->showBrickwallPreview();
-    return writeBothScales (*editor, "eq-brickwall", outputDir) && ok;
+    ok = writeBothScales (*editor, "eq-brickwall", outputDir) && ok;
+
+    // Phase 4 Wave 2 item 46 (mockup 66): the band list, then Bands with the group tags.
+    editor->showListPreview();
+    ok = writeBothScales (*editor, "eq-list", outputDir) && ok;
+
+    editor->showGroupsPreview();
+    return writeBothScales (*editor, "eq-groups", outputDir) && ok;
 }
 #endif
 

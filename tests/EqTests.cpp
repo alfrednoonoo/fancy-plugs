@@ -1404,9 +1404,9 @@ TEST_CASE ("a state saved before Q2.4 loads with every new parameter at its defa
         child = next;
     }
 
-    // Eight bands of fifteen parameters (fourteen, and Phase 4 Wave 1's Reach), 24 Channels and
-    // the analyzer's.
-    CHECK (removed == 8 * 15 + 24 + 1);
+    // Eight bands of sixteen parameters (fourteen, Phase 4 Wave 1's Reach and Wave 2's Group), 24
+    // Channels and the analyzer's.
+    CHECK (removed == 8 * 16 + 24 + 1);
 
     xml->setAttribute ("stateVersion", 3);
 

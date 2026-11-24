@@ -174,6 +174,16 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
     // Phase 4 Wave 2 (docs/eq.md), appended: Clean doesn't run the stage, so it's the old sound.
     layout.add (std::make_unique<Choice> (juce::ParameterID { "character", 1 }, "Character", juce::StringArray { "Clean", "Subtle", "Warm" }, 0));
 
+    // Phase 4 Wave 2 item 46 (docs/eq.md, "band list and groups"), appended: each band's group,
+    // none by default, and the band strip's view. Neither touches the audio.
+    const juce::StringArray groups { juce::String::fromUTF8 ("\xe2\x80\x94"), "A", "B", "C", "D" };
+
+    for (int band = 0; band < eq::maxBands; ++band)
+        layout.add (std::make_unique<Choice> (juce::ParameterID { EqProcessor::id (band, "group"), 1 }, "Band " + juce::String (band + 1) + " Group",
+                                              groups, 0, Attributes {}.withAutomatable (false)));
+
+    layout.add (setting ("bandView", "Band view", { "Bands", "List" }, 0));
+
     return layout;
 }
 
@@ -509,6 +519,7 @@ int EqProcessor::addBand (float hz, float gainDb)
             continue;
 
         resetBand (band);
+        setParameter (id (band, "group"), 0.0f); // a new band starts in no group (Reset band keeps it)
         setParameter (id (band, "type"), 2.0f);
         setParameter (id (band, "freq"), hz);
         setParameter (id (band, "gain"), gainDb);
