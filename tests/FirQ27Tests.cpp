@@ -806,7 +806,7 @@ TEST_CASE ("fir W2b CPU measurement", "[.measure]")
             targets.engine = { 4096, false, false, midSide };
             dsp.prepare (rate, targets);
 
-            for (const auto curve : { fir::compressor, fir::sideCurve (fir::compressor) })
+            for (const auto curve : { (int) fir::compressor, fir::sideCurve (fir::compressor) })
             {
                 for (auto& value : dsp.shared.curves[(size_t) curve])
                     value.store (-30.0f);
