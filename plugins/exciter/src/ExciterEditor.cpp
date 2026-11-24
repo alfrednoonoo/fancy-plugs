@@ -115,7 +115,7 @@ ExciterEditor::ExciterEditor (ExciterProcessor& processor)
     punchKnob.setBounds (20, 221, 72, 99);
     highCutKnob.setBounds (102, 221, 72, 99);
     widthKnob.setBounds (184, 221, 72, 99);
-    shapeNote.setBounds (24, 313, 230, 48);
+    shapeNote.setBounds (24, 320, 230, 48); // 7 px under the mockup: fancy-core's knob face is 42 px, not 36
 
     freq2Knob.setTooltip ("Where Band 2 starts. It runs up to Freq, so above Freq it does nothing.");
     harmonics2Knob.setTooltip ("How much Band 2 adds: harmonics from Freq 2 up to Freq, for warmth and body. 0 turns it off.");
