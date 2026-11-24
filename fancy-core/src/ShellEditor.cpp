@@ -53,6 +53,12 @@ void CaptionPanels::setCaption (const juce::String& caption)
     }
 }
 
+void CaptionPanels::setCaptionRightInset (int inset)
+{
+    rightInset = inset;
+    repaint();
+}
+
 void CaptionPanels::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds();
@@ -65,7 +71,7 @@ void CaptionPanels::paint (juce::Graphics& g)
     g.setColour (colours::textSecondary);
     g.setFont (font (Weight::medium, 12.0f));
     // Right-aligned, so a short caption sits where it always did; room for Kicker's mode lines.
-    g.drawText (captionText, leftWidth - 224, captionTop, 200, 18, juce::Justification::centredRight, false);
+    g.drawText (captionText, leftWidth - 200 - rightInset, captionTop, 200, 18, juce::Justification::centredRight, false);
 }
 
 // EditLink --------------------------------------------------------------------

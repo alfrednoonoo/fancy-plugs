@@ -405,6 +405,16 @@ TEST_CASE ("EQ: sidechain inactive, mono, stereo, and the warning", "[host][side
 }
 #endif
 
+#if FANCY_HAS_KICKER
+// Phase 4 (docs/kicker.md): Duck from Sidechain, with Duck up so the notice can show.
+TEST_CASE ("Kicker: sidechain inactive, mono, stereo, and the warning", "[host][sidechain]")
+{
+    KickerProcessor processor;
+    set (processor, "duck", 6.0f);
+    checkSidechain (processor, [&] (bool on) { set (processor, "duckFrom", on ? 0.0f : 1.0f); }, true);
+}
+#endif
+
 #if FANCY_HAS_ROOM
 // Phase 4 Wave 2: Duck from Sidechain, with Ducking up so the notice can show.
 TEST_CASE ("Room: sidechain inactive, mono, stereo, and the warning", "[host][sidechain]")

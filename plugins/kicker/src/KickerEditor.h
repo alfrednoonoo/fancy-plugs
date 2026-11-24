@@ -5,6 +5,9 @@
 #include <fancy/ui/Meter.h>
 #include <fancy/ui/ShellEditor.h>
 
+#include <functional>
+#include <vector>
+
 class KickerEditor final : public fancy::ui::ShellEditor
 {
 public:
@@ -17,9 +20,18 @@ public:
     // in Sub mode (docs/kicker-sub.md).
     void showPreview (bool drawerOpen, bool subMode = false);
 
+    // Phase 4 (mockup 63): the drawer's pages, Main and Duck and clip.
+    enum DrawerPage { mainPage, duckPage };
+    void showDrawerPage (int page);
+
+    // For rendered screenshots: mockup 63's values, on the main window (panel 1, with the DUCK
+    // tag) or on the drawer's Duck and clip page (panel 2).
+    void showDuckPreview (bool drawerOpen);
+
 private:
     void onTick (float seconds) override;
     void updateMode();
+    bool isHostSyncChosen();
 
     fancy::ui::CaptionPanels panels;
     fancy::ui::ParamSegments modeSegments;
@@ -36,7 +48,7 @@ private:
     fancy::ui::EditLink editLink;
     fancy::ui::InOutMeter meter;
 
-    fancy::ui::EditDrawer drawer;
+    fancy::ui::EditDrawer drawer { juce::String() }; // the page switch takes the title's place
     fancy::ui::Knob qKnob, drawerOutputKnob, sensitivityKnob, subLowpassKnob;
     fancy::ui::ParamCheckbox monoCheckbox, softClipCheckbox, subMonoCheckbox;
 
@@ -54,6 +66,24 @@ private:
     fancy::ui::Knob subLengthKnob, roomFreqKnob, ceilingKnob;
     fancy::ui::ParamCheckbox roomCheckbox, polarityCheckbox, autoGainCheckbox;
     SubMeter subMeter;
+
+    // Phase 4 (mockup 63): the Duck and clip page, and the DUCK tag beside EDIT while Duck is up.
+    class DuckTag final : public juce::Component, public juce::SettableTooltipClient
+    {
+    public:
+        DuckTag();
+        void paint (juce::Graphics&) override;
+        void mouseUp (const juce::MouseEvent&) override;
+        std::function<void()> onClick;
+    };
+
+    fancy::ui::ViewTabs drawerTabs { juce::StringArray { "Main", "Duck and clip" } };
+    fancy::ui::Knob duckKnob, duckReleaseKnob, duckShapeKnob;
+    fancy::ui::ParamDropdown duckFromDropdown, duckRateDropdown, clipOsDropdown;
+    juce::Label duckTitle, duckFromLabel, syncTitle, rateLabel, clipTitle, clipOsLabel, clipNote;
+    DuckTag duckTag;
+    std::vector<juce::Component*> mainItems, duckItems, syncItems;
+    int shownPage = mainPage;
 
     int shownMode = -1;
 

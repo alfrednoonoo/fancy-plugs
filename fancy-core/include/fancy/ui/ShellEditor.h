@@ -20,11 +20,16 @@ public:
     // For a caption that follows the plugin's state, such as Kicker's mode.
     void setCaption (const juce::String& caption);
 
+    // Where the caption's right edge sits, from the left panel's right edge: 24 by default.
+    // Kicker's is 12, so its longest mode line clears the DUCK tag (docs/kicker.md).
+    void setCaptionRightInset (int inset);
+
     void paint (juce::Graphics&) override;
 
 private:
     juce::String captionText;
     int leftWidth, captionTop;
+    int rightInset = 24;
 };
 
 // Link with a gear icon that opens a plugin's EDIT drawer.

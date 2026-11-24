@@ -132,6 +132,24 @@ bool renderKickerSub (const juce::File& outputDir)
     editor->showPreview (true, true);
     return writeBothScales (*editor, "kicker-sub-edit", outputDir) && mainOk;
 }
+
+// Phase 4 (docs/kicker.md): the DUCK tag on the main window and the drawer's Duck and clip page,
+// at mockup 63's values (panels 1 and 2).
+bool renderKickerDuck (const juce::File& outputDir)
+{
+    KickerProcessor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<KickerEditor*> (base.get());
+
+    if (editor == nullptr)
+        return false;
+
+    editor->showDuckPreview (false);
+    const auto mainOk = writeBothScales (*editor, "kicker-duck", outputDir);
+
+    editor->showDuckPreview (true);
+    return writeBothScales (*editor, "kicker-duck-edit", outputDir) && mainOk;
+}
 #endif
 
 template <typename Processor, typename Editor>
@@ -636,6 +654,7 @@ int main (int argc, char** argv)
    #if FANCY_HAS_KICKER
     ok = renderPlugin<KickerProcessor, KickerEditor> ("kicker", outputDir) && ok;
     ok = renderKickerSub (outputDir) && ok;
+    ok = renderKickerDuck (outputDir) && ok;
    #endif
 
    #if FANCY_HAS_EXCITER

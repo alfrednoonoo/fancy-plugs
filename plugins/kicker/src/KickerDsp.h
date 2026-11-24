@@ -131,12 +131,23 @@ public:
         updateSubSettings();
     }
 
-    void process (float* const* channels, int numChannels, int numSamples)
+    // Phase 4 (docs/kicker.md, sidechain Duck and the oversampled clipper). With `deferred`,
+    // process() leaves each output sample before its soft clip and bypass mix, and records the
+    // sample's clip and bypass amounts there, so the caller can clip it oversampled and mix the
+    // bypass with a delayed input. With neither argument, it's Kicker as it was, to the bit.
+    struct Deferred
+    {
+        float* clip = nullptr;
+        float* bypass = nullptr;
+    };
+
+    // `duckGain`, if given, is a gain per sample on the whole output, before the soft clip.
+    void process (float* const* channels, int numChannels, int numSamples, const float* duckGain = nullptr, const Deferred* deferred = nullptr)
     {
         if (modeAmount.isSettled() && modeAmount.getCurrent() == 0.0)
-            processBoost (channels, numChannels, numSamples);
+            processBoost (channels, numChannels, numSamples, duckGain, deferred);
         else
-            processWithSub (channels, numChannels, numSamples);
+            processWithSub (channels, numChannels, numSamples, duckGain, deferred);
 
         guardAgainstBadInput();
     }
@@ -157,7 +168,7 @@ public:
 
 private:
     // Boost mode, settled: exactly the v1.2.0 code, so it stays bit-identical (docs/kicker-sub.md).
-    void processBoost (float* const* channels, int numChannels, int numSamples)
+    void processBoost (float* const* channels, int numChannels, int numSamples, const float* duckGain, const Deferred* deferred)
     {
         for (int i = 0; i < numSamples; ++i)
         {
@@ -176,6 +187,12 @@ private:
 
             advanceSubSmoothers();
 
+            if (deferred != nullptr)
+            {
+                deferred->clip[i] = (float) clip;
+                deferred->bypass[i] = (float) bypass;
+            }
+
             const auto mid = numChannels > 1 ? 0.5 * ((double) channels[0][i] + (double) channels[1][i])
                                              : (double) channels[0][i];
 
@@ -190,6 +207,15 @@ private:
                     continue;
 
                 auto out = (in * dryGain + wetOut * wetGain) * outputGain;
+
+                if (duckGain != nullptr)
+                    out *= (double) duckGain[i];
+
+                if (deferred != nullptr)
+                {
+                    channels[ch][i] = (float) out;
+                    continue;
+                }
 
                 if (clip > 0.0)
                     out += (softClip (out) - out) * clip;
@@ -232,7 +258,7 @@ private:
     }
 
     // Sub mode, or a crossfade between the modes.
-    void processWithSub (float* const* channels, int numChannels, int numSamples)
+    void processWithSub (float* const* channels, int numChannels, int numSamples, const float* duckGain, const Deferred* deferred)
     {
         auto peakHere = 0.0;
 
@@ -253,6 +279,12 @@ private:
             const auto mode = modeAmount.next();
             const auto subGain = subLevel.next();
             const auto subMono = subMonoAmount.next();
+
+            if (deferred != nullptr)
+            {
+                deferred->clip[i] = (float) clip;
+                deferred->bypass[i] = (float) bypass;
+            }
 
             if (! subLogCutoff.isSettled() || ! subLogLowpass.isSettled())
             {
@@ -307,6 +339,15 @@ private:
 
                 const auto withSub = source * dryGain + sub[(size_t) ch] * subGain;
                 auto out = (boost + (withSub - boost) * mode) * outputGain;
+
+                if (duckGain != nullptr)
+                    out *= (double) duckGain[i];
+
+                if (deferred != nullptr)
+                {
+                    channels[ch][i] = (float) out;
+                    continue;
+                }
 
                 if (clip > 0.0)
                     out += (softClip (out) - out) * clip;

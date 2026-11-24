@@ -14,7 +14,7 @@ Fancy Kicker adds a focused low-frequency boost to a kick or bass. It filters a 
 
 ### EDIT drawer
 
-Click **EDIT** to open it and **Done** to close it.
+Click **EDIT** to open it and **Done** to close it. The switch at its top has two pages: **Main**, described here, and **Duck and clip** (see "Duck and Clip oversampling" below).
 
 | Control | Range | Default | What it does |
 |---|---|---|---|
@@ -39,7 +39,7 @@ Use the dropdown to load a preset and **+** to save your own. User presets are s
 
 ## Latency and phase
 
-Latency is 0 samples at all settings. The filtered signal is minimum-phase, so it stays aligned with the dry signal at Freq, apart from a small phase lead from a 15 Hz filter that keeps DC and infrasonic energy out of the wet path. At 50 Hz, wet and dry at equal level sum to about +5.8 dB. The sum is smaller at the bottom of the Freq range.
+Latency is 0 samples with Clip oversampling and Ceiling Off (the defaults); each reports its own latency while it's on. The filtered signal is minimum-phase, so it stays aligned with the dry signal at Freq, apart from a small phase lead from a 15 Hz filter that keeps DC and infrasonic energy out of the wet path. At 50 Hz, wet and dry at equal level sum to about +5.8 dB. The sum is smaller at the bottom of the Freq range.
 
 ## Using it in other hosts
 
@@ -96,6 +96,25 @@ Switching mode while playing crossfades over 20 ms. Presets **Sub: Deep 808**, *
 - **Invert sub:** flips the sub, for kicks whose own low end cancels it.
 - **Sub meter:** the thin bar between In and Out shows the sub's level.
 - **Auto gain** (drawer): turns the output down by as much as Boost or Sub adds, so you hear the shape, not the level. **Ceiling** (drawer): holds the output's true peak under this level; Off at the bottom.
+
+## Duck and Clip oversampling
+
+The drawer's second page, **Duck and clip**.
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Duck | 0 to 24 dB | 0.0 dB | Turns the whole output, the dry signal and what Kicker adds, down by up to this much while a kick hits. 0 turns it off |
+| Release | 20 to 500 ms | 120 ms | How fast the output comes back after each kick |
+| Duck from | Sidechain, Host sync | Sidechain | What Duck listens to: a kick on the sidechain input, or a pulse on the host's beat grid |
+| Rate | 1/1 to 1/16, dotted, triplet | 1/4 | Host sync only: one pulse per note of this length |
+| Shape | 5 to 100 % | 50 % | Host sync only: how long each pulse holds the duck, as a share of the step |
+| Clip oversampling | Off, 2x, 4x | Off | Runs Soft clip at 2x or 4x the sample rate, so a hard-driven kick's click doesn't alias |
+
+**Duck** is for Kicker on a bass: when the kick hits, the bass and its added low end both fill 40 to 80 Hz, and the low end clips or blurs. Duck turns the bass down while the kick plays, then lets it back over Release, so the two take turns. Route the kick to Kicker's sidechain (in REAPER, pins 3/4 of the bass track, fed by a send from the kick). Duck follows the kick's peak: it ducks fully when the kick is above -12 dBFS and not at all below -24 dBFS, so a kick's tail doesn't hold the bass down. With **Host sync**, there's no kick track to route: Duck pulses on the host's beat at Rate, for Shape of each step. Without a host tempo it runs on at 120 BPM.
+
+While Duck is above 0, a red **DUCK** tag shows beside EDIT on the main window, so a ducking Kicker is never a surprise; click it to open this page. With Duck from Sidechain and nothing routed to the sidechain, the main window shows "No sidechain signal".
+
+**Clip oversampling** only matters with **Soft clip** ticked on the Main page. On a typical kick driven into the clipper, 4x leaves the aliasing and error about 35 dB lower than Off, and 2x about 20 dB lower. It reports its latency while it's on (about 70 samples at 4x, at 48 kHz), so hosts keep the track in time. Off is Kicker as it was.
 
 ## Credits
 

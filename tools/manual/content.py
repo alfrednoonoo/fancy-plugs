@@ -101,7 +101,9 @@ PLUGINS = {
 # Each view: (screen, caption, heading). The screenshot goes right under that heading of the
 # plugin's manual; a view without a heading goes under "More views".
 MORE = {
-    "Kicker": [("kicker-edit", "Boost mode's EDIT drawer", "EDIT drawer"), ("kicker-sub-edit", "Sub mode's EDIT drawer", "Sub mode")],
+    "Kicker": [("kicker-edit", "Boost mode's EDIT drawer", "EDIT drawer"), ("kicker-sub-edit", "Sub mode's EDIT drawer", "Sub mode"),
+               ("kicker-duck-edit", "The EDIT drawer's Duck and clip page, with Host sync chosen", "Duck and Clip oversampling"),
+               ("kicker-duck", "The DUCK tag beside EDIT while Duck is up", "Duck and Clip oversampling")],
     "Exciter": [("exciter-edit", "The EDIT drawer", "EDIT drawer"),
                 ("exciter-harmonics", "The EDIT drawer's Harmonics page", "Band 2, Punch, High cut and Width (Phase 4)")],
     "Comp": [("comp-history", "EDIT drawer: History page", "History"), ("comp-sync", "Host sync as the detector input, with its Rate and Shape", "Host sync (Phase 4)"),
