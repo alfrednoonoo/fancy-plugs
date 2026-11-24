@@ -1812,7 +1812,7 @@ public:
         dyn.setBounds (480, 1, 64, 20);
         group.setBounds (552, 1, 58, 19);
         solo.setBounds (622, 1, 22, 19);
-        remove.setBounds (672, 1, 20, 20);
+        remove.setBounds (677, 6, 10, 10);   // the small delete cross of mockup 66; the glyph fills its bounds
     }
 
     void update (bool isSelected)
