@@ -148,7 +148,7 @@ KickerEditor::KickerEditor (KickerProcessor& processor)
     // Phase 4 (mockup 63; drawer coordinates are the mockup's window coordinates less 73, knobs
     // placed as Exciter's Harmonics page places them). The page switch takes the drawer title's
     // place; Main is today's drawer as it was.
-    drawerTabs.setBounds (22, 13, 160, 22);
+    drawerTabs.setBounds (20, 13, 200, 22); // wider than the mockup's 160: each half fits "Duck and clip" (run 45473290714)
     drawerTabs.onChange = [this] (int page) { showDrawerPage (page); };
     drawer.addAndMakeVisible (drawerTabs);
 
@@ -204,6 +204,7 @@ KickerEditor::KickerEditor (KickerProcessor& processor)
     duckTag.setTooltip ("Duck is on: Kicker turns its output down while a kick hits. Click to see its settings.");
     duckTag.onClick = [this] { drawer.setVisible (true); showDrawerPage (duckPage); };
     body.addChildComponent (duckTag);
+    drawer.toFront (false); // the open drawer covers the tag
 
     updateMode();
     showDrawerPage (mainPage);
