@@ -347,3 +347,21 @@ A seventh profile, **Hiss**, after DS-Mini's voice and instrument profiles: Hiss
 ### 6. Build order
 
 Approval, then the mockup (`reference/phase4/60__ds_w2b_mockup.png`): the three-way Detection switch and the drawer's Reduce row, and DS-Mini's profile list with Hiss. Then one push, with tests, manuals and checklists for both plugins. Mockup 60 approved by the user on 23 November 2026: Reduce under Filter slope, Ceiling a row lower.
+
+### 7. Pre-build check (24 November 2026, before any code)
+
+`docs/research/ds-hiss-prepush.py` runs the design model's signal through Hiss mode as the plugin would build it. **Hiss mode as the note describes it would fail test 3, and with DS's own detector it wouldn't work at all.**
+
+| Version | Hiss in the pauses | Highs in loud parts | Test 3 (≥ 5 dB, < 0.5 dB) |
+|---|---|---|---|
+| A. The design model as written | −6.8 dB | −0.17 dB | passes |
+| B. The note's ballistics (closes at Release 60 ms, opens at Attack 0.5 ms), the model's 30 ms detector | −4.9 dB | 0.00 dB | fails |
+| C. The note's ballistics, DS's own detector (1 ms hold, then 20 dB/s) | 0.0 dB | 0.00 dB | fails |
+| D. As C, the detector falling at 200 dB/s in Hiss mode | −4.3 dB | 0.00 dB | fails |
+
+- **The model's ballistics are reversed.** Its comment and the note say it opens fast and closes over Release, but its `smooth()` closes in 2 ms and opens over 60 ms. Its −6.8 dB comes from that fast close.
+- **DS's detector is too slow to fall.** After a phrase, its peak falls at 20 dB/s, so it takes about 0.65 s to drop from the voice's highs to Threshold, longer than the model's 0.4 s pauses. A de-esser wants exactly that slow fall (it holds the cut through a sibilant), but Hiss mode needs the opposite.
+- **There's little room in any version.** Threshold −38 dB sits about 6 dB over the hiss's peaks, and Hiss mode turns down by 1 dB per dB under Threshold, so about 6 dB is the most the pauses can lose. The best variants tried: a 15 ms detector envelope closing over 20 to 60 ms gives −5.9 to −5.5 dB; DS's peak falling at 400 dB/s gives −5.7 to −5.2 dB. The loud parts are untouched (0.00 dB) in every variant with the note's ballistics.
+- **Needs your decision before building (no code yet):** Hiss mode's own detector, either a 15 ms envelope or DS's peak falling at 400 dB/s (the de-essing modes keep theirs, bit for bit), with Release as the closing time, as the note says; and test 3's limit lowered to 4.5 dB (the model gives 5.2 to 5.9 dB), or the model's Threshold placed closer to the voice. DS-Mini's Hiss profile (item 34) inherits whichever is chosen.
+- **Decided by the user, 24 November 2026:** Hiss mode has its own detector, a 15 ms envelope of the band, with Release as the closing time and Attack as the opening time, as the note says (the model's reversed `smooth()` is fixed to match). The de-essing modes keep DS's detector, bit for bit. Test 3's limit is **at least 4.5 dB** in the pauses (still under 0.5 dB in the loud parts), on the model's signal and Threshold as they are. DS-Mini's Hiss profile (item 34) uses the same detector.
+- **Tests 2 and 4 are safe as written:** at a gain of exactly 1, DS's cut is `input + (gain − 1) × band`, which is the input exactly; and a side-only input encodes to a mid of exactly 0 and decodes back exactly.

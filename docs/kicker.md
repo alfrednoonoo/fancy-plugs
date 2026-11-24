@@ -156,6 +156,16 @@ At 1x the click's aliasing sits only 33 dB under the kick, which is audible as g
 
 Approval, then one push: the parameter, the oversampler, the drawer row, tests, manual and checklist. The row sits on the drawer's second page, Duck and clip, under CLIPPER, as mockup 63 draws it, since the first page has no free row under Ceiling (user, 23 November 2026).
 
+### 6. Pre-build check (24 November 2026, before any code)
+
+`docs/research/kicker-clip-prepush.py` runs the kick through filters like `SwitchedOversampler`'s (half-band, transition 0.06 and 0.12, stopbands −100 and −90 dB) and Kicker's own soft clipper (knee 0.7, then tanh), where the design model used ideal resampling and a plain tanh.
+
+- **Test 2 as written would fail.** On the design model's click, which has content up to 24 kHz, 4x is only 7 dB under Off measured to 24 kHz, and 18 dB under it below 20 kHz. The oversampler's passband ends near 21 kHz, so the clipper is fed a slightly different signal than the ideal reference's, and the clipper's nonlinearity spreads that difference everywhere. That's the filters, not aliasing, and no real oversampler avoids it.
+- With the click low-passed at 18 kHz (real kicks have little above it) and the error measured below 20 kHz: Off −39.2 dB, 2x −60.0, 4x −75.0, so 4x is 35.8 dB under Off. At 20 kHz it's 34.6 dB, just under the note's 35.
+- **Proposed test 2 (needs your OK):** the model's kick with its click low-passed at 18 kHz, the error against a 16x ideal reference measured below 20 kHz after removing the latency; 4x at least 30 dB under Off, and 2x at least 15 dB. The table in section 2 is the ideal case; the manual should quote the realistic figures (4x about 35 dB cleaner on a typical kick).
+- **Decided by the user, 24 November 2026:** test 2 is the proposed one above (click low-passed at 18 kHz, error below 20 kHz against a 16x ideal reference, latency removed; 4x at least 30 dB under Off, 2x at least 15 dB). The manual quotes about 35 dB for 4x on a typical kick.
+- **For the build:** the clipper runs per sample after the output gain, and the bypass mix uses the undelayed input. With oversampling on, the pre-clip signal has to be gathered per block, oversampled, clipped and brought back, and the bypass mix's input delayed by the oversampler's latency (69 samples at 4x in Exciter, 66 in this model), in both Boost and Sub mode.
+
 ## Phase 4: sidechain Duck
 
 **Approved by the user on 23 November 2026: decisions 1 to 3 all A.** Kicker 7 of `docs/enhancements.md`, from Phase 3 Q2.2 ("an optional sidechain input ducks the added sub when a kick hits on the sidechain"), deferred to Phase 4 and now planned for v1.7.1 (user, 22 November 2026). Modelled first: `docs/research/kicker-duck-model.py`.
@@ -205,3 +215,12 @@ Ducking only the added sub barely helps, because most of what meets the kick is 
 ### 5. Build order
 
 Approval, then the drawer mockup (`reference/phase4/63__kicker_duck_mockup.png`), then one push: the bus, the ducker, Host sync, the drawer and the tag, tests, manual and checklist. Mockup 63 approved by the user on 23 November 2026: the window grows 40 px wider, to 432 px, so the DUCK tag sits beside EDIT; the drawer has two pages, Main and Duck and clip.
+
+### 6. Pre-build check (24 November 2026, before any code)
+
+Run on `docs/research/kicker-duck-model.py`'s own signals, at Duck 6 dB on the whole output:
+
+- **Under each kick:** −6.0 dB, whatever the detector's details, against test 2's "at least 5 dB": a 1 dB margin.
+- **Between kicks, as the model measures it (0.3 to 0.48 s after each kick):** −1.7 dB against "back within 2 dB", a 0.3 dB margin. It depends on how fast the key's peak follower lets go, which the note doesn't give: −1.6 dB at 10 ms, −1.7 dB at 30 ms (the model's), −2.0 dB at 60 ms, which would fail. At 0.3 s the kick's tail is still at −24 dBFS, the detector's floor.
+- **For the build:** the peak follower's release is 30 ms, as in the model, and the design should say so. **Proposed for test 2 (needs your OK):** measure "between kicks" over the last 100 ms before the next kick (0.4 to 0.5 s), where the model gives −1.0 dB (−0.9 to −1.2 dB across 10 to 60 ms), and keep "within 2 dB".
+- **Decided by the user, 24 November 2026:** the key's peak follower releases over 30 ms, and test 2 measures "between kicks" over the last 100 ms before the next kick (0.4 to 0.5 s), within 2 dB.

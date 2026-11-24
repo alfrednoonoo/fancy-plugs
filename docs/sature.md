@@ -317,3 +317,19 @@ At 100 % the added harmonics vanish in mono. That's the warning for this control
 ### 8. Build order
 
 Approval, then the mockup (`reference/phase4/61__sature_w2b_mockup.png`): the Type segment with Diode and Fold, and the drawer's two pages. Then one push, with tests, manual and checklist. Mockup 61 approved by the user on 23 November 2026: the drawer has two pages, Shape (with Offset) and Tone and stereo.
+
+### 9. Pre-build check (24 November 2026, before any code)
+
+- **The curves match.** The plugin's Tape is `u / sqrt(1 + u²)` (`fancy::dsp::saturation::soft`), the design model's curve, and Tape's high-frequency loss starts at Drive 12 dB, so at the model's settings it adds nothing. Tests 2 and 3's harmonic levels carry over.
+- **Test 2's DC check is safe if it waits:** Sature's DC filter (a 5 Hz high-pass on the added part, on by default) already holds DC under −100 dBFS at Drive 36. The test should measure after at least 0.5 s, with the filter at its default.
+- **Test 3 needs rewording.** With Oversampling Off, Sature runs the bare curve without ADAA (ADAA is only in the oversampled path), so "ADAA keeps their aliasing at 1x" isn't a setting the plugin has. `docs/research/sature-families-prepush.py` measures what `worstAliasDb` measures, for Clip, Diode and Fold. Its filters are stand-ins (Clip at 1 kHz, 4x reads 7 dB worse than the plugin's model), so compare along each line:
+
+| Drive 24, −6 dBFS, 44.1 kHz | 1 kHz, Off | 1 kHz, 4x | 10 kHz, 4x |
+|---|---|---|---|
+| Clip (the existing limits: −38, −90, −50) | −42.4 | −87.7 | −56.2 |
+| Diode | −42.2 | −93.7 | −56.5 |
+| Fold | −104.0 | −104.0 | −71.4 |
+
+  Diode aliases about as much as Clip, and Fold, being smooth, far less. **Proposed test 3 (needs your OK):** Diode and Fold held to Clip's existing limits at the same settings (1 kHz under −38 dBFS at Off and −90 at 4x; 10 kHz under −50 at 4x), with ADAA in the oversampled path as the other curves have it. Diode's margins are then Clip's own.
+- **Decided by the user, 24 November 2026:** test 3 is the proposed one: Diode and Fold, with ADAA in the oversampled path only, meet Clip's existing limits at the same settings. No ADAA at 1x.
+- **For the build:** Diode's ADAA needs its antiderivative in two pieces (the soft curve's integral above zero, a tenth of it below), and Fold's is `−(2/π) cos(πu/2)`; both blend through `Curve` as the existing Types do.

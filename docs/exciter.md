@@ -166,3 +166,24 @@ The excited path is already high-passed at Freq, before and after the shaper, wh
 ### 8. Build order
 
 Approval, then the drawer mockup (`reference/phase4/62__exciter_w2_mockup.png`), then one push with all five items, tests, manual and checklist. Mockup 62 approved by the user on 23 November 2026: the drawer has two pages, Main (with Oversampling filter) and Harmonics.
+
+### 9. Pre-build check (24 November 2026, before any code)
+
+**Two of the five tests would fail as written, and one of them because the design itself doesn't hold up:**
+
+- **Test 5 (minimum phase within 1 dB of linear phase) fails by a wide margin: Decision 4 needs revisiting.** `docs/research/exciter-minphase-prepush.py` reproduces JUCE 8.0.17's minimum-phase half-bands exactly (`designIIRLowpassHalfBandPolyphaseAllpassMethod` at Exciter's settings, both stages up and down, the Thiran delay for integer latency), where the design model stood in an 8th-order Butterworth. The latency is fine: 5.34 samples, reported as 6 (test 5 asks for under 8). But the chain's phase delay grows from 6.0 samples at low frequencies to 6.3 at 10 kHz, 7.5 at 18 kHz and 8.0 at 20 kHz, about 300° against the dry path at 20 kHz. Summed with the dry at Mix Back −6 dB (linear phase: a flat +3.53 dB):
+
+| Band | Minimum phase | Furthest from linear phase |
+|---|---|---|
+| 3 to 10 kHz | +3.32 to +3.53 dB | 0.21 dB |
+| 10 to 16 kHz | −1.94 to +3.32 dB | 5.47 dB |
+| 16 to 20 kHz | −6.04 to +2.68 dB | 9.57 dB |
+
+  A comb with a 9.6 dB notch in exactly the range an exciter is for. Even the best constant dry delay (7.5 samples, which the plugin can't use, since the dry has to match the low end) leaves 2.4 dB. **Recommendation: Decision 4 B, drop minimum phase from Exciter** (Linear phase stays, as today). The alternative, delaying the dry through matching allpasses, makes the dry no longer dry and costs what minimum phase was meant to save. This needs your decision.
+- **Test 2 contradicts the model.** It says that with Band 2 "nothing changes above Freq", but Band 2's harmonics of 400 Hz to 3 kHz land above 3 kHz too: in the design model the added energy above 3 kHz rises from −35.8 dB to +3.0 dB with Band 2 on. **Proposed (needs your OK):** either (a) test that the top band's own added part is unchanged, bit for bit, and only report Band 2's energy above Freq; or (b) low-pass Band 2's added part at Freq, so the two bands don't overlap, and test that the energy it adds above 2 x Freq is at least 20 dB under what it adds below Freq.
+- **Test 3 (Punch) is safe but measures quiet sound.** The model's difference grows by 12.0 dB, inside 10 to 14 dB, because the weight is held to +6 and −6 dB. But its pluck's upper harmonics decay with time constants of 25 ms and less, so the sustain (100 to 300 ms) reads about −115 dB, near float rounding in the oversampled path. For the test, give the pluck's harmonics one 0.25 s decay so the sustain stays well above rounding.
+- **Test 4 (Width 0 %) and test 1 (legacy) are straightforward:** Width scales only the added part's side, and every new control's default (Harmonics 2 at 0, which isn't run; Punch 0; High cut Off; Width 100 %; Linear phase) leaves today's path untouched.
+- **Decided by the user, 24 November 2026:**
+  - **Decision 4 B: minimum phase is dropped** (item 44 is not built). Exciter keeps linear-phase oversampling only, there's no Oversampling filter parameter, and test 5 goes. Mockup 62's Main page loses its Oversampling filter row; nothing else on it moves.
+  - **Test 2 is option (a):** with Band 2 at 400 Hz, the added energy from 400 Hz to 3 kHz rises by over 30 dB, and the top band's own added part is bit-identical with Band 2 on and off. Band 2's energy above Freq is reported, not tested. No change to the DSP.
+  - **Test 3** uses a pluck whose harmonics all decay over 0.25 s, as above.
