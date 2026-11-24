@@ -747,6 +747,18 @@ int main (int argc, char** argv)
    #if FANCY_HAS_DS
     ok = renderPlugin<DsProcessor, DsEditor> ("ds", outputDir) && ok;
     ok = renderListening<DsProcessor, DsEditor> ("ds", outputDir) && ok;
+
+    {
+        // Phase 4 Wave 2 (item 33): Detection on Hiss.
+        DsProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<DsEditor*> (base.get()))
+        {
+            editor->showHissPreview();
+            ok = writeBothScales (*editor, "ds-hiss", outputDir) && ok;
+        }
+    }
    #endif
    #if FANCY_HAS_DSMINI
     ok = renderPlugin<DsMiniProcessor, DsMiniEditor> ("dsmini", outputDir) && ok;
@@ -755,6 +767,23 @@ int main (int argc, char** argv)
    #if FANCY_HAS_SATURE
     ok = renderPlugin<SatureProcessor, SatureEditor> ("sature", outputDir) && ok;
     ok = renderListening<SatureProcessor, SatureEditor> ("sature", outputDir) && ok;
+
+    {
+        // Phase 4 Wave 2 (items 35 to 39), mockup 61: the drawer's two pages, then Fold.
+        SatureProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<SatureEditor*> (base.get()))
+        {
+            editor->showPreview (false);
+            editor->showShapePagePreview();
+            ok = writeBothScales (*editor, "sature-page-shape", outputDir) && ok;
+            editor->showToneStereoPagePreview();
+            ok = writeBothScales (*editor, "sature-page-tone", outputDir) && ok;
+            editor->showFoldPreview();
+            ok = writeBothScales (*editor, "sature-type-fold", outputDir) && ok;
+        }
+    }
    #endif
    #if FANCY_HAS_TS
     ok = renderPlugin<TsProcessor, TsEditor> ("ts", outputDir) && ok;

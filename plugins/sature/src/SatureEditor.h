@@ -24,6 +24,14 @@ public:
     enum DrawerPage { shapePage, toneStereoPage };
     void showDrawerPage (int page);
 
+    // For rendered screenshots, after showPreview (false) and in this order, as each keeps the
+    // settings of the one before (mockup 61): the Shape page with Offset at 0.10 (panel 2), the
+    // Tone and stereo page at the mockup's values (panel 3), and Fold chosen with the drawer shut
+    // (panel 1).
+    void showShapePagePreview();
+    void showToneStereoPagePreview();
+    void showFoldPreview();
+
     // What the harmonics card shows: H1 to H10 relative to H1, in dB, and THD from H2 to H10.
     struct Harmonics
     {

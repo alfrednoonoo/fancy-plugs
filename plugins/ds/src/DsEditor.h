@@ -19,6 +19,9 @@ public:
     // For rendered screenshots: the mockup's values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
 
+    // For rendered screenshots: Detection on Hiss with the drawer shut (mockup 60, panel 1).
+    void showHissPreview();
+
     // The hint the locked Width knob shows in Shelf.
     static const char* const widthHint;
 

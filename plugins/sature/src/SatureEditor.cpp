@@ -763,31 +763,29 @@ std::vector<ShellEditor::PopupOpener> SatureEditor::getPopupOpeners()
     openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); oversamplingDropdown.click(); } });
     openers.push_back ({ "tooltip-listen", [this] { showTip (listenCheckbox, listenCheckbox.getTooltip()); } });
     openers.push_back ({ "value-drive", [this] { driveKnob.openValueEditor(); } });
-
-    // Phase 4 Wave 2, mockup 61: the Shape page with Offset at 0.10 (panel 2), then the Tone and
-    // stereo page at the mockup's values (panel 3), and Fold chosen on the main window. Last, as
-    // they leave those settings in place.
-    openers.push_back ({ "page-shape", [this]
-    {
-        if (auto* editor = driveKnob.getValueEditor()) editor->setVisible (false);
-        setValue (parameter ("offset"), 0.1f);
-        drawer.setVisible (true);
-        showDrawerPage (shapePage);
-    } });
-    openers.push_back ({ "page-tone", [this]
-    {
-        setValue (parameter ("lowCut"), 200.0f);
-        setValue (parameter ("lowCutSlope"), 1.0f);
-        setValue (parameter ("spread"), 35.0f);
-        setValue (parameter ("channels"), 1.0f);
-        drawer.setVisible (true);
-        showDrawerPage (toneStereoPage);
-    } });
-    openers.push_back ({ "type-fold", [this]
-    {
-        drawer.setVisible (false);
-        setValue (parameter ("type"), (float) fancy::dsp::saturation::fold);
-        transferCurve.update();
-    } });
     return openers;
+}
+
+void SatureEditor::showShapePagePreview()
+{
+    setValue (parameter ("offset"), 0.1f);
+    drawer.setVisible (true);
+    showDrawerPage (shapePage);
+}
+
+void SatureEditor::showToneStereoPagePreview()
+{
+    setValue (parameter ("lowCut"), 200.0f);
+    setValue (parameter ("lowCutSlope"), 1.0f);
+    setValue (parameter ("spread"), 35.0f);
+    setValue (parameter ("channels"), 1.0f);
+    drawer.setVisible (true);
+    showDrawerPage (toneStereoPage);
+}
+
+void SatureEditor::showFoldPreview()
+{
+    drawer.setVisible (false);
+    setValue (parameter ("type"), (float) fancy::dsp::saturation::fold);
+    transferCurve.update();
 }
