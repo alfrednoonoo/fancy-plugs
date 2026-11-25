@@ -657,6 +657,35 @@ for _plugin, _values in RANGE_W2B.items():
 for _plugin, _values in DESC_W2B.items():
     DESC.setdefault(_plugin, {}).update(_values)
 
+# Rows whose text came from a plain name's row (Up threshold from Threshold), said "see below", or
+# whose range predates a later choice.
+RANGE["DS"]["Detection"] = "Band, Shelf, Hiss"
+RANGE.setdefault("DS-Mini", {})["Profile"] = "7 choices"
+RANGE["EQ"]["Slope"] = "6, 12, 18, 24, 36, 48 dB/oct, Brickwall (96)"
+RANGE["FIR"]["Mode"] = "EQ, Gate, Compressor, Subtract, Convolve L/R, Resonance"
+RANGE["Gate"]["Mode"] = "Gate, Duck, Upward"
+RANGE["MultiComp"]["Crossover"] = "LR 24, LR 48, Linear phase, Dynamic phase"
+RANGE["Sature"]["Type"] = "Tape, Tube, Transistor, Clip, Diode, Fold"
+RANGE["Comp"]["Oversampling"] = "Off, 2x, 4x, 8x"
+
+for _plugin, _values in {
+    "Comp": {
+        "Attack = 90 % rise": "The Attack time reads as the time to cover 90 % of the change, as some compressors quote it, not 63 %.",
+        "Up threshold": "Upward compression acts below this level.",
+        "Up ratio": "How strongly levels below Up threshold are raised.",
+    },
+    "DS": {
+        "Mode": "Split turns down only the band; Wide turns the whole signal down while the band is loud.",
+        "Relative threshold": "On: compares the band with the voice's own level, so one setting works on quiet and loud passages. Off: a fixed threshold.",
+    },
+    "Delay": {"Duck amount": "In EDIT: how far the repeats dip while the input is above Duck threshold. 0 is off."},
+    "Limit": {"Style": "Clean, Punchy or Dense: how the gain moves. All four knobs keep working in each."},
+    "MultiComp": {"Up threshold": "The band's upward compression acts below this level."},
+    "Room": {"Gate decay": "How long the gated tail takes to fade out."},
+    "Sature": {"Type": "The saturation curve: Tape, Tube, Transistor, Clip, Diode or Fold."},
+}.items():
+    DESC.setdefault(_plugin, {}).update(_values)
+
 # Fancy TS and Fancy Chorus: every range written out, as their design notes' tables put units in a
 # column of their own.
 RANGE.setdefault("TS", {}).update({
