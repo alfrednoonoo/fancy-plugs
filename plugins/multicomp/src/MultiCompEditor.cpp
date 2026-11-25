@@ -853,7 +853,7 @@ std::vector<ShellEditor::PopupOpener> MultiCompEditor::getPopupOpeners()
     openers.push_back ({ "sidechain-notice", [this] { forceSidechainNotice (true); } });
     openers.push_back ({ "delete-band", [this] { confirmThen ("Delete band " + juce::String (selectedBand + 1) + "?", "Its settings will be lost.", "Delete", true, [] {}); } });
     openers.push_back ({ "tooltip-ratio", [this] { auto& knob = bandEditors[(size_t) selectedBand]->getRatioKnob(); showTip (knob, knob.getTooltip()); } });
-    openers.push_back ({ "value-threshold", [this] { bandEditors[(size_t) selectedBand]->getThresholdFader().openValueEditor(); } });
     openers.push_back ({ "slope-menu", [this] { graph.showSlopeMenuFor (1); } }); // Phase 4 Wave 2, mockup 58 panel 1
+    openers.push_back ({ "value-threshold", [this] { bandEditors[(size_t) selectedBand]->getThresholdFader().openValueEditor(); } });
     return openers;
 }

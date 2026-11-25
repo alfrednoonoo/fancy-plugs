@@ -721,6 +721,8 @@ std::vector<ShellEditor::PopupOpener> DelayEditor::getPopupOpeners()
                                  typed->onEscapeKey();
 
                              drawer.setVisible (false);
+                             setValue (parameter (DelayProcessor::id (selectedTap, "modShape")), 1.0f);
+                             updateSelection();
                              editor.showMotion (true);
                              showTip (editor.getShapeSwitch(), "Triangle: a steady detune that flips each half cycle");
                          } });

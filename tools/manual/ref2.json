@@ -375,6 +375,166 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "SC band 1 type",
+   "default": "Low shelf",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 2 type",
+   "default": "Bell",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 3 type",
+   "default": "High shelf",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 1 Q",
+   "default": "1.00",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 3 Q",
+   "default": "1.00",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 4 type",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 4 freq",
+   "default": "200 Hz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 4 gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 4 Q",
+   "default": "1.00",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 5 type",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 5 freq",
+   "default": "2.0 kHz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 5 gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 5 Q",
+   "default": "1.00",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 6 type",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 6 freq",
+   "default": "5.0 kHz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 6 gain",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "SC band 6 Q",
+   "default": "1.00",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Highpass slope",
+   "default": "12 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Lowpass slope",
+   "default": "12 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Link mode",
+   "default": "Stereo",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "**Stereo** compresses left and right. **Mid/Side** splits the input into mid and side and compresses each on its own, so a loud vocal in the middle no longer turns the sides down with it; Link channels and Link amount then act between mid and side. **M>S** turns down only the side, by the mid's level: the stereo image narrows while the centre is loud, so a vocal steps forward. **S>M** turns down only the mid, by the side's level. The other channel isn't compressed, but Auto make-up and Character apply to both channels. While the mode isn't Stereo, the GR meter's read-outs are labelled M and S. The Detector inputs keep their meaning: Main and Sidechain L+R are heard as mid and side, and a one-channel input (L, R, Mid, Side, Host sync) drives whichever channels the mode compresses. Changing the mode fades out and back in"
   }
  ],
  "DS-Mini": [
@@ -466,7 +626,7 @@
    "repeat": false,
    "range": "0.3–3",
    "unit": "oct",
-   "desc": "How wide the band is. Locked in Shelf"
+   "desc": "How wide the band is. Locked in Shelf and Hiss"
   },
   {
    "name": "Detection",
@@ -570,7 +730,7 @@
    "repeat": false,
    "range": null,
    "unit": "",
-   "desc": null
+   "desc": "See Phase 4 additions"
   },
   {
    "name": "Ceiling",
@@ -578,7 +738,7 @@
    "repeat": false,
    "range": null,
    "unit": "",
-   "desc": null
+   "desc": "See Phase 4 additions"
   },
   {
    "name": "Dual band",
@@ -619,6 +779,14 @@
    "range": "−24 to 0",
    "unit": "dB, linear",
    "desc": null
+  },
+  {
+   "name": "Reduce",
+   "default": "Both",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Where the cut lands. Both turns down left and right. Mid turns down only the centre, so a centre vocal is de-essed while wide cymbals keep their highs. Side turns down only the sides. Changing it fades out and back in"
   }
  ],
  "Delay": [
@@ -909,6 +1077,22 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Mod shape",
+   "default": "Sine",
+   "repeat": true,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Mod stereo",
+   "default": "90°",
+   "repeat": true,
+   "range": null,
+   "unit": "",
+   "desc": "How far ahead the right channel's wobble runs. 0° moves both sides together, so the repeats stay centred; 90°, the default, widens them a little; 180° moves the sides in opposition, the widest. Width still scales it"
   }
  ],
  "EQ": [
@@ -966,7 +1150,7 @@
    "repeat": true,
    "range": "6, 12, 18, 24, 36, 48 dB/oct",
    "unit": "",
-   "desc": "For the selected band"
+   "desc": "For the selected band. Brickwall is for Low pass and High pass; a shelf or Tilt set to it stays at 48 dB/oct"
   },
   {
    "name": "Output",
@@ -1191,6 +1375,30 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Character",
+   "default": "Clean",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "A little saturation after the bands, before Output. See Phase 4 additions"
+  },
+  {
+   "name": "Group",
+   "default": "—",
+   "repeat": true,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Band view",
+   "default": "Bands",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "Exciter": [
@@ -1273,6 +1481,46 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Freq 2",
+   "default": "400 Hz",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Where Band 2 starts. Band 2 runs from here up to Freq, so at or above Freq it has nothing to work on"
+  },
+  {
+   "name": "Harmonics 2",
+   "default": "0 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "How much Band 2 adds. It drives the band from Freq 2 to Freq through the same clipper, Clip Boost and Character as the main band, for warmth and body under the air the main band adds. At 0 % Band 2 doesn't run. Mix Back sets both bands' level"
+  },
+  {
+   "name": "Punch",
+   "default": "0 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Follows the attacks of the part above Freq. At 100 % the added part rises by up to 6 dB on attacks and falls by up to 6 dB in sustains, so picks and sticks come forward without the tails getting fizzy"
+  },
+  {
+   "name": "High cut",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "A 12 dB/oct low-pass on what Exciter adds, both bands, to tame fizz on bright sources. The dry signal is never filtered. Off at the top of the knob"
+  },
+  {
+   "name": "Width",
+   "default": "100 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "The width of what Exciter adds, not of the dry signal. Below 100 % the added part narrows towards the centre, and at 0 % it's mono. Above 100 % it spreads wider than the source. A mono fold-down hears the same added part at any setting"
   }
  ],
  "FIR": [
@@ -1531,6 +1779,14 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Mid/Side",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "Gate": [
@@ -1636,7 +1892,7 @@
    "repeat": false,
    "range": "Gate, Duck",
    "unit": "",
-   "desc": "Duck turns the signal down by Range while the detector is over Threshold"
+   "desc": "Duck turns the signal down by Range while the detector is over Threshold. Upward turns it up above Threshold (see Upward mode)"
   },
   {
    "name": "Link channels",
@@ -1761,6 +2017,46 @@
   {
    "name": "Sync shape",
    "default": "50 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Detector mode",
+   "default": "Level",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Rise",
+   "default": "8.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "In Transient, in RMS size's place: how far the level must jump above its recent average to count as a hit"
+  },
+  {
+   "name": "Boost",
+   "default": "+4.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "In Upward, in Range's place: the most it raises the level by"
+  },
+  {
+   "name": "Up ratio",
+   "default": "1.5:1",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Ceiling",
+   "default": "Off",
    "repeat": false,
    "range": null,
    "unit": "",
@@ -1935,6 +2231,54 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Duck",
+   "default": "0.0 dB",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Turns the whole output, the dry signal and what Kicker adds, down by up to this much while a kick hits. 0 turns it off"
+  },
+  {
+   "name": "Duck release",
+   "default": "120 ms",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "How fast the output comes back after each kick"
+  },
+  {
+   "name": "Duck from",
+   "default": "Sidechain",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "What Duck listens to: a kick on the sidechain input, or a pulse on the host's beat grid"
+  },
+  {
+   "name": "Duck rate",
+   "default": "1/4",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Host sync only: one pulse per note of this length"
+  },
+  {
+   "name": "Duck shape",
+   "default": "50 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Host sync only: how long each pulse holds the duck, as a share of the step"
+  },
+  {
+   "name": "Clip oversampling",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Runs Soft clip at 2x or 4x the sample rate, so a hard-driven kick's click doesn't alias"
   }
  ],
  "Limit": [
@@ -2419,6 +2763,86 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Detector HP",
+   "default": "Off",
+   "repeat": true,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Detector LP",
+   "default": "Off",
+   "repeat": true,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Detector tilt",
+   "default": "0.0 dB/oct",
+   "repeat": true,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Crossover 1 slope",
+   "default": "LR 24 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Crossover 2 slope",
+   "default": "LR 24 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Crossover 3 slope",
+   "default": "LR 24 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Crossover 4 slope",
+   "default": "LR 24 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Crossover 5 slope",
+   "default": "LR 24 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Crossover 6 slope",
+   "default": "LR 24 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Crossover 7 slope",
+   "default": "LR 24 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
   }
  ],
  "Room": [
@@ -2693,6 +3117,30 @@
    "range": null,
    "unit": "",
    "desc": "Trims the wet level as Size and Decay change, so a longer decay doesn't make the reverb louder. 0 dB at Size 55 % and Decay 1.8 s"
+  },
+  {
+   "name": "Low decay",
+   "default": "×1.00",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Attack",
+   "default": "0.0 ms",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Duck from",
+   "default": "Input",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "What Ducking listens to. Sidechain reads Room's optional stereo sidechain bus (pins 3/4 in REAPER), so a reverb on the drums can make room for the vocal: down while the vocal sings, back in its gaps. With nothing on the sidechain, Ducking has nothing to follow and leaves the reverb alone, and while Ducking is above 0 the main window shows \"No sidechain signal\". (A host that switches the sidechain bus off altogether gives Ducking the input instead)"
   }
  ],
  "Sature": [
@@ -2847,6 +3295,78 @@
    "range": null,
    "unit": "",
    "desc": null
+  },
+  {
+   "name": "Offset",
+   "default": "0.00",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Low cut",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Low cut slope",
+   "default": "12 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Low cut position",
+   "default": "Pre",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "High cut",
+   "default": "Off",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "High cut slope",
+   "default": "12 dB/oct",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "High cut position",
+   "default": "Post",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": null
+  },
+  {
+   "name": "Spread",
+   "default": "0 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Widens the added harmonics on each side while the note itself stays centred. At 50 % the harmonics are fully decorrelated between left and right, and in mono they lose at most 3 dB"
+  },
+  {
+   "name": "Channels",
+   "default": "Stereo",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "Mid only saturates the centre (a bass, a vocal) and leaves wide parts clean; Side only does the reverse. Changing it fades the saturation out and back in"
   }
  ],
  "Verb": [
@@ -2977,6 +3497,14 @@
    "range": null,
    "unit": "",
    "desc": "Time to fall 60 dB"
+  },
+  {
+   "name": "Extra width",
+   "default": "100 %",
+   "repeat": false,
+   "range": null,
+   "unit": "",
+   "desc": "100–200 %, 100 % by default. Widens the reverb past the right column's Width: the two multiply, so Width 100W with Extra width 150 % puts one and a half times the side in the wet signal. It raises only the side, so the mono sum stays exactly the same, and each side gets up to 3 dB louder at 200 %. Past about 150 % the left and right are more opposed than alike: check in mono, and keep to 120–150 % for most mixes. It can be automated and changes smoothly, as Width does"
   }
  ],
  "TS": [

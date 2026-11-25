@@ -583,6 +583,80 @@ for _plugin, _values in RANGE_P4.items():
 for _plugin, _values in DESC_P4.items():
     DESC.setdefault(_plugin, {}).update(_values)
 
+# v1.7.1 (Wave 2 items 11 to 46): what the design notes' tables and the manuals don't give row by row.
+RANGE_W2B = {
+    "Comp": {
+        "SC low freq": "20 Hz–20 kHz", "SC mid freq": "20 Hz–20 kHz", "SC high freq": "20 Hz–20 kHz",
+        "Highpass slope": "12, 24, 48 dB/oct", "Lowpass slope": "12, 24, 48 dB/oct",
+        "Link mode": "Stereo, Mid/Side, M>S, S>M",
+    },
+    "Delay": {"Mod shape": "Sine, Triangle", "Mod stereo": "0–180°"},
+    "EQ": {"Character": "Clean, Subtle, Warm"},
+    "Exciter": {
+        "Freq 2": "100 Hz–16 kHz", "Harmonics 2": "0–100 %", "Punch": "0–100 %",
+        "High cut": "4–20 kHz, Off at the top", "Width": "0–150 %",
+    },
+    "FIR": {"Mid/Side": "off/on"},
+    "Gate": {
+        "Detector mode": "Level, Transient", "Rise": "3–24 dB", "Boost": "0–12 dB", "Up ratio": "1.1:1–4:1",
+        "Ceiling": "Off, -12 to 0 dBTP",
+    },
+    "MultiComp": {
+        "Detector HP": "Off, 20 Hz–20 kHz", "Detector LP": "20 Hz–20 kHz, Off", "Detector tilt": "-6 to +6 dB/oct",
+    },
+    "Room": {"Low decay": "×0.25–×4", "Attack": "0–500 ms", "Duck from": "Input, Sidechain"},
+    "Verb": {"Extra width": "100–200 %"},
+}
+
+DESC_W2B = {
+    "Comp": {
+        "SC low freq": "Detector EQ, band 1's frequency. The detector EQ shapes what the compressor reacts to, never the audio.",
+        "SC low gain": "Detector EQ, band 1's gain. 0 dB is off; boost to make the compressor react more to that range.",
+        "SC mid freq": "Detector EQ, band 2's frequency.",
+        "SC mid gain": "Detector EQ, band 2's gain. Boosting a bell at 6 to 8 kHz makes the compressor work like a de-esser.",
+        "SC mid Q": "Detector EQ, band 2's width. Higher is narrower. Used only by a Bell.",
+        "SC high freq": "Detector EQ, band 3's frequency.",
+        "SC high gain": "Detector EQ, band 3's gain.",
+        "Highpass slope": "How steeply Highpass cuts what the detector hears. 12 dB/oct is the old sound.",
+        "Lowpass slope": "How steeply Lowpass cuts what the detector hears. 12 dB/oct is the old sound.",
+    },
+    "Delay": {"Mod shape": "The wobble's shape. Sine sweeps the pitch smoothly; Triangle holds it at +Depth, then at -Depth, for a steady detune."},
+    "FIR": {"Mid/Side": "Works on mid (the centre) and side (the width) instead of left and right, each with its own curves."},
+    "Gate": {
+        "Detector mode": "How the gate decides to open: Level on the level, Transient on a sudden rise in level.",
+        "Up ratio": "In Upward, how much the level above Threshold is raised: at 1.5:1, 4 dB over comes up 2 dB.",
+        "Ceiling": "Holds the output's true peak under this level, in every mode. Off at the bottom; it adds a little latency while on.",
+    },
+    "MultiComp": {
+        "Detector HP": "Cuts the lows the band's detector hears, at 24 dB/oct, never the band's audio. Off isn't run.",
+        "Detector LP": "Cuts the highs the band's detector hears, at 24 dB/oct, never the band's audio. Off isn't run.",
+        "Detector tilt": "Tips the detector's hearing around the middle of the band: up makes its highs drive the compression more, down its lows.",
+    },
+    "Room": {
+        "Low decay": "How long the lows (below about 250 Hz) ring compared with Decay. ×1 is out of the path.",
+        "Attack": "Makes the late tail swell in over this time. The early reflections still start at once.",
+    },
+}
+
+for _band in range(1, 7):
+    RANGE_W2B["Comp"].update({f"SC band {_band} type": "Off, Low shelf, Bell, High shelf", f"SC band {_band} freq": "20 Hz–20 kHz",
+                              f"SC band {_band} gain": "±18 dB", f"SC band {_band} Q": "0.3–8"})
+    DESC_W2B["Comp"].update({f"SC band {_band} type": f"Detector EQ, band {_band}'s type. Off isn't run.",
+                             f"SC band {_band} freq": f"Detector EQ, band {_band}'s frequency.",
+                             f"SC band {_band} gain": f"Detector EQ, band {_band}'s gain. 0 dB isn't run.",
+                             f"SC band {_band} Q": f"Detector EQ, band {_band}'s width. Higher is narrower. Used only by a Bell."})
+
+for _crossover in range(1, 8):
+    RANGE_W2B["MultiComp"][f"Crossover {_crossover} slope"] = "LR 24, LR 48 dB/oct"
+    DESC_W2B["MultiComp"][f"Crossover {_crossover} slope"] = (
+        f"The slope of the crossover between bands {_crossover} and {_crossover + 1}. Linear and Dynamic phase don't use it.")
+
+for _plugin, _values in RANGE_W2B.items():
+    RANGE.setdefault(_plugin, {}).update(_values)
+
+for _plugin, _values in DESC_W2B.items():
+    DESC.setdefault(_plugin, {}).update(_values)
+
 # Fancy TS and Fancy Chorus: every range written out, as their design notes' tables put units in a
 # column of their own.
 RANGE.setdefault("TS", {}).update({

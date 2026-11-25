@@ -10,7 +10,7 @@ def fb(k):
         if mt:
             full=mt.group(1); n=re.sub(r'^(Tap|Band) \d+ ','',full)
             d=re.sub(r'\s+\[[^\]]*\]$','',mt.group(2))
-            if n not in [o[0] for o in out]: out.append((n,d,full!=n))
+            if not n.startswith('MIDI CC') and n not in [o[0] for o in out]: out.append((n,d,full!=n))
     return out
 def rows(note):
     byname,byid={},{}
