@@ -8,7 +8,7 @@ Sixteen original effects with a shared UI library, for personal use: VST3 on Win
 
 ## Build order
 
-Done: Phase 1 (Kicker, Exciter, Comp, EQ, Verb), Phase 2 (Delay, MultiComp, FIR), Phase 2.0.1 (Gate), Phase 2.1 (S, H, W, D, U, A) and, from Phase 3, the benchmark host, the preset browser, the design rules and the new plugins (Fancy Limit, Fancy DS, Fancy DS-Mini, Fancy Sature, Kicker's Sub mode, Fancy Room), the Mac build, and from Phase 4 Wave 1, Wave 2 items 1 to 10, Fancy TS and Fancy Chorus (all released as v1.7.0). Now: v1.7.1 (Wave 2 items 11 to 46 and Kicker's Duck). `docs/PROGRESS.md` lists the releases and the next item.
+Done: Phase 1 (Kicker, Exciter, Comp, EQ, Verb), Phase 2 (Delay, MultiComp, FIR), Phase 2.0.1 (Gate), Phase 2.1 (S, H, W, D, U, A) and, from Phase 3, the benchmark host, the preset browser, the design rules and the new plugins (Fancy Limit, Fancy DS, Fancy DS-Mini, Fancy Sature, Kicker's Sub mode, Fancy Room), the Mac build, and from Phase 4 Wave 1, Wave 2 items 1 to 10, Fancy TS and Fancy Chorus (all released as v1.7.0). Wave 2 items 11 to 46 and Kicker's Duck are released as v1.7.1. Now: v1.7.2 (Wave 3). `docs/PROGRESS.md` lists the releases and the next item.
 
 Phase 3 (`docs/BUILD_PROMPT_PHASE3.md`) is finished. Phase 4 is `docs/enhancements.md` (user, 17 November 2026), in the order and release plan written there. Phase 5 is Fancy Harmony (user). Each item gets its design note approved before any code; a new plugin also goes through Q5's design rules (`docs/DESIGN_SYSTEM.md`) and an HTML mockup first. A listen or preview switch is temporary, never a parameter (`FancyProcessor::setListening`, `ListenCheckbox`), per §0.3 of `docs/BUILD_PROMPT_PHASE3_NEW_PLUGINS.md`.
 
