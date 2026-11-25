@@ -4466,6 +4466,52 @@
           ]
         },
         {
+          "id": "search",
+          "label": "IR search",
+          "image": "verb-picker",
+          "alt": "Fancy Verb searching its library for halls",
+          "points": [
+            [
+              22,
+              5.8,
+              "Search",
+              "Type part of a name to see only what matches."
+            ],
+            [
+              20,
+              10.7,
+              "Favourites",
+              "Your starred impulses come first."
+            ],
+            [
+              30.3,
+              19.5,
+              "Star",
+              "Click a star to add or remove a favourite."
+            ],
+            [
+              23.5,
+              13.4,
+              "TS",
+              "These impulses are true stereo."
+            ]
+          ]
+        },
+        {
+          "id": "drop",
+          "label": "Drop a file",
+          "image": "verb-drop",
+          "alt": "Fancy Verb while an audio file is dragged over the rack",
+          "points": [
+            [
+              56.5,
+              70,
+              "Drop",
+              "Drop an audio file on the rack to add it as a File module."
+            ]
+          ]
+        },
+        {
           "id": "scrolled",
           "label": "Scrolled rack",
           "image": "verb-scrolled",
