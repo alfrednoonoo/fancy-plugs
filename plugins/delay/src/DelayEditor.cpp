@@ -9,19 +9,20 @@ namespace
 // reference/phase2/11__delay_mockup.png at 100 %. The shared header is 16 px taller than the
 // mockup's, so the window is too. Phase 4 Wave 2 (reference/phase4/57__delay_w2_mockup.png) grows
 // it 60 px wider for the Motion page's Stereo knob: the tap graph and the knob card widen, and
-// everything right of them moves across.
+// everything right of them moves across. v1.7.2 (reference/phase4/67__delay_freeze_mockup.png, A) grows
+// it 24 px taller: the tap graph has a label strip for Freeze, so everything under it moves down.
 constexpr int baseWidth = 820;
-constexpr int bodyHeight = 375;
+constexpr int bodyHeight = 399;
 constexpr int baseHeight = ShellEditor::headerHeight + bodyHeight;
 constexpr int rightColumnX = 716;
 
-constexpr int mapX = 13, mapY = 10, mapWidth = 670, mapHeight = 150;
-constexpr int tabRowY = 170, tabRowHeight = 22;
-constexpr int cardY = 198, cardHeight = 145;
+constexpr int mapX = 13, mapY = 10, mapWidth = 670, mapHeight = 174;
+constexpr int tabRowY = 194, tabRowHeight = 22;
+constexpr int cardY = 222, cardHeight = 145;
 constexpr int timeCardX = 13, timeCardWidth = 186;
 constexpr int controlsCardX = 207, controlsCardWidth = 499;
-constexpr int footerY = 351;
-constexpr int faderTop = 26, faderHeight = 321;
+constexpr int footerY = 375;
+constexpr int faderTop = 26, faderHeight = 345;
 
 // Between Knob::smallStyle and mediumStyle. The window fits the mockup's labels at 12 px, not
 // the 14 px of the larger Figma frames.
@@ -32,7 +33,7 @@ constexpr Knob::Style tapKnobStyle = Knob::tightStyle;
 // Phase 3 Q2.3: a smaller labelled knob, for Amount under the Character switch.
 constexpr Knob::Style amountStyle { 36.0f, 30.0f, 3.0f, 10.0f, 8.0f, 14.0f, 4.0f, 2.0f, 18.0f, 11.0f, false, true };
 
-constexpr OutMeter::Geometry meterGeometry { 14.5f, 15.0f, 306.0f, 25.0f, 4.75f, 314.0f, false, true };
+constexpr OutMeter::Geometry meterGeometry { 14.5f, 15.0f, 330.0f, 25.0f, 5.156f, 338.0f, false, true };
 
 const juce::Identifier selectedTapProperty ("selectedTap");
 
@@ -442,7 +443,7 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
     tapMap.onTapSelected = [this] (int tap) { selectTap (tap); };
     body.addAndMakeVisible (tapMap);
 
-    // Phase 4 Wave 1: Freeze, top left of the tap graph after "dry" (the footer is full).
+    // Phase 4 Wave 1: Freeze, in the tap graph's label strip, after "dry".
     freezeToggle.setBounds (mapX + 94, mapY + 10, 70, 22);
     freezeToggle.setTooltip ("Freeze: the repeats hold for as long as it's on, and new input isn't heard. Automatable.");
     body.addAndMakeVisible (freezeToggle);
@@ -466,7 +467,7 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
     smoothCheckbox.setBounds (431, footerY, 151, 20);
     smoothCheckbox.setLabelHeight (labelHeight);
     editLink.setBounds (642, footerY - 2, 64, 24);
-    outMeter.setBounds (710, 10, 46, 340);
+    outMeter.setBounds (710, 10, 46, 364);
 
     styleLabel (wetLabel, "Wet", colours::textSecondary, juce::Justification::centred);
     styleLabel (dryLabel, "Dry", colours::textSecondary, juce::Justification::centred);

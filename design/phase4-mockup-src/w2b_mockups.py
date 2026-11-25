@@ -1073,6 +1073,7 @@ def eq_band_list():
 
 
 # ---------------------------------------------------------------------------------------------
+PAGE_WIDTHS = {}
 PAGE_HEIGHTS = {"eq_list": 4400}  # pages taller than the default render window (1x px)
 
 
@@ -1083,7 +1084,7 @@ def render(key):
     png = w1.OUT / filename
     w1.OUT.mkdir(parents=True, exist_ok=True)
     subprocess.run([w1.EDGE, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=2",
-                    f"--window-size=1548,{PAGE_HEIGHTS.get(key, 2600)}", f"--screenshot={png}", html.as_uri()], capture_output=True)
+                    f"--window-size={PAGE_WIDTHS.get(key, 1548)},{PAGE_HEIGHTS.get(key, 2600)}", f"--screenshot={png}", html.as_uri()], capture_output=True)
     from PIL import Image
     image = Image.open(png).convert("RGB")
     pixels = image.load()

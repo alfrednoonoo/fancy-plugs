@@ -8,7 +8,7 @@ using namespace fancy::ui;
 
 namespace
 {
-constexpr float leftInset = 30.0f, rightInset = 14.0f, topInset = 10.0f, baselineInset = 26.0f;
+constexpr float leftInset = 30.0f, rightInset = 14.0f, labelTop = 8.0f, topInset = 34.0f, baselineInset = 26.0f;
 constexpr float barWidth = 8.0f, handleRadius = 8.5f, grabRadius = 13.0f;
 constexpr float repeatAlpha = 0.45f;
 constexpr double smallestRepeatGain = 0.03;
@@ -200,8 +200,8 @@ void TapMap::paint (juce::Graphics& g)
 
     g.setColour (colours::textSecondary);
     g.setFont (font (Weight::regular, 12.0f));
-    g.drawText ("dry", juce::Rectangle<float> (leftInset + 7.0f, topInset - 2.0f, 40.0f, 16.0f), juce::Justification::centredLeft, false);
-    g.drawText ("faded bars = feedback repeats", juce::Rectangle<float> (right - 190.0f, topInset - 2.0f, 190.0f, 16.0f),
+    g.drawText ("dry", juce::Rectangle<float> (leftInset + 7.0f, labelTop, 40.0f, 16.0f), juce::Justification::centredLeft, false);
+    g.drawText ("faded bars = feedback repeats", juce::Rectangle<float> (right - 190.0f, labelTop, 190.0f, 16.0f),
                 juce::Justification::centredRight, false);
 
     for (int tap = 0; tap < delay::maxTaps; ++tap)

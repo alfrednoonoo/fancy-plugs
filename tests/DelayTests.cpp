@@ -1072,6 +1072,7 @@ TEST_CASE ("the delay editor opens", "[delay]")
 
     REQUIRE (editor != nullptr);
     CHECK (editor->getWidth() == 820); // Phase 4 Wave 2: 60 px wider
+    CHECK (editor->getHeight() == 472); // v1.7.2: 24 px taller, the tap graph's label strip
 
     processor.editorBeingDeleted (editor.get());
 }
