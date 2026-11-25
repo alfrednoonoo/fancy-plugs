@@ -441,7 +441,13 @@ void VerbEditor::showPreview (Preview preview)
     }
 
     if (preview == Preview::drop)
+    {
+        // The picker shot before this one leaves it open.
+        if (auto* picker = LibraryPicker::findOpen (getPopupParent()))
+            picker->close();
+
         rack.showDropPreview ("Bright Room.wav");
+    }
 }
 
 juce::Colour VerbEditor::getAccentColour()

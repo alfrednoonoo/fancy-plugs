@@ -369,12 +369,12 @@ LibraryPicker::LibraryPicker (juce::Component& target, VerbProcessor& processorT
     const auto x = juce::jlimit (bounds.getX(), juce::jmax (bounds.getX(), bounds.getRight() - width), anchor.getX());
     panel = { x, y, width, height };
 
-    // The current IR in view.
+    // The current IR in view, once the list has its height.
+    resized();
+
     for (size_t i = 0; i < rows.size(); ++i)
         if (rows[i].ticked)
             list->reveal ((int) i);
-
-    resized();
 }
 
 LibraryPicker::~LibraryPicker()
@@ -566,6 +566,8 @@ void LibraryPicker::setSearch (const juce::String& text)
 {
     search->setText (text, true);
     rebuildRows();
+    list->scrollTo (0);
+    list->setHighlighted (-1);
 }
 
 void LibraryPicker::toggleStar (int index)

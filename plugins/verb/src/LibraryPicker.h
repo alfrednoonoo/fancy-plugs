@@ -47,6 +47,8 @@ public:
 
     static LibraryPicker* findOpen (juce::Component& parent);
 
+    void close();
+
 private:
     class List;
     class Search;
@@ -55,7 +57,6 @@ private:
                    juce::Array<juce::File> files, const juce::File& currentFile, std::vector<Row> actions, Callback callback);
 
     void rebuildRows();
-    void close();
     void moveHighlight (int direction);
     juce::Rectangle<int> panelBounds() const noexcept { return panel; }
 
