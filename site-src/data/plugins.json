@@ -69,7 +69,7 @@
         [
           "Shape the frequencies of a track",
           "eq",
-          "Up to 24 bands on a live analyzer, any of which can act only when needed."
+          "Up to 24 bands on a live analyzer or in one list, any of which can act only when needed."
         ],
         [
           "Remove steady noise or ringing",
@@ -84,7 +84,7 @@
         [
           "Add warmth or grit",
           "sature",
-          "Four kinds of saturation, at a steady level."
+          "Six kinds of saturation, at a steady level."
         ],
         [
           "Add low end to a kick",
@@ -193,10 +193,16 @@
               "Blend compressed and uncompressed sound for parallel compression."
             ],
             [
-              39.6,
-              95.6,
+              16.5,
+              91.8,
               "Checkbox row",
               "Link the channels, make up the lost level automatically, and limit the output."
+            ],
+            [
+              57.5,
+              91.8,
+              "Listen to removed",
+              "Hear only what the compressor takes away."
             ]
           ]
         },
@@ -207,34 +213,40 @@
           "alt": "Fancy Comp with the EDIT drawer open on the Detector page",
           "points": [
             [
-              64.5,
-              26.8,
-              "Four pages",
-              "Detector, Character, Upward and Options: the settings you set once and leave."
+              53,
+              22,
+              "Five pages",
+              "Detector, Character, Upward, Options and History: the settings you set once and leave."
             ],
             [
               60,
               38,
               "Detector EQ curve",
-              "Shape what the detector hears. Drag the points on the curve, or use the knobs below."
+              "Shape what the detector hears. Drag the numbered points on the curve, or use the controls below."
             ],
             [
-              24.5,
+              42,
+              34.5,
+              "Bands 1 to 6",
+              "Pick the band to edit. A band that’s off is dimmed."
+            ],
+            [
+              34.5,
+              58.5,
+              "Type",
+              "Off, Low shelf, Bell or High shelf."
+            ],
+            [
               58,
-              "Low shelf",
-              "Turn the lows up or down in the detector only, so a bass doesn’t pump the whole mix."
+              64.5,
+              "Freq, Gain and Q",
+              "The selected band’s settings, anywhere from 20 Hz to 20 kHz."
             ],
             [
-              39,
-              53.3,
-              "Bell",
-              "Make the detector more or less sensitive around one frequency."
-            ],
-            [
-              61.5,
-              53.3,
-              "High shelf",
-              "Turn the highs up or down in the detector only."
+              78,
+              60.5,
+              "Cut slopes",
+              "12, 24 or 48 dB per octave for Highpass and Lowpass."
             ],
             [
               40,
@@ -258,15 +270,27 @@
           "points": [
             [
               66,
-              33,
+              36,
               "Bell in use",
               "A +12 dB bell at 3 kHz makes the detector react to harsh upper mids first."
             ],
             [
+              47.5,
               39,
-              53.3,
+              "A fourth band",
+              "Six bands in all, each with its own type."
+            ],
+            [
+              50.5,
+              49,
+              "24 dB slope",
+              "A steeper Highpass keeps the kick out and still follows the bass."
+            ],
+            [
+              58.5,
+              64.5,
               "Bell controls",
-              "Freq, Gain and Q of the detector’s bell."
+              "Freq, Gain and Q of the selected band."
             ],
             [
               70.5,
@@ -324,7 +348,7 @@
               50,
               21,
               "EDIT pages",
-              "Open four pages of deeper settings without leaving the window: Detector, Character, Upward and Options."
+              "Open five pages of deeper settings without leaving the window: Detector, Character, Upward, Options and History."
             ],
             [
               31.2,
@@ -399,6 +423,94 @@
               42,
               "Output",
               "The same output level as the header knob."
+            ],
+            [
+              34.5,
+              68.7,
+              "Optical",
+              "Optical ballistics: a slowing attack, a two-stage release, and slow recovery from long squashing."
+            ],
+            [
+              66.3,
+              64.5,
+              "Hold",
+              "Wait this long after a peak before releasing."
+            ],
+            [
+              77.3,
+              64.5,
+              "Range",
+              "The most it will turn down."
+            ],
+            [
+              70,
+              83.5,
+              "Link mode",
+              "Stereo, Mid/Side, M>S or S>M: compress mid and side apart, or one by the other’s level."
+            ]
+          ]
+        },
+        {
+          "id": "sync",
+          "label": "Host sync",
+          "image": "comp-sync",
+          "alt": "Fancy Comp with Host sync as its detector input",
+          "points": [
+            [
+              30,
+              17.9,
+              "Host sync",
+              "Duck in time with the host, without a sidechain track."
+            ],
+            [
+              36,
+              74,
+              "Rate",
+              "One virtual kick per note of this length."
+            ],
+            [
+              51,
+              78.3,
+              "Shape",
+              "How long each one lasts."
+            ]
+          ]
+        },
+        {
+          "id": "history",
+          "label": "History",
+          "image": "comp-history",
+          "alt": "Fancy Comp’s History page",
+          "points": [
+            [
+              36,
+              30.5,
+              "Time shown",
+              "1.5, 3, 6 or 12 s."
+            ],
+            [
+              55,
+              34.9,
+              "Grid",
+              "Beat and bar lines from the host’s tempo."
+            ],
+            [
+              50,
+              62,
+              "Input and output in dB",
+              "Input in grey and output in teal, from -60 dB at the middle to 0 dB at the edges. The gap is the reduction."
+            ],
+            [
+              40,
+              50,
+              "Gain reduction",
+              "The yellow line, hanging from the top."
+            ],
+            [
+              67,
+              34.9,
+              "Peak",
+              "The largest reduction in view. Click it to clear it."
             ]
           ]
         },
@@ -415,8 +527,8 @@
               "The title strip says so while you’re hearing the detector instead of the output."
             ],
             [
-              56.2,
-              95.6,
+              41,
+              91.5,
               "Preview filter",
               "Hear the filtered detector signal, to set Lowpass and Highpass. It turns off when you close the window."
             ],
@@ -460,7 +572,7 @@
         ],
         [
           "Shape what the detector hears",
-          "A low shelf, a bell and a high shelf on a curve you can drag."
+          "Six bands, each a shelf or a bell, on a curve you can drag, and detector cuts up to 48 dB per octave."
         ],
         [
           "Catch the last peaks",
@@ -473,6 +585,26 @@
         [
           "Avoid aliasing",
           "Oversampling up to 8x."
+        ],
+        [
+          "Compress mid and side apart",
+          "Link modes work on mid and side, or turn one down by the other’s level."
+        ],
+        [
+          "Read the reduction in dB",
+          "History draws the input, the output and the reduction on a dB scale."
+        ],
+        [
+          "Duck in time",
+          "Host sync needs no trigger track."
+        ],
+        [
+          "Level like an optical unit",
+          "Optical slows the attack as it closes in and releases in two stages."
+        ],
+        [
+          "Set limits",
+          "Hold delays the release, and Range caps the reduction."
         ]
       ],
       "details": [
@@ -530,8 +662,8 @@
           "alt": "Fancy MultiComp with the Upward row for band 2",
           "points": [
             [
-              31,
-              19,
+              42,
+              20.5,
               "Band graph",
               "Drag a band’s handle down to lower its threshold, and use the mouse wheel on it for the ratio."
             ],
@@ -539,19 +671,31 @@
               52,
               37,
               "Crossovers",
-              "Drag the blue lines to move where one band ends and the next begins."
+              "Drag the blue lines to move where one band ends and the next begins. Right-click one for its slope."
+            ],
+            [
+              28.3,
+              19.9,
+              "Spectrum or GR history",
+              "Show the spectrum, or each band’s gain reduction over the last 3 s."
+            ],
+            [
+              69.5,
+              18.9,
+              "Learn",
+              "Let it place the crossovers for you."
             ],
             [
               21.5,
-              44.5,
+              43.8,
               "Band tabs",
               "Pick a band to edit, or add one with + for up to 8."
             ],
             [
-              64.5,
-              44.5,
-              "Channel, solo and bypass",
-              "Put the band on Stereo, Left, Right, Mid or Side, hear it alone, or switch it off."
+              59.5,
+              48,
+              "Mute, channel, solo and bypass",
+              "Mute the band, put it on Stereo, Left, Right, Mid or Side, hear it alone, or switch it off."
             ],
             [
               3.5,
@@ -560,10 +704,16 @@
               "The selected band’s threshold, over its own input meter."
             ],
             [
-              37,
-              51.5,
+              34,
+              51.2,
               "Band compressor",
               "Ratio, knee, attack, release, RMS size and gain for the selected band."
+            ],
+            [
+              80.5,
+              60.3,
+              "Look",
+              "The band’s own lookahead, so it turns down before a transient arrives."
             ],
             [
               7,
@@ -592,10 +742,36 @@
               "A band on one channel shows its letter on the graph: M for Mid."
             ],
             [
-              64.5,
-              44.5,
+              67.5,
+              43.6,
               "Channel chip",
               "Choose the channel the band works on: Stereo, Left, Right, Mid or Side."
+            ]
+          ]
+        },
+        {
+          "id": "history",
+          "label": "GR history",
+          "image": "multicomp-history",
+          "alt": "Fancy MultiComp’s gain-reduction history",
+          "points": [
+            [
+              28.3,
+              19.9,
+              "GR history",
+              "The last 3 seconds of each band’s gain reduction."
+            ],
+            [
+              45,
+              31,
+              "One line per band",
+              "In the band’s colour, so you can see which bands work and when."
+            ],
+            [
+              80.5,
+              26,
+              "Peaks",
+              "Each band’s largest reduction in view, in dB."
             ]
           ]
         },
@@ -618,16 +794,34 @@
               "Automate the crossovers on a log scale, so a sweep moves evenly through the octaves."
             ],
             [
-              52,
+              51.5,
               63,
               "Output",
               "The same output level as the header knob."
             ],
             [
-              68,
+              66,
               63,
-              "Lookahead",
-              "Up to 10 ms, so the bands start turning down before a transient arrives. The latency it adds is shown below it."
+              "Set all bands",
+              "Move every band’s Look together. The latency it adds is shown below it."
+            ],
+            [
+              17.5,
+              79.5,
+              "HP and LP",
+              "Filter what the selected band’s detector hears, never its audio."
+            ],
+            [
+              39,
+              79.5,
+              "Tilt",
+              "Make the detector listen more to the band’s highs, or its lows."
+            ],
+            [
+              66,
+              79.8,
+              "Crossover slopes",
+              "LR 24 or LR 48 for each crossover on its own."
             ],
             [
               71,
@@ -665,7 +859,7 @@
         ],
         [
           "Look ahead",
-          "Up to 10 ms of lookahead, reported to the host."
+          "Up to 10 ms for each band on its own, reported to the host."
         ],
         [
           "Key a band from a sidechain",
@@ -673,11 +867,27 @@
         ],
         [
           "Choose the crossover",
-          "Linkwitz-Riley 24 or 48 dB, or linear phase."
+          "Linkwitz-Riley 24 or 48 dB for each crossover, linear phase or dynamic phase."
         ],
         [
           "Change everything at once",
           "Depth and Time scale every band’s compression and speed together."
+        ],
+        [
+          "Shape each band’s detector",
+          "A high-pass, a low-pass and a tilt on what the band listens to."
+        ],
+        [
+          "See what each band did",
+          "GR history draws the last 3 s of reduction, band by band."
+        ],
+        [
+          "Learn the crossovers",
+          "Let it place them from the material."
+        ],
+        [
+          "Mute a band",
+          "Hear the mix without it."
         ]
       ],
       "details": [
@@ -713,8 +923,8 @@
       "name": "Gate",
       "kind": "Gate, ducker and trigger",
       "accent": "#F1C315",
-      "line": "Closes between hits, ducks from a sidechain and sends MIDI.",
-      "lede": "A noise gate and ducker with hysteresis, hold, optional 50 ms lookahead, a sidechain input and MIDI triggering.",
+      "line": "Closes between hits, ducks from a sidechain, lifts loud parts and sends MIDI.",
+      "lede": "A noise gate, ducker and upward expander with hysteresis, hold, a transient detector, optional 50 ms lookahead, a sidechain input and MIDI triggering.",
       "hub": [
         "For drum mics and noisy tracks, and for ducking one track under another.",
         [
@@ -732,63 +942,69 @@
           "points": [
             [
               3.3,
-              24.5,
+              22,
               "Threshold",
               "Set where the gate opens, on top of the input meter, with the closing level shown below it."
             ],
             [
-              12.2,
-              21,
+              11.5,
+              24,
               "Detector input",
               "Open from the track itself or from a sidechain."
             ],
             [
-              26.5,
-              21,
+              46,
+              23,
               "Lookahead",
               "Open 50 ms early, so not even the first transient is cut."
             ],
             [
-              74.5,
-              25.5,
-              "Gate or Duck",
-              "Close on silence, or turn the track down while the sidechain plays."
+              60.8,
+              20.3,
+              "Gate, Duck or Upward",
+              "Close on silence, turn the track down while the sidechain plays, or lift what’s above the threshold."
             ],
             [
               47,
-              37,
+              34,
               "History",
               "Watch the level and the gate opening and closing over the last few seconds."
             ],
             [
-              40.5,
-              55,
+              40.6,
+              52,
               "Attack, Hold and Release",
               "How fast it opens, how long it stays open, and how slowly it closes."
             ],
             [
-              18.5,
-              70,
+              19,
+              74,
               "Range",
               "Close only part of the way, so the gate never sounds abrupt."
             ],
             [
-              63,
-              78,
+              63.5,
+              80,
               "Detector filters",
               "Filter what it listens to, so only the snare opens a snare mic."
             ],
             [
-              34.5,
-              91.5,
+              51,
+              91.7,
               "MIDI on open/close",
               "Send a MIDI note on every opening, to trigger a sample."
             ],
             [
-              86.3,
-              50,
+              93.5,
+              45,
               "Wet, Dry and Noise",
               "Blend the gated and ungated sound, and add white noise only while it’s open."
+            ],
+            [
+              25.5,
+              66,
+              "Level or Transient",
+              "Open on the level, or on a sudden rise in level, whatever the level is."
             ]
           ]
         },
@@ -799,34 +1015,156 @@
           "alt": "Fancy Gate keyed from the sidechain, with Lookahead and MIDI on",
           "points": [
             [
-              26.7,
-              21,
+              11.5,
+              24,
               "Sidechain L+R",
               "The gate listens to the sidechain instead of the track."
             ],
             [
-              55,
-              21,
+              46,
+              23,
               "Lookahead",
               "On: the gate opens 50 ms early, and the plugin reports 50 ms of latency."
             ],
             [
-              69.5,
-              29,
+              62,
+              27.3,
               "No sidechain signal",
               "A sidechain is chosen but nothing arrives, with a hint on routing it in REAPER."
             ],
             [
-              16.5,
-              53,
+              16,
+              52,
               "Pre-open",
               "With Lookahead on, open a few ms before the hit."
             ],
             [
-              56.5,
-              95.6,
+              58,
+              92,
               "MIDI note and velocity",
               "Send A4 on channel 1 on every opening, with the velocity from the level."
+            ]
+          ]
+        },
+        {
+          "id": "transient",
+          "label": "Transient detector",
+          "image": "gate-transient",
+          "alt": "Fancy Gate with the Transient detector chosen",
+          "points": [
+            [
+              25.5,
+              66,
+              "Transient",
+              "Opens on a sudden rise in level, so a drum hit opens it and a held bass note doesn’t."
+            ],
+            [
+              44,
+              79,
+              "Rise",
+              "How far the level must jump above its recent average to count as a hit."
+            ],
+            [
+              53.5,
+              52,
+              "Hold and Release",
+              "It closes Hold after the last hit and fades over Release, whatever the level."
+            ],
+            [
+              7,
+              50,
+              "Threshold",
+              "A floor: noise between hits stays under it."
+            ]
+          ]
+        },
+        {
+          "id": "upward",
+          "label": "Upward",
+          "image": "gate-upward",
+          "alt": "Fancy Gate in Upward mode",
+          "points": [
+            [
+              80.5,
+              20.3,
+              "Upward",
+              "Turns the sound up above the threshold, and leaves the rest alone."
+            ],
+            [
+              28,
+              79,
+              "Boost",
+              "The most it raises the level by."
+            ],
+            [
+              15,
+              89.5,
+              "Boost light",
+              "Lights while it’s raising the level."
+            ]
+          ]
+        },
+        {
+          "id": "drawer",
+          "label": "EDIT drawer",
+          "image": "gate-drawer",
+          "alt": "Fancy Gate’s EDIT drawer with Host sync as the detector input",
+          "points": [
+            [
+              31,
+              52.5,
+              "MIDI trigger",
+              "Open and close it from MIDI notes instead of the detector."
+            ],
+            [
+              64,
+              58,
+              "Ratio",
+              "Below inf:1 it’s a gentle expander instead of a full gate."
+            ],
+            [
+              75.5,
+              58,
+              "De-bleed",
+              "Keeps out-of-band bleed from opening it. It needs Lowpass and Highpass set."
+            ],
+            [
+              47.5,
+              72.5,
+              "Learn",
+              "Listens for 3 s and sets Threshold."
+            ],
+            [
+              45.5,
+              82.5,
+              "Ceiling",
+              "Holds the output’s true peak under a level, in every mode."
+            ],
+            [
+              66.5,
+              77.5,
+              "Host sync",
+              "With Host sync as the detector input: opens on the beat, with Rate and Shape."
+            ]
+          ]
+        },
+        {
+          "id": "drawer-upward",
+          "label": "EDIT, Upward",
+          "image": "gate-drawer-upward",
+          "alt": "Fancy Gate’s EDIT drawer in Upward mode",
+          "points": [
+            [
+              64,
+              58,
+              "Up ratio",
+              "How strongly the level above the threshold is raised."
+            ],
+            [
+              45.5,
+              82.5,
+              "Ceiling",
+              "Set to -1 dBTP, so the boost can’t push peaks over."
             ]
           ]
         },
@@ -837,20 +1175,20 @@
           "alt": "Fancy Gate with Preview filter on",
           "points": [
             [
-              25,
-              2.6,
+              23,
+              2.3,
               "LISTENING",
               "Shown in the title strip while you preview."
             ],
             [
-              8,
-              91.2,
+              14,
+              91.5,
               "Preview filter",
               "Hear what the detector hears, to set Lowpass and Highpass by ear."
             ],
             [
-              62.8,
-              78,
+              63.5,
+              80,
               "Detector filters",
               "Lowpass and Highpass on what the gate listens to."
             ]
@@ -864,8 +1202,8 @@
         "box": [
           0,
           18,
-          79,
-          45
+          80,
+          42
         ],
         "alt": "Fancy Gate’s history, with the gate opening on each hit"
       },
@@ -893,21 +1231,41 @@
         [
           "Close gently",
           "Range sets how far it closes, from a few dB to silence."
+        ],
+        [
+          "Open on hits, not on level",
+          "The Transient detector follows drum hits however the bleed’s level changes."
+        ],
+        [
+          "Bring the loud parts up",
+          "Upward lifts what’s above the threshold, with a ceiling on the peaks."
+        ],
+        [
+          "Gate in time",
+          "Host sync opens it on the beat, without a trigger track."
+        ],
+        [
+          "Play it from MIDI",
+          "A MIDI note can open and close it."
+        ],
+        [
+          "Set the threshold for you",
+          "Learn listens for 3 s and sets it."
         ]
       ],
       "details": [
         [
           "Inputs",
-          "Mono or stereo, plus a sidechain. MIDI out."
+          "Mono or stereo, plus a sidechain. MIDI in and out."
         ],
         [
           "Latency",
-          "None with Lookahead off; 50 ms with it on, at every sample rate."
+          "None with Lookahead off; 50 ms with it on, at every sample rate. Ceiling adds a little more while it’s on."
         ]
       ],
       "window": [
-        740,
-        441
+        790,
+        465
       ],
       "pairs": [
         [
@@ -942,13 +1300,13 @@
           "alt": "Fancy Limit’s main view",
           "points": [
             [
-              31.2,
-              20.8,
+              31,
+              16.8,
               "Style",
               "Clean, Punchy or Dense: how the limiter shapes the peaks it catches."
             ],
             [
-              53.5,
+              83.5,
               20.8,
               "Target",
               "Pick a loudness target, such as Streaming at -14 LUFS, to aim for."
@@ -994,6 +1352,18 @@
               95.6,
               "Listen to removed",
               "Hear only what the limiter takes away."
+            ],
+            [
+              36,
+              20.8,
+              "Auto to target",
+              "Let it find the Threshold that reaches the target."
+            ],
+            [
+              68,
+              95.6,
+              "Gain lock",
+              "Hear the limiting without the added level, so louder doesn’t fool you."
             ]
           ]
         },
@@ -1038,6 +1408,24 @@
               29.3,
               "Done",
               "Close the drawer."
+            ],
+            [
+              51.5,
+              82.8,
+              "Release curve",
+              "Exponential, or Linear."
+            ],
+            [
+              43.7,
+              91.3,
+              "DC filter",
+              "A 5 Hz high-pass that removes a DC offset."
+            ],
+            [
+              73,
+              91.3,
+              "Clip before limiting",
+              "Shave the sharpest peaks with a clipper first, by up to Clip."
             ]
           ]
         }
@@ -1078,6 +1466,18 @@
         [
           "Dither the last bounce",
           "16 or 24 bit, plain or shaped."
+        ],
+        [
+          "Reach the target by itself",
+          "Auto to target finds the Threshold."
+        ],
+        [
+          "Compare at the same level",
+          "Gain lock takes the added level off."
+        ],
+        [
+          "Clip first",
+          "A clipper before the limiter takes the sharpest peaks."
         ]
       ],
       "details": [
@@ -1179,6 +1579,24 @@
               95.6,
               "Listen",
               "Hear only what’s being removed."
+            ],
+            [
+              54.8,
+              20.8,
+              "High and Low",
+              "Two bands: High for “s”, and Low for “sh”, with its own settings."
+            ],
+            [
+              44.5,
+              65,
+              "Band, Shelf or Hiss",
+              "De-ess a band or everything above Freq, or take the hiss out of the gaps."
+            ],
+            [
+              53,
+              95.6,
+              "Learn",
+              "Play 2 s and let it find the setting."
             ]
           ]
         },
@@ -1205,6 +1623,56 @@
               29.3,
               "Done",
               "Close the drawer."
+            ],
+            [
+              51,
+              57,
+              "Filter slope",
+              "How sharply the detector picks out the band: 12, 24 or 48 dB/oct."
+            ],
+            [
+              51,
+              65.5,
+              "Reduce",
+              "Cut both channels, only the middle, or only the sides."
+            ],
+            [
+              35.5,
+              80,
+              "Ceiling",
+              "Hold the output’s true peak under a level."
+            ]
+          ]
+        },
+        {
+          "id": "hiss",
+          "label": "Hiss",
+          "image": "ds-hiss",
+          "alt": "Fancy DS in Hiss mode",
+          "points": [
+            [
+              44.5,
+              65,
+              "Hiss",
+              "Turns the highs down in the gaps, while they’re quiet, and leaves loud passages bright."
+            ],
+            [
+              28.5,
+              78,
+              "Freq",
+              "Everything above it is worked on. Width isn’t used."
+            ],
+            [
+              48,
+              78,
+              "Range",
+              "The most the hiss is turned down."
+            ],
+            [
+              8.5,
+              58,
+              "Threshold",
+              "Below this level it counts as a gap."
             ]
           ]
         },
@@ -1265,6 +1733,26 @@
         [
           "De-ess more than voices",
           "Harsh cymbals and bright buses too."
+        ],
+        [
+          "Clean up hiss",
+          "Hiss mode turns the highs down in the gaps."
+        ],
+        [
+          "Catch “sh” as well",
+          "A second, Low band beside the one for “s”."
+        ],
+        [
+          "Cut the middle or the sides",
+          "Reduce works on both, Mid or Side."
+        ],
+        [
+          "Let it learn",
+          "Learn finds the setting from 2 s of playback."
+        ],
+        [
+          "Hold the peaks",
+          "A true-peak ceiling on the output."
         ]
       ],
       "details": [
@@ -1274,7 +1762,7 @@
         ],
         [
           "Latency",
-          "None by default. Lookahead adds 1 to 5 ms, and the linear-phase split 53 ms. The host compensates for it."
+          "None by default. Lookahead adds 1 to 5 ms, the linear-phase split 53 ms, and Ceiling a little. The host compensates for it."
         ]
       ],
       "window": [
@@ -1317,7 +1805,7 @@
               70,
               20.5,
               "Profile",
-              "Pick what you’re de-essing: Female voice, Male voice, Sibilance, Harshness, Acoustic guitar or Bowed strings."
+              "Pick what you’re de-essing: Female voice, Male voice, Sibilance, Harshness, Acoustic guitar or Bowed strings. Or Hiss, for the gaps."
             ],
             [
               60,
@@ -1348,6 +1836,12 @@
               95.6,
               "EDIT",
               "More settings, including Save as Fancy DS preset."
+            ],
+            [
+              44,
+              89.3,
+              "Auto",
+              "Ride Amount from the balance of sibilance to voice."
             ]
           ]
         },
@@ -1390,6 +1884,32 @@
           ]
         },
         {
+          "id": "hiss",
+          "label": "Profiles",
+          "image": "dsmini-hiss",
+          "alt": "Fancy DS-Mini’s profile menu with Hiss chosen",
+          "points": [
+            [
+              50,
+              20.5,
+              "Profile",
+              "Click the name for the menu, or step with the arrows."
+            ],
+            [
+              25,
+              61,
+              "Hiss",
+              "Turns everything above 5 kHz down while it’s quiet, in the gaps between phrases."
+            ],
+            [
+              42,
+              38,
+              "Six de-essing profiles",
+              "Each listens to its own band at its own speed."
+            ]
+          ]
+        },
+        {
           "id": "listening",
           "label": "Listen",
           "image": "dsmini-listening",
@@ -1424,8 +1944,8 @@
       },
       "can": [
         [
-          "Six profiles",
-          "Female voice, Male voice, Sibilance, Harshness, Acoustic guitar and Bowed strings."
+          "Seven profiles",
+          "Female voice, Male voice, Sibilance, Harshness, Acoustic guitar, Bowed strings and Hiss."
         ],
         [
           "Switch while playing",
@@ -1442,6 +1962,14 @@
         [
           "Hear what’s removed",
           "Listen to only the sibilance being taken out."
+        ],
+        [
+          "Clean up hiss",
+          "The Hiss profile turns the highs down in the gaps."
+        ],
+        [
+          "Let it ride",
+          "Auto adjusts Amount as the voice changes."
         ]
       ],
       "details": [
@@ -1632,8 +2160,8 @@
       "name": "EQ",
       "kind": "Parametric equalizer",
       "accent": "#E74D3D",
-      "line": "Up to 24 bands on a live analyzer, with dynamic bands, mid/side and Match.",
-      "lede": "A parametric EQ with up to 24 bands, draggable handles on a live analyzer, dynamic bands, a channel per band and Match.",
+      "line": "Up to 24 bands on a live analyzer, with a band list, dynamic bands, mid/side and Match.",
+      "lede": "A parametric EQ with up to 24 bands, draggable handles on a live analyzer, a list and groups of bands, dynamic bands, a channel per band and Match.",
       "hub": [
         "For shaping the tone of any track, bus or mix.",
         [
@@ -1702,6 +2230,18 @@
               22,
               "Gain fader",
               "The output level."
+            ],
+            [
+              18,
+              66.5,
+              "Bands or List",
+              "Edit one band at a time, or see every band as a row."
+            ],
+            [
+              85.5,
+              86.2,
+              "Reach",
+              "How far past the threshold the band reaches its full Range."
             ]
           ]
         },
@@ -1752,6 +2292,126 @@
               25,
               "Gain fader",
               "The output level."
+            ],
+            [
+              76,
+              16.5,
+              "Freeze",
+              "Hold the analyzer still behind your moves."
+            ],
+            [
+              18,
+              66.5,
+              "Bands or List",
+              "Edit one band at a time, or see every band as a row."
+            ]
+          ]
+        },
+        {
+          "id": "list",
+          "label": "Band list",
+          "image": "eq-list",
+          "alt": "Fancy EQ’s band list with five bands",
+          "points": [
+            [
+              17.5,
+              66.5,
+              "List",
+              "Every band in use as a row, so you can see and change them all at once."
+            ],
+            [
+              16,
+              70,
+              "Type",
+              "Click for the band’s shape, and the slope of a cut."
+            ],
+            [
+              46,
+              66.5,
+              "Freq, Gain and Q",
+              "Drag a value, click it to type one, or double-click to reset it."
+            ],
+            [
+              57,
+              66.5,
+              "Channel and Dyn",
+              "The band’s channel, and its dynamic range. Click Dyn to open the band’s settings."
+            ],
+            [
+              72.2,
+              66.5,
+              "Group",
+              "Put bands in group A, B, C or D to move them together."
+            ],
+            [
+              79,
+              66.5,
+              "Solo",
+              "Hold S to hear only what the band works on."
+            ],
+            [
+              88,
+              73,
+              "Delete",
+              "Remove the band."
+            ],
+            [
+              13,
+              90.3,
+              "Add band",
+              "Add a band under the last row. With more than six, the list scrolls."
+            ]
+          ]
+        },
+        {
+          "id": "groups",
+          "label": "Groups",
+          "image": "eq-groups",
+          "alt": "Fancy EQ with bands 2 and 3 in group A",
+          "points": [
+            [
+              38,
+              46.5,
+              "Letter on the handle",
+              "Bands 2 and 3 are in group A."
+            ],
+            [
+              63.5,
+              66.5,
+              "Letter on the tab",
+              "The tabs show the group too."
+            ],
+            [
+              56,
+              24,
+              "Moving together",
+              "Move one and the other follows: frequency and Q by the same ratio, gain by the same number of dB. Automation still moves one band alone."
+            ]
+          ]
+        },
+        {
+          "id": "brickwall",
+          "label": "Brickwall",
+          "image": "eq-brickwall",
+          "alt": "Fancy EQ with a Brickwall high-pass on band 1 and Character at Warm",
+          "points": [
+            [
+              12,
+              50,
+              "A brickwall cut",
+              "A high-pass that falls 96 dB per octave."
+            ],
+            [
+              22.5,
+              94,
+              "Slope",
+              "Brickwall (96), for high-pass and low-pass bands."
+            ],
+            [
+              89.5,
+              95,
+              "Character",
+              "Warm adds a little saturation after the bands."
             ]
           ]
         },
@@ -1887,7 +2547,7 @@
               30.9,
               85,
               "Oversampling and Slope",
-              "Off, 2x or 4x, and the selected band’s slope from 6 to 48 dB/oct."
+              "Off, 2x or 4x, and the selected band’s slope: 6 to 48 dB/oct, or Brickwall (96) for cuts."
             ],
             [
               60.2,
@@ -1912,6 +2572,18 @@
               68.3,
               "Done",
               "Close the drawer."
+            ],
+            [
+              74.5,
+              89.8,
+              "Auto gain",
+              "Keep the level steady as you boost and cut."
+            ],
+            [
+              89.5,
+              95,
+              "Character",
+              "Clean, Subtle or Warm saturation after the bands."
             ]
           ]
         }
@@ -1952,6 +2624,30 @@
         [
           "Resize freely",
           "Its layout stretches to fill a window of any shape."
+        ],
+        [
+          "See every band at once",
+          "The band list shows type, frequency, gain, Q, channel and more in one table, and you can edit it all there."
+        ],
+        [
+          "Move bands together",
+          "Group bands, and moving one moves the others the same way."
+        ],
+        [
+          "Cut like a wall",
+          "Brickwall cuts fall 96 dB per octave."
+        ],
+        [
+          "Add a little colour",
+          "Character is Clean, Subtle or Warm."
+        ],
+        [
+          "Hear one band alone",
+          "Solo plays only what a band works on."
+        ],
+        [
+          "Keep the level steady",
+          "Auto gain follows your boosts and cuts."
         ]
       ],
       "details": [
@@ -2009,50 +2705,56 @@
           "alt": "Fancy FIR in Resonance mode, turning down resonances at 700 Hz and 3 kHz",
           "points": [
             [
-              61.5,
+              56,
               20.6,
               "Mode",
               "EQ, Gate, Compressor, Subtract, Convolve L/R or Resonance."
             ],
             [
               52,
-              31,
+              32,
               "Spectrum",
               "Input, output and what’s being taken out, in green hanging from 0 dB."
             ],
             [
-              21.5,
-              76,
+              11.8,
+              83,
               "Range",
               "Keep Resonance to part of the spectrum; the graph dims the rest."
             ],
             [
-              35.5,
-              73,
+              32.5,
+              81,
               "Depth and Sharpness",
               "How far to turn each resonance down, and how narrow a peak must be to count."
             ],
             [
-              52.3,
+              47.9,
               81,
               "Attack and Release",
               "How fast each cut comes and goes."
             ],
             [
-              77,
-              78,
+              85.5,
+              76,
+              "Tilt",
+              "Work harder on the highs, or on the lows."
+            ],
+            [
+              71.5,
+              73,
               "FFT size",
               "Finer frequency detail, or faster reactions and less latency."
             ],
             [
-              47.2,
+              69,
               97,
               "Listen to removed resonances",
               "Hear only what’s taken out."
             ],
             [
-              70,
-              10,
+              73,
+              9.7,
               "Latency",
               "The latency it reports to the host, shown in the header."
             ]
@@ -2065,38 +2767,38 @@
           "alt": "Fancy FIR in Subtract mode, learning a noise profile",
           "points": [
             [
-              60.5,
+              56,
               20.6,
               "Subtract",
               "Take a noise profile away from the sound."
             ],
             [
-              25.2,
-              72,
+              12,
+              67.5,
               "Learned, Adaptive or Both",
               "Learned uses one noise profile you capture."
             ],
             [
-              26,
-              78.5,
+              3.5,
+              77.5,
               "Learn",
               "Play a part with only noise and click it. It stops by itself after the learn length."
             ],
             [
-              35.6,
-              80,
+              32.5,
+              81,
               "Reduction and Offset",
               "The most any frequency is turned down, and Offset moves the profile: higher removes more."
             ],
             [
               55,
-              58,
+              59,
               "Noise profile",
               "The learned profile, in red under the spectrum."
             ],
             [
-              47.6,
-              93,
+              43.2,
+              92.8,
               "Sidechain detector",
               "Learn from, or follow, the sidechain instead."
             ]
@@ -2109,20 +2811,20 @@
           "alt": "Fancy FIR in Subtract mode with Adaptive tracking",
           "points": [
             [
-              49,
+              56,
               20.6,
               "Subtract",
               "Take a noise profile away from the sound."
             ],
             [
-              25.5,
-              72,
+              12,
+              67.5,
               "Learned, Adaptive or Both",
               "Learn the noise once from a noise-only part, track it as it changes, or both."
             ],
             [
-              25.5,
-              81,
+              20.5,
+              76.8,
               "Tracking",
               "Shows what the adaptive tracker has found."
             ],
@@ -2133,13 +2835,13 @@
               "The learned profile, and the tracked one dashed."
             ],
             [
-              35.8,
+              32.5,
               81,
               "Reduction",
               "How far to turn the noise down."
             ],
             [
-              71,
+              65,
               97,
               "Listen to removed noise",
               "Hear only what’s taken out."
@@ -2153,28 +2855,92 @@
           "alt": "Fancy FIR in EQ mode with a drawn curve",
           "points": [
             [
-              60.5,
+              56,
               20.6,
               "EQ",
               "The curve is the EQ."
             ],
             [
-              26,
-              27,
+              35.5,
+              38.5,
               "Points",
               "Click the curve to add a point, and drag points to shape it."
             ],
             [
-              86.3,
-              25,
+              87,
+              20.6,
               "Edit",
               "Points (smooth), Points (flat) with straight lines, or Freehand to draw with the mouse."
             ],
             [
-              25.5,
-              78.5,
+              22.2,
+              72.5,
               "Reset, Flat, Tilt, De-mud",
               "Start the curve again, or from a ready shape."
+            ]
+          ]
+        },
+        {
+          "id": "compressor",
+          "label": "Compressor",
+          "image": "fir-compressor",
+          "alt": "Fancy FIR in Compressor mode, editing the threshold curve",
+          "points": [
+            [
+              23,
+              28.5,
+              "Threshold or Ratio",
+              "Two curves: where compression starts at each frequency, and how strong it is."
+            ],
+            [
+              66,
+              43,
+              "Threshold curve",
+              "A little lower around 3 kHz, where this mix gets harsh."
+            ],
+            [
+              65,
+              34,
+              "Reduction",
+              "What’s being turned down, in yellow."
+            ],
+            [
+              32.5,
+              78,
+              "Ratio",
+              "Moves the whole ratio curve."
+            ]
+          ]
+        },
+        {
+          "id": "ratio",
+          "label": "Ratio curve, side",
+          "image": "fir-ratio",
+          "alt": "Fancy FIR editing the side’s ratio curve in Mid/Side",
+          "points": [
+            [
+              23,
+              28.2,
+              "Ratio",
+              "Draw a different ratio for each frequency."
+            ],
+            [
+              69,
+              48,
+              "Ratio curve",
+              "4:1 from 2 to 5 kHz and 1:1 elsewhere."
+            ],
+            [
+              58,
+              24.6,
+              "Mid or Side",
+              "With Mid/Side on, this curve is the side’s."
+            ],
+            [
+              21.8,
+              85.4,
+              "Reset ratio curve",
+              "Start the ratio curve again."
             ]
           ]
         },
@@ -2185,8 +2951,8 @@
           "alt": "Fancy FIR in Resonance mode with Range set, listening",
           "points": [
             [
-              12.6,
-              76,
+              11.8,
+              83,
               "Range",
               "Low at 1.5 kHz and High at 10 kHz: only that part is worked on."
             ],
@@ -2197,13 +2963,13 @@
               "The graph dims the part of the spectrum outside the range."
             ],
             [
-              64,
+              65,
               35,
               "Cut",
               "The resonance being turned down, in green."
             ],
             [
-              75.5,
+              69,
               97,
               "Listen to removed resonances",
               "On: you hear only what’s taken out."
@@ -2217,19 +2983,31 @@
           "alt": "Fancy FIR’s EDIT drawer",
           "points": [
             [
-              19.5,
+              15.5,
               86,
               "Learn length",
               "How long Learn listens before it stops by itself."
             ],
             [
-              34,
-              87,
+              28.5,
+              86,
               "Output",
               "The same output level as the header knob."
             ],
             [
-              74.5,
+              43.5,
+              82,
+              "Mid/Side",
+              "Every mode but Convolve works on mid and side, each with its own curves."
+            ],
+            [
+              64.5,
+              20.6,
+              "Mid or Side",
+              "Pick which one you edit."
+            ],
+            [
+              76,
               72.3,
               "Done",
               "Close the drawer."
@@ -2260,7 +3038,7 @@
         ],
         [
           "Gate or compress each frequency",
-          "Gate and Compressor modes act on every part of the spectrum on its own."
+          "Gate and Compressor modes act on every part of the spectrum on its own, and Compressor can have a different ratio at each frequency."
         ],
         [
           "Leave broadband sound alone",
@@ -2268,11 +3046,19 @@
         ],
         [
           "Keep the stereo image",
-          "Both channels get the same cut, so the image never moves."
+          "In left and right, both channels get the same Resonance cut, so the image never moves."
         ],
         [
           "Convolve",
           "Convolve L/R convolves the left input with the right one."
+        ],
+        [
+          "Work on mid and side",
+          "Every mode but Convolve can treat the centre and the sides apart."
+        ],
+        [
+          "Tilt Resonance",
+          "Work harder on the highs, or on the lows."
         ]
       ],
       "details": [
@@ -2286,7 +3072,7 @@
         ]
       ],
       "window": [
-        760,
+        830,
         465
       ],
       "pairs": [
@@ -2356,6 +3142,12 @@
               93.5,
               "EDIT",
               "Character, the output trim and oversampling."
+            ],
+            [
+              60,
+              87,
+              "Listen to added harmonics",
+              "Hear only what Exciter adds."
             ]
           ]
         },
@@ -2388,6 +3180,62 @@
               21.5,
               "Done",
               "Close the drawer."
+            ],
+            [
+              26,
+              25.5,
+              "Main or Harmonics",
+              "The drawer’s two pages."
+            ],
+            [
+              27,
+              76,
+              "Ceiling",
+              "Hold the output’s true peak under a level."
+            ],
+            [
+              61,
+              76.5,
+              "Auto gain",
+              "Keep the level steady as you add harmonics."
+            ]
+          ]
+        },
+        {
+          "id": "harmonics",
+          "label": "Harmonics page",
+          "image": "exciter-harmonics",
+          "alt": "Fancy Exciter’s EDIT drawer on the Harmonics page",
+          "points": [
+            [
+              27,
+              40.5,
+              "Freq 2",
+              "Where Band 2 starts. It runs from here up to Freq."
+            ],
+            [
+              55,
+              40.5,
+              "Harmonics 2",
+              "How much warmth and body Band 2 adds, under the brightness."
+            ],
+            [
+              23.5,
+              75.5,
+              "Punch",
+              "Lift the harmonics on attacks."
+            ],
+            [
+              44.5,
+              75.5,
+              "High cut",
+              "Take the fizz off what’s added. The original is never filtered."
+            ],
+            [
+              66,
+              70,
+              "Width",
+              "Narrow or widen what’s added, not the original."
             ]
           ]
         }
@@ -2420,12 +3268,32 @@
         [
           "Avoid aliasing",
           "Oversampling up to 8x."
+        ],
+        [
+          "Add body as well",
+          "Band 2 adds harmonics below the main band."
+        ],
+        [
+          "Follow the attacks",
+          "Punch lifts the harmonics on each hit."
+        ],
+        [
+          "Keep the fizz down",
+          "High cut filters only what’s added."
+        ],
+        [
+          "Widen only the sparkle",
+          "Width works on the added harmonics."
+        ],
+        [
+          "Hear what’s added",
+          "Listen plays only the new harmonics."
         ]
       ],
       "details": [
         [
           "Latency",
-          "Only with oversampling on. The host compensates for it."
+          "Only with oversampling or Ceiling on. The host compensates for it."
         ],
         [
           "Oversampling",
@@ -2451,12 +3319,12 @@
       "name": "Sature",
       "kind": "Saturator",
       "accent": "#E77E23",
-      "line": "Tape, Tube, Transistor and Clip colour at a steady level.",
-      "lede": "A saturator with four characters. It adds the warmth or grit of driving tape, valves or transistors without making the track louder, and can keep the lows or the highs clean.",
+      "line": "Tape, Tube, Transistor, Clip, Diode and Fold colour at a steady level.",
+      "lede": "A saturator with six curves. It adds the warmth or grit of driving tape, valves or transistors without making the track louder, and can keep the lows or the highs clean.",
       "hub": [
         "For warmth or grit on a track or a bus.",
         [
-          "Choose Tape, Tube, Transistor or Clip",
+          "Choose from six curves, Tape to Fold",
           "Drive it harder at a steady level",
           "Hear only the added harmonics"
         ]
@@ -2469,10 +3337,10 @@
           "alt": "Fancy Sature’s main view",
           "points": [
             [
-              40,
+              52.5,
               20.8,
               "Type",
-              "Tape, Tube, Transistor or Clip."
+              "Tape, Tube, Transistor, Clip, Diode or Fold."
             ],
             [
               20,
@@ -2565,6 +3433,82 @@
               29.3,
               "Done",
               "Close the drawer."
+            ],
+            [
+              45,
+              29.3,
+              "Shape or Tone and stereo",
+              "The drawer’s two pages."
+            ],
+            [
+              3,
+              87,
+              "Offset",
+              "Bias the signal before the curve, so even a symmetric curve adds even harmonics."
+            ],
+            [
+              43,
+              55.5,
+              "Outer bands",
+              "Drive and Mix for the parts below Low and above High."
+            ]
+          ]
+        },
+        {
+          "id": "tone",
+          "label": "Tone and stereo",
+          "image": "sature-page-tone",
+          "alt": "Fancy Sature’s EDIT drawer on the Tone and stereo page",
+          "points": [
+            [
+              13,
+              49,
+              "Low cut",
+              "Filter the lows, with its slope and its place: before the curve, or on what it adds."
+            ],
+            [
+              53.5,
+              49,
+              "High cut",
+              "Filter the highs, the same way."
+            ],
+            [
+              37.5,
+              50.6,
+              "Pre or Post",
+              "Pre shapes what’s driven; Post shapes only the added harmonics."
+            ],
+            [
+              13,
+              82.5,
+              "Spread",
+              "Widen only the added harmonics."
+            ],
+            [
+              77.5,
+              78,
+              "Channels",
+              "Saturate Stereo, only the middle, or only the sides."
+            ]
+          ]
+        },
+        {
+          "id": "fold",
+          "label": "Fold",
+          "image": "sature-type-fold",
+          "alt": "Fancy Sature with the Fold curve",
+          "points": [
+            [
+              52.5,
+              20.8,
+              "Fold",
+              "Folds the wave back past its ceiling, for a metallic, synth-like sound."
+            ],
+            [
+              20,
+              56,
+              "Curve",
+              "The wave goes up, then folds down again."
             ]
           ]
         },
@@ -2603,8 +3547,8 @@
       },
       "can": [
         [
-          "Four characters",
-          "Tape, Tube, Transistor and Clip."
+          "Six curves",
+          "Tape, Tube, Transistor, Clip, Diode and Fold."
         ],
         [
           "Even or odd",
@@ -2625,6 +3569,22 @@
         [
           "Avoid aliasing",
           "Oversampling up to 8x."
+        ],
+        [
+          "Filter around the curve",
+          "Low and high cuts before it, or on what it adds."
+        ],
+        [
+          "Spread the colour",
+          "Widen only the added harmonics."
+        ],
+        [
+          "Work on the middle or the sides",
+          "Saturate Stereo, Mid only or Side only."
+        ],
+        [
+          "Drive the outer bands",
+          "The lows and highs outside the band can have their own drive."
         ]
       ],
       "details": [
@@ -2661,9 +3621,9 @@
       "kind": "Low-end enhancer",
       "accent": "#E74D3D",
       "line": "Swells a kick’s own note, or adds a sub below it.",
-      "lede": "A low-end enhancer with two modes: Boost swells the kick’s own note, and Sub adds a clean sub an octave or two below it.",
+      "lede": "A low-end enhancer with two modes: Boost swells the kick’s own note, and Sub adds a clean sub an octave or two below it. On a bass, Duck makes room for the kick.",
       "hub": [
-        "For a kick drum or a bass that needs more low end.",
+        "For a kick drum or a bass that needs more low end, and for ducking a bass under its kick.",
         [
           "Swell the kick’s own note",
           "Add a sub an octave or two below",
@@ -2679,25 +3639,25 @@
           "points": [
             [
               51,
-              21,
+              20.5,
               "Boost or Sub",
               "Swell the kick’s own note, or add a sub below it."
             ],
             [
-              14,
-              38,
+              50,
+              40,
               "Freq",
               "Find the kick’s own note, usually between 40 and 80 Hz."
             ],
             [
-              6,
+              12,
               70,
               "Wet",
               "How much of the enhanced low end to add."
             ],
             [
-              60,
-              66,
+              59.5,
+              70,
               "Dry",
               "The level of the original."
             ],
@@ -2708,8 +3668,8 @@
               "The level going in and coming out."
             ],
             [
-              12,
-              89.5,
+              20,
+              94,
               "EDIT",
               "The output trim and the mode’s extra settings."
             ]
@@ -2722,34 +3682,64 @@
           "alt": "Fancy Kicker’s EDIT drawer in Boost mode",
           "points": [
             [
-              31.5,
+              27,
               37,
               "Filter Q",
               "How narrow the boosted band is. Higher rings longer."
             ],
             [
-              61,
+              52,
               37,
               "Output",
               "The same output level as the header knob."
             ],
             [
-              48,
-              55.5,
+              44,
+              56,
               "Mono below Freq",
               "Make the added low end identical in both channels."
             ],
             [
               31,
-              62,
+              62.5,
               "Soft clip",
               "Round the peaks so they can’t pass 0 dBFS."
             ],
             [
-              67,
+              70,
               19.7,
               "Done",
               "Close the drawer."
+            ],
+            [
+              5.5,
+              70,
+              "Length",
+              "How long the sub may last. At the top it isn’t limited."
+            ],
+            [
+              48.5,
+              66.5,
+              "Make-room",
+              "Turn the original down around the small knob’s frequency while the sub plays."
+            ],
+            [
+              60,
+              76,
+              "Invert sub",
+              "Flip the sub’s polarity, for when it cancels the kick."
+            ],
+            [
+              30,
+              87,
+              "Auto gain",
+              "Keep the level steady as you add low end."
+            ],
+            [
+              53,
+              92,
+              "Ceiling",
+              "Hold the output’s true peak under a level."
             ]
           ]
         },
@@ -2760,26 +3750,26 @@
           "alt": "Fancy Kicker in Sub mode",
           "points": [
             [
-              14,
-              38,
+              50,
+              40,
               "Cutoff",
               "The sub follows the kick’s pitch below this frequency."
             ],
             [
-              51.5,
+              52,
               59,
               "Octave",
               "One octave below, or two."
             ],
             [
-              6,
+              12,
               70,
               "Sub",
               "How much sub to add."
             ],
             [
-              60,
-              66,
+              59.5,
+              70,
               "Dry",
               "The level of the original."
             ]
@@ -2792,34 +3782,116 @@
           "alt": "Fancy Kicker’s EDIT drawer in Sub mode",
           "points": [
             [
-              22.3,
-              37,
+              20.5,
+              33.5,
               "Sensitivity",
               "Below this level Sub stays silent, so bleed and noise don’t make sub."
             ],
             [
-              43.3,
-              37,
+              39.5,
+              33.5,
               "Low-pass",
               "Smooths the sub: nothing it adds goes much above this."
             ],
             [
-              66.5,
+              58,
               37,
               "Output",
               "The same output level as the header knob."
             ],
             [
-              33.5,
-              55.5,
+              33,
+              55.8,
               "Mono sub",
               "Make the sub identical in both channels."
             ],
             [
               31,
-              62,
+              62.5,
               "Soft clip",
               "Round the peaks so they can’t pass 0 dBFS."
+            ],
+            [
+              5.5,
+              70,
+              "Length",
+              "How long the sub may last after the kick."
+            ],
+            [
+              48.5,
+              66.5,
+              "Make-room",
+              "Turn the original down around the small knob’s frequency while the sub plays."
+            ],
+            [
+              60,
+              76,
+              "Invert sub",
+              "Flip the sub’s polarity."
+            ]
+          ]
+        },
+        {
+          "id": "duck-edit",
+          "label": "Duck and clip",
+          "image": "kicker-duck-edit",
+          "alt": "Fancy Kicker’s EDIT drawer on the Duck and clip page, with Host sync",
+          "points": [
+            [
+              70,
+              19.7,
+              "Duck and clip",
+              "The drawer’s second page, with Done beside it."
+            ],
+            [
+              24.5,
+              37,
+              "Duck",
+              "Turn the output down by up to this much while a kick hits."
+            ],
+            [
+              50.5,
+              37,
+              "Release",
+              "How fast it comes back after each kick."
+            ],
+            [
+              62,
+              52,
+              "Duck from",
+              "A kick on the sidechain, or pulses on the host’s beat."
+            ],
+            [
+              36.5,
+              63.5,
+              "Rate",
+              "With Host sync, one pulse per note of this length."
+            ],
+            [
+              56.5,
+              66,
+              "Shape",
+              "With Host sync, how long each pulse holds the duck."
+            ],
+            [
+              62,
+              84.2,
+              "Clip oversampling",
+              "Off, 2x or 4x for Soft clip, so a hard-driven click doesn’t alias."
+            ]
+          ]
+        },
+        {
+          "id": "duck",
+          "label": "The DUCK tag",
+          "image": "kicker-duck",
+          "alt": "Fancy Kicker with Duck on",
+          "points": [
+            [
+              22.5,
+              89.5,
+              "DUCK",
+              "Shows while Duck is on. Click it to open its page."
             ]
           ]
         }
@@ -2850,18 +3922,38 @@
           "Pick the sub’s distance from the kick."
         ],
         [
-          "No latency",
-          "None at any setting, so it lines up with everything else."
+          "Make room for the kick",
+          "On a bass, Duck turns it down while the kick on the sidechain plays, or in time with the host."
+        ],
+        [
+          "Clip cleanly",
+          "2x or 4x oversampling for Soft clip."
+        ],
+        [
+          "Shape the sub",
+          "Set its length, flip its polarity, and make room for it."
+        ],
+        [
+          "Hold the peaks",
+          "A true-peak ceiling and auto gain."
+        ],
+        [
+          "No latency by default",
+          "It lines up with everything else. Clip oversampling and Ceiling report theirs while on."
         ]
       ],
       "details": [
         [
+          "Inputs",
+          "Mono or stereo, plus a sidechain for Duck."
+        ],
+        [
           "Latency",
-          "None, at any setting."
+          "None at the default settings. Clip oversampling and Ceiling add some, and the host compensates for it."
         ]
       ],
       "window": [
-        392,
+        432,
         492
       ],
       "pairs": [
@@ -2903,58 +3995,64 @@
               "Every tap’s time and level on one line, with its feedback repeats faded."
             ],
             [
-              16.5,
-              52.3,
+              15,
+              51.7,
               "Tap tabs",
               "Pick a tap to edit, or add one, up to 16."
             ],
             [
-              50.5,
+              47.5,
               56.7,
               "Tone or Motion",
               "Switch the tap’s second page."
             ],
             [
-              72,
+              75,
               56.7,
               "Solo, bypass and remove",
               "Hear the tap alone, switch it off, or delete it."
             ],
             [
-              26.3,
-              74,
+              24.2,
+              68,
               "Time",
               "A note value in time with the host’s tempo, or milliseconds."
             ],
             [
-              28.7,
+              33.8,
               70,
               "Feedback",
               "How many repeats."
             ],
             [
-              45.2,
-              73,
+              41.5,
+              82,
               "Lowpass and Highpass",
               "Darken or thin the repeats."
             ],
             [
-              62.3,
+              65.5,
               73,
               "Resolution, Width and Pan",
               "Bit-crush the tap, and place it in the stereo field."
             ],
             [
-              78.8,
-              66,
+              78.3,
+              64,
               "Volume",
               "The tap’s level."
             ],
             [
-              38.5,
-              97,
+              35.5,
+              92,
               "Footer",
               "Filters inside the loop, ping-pong, saturated feedback and smooth time changes."
+            ],
+            [
+              13,
+              23.2,
+              "Freeze",
+              "Stop the input and hold whatever the taps are repeating."
             ]
           ]
         },
@@ -2965,7 +4063,7 @@
           "alt": "Fancy Delay’s Motion page with a Tape tap",
           "points": [
             [
-              42,
+              43,
               64,
               "Character",
               "Clean, Tape or BBD for this tap."
@@ -2977,16 +4075,34 @@
               "How much of the character."
             ],
             [
-              46.3,
-              76,
+              50.3,
+              70,
               "Rate, Depth and Random",
               "Wow and flutter on the repeats: speed, depth and how much of it wanders at random."
             ],
             [
-              50.5,
+              47.5,
               56.7,
               "Motion page",
               "The second page for the selected tap."
+            ],
+            [
+              52,
+              87.3,
+              "Shape",
+              "Sine sweeps the pitch smoothly; Triangle holds it up, then down, for a steady detune."
+            ],
+            [
+              67,
+              87,
+              "Stereo",
+              "How far ahead the right side’s wobble runs, from 0 to 180°."
+            ],
+            [
+              79,
+              73,
+              "Diffusion",
+              "Smear each repeat into the next, towards a wash."
             ]
           ]
         },
@@ -2997,34 +4113,40 @@
           "alt": "Fancy Delay’s EDIT drawer",
           "points": [
             [
-              30.5,
-              70,
+              28.3,
+              69,
               "Note multiplier",
               "Multiply the selected tap’s note value."
             ],
             [
-              13,
-              83,
+              12,
+              87,
               "Swing",
               "Move taps on odd eighth notes later, from straight (50 %) to 75 %."
             ],
             [
-              42.5,
-              77,
+              38.8,
+              78,
               "Output",
               "The same output level as the header knob."
             ],
             [
-              57.5,
-              64.5,
+              51.5,
+              63.5,
               "Ducking",
               "Turn the repeats down while you play: Amount, Threshold and Release."
             ],
             [
-              74.5,
-              59,
+              76,
+              58.8,
               "Done",
               "Close the drawer."
+            ],
+            [
+              77.5,
+              78,
+              "Ceiling",
+              "Hold the output’s true peak under a level, so high feedback can’t clip."
             ]
           ]
         }
@@ -3036,7 +4158,7 @@
         "box": [
           0,
           17,
-          84,
+          85,
           52
         ],
         "alt": "Fancy Delay’s tap map with three taps"
@@ -3056,7 +4178,7 @@
         ],
         [
           "Move the repeats",
-          "Rate, Depth, Random and Diffusion on the Motion page."
+          "Rate, Depth, Random and Diffusion on the Motion page, as a sine or triangle wobble with its own stereo spread."
         ],
         [
           "Duck under the voice",
@@ -3069,16 +4191,24 @@
         [
           "Ping-pong",
           "Bounce a tap’s repeats left and right."
+        ],
+        [
+          "Freeze the echoes",
+          "Hold the repeats for as long as it’s on."
+        ],
+        [
+          "Keep feedback safe",
+          "A true-peak ceiling on the output."
         ]
       ],
       "details": [
         [
           "Latency",
-          "None."
+          "None. Ceiling adds a little while it’s on, and the host compensates for it."
         ]
       ],
       "window": [
-        760,
+        820,
         448
       ],
       "pairs": [
@@ -3246,8 +4376,8 @@
               "Length, Decay, Density, Damping and Spread: a reverb built from scratch."
             ],
             [
-              34,
-              67,
+              24,
+              67.5,
               "Low RT, High RT, Size, Build-up",
               "How long the lows and highs last, the room’s size, and how the tail swells."
             ],
@@ -3268,6 +4398,38 @@
               13,
               "File info",
               "2.5 s, 4 channels, true stereo."
+            ],
+            [
+              40,
+              67.5,
+              "Attack",
+              "Fade the whole tail in, so the reverb swells instead of starting at full level."
+            ]
+          ]
+        },
+        {
+          "id": "eq",
+          "label": "EQ module",
+          "image": "verb-eq",
+          "alt": "Fancy Verb with the EQ module in the chain",
+          "points": [
+            [
+              62,
+              43,
+              "EQ",
+              "A module that shapes the impulse’s tone."
+            ],
+            [
+              71,
+              47,
+              "Curve",
+              "The response of the three bands."
+            ],
+            [
+              70,
+              59.3,
+              "Low shelf, bell and high shelf",
+              "Freq and Gain for each, and Q for the bell."
             ]
           ]
         },
@@ -3358,6 +4520,30 @@
               42.5,
               "Done",
               "Close the panel."
+            ],
+            [
+              17.5,
+              72.2,
+              "Equal loudness",
+              "Even out the level between impulses."
+            ],
+            [
+              2,
+              81,
+              "Extra width",
+              "Widen the reverb beyond the header’s Width, up to 200 %."
+            ],
+            [
+              47.5,
+              63,
+              "Ducking",
+              "Turn the reverb down while the main input or a sidechain plays."
+            ],
+            [
+              48,
+              74,
+              "Gate",
+              "Cut the reverb off with a threshold, a hold and a decay."
             ]
           ]
         }
@@ -3389,7 +4575,7 @@
         ],
         [
           "Generate a reverb",
-          "Echo and reverb generators, with Low and High RT, early reflections and build-up."
+          "Echo and reverb generators, with Low and High RT, early reflections, build-up and an attack that swells in."
         ],
         [
           "Move a long tail",
@@ -3398,9 +4584,33 @@
         [
           "Trim the impulse",
           "Drag its start and end on the waveform."
+        ],
+        [
+          "Go wider",
+          "Extra width takes the reverb up to 200 %, and mono stays the same."
+        ],
+        [
+          "Shape the impulse",
+          "EQ and Decay modules work on the impulse itself."
+        ],
+        [
+          "Duck and gate",
+          "Turn the reverb down under the voice, or gate its tail."
+        ],
+        [
+          "Find an impulse fast",
+          "Search the library, star favourites, or drop a file on the rack."
+        ],
+        [
+          "Keep the level steady",
+          "Equal loudness evens out different impulses."
         ]
       ],
       "details": [
+        [
+          "Inputs",
+          "Mono or stereo, plus a sidechain for Ducking."
+        ],
         [
           "Latency",
           "None in zero-latency mode. Low CPU mode reports 4096 samples, and the host compensates for it."
@@ -3444,18 +4654,18 @@
           "points": [
             [
               60,
-              28,
+              24,
               "Decay display",
               "See the early reflections, the decay and the highs’ decay over time."
             ],
             [
-              11.8,
-              71,
+              10.5,
+              78.5,
               "Pre-delay",
               "Space between the dry sound and the reverb."
             ],
             [
-              19.8,
+              20,
               79,
               "Size and Decay",
               "How big the space sounds, and how long the tail lasts in seconds."
@@ -3474,7 +4684,7 @@
             ],
             [
               44,
-              95.6,
+              96.2,
               "Footer",
               "Sync pre-delay to the tempo, freeze the tail, or use it as a send with Wet only."
             ],
@@ -3493,32 +4703,80 @@
           "alt": "Fancy Room’s EDIT drawer",
           "points": [
             [
-              52,
-              33,
+              50.3,
+              28.5,
               "Quality",
               "Eco, Normal or High: 8 or 16 delay lines, and smoother modulation at High."
             ],
             [
-              52,
-              41.6,
+              50.3,
+              36,
               "Stereo input",
               "Stereo, or feed the reverb the sum of both channels."
             ],
             [
-              16,
-              58,
+              14.5,
+              50,
               "Ducking",
               "Turn the reverb down while the dry signal plays."
             ],
             [
-              36,
-              58,
+              30.5,
+              50,
               "Early reflections",
               "The level of the first echoes."
             ],
             [
+              45,
+              43,
+              "Duck from",
+              "Duck under the input, or under a sidechain such as a vocal."
+            ],
+            [
+              43,
+              58,
+              "Listen to ducking",
+              "Hear what the ducking takes away."
+            ],
+            [
+              62,
+              24.7,
+              "Reverb EQ",
+              "Low, mid and high EQ on the reverb."
+            ],
+            [
+              77.5,
+              49.5,
+              "Mod rate",
+              "The speed of the tail’s movement."
+            ],
+            [
+              18.5,
+              70.5,
+              "Gate the tail",
+              "Cut the reverb off with a threshold, a hold and a decay."
+            ],
+            [
+              69,
+              70.5,
+              "Auto gain",
+              "Keep the level steady as Size and Decay change."
+            ],
+            [
+              63.5,
+              89,
+              "Low decay",
+              "How long the lows ring compared with Decay."
+            ],
+            [
+              75.5,
+              89,
+              "Attack",
+              "Make the late tail swell in instead of starting at once."
+            ],
+            [
               73.5,
-              22,
+              19.5,
               "Done",
               "Close the drawer."
             ]
@@ -3531,9 +4789,9 @@
         "image": "room",
         "box": [
           0,
-          17,
+          14,
           84,
-          62
+          60
         ],
         "alt": "Fancy Room’s decay display"
       },
@@ -3556,14 +4814,34 @@
         ],
         [
           "Duck under the dry signal",
-          "Ducking turns the reverb down while the dry signal plays."
+          "Ducking turns the reverb down while the dry signal plays, or while a sidechain does."
         ],
         [
           "No ringing",
           "The tail is kept smooth, so it doesn’t ring."
+        ],
+        [
+          "Shape the decay",
+          "Let the lows ring longer or shorter than the rest, and swell the tail in with Attack."
+        ],
+        [
+          "EQ the reverb",
+          "Low, mid and high bands on the reverb alone."
+        ],
+        [
+          "Gate the tail",
+          "For the gated drum sound."
+        ],
+        [
+          "Keep the level steady",
+          "Auto gain follows Size and Decay."
         ]
       ],
       "details": [
+        [
+          "Inputs",
+          "Mono or stereo, plus a sidechain for Ducking."
+        ],
         [
           "Latency",
           "None."
@@ -3571,7 +4849,7 @@
       ],
       "window": [
         760,
-        465
+        529
       ],
       "pairs": [
         [

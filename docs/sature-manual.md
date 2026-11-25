@@ -1,6 +1,6 @@
 # Fancy Sature: manual
 
-A saturator with four characters. It adds harmonics, the warmth or grit of driving tape, valves or transistors, without making the track louder, and can keep the lows or the highs clean. Design: `docs/sature.md`.
+A saturator with six curves. It adds harmonics, the warmth or grit of driving tape, valves or transistors, without making the track louder, and can keep the lows or the highs clean. Design: `docs/sature.md`.
 
 ## Controls
 
