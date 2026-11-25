@@ -519,7 +519,7 @@ All in 1x units, from `EqEditor::layoutEditors`. Only List in the normal view ch
 
 - **List height:** `max (178, min (44 + 22 x rows, height - 50 - 344))`, where `rows` is the bands in use, plus one for **+ Add band** while there are fewer than 24, and `height` is the body's. 344 px is the graph's height in the default window, so the list only takes height the window has beyond that. In the default window and smaller ones the list is 178 px, as today.
 - **All 24 bands** (572 px) show from a window 1039 px tall, title strip included. With more rows than fit, the list scrolls, as today.
-- **Columns:** `span = clamp (contentWidth, 734, 1100)`. Each column's x is today's x times `span / 734`, rounded, plus `(contentWidth - span) / 2` when the content is wider than `span`. Below 734 px (the minimum window is 666 px of content) the columns stay as they are today. Every control keeps its size. The header text, the selected row's bar and **+ Add band** move with the columns.
+- **Columns:** `span = clamp (contentWidth, 734, 1100)`. Each column's x is today's x times `span / 734`, rounded, plus `(contentWidth - span) / 2` when the content is wider than `span`. Below 734 px see Decision 3. Every control keeps its size. The header text, the selected row's bar and **+ Add band** move with the columns.
 - **The graph** ends at the list's top. MATCH's card floats over the graph's bottom, as today. The EDIT drawer starts at the list's top, so no part of the list shows above it; its contents stay where they are in it.
 - The height follows the bands in use: adding, deleting, undo, a preset and automation of a band's use all lay the window out again, on the editor's existing timer.
 
@@ -541,3 +541,4 @@ A new screenshot `eq-list-large` (the largest window, twelve bands, List) is com
 
 1. **While a drag or a typed value is in progress** the list doesn't change height (none of them adds or deletes a band), so nothing moves under the mouse. A: as described (recommended).
 2. **EDIT drawer over a tall list.** A: it covers the whole list (recommended). B: it keeps its 228 px height and the list's top rows stay visible above it.
+3. **Narrow windows** (found while writing this, from the code; v1.7.1 has it). The delete cross is at x 677 to 687, but the minimum window (724 px) has 656 px of content, so under about 755 px wide the cross is cut off; a band can still be deleted from its handle's menu or in Bands. A (recommended): below 734 px of content only the gaps after Q close up, in proportion, until at 656 px Dyn is at 470, Group 538, Solo 604 and the cross 634, clear of the 6 px scroll bar; no control shrinks. B: leave it. Test 6 (A): at the minimum width every row's controls are inside the list and none overlap.
