@@ -159,3 +159,8 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] Width 0W with Extra width 200 %: still mono (they multiply).
 - [ ] Automate Extra width from 100 to 200 %: it moves smoothly, no zipper.
 - [ ] Render offline twice: the renders match.
+
+## IR search (v1.7.2)
+
+- [ ] Load an IR far down the library, then open the File dropdown: the list opens showing that IR.
+- [ ] Type "hall": the halls show from the top.

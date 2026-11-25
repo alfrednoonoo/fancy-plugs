@@ -117,3 +117,8 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] The checks above, once, with the VST3 in Ableton Live.
 - [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
 - [ ] The Audio Unit in Live: automation follows, an export matches playback, and the Set reopens as it was. (Logic too, if someone has it.)
+
+## Freeze strip (v1.7.2)
+
+- [ ] The window is a little taller, and Freeze sits above the tap handles. Set a tap near 375 ms to full volume: its handle stays clear of Freeze and can be dragged.
+- [ ] A saved project opens with the same sound.

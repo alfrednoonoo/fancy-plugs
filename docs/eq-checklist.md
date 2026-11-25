@@ -193,3 +193,11 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] The checks above, once, with the VST3 in Ableton Live.
 - [ ] A project saved on Windows opens on the Mac with every setting, and a render matches the Windows render by ear (CI holds them to within -100 dB).
 - [ ] The Audio Unit in Live: automation follows, an export matches playback, and the Set reopens as it was. (Logic too, if someone has it.)
+
+## Band list in a large window (v1.7.2)
+
+- [ ] List on, default window: looks as before, six rows.
+- [ ] Add bands to twelve and drag the window taller: more rows show and the graph shrinks, never below its default height. Drag it wide: the columns spread and stay centred.
+- [ ] Add and delete bands in a tall window: the list follows. Click EDIT: the drawer covers the whole list.
+- [ ] Drag the window to its smallest: the delete cross still shows and works.
+- [ ] Bands and Compact mode look as before at any size.
