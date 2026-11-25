@@ -293,3 +293,76 @@ TEST_CASE ("EQ: the band view and the groups survive a save and reload", "[eq][w
     CHECK (loaded.addBand (500.0f, 0.0f) == 2);
     CHECK (value (loaded, "b3group") == 0.0f);
 }
+
+// v1.7.2: the band list in a large window (docs/eq.md, section 3 of its note).
+
+TEST_CASE ("EQ: the band list takes only the height beyond the default graph's", "[eq][v172][groups]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    // The default body is 572 px, and 966 is the first that shows all 24 bands.
+    for (const auto bands : { 5, 6, 12, 24 })
+        CHECK (EqEditor::listHeight (572, bands) == 178);
+
+    CHECK (EqEditor::listHeight (1247, 5) == 178);
+    CHECK (EqEditor::listHeight (1247, 12) == 330);
+    CHECK (EqEditor::listHeight (1247, 24) == 572);
+    CHECK (EqEditor::listHeight (966, 24) == 572);
+    CHECK (EqEditor::listHeight (965, 24) == 571);
+    CHECK (EqEditor::listHeight (400, 24) == 178);
+
+    EqProcessor processor;
+    const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+    auto* editor = dynamic_cast<EqEditor*> (base.get());
+    REQUIRE (editor != nullptr);
+
+    editor->showListPreview();
+    CHECK (editor->getListHeight() == 178);
+    CHECK (editor->getGraphHeight() == 344);
+
+    auto* constrainer = editor->getConstrainer();
+    REQUIRE (constrainer != nullptr);
+    editor->setSize (constrainer->getMaximumWidth(), constrainer->getMaximumHeight());
+
+    const auto shortListGraph = editor->getGraphHeight();
+    editor->showLargeListPreview();
+    CHECK (editor->getListHeight() == 330);
+    CHECK (editor->getGraphHeight() == shortListGraph - 152);
+
+    // Bands gives the height back, and Compact mode has no list.
+    editor->showGroupsPreview();
+    CHECK (editor->getListHeight() == 0);
+    CHECK (editor->getGraphHeight() == shortListGraph);
+
+    editor->showCompactPreview();
+    CHECK (editor->getListHeight() == 0);
+    CHECK (editor->getGraphHeight() == shortListGraph + 178);
+
+    processor.editorBeingDeleted (editor);
+}
+
+TEST_CASE ("EQ: the band list's columns spread to 1100 px and never leave a narrow window", "[eq][v172][groups]")
+{
+    CHECK (EqEditor::listColumnX (196, 734) == 196);
+    CHECK (EqEditor::listColumnX (677, 734) == 677);
+    CHECK (EqEditor::listColumnX (196, 1732) == 610);
+    CHECK (EqEditor::listSpan (1732) == juce::Range<int> (316, 1416));
+
+    // Each column's x in the default window and its control's width.
+    const std::pair<int, int> columns[] { { 84, 100 }, { 196, 84 }, { 288, 76 }, { 372, 46 }, { 426, 40 },
+                                          { 480, 64 }, { 552, 58 }, { 622, 22 }, { 677, 10 } };
+
+    for (int width = 656; width <= 1732; ++width)
+    {
+        auto end = 0;
+
+        for (const auto& [x, controlWidth] : columns)
+        {
+            const auto left = EqEditor::listColumnX (x, width);
+            REQUIRE (left >= end);
+            end = left + controlWidth;
+        }
+
+        REQUIRE (end <= width - 6); // clear of the scroll bar
+    }
+}

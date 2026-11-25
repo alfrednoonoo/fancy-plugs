@@ -61,6 +61,18 @@ public:
     void showListPreview();
     void showGroupsPreview();
 
+    // v1.7.2, mockup 68: the list with twelve bands, for the largest window.
+    void showLargeListPreview();
+
+    // v1.7.2 (docs/eq.md, "the band list in a large window"): the list's height for a body of this
+    // height, and where a column drawn at this x in the default window goes. Static for tests.
+    static int listHeight (int bodyHeight, int bandsUsed);
+    static int listColumnX (int x, int contentWidth);
+    static juce::Range<int> listSpan (int contentWidth);
+
+    int getGraphHeight() const { return graph.getHeight(); }
+    int getListHeight() const;
+
     // Opens or closes the Match card. While it's open the processor's Match engine runs.
     void setMatchOpen (bool shouldBeOpen);
     bool isMatchOpen() const noexcept { return matchOpen; }
@@ -72,6 +84,7 @@ private:
         void paint (juce::Graphics&) override;
 
         bool compact = false;
+        int stripHeight = 0;
     };
 
     class TabStrip final : public juce::Component
@@ -315,6 +328,7 @@ private:
     void removeBandNow();
     void updateSelection();
     void layoutEditors();
+    int wantedStripHeight();
     void applyPreviewValues();
 
     // Phase 4 Wave 2 item 46: Bands or List, and opening a band in Bands (from the list).
@@ -358,6 +372,7 @@ private:
     std::unique_ptr<GroupLink> groupLink;
     bool listShown = false;
 
+    int stripShown = 0; // the band strip's height as laid out
     bool compactMode = false;
     float lastRange = -1.0f;
     int selectedBand = 0;

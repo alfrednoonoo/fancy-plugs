@@ -511,7 +511,7 @@ Approval of this note, then a short Python model of section 2's group arithmetic
 
 ## v1.7.2: the band list in a large window
 
-Design note, for approval. Mockup 68 (`reference/phase4/68__eq_list_large_mockup.png`, source `design/phase4-mockup-src/w3_mockups.py`), layout A approved by the user, 25 November 2026. Today the list is always 178 px tall with its columns at the left, so a larger window shows no more rows.
+Decisions 1 to 3 A (user, 25 November 2026). Mockup 68 (`reference/phase4/68__eq_list_large_mockup.png`, source `design/phase4-mockup-src/w3_mockups.py`), layout A approved by the user, 25 November 2026. Today the list is always 178 px tall with its columns at the left, so a larger window shows no more rows.
 
 ### 1. Layout
 
@@ -542,3 +542,7 @@ A new screenshot `eq-list-large` (the largest window, twelve bands, List) is com
 1. **While a drag or a typed value is in progress** the list doesn't change height (none of them adds or deletes a band), so nothing moves under the mouse. A: as described (recommended).
 2. **EDIT drawer over a tall list.** A: it covers the whole list (recommended). B: it keeps its 228 px height and the list's top rows stay visible above it.
 3. **Narrow windows** (found while writing this, from the code; v1.7.1 has it). The delete cross is at x 677 to 687, but the minimum window (724 px) has 656 px of content, so under about 755 px wide the cross is cut off; a band can still be deleted from its handle's menu or in Bands. A (recommended): below 734 px of content only the gaps after Q close up, in proportion, until at 656 px Dyn is at 470, Group 538, Solo 604 and the cross 634, clear of the 6 px scroll bar; no control shrinks. B: leave it. Test 6 (A): at the minimum width every row's controls are inside the list and none overlap.
+
+### 5. As built
+
+`EqEditor::listHeight`, `listSpan`, `listColumnX` and `wantedStripHeight`; the strip's height as laid out is `stripShown`, checked on the 30 Hz tick, never while a mouse button is down. Tests 1 to 6 in two cases of `tests/EqGroupsTests.cpp`. Screens `eq-list-large` and `eq-list-small`. The column arithmetic was checked for every content width from 656 to 1732 px before pushing: no control overlaps another, and the cross is clear of the scroll bar.

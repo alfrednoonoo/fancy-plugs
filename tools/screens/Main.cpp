@@ -229,7 +229,20 @@ bool renderEq (const juce::File& outputDir)
     ok = writeBothScales (*editor, "eq-list", outputDir) && ok;
 
     editor->showGroupsPreview();
-    return writeBothScales (*editor, "eq-groups", outputDir) && ok;
+    ok = writeBothScales (*editor, "eq-groups", outputDir) && ok;
+
+    // v1.7.2 (mockup 68): the list in the largest window, twelve bands, and in the smallest.
+    if (auto* constrainer = editor->getConstrainer())
+    {
+        editor->setSize (constrainer->getMaximumWidth(), constrainer->getMaximumHeight());
+        editor->showLargeListPreview();
+        ok = writeBothScales (*editor, "eq-list-large", outputDir) && ok;
+
+        editor->setSize (constrainer->getMinimumWidth(), constrainer->getMinimumHeight());
+        ok = writeBothScales (*editor, "eq-list-small", outputDir) && ok;
+    }
+
+    return ok;
 }
 #endif
 

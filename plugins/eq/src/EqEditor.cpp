@@ -18,6 +18,9 @@ constexpr int minWidth = 724, minHeight = 464, maxWidth = 1800, maxHeight = 1300
 constexpr int gainColumnWidth = 68;
 constexpr int detailsHeight = 178;
 constexpr int optionsHeight = 50;
+
+// v1.7.2: the band list's columns: their normal width, their widest, and the minimum window's.
+constexpr int listNormal = 734, listWidest = 1100, listNarrowest = 656;
 constexpr int cardWidth = 437, cardHeight = 122, cardBottomGap = 24;
 constexpr int dynamicCardWidth = 720;
 
@@ -159,7 +162,7 @@ void EqEditor::Panels::paint (juce::Graphics& g)
     if (! compact)
     {
         g.setColour (colours::bgBody);
-        g.fillRect (0, getHeight() - optionsHeight - detailsHeight, contentWidth, detailsHeight);
+        g.fillRect (0, getHeight() - optionsHeight - stripHeight, contentWidth, stripHeight);
     }
 }
 
@@ -1216,6 +1219,55 @@ void EqEditor::bodyResized()
         graph.update();
 }
 
+int EqEditor::listHeight (int bodyHeight, int bandsUsed)
+{
+    constexpr int defaultGraphHeight = baseHeight - headerHeight - optionsHeight - detailsHeight;
+
+    const auto rows = bandsUsed + (bandsUsed < eq::maxBands ? 1 : 0); // + Add band
+    const auto wanted = BandList::rowsTop + rows * BandList::rowHeight;
+
+    return juce::jmax (detailsHeight, juce::jmin (wanted, bodyHeight - optionsHeight - defaultGraphHeight));
+}
+
+juce::Range<int> EqEditor::listSpan (int contentWidth)
+{
+    const auto span = juce::jmin (contentWidth, listWidest);
+    return juce::Range<int>::withStartAndLength ((contentWidth - span) / 2, span);
+}
+
+int EqEditor::listColumnX (int x, int contentWidth)
+{
+    if (contentWidth >= listNormal)
+    {
+        const auto span = listSpan (contentWidth);
+        return span.getStart() + juce::roundToInt ((float) (x * span.getLength()) / (float) listNormal);
+    }
+
+    // In a narrow window only the gaps after Q close up, so the delete cross stays in the list.
+    const auto closeUp = x >= 670 ? 43 : x >= 620 ? 18 : x >= 550 ? 14 : x >= 480 ? 10 : 0;
+    const auto amount = juce::jmin (1.0f, (float) (listNormal - contentWidth) / (float) (listNormal - listNarrowest));
+
+    return x - juce::roundToInt ((float) closeUp * amount);
+}
+
+int EqEditor::getListHeight() const
+{
+    return bandList != nullptr && bandList->isVisible() ? bandList->getHeight() : 0;
+}
+
+int EqEditor::wantedStripHeight()
+{
+    if (! listShown || compactMode)
+        return detailsHeight;
+
+    auto used = 0;
+
+    for (int band = 0; band < eq::maxBands; ++band)
+        used += eqProcessor().isBandUsed (band) ? 1 : 0;
+
+    return listHeight (getBaseHeight() - headerHeight, used);
+}
+
 void EqEditor::layoutEditors()
 {
     if (bandEditors.empty())
@@ -1225,10 +1277,12 @@ void EqEditor::layoutEditors()
     const auto height = getBaseHeight() - headerHeight;
     const auto contentWidth = width - gainColumnWidth;
     const auto optionsTop = height - optionsHeight;
-    const auto detailsTop = optionsTop - detailsHeight;
+    stripShown = wantedStripHeight();
+    const auto detailsTop = optionsTop - stripShown;
     const auto graphHeight = compactMode ? optionsTop : detailsTop;
 
     panels.compact = compactMode;
+    panels.stripHeight = stripShown;
     panels.setBounds (0, 0, width, height);
     panels.repaint();
 
@@ -1271,7 +1325,7 @@ void EqEditor::layoutEditors()
     // Phase 4 Wave 2 item 46: the list in the band strip's place, the switch over its left end.
     if (bandList != nullptr)
     {
-        bandList->setBounds (0, detailsTop, contentWidth, detailsHeight);
+        bandList->setBounds (0, detailsTop, contentWidth, stripShown);
         bandList->toFront (false);
         viewSwitch.setBounds (14, detailsTop + 2, 112, 20);
         viewSwitch.setVisible (! compactMode);
@@ -1283,7 +1337,8 @@ void EqEditor::layoutEditors()
                          MatchCard::cardWidth, MatchCard::cardHeight);
     matchCard.toFront (false);
 
-    drawer.setBounds (0, height - detailsHeight - optionsHeight, contentWidth, detailsHeight + optionsHeight);
+    // Over the whole list when that's taller than the strip (v1.7.2, Decision 2 A).
+    drawer.setBounds (0, detailsTop, contentWidth, stripShown + optionsHeight);
     drawer.toFront (false);
 
     const auto knobRight = width - 16 - 56 - 36;
@@ -1332,6 +1387,14 @@ void EqEditor::onTick (float)
     {
         listShown = ! listShown;
         layoutEditors();
+        graph.update();
+    }
+
+    // v1.7.2: the list's height follows its rows, but not under a mouse drag (Decision 1 A).
+    if (wantedStripHeight() != stripShown && ! juce::ModifierKeys::currentModifiers.isAnyMouseButtonDown())
+    {
+        layoutEditors();
+        graph.update();
     }
 
     updateSelection();
@@ -1432,6 +1495,25 @@ void EqEditor::showListPreview()
     bandList->update();
 
     drawer.setVisible (false);
+    graph.update();
+}
+
+void EqEditor::showLargeListPreview()
+{
+    showListPreview();
+
+    auto& processor = eqProcessor();
+    const float freqs[] { 100.0f, 200.0f, 300.0f, 1000.0f, 3000.0f, 5000.0f, 10000.0f, 50.0f };
+
+    for (int i = 0; i < (int) std::size (freqs); ++i)
+    {
+        processor.setParameter (EqProcessor::id (4 + i, "used"), 1.0f);
+        processor.setParameter (EqProcessor::id (4 + i, "freq"), freqs[i]);
+    }
+
+    updateSelection();
+    layoutEditors();
+    bandList->update();
     graph.update();
 }
 
@@ -1803,16 +1885,18 @@ public:
 
     void resized() override
     {
-        power.setBounds (52, 2, 18, 18);
-        type.setBounds (84, 1, 100, 19);
-        freqField.setBounds (196, 1, 84, 20);
-        gainField.setBounds (288, 1, 76, 20);
-        qField.setBounds (372, 1, 46, 20);
-        channel.setBounds (426, 1, 40, 19);
-        dyn.setBounds (480, 1, 64, 20);
-        group.setBounds (552, 1, 58, 19);
-        solo.setBounds (622, 1, 22, 19);
-        remove.setBounds (677, 6, 10, 10);   // the small delete cross of mockup 66; the glyph fills its bounds
+        const auto at = [this] (int x) { return listColumnX (x, getWidth()); };
+
+        power.setBounds (at (50) + 2, 2, 18, 18);
+        type.setBounds (at (84), 1, 100, 19);
+        freqField.setBounds (at (196), 1, 84, 20);
+        gainField.setBounds (at (288), 1, 76, 20);
+        qField.setBounds (at (372), 1, 46, 20);
+        channel.setBounds (at (426), 1, 40, 19);
+        dyn.setBounds (at (480), 1, 64, 20);
+        group.setBounds (at (552), 1, 58, 19);
+        solo.setBounds (at (622), 1, 22, 19);
+        remove.setBounds (at (677), 6, 10, 10);   // the small delete cross of mockup 66; the glyph fills its bounds
     }
 
     void update (bool isSelected)
@@ -1854,13 +1938,14 @@ public:
 
         if (selected)
         {
+            const auto span = listSpan (getWidth());
             g.setColour (listSelection);
-            g.fillRoundedRectangle (juce::Rectangle<float> (8.0f, 0.0f, (float) getWidth() - 16.0f, 21.0f), 3.0f);
+            g.fillRoundedRectangle (juce::Rectangle<float> ((float) span.getStart() + 8.0f, 0.0f, (float) span.getLength() - 16.0f, 21.0f), 3.0f);
             g.setColour (bandColour (band));
-            g.fillRoundedRectangle (juce::Rectangle<float> (8.0f, 0.0f, 3.0f, 21.0f), 1.5f);
+            g.fillRoundedRectangle (juce::Rectangle<float> ((float) span.getStart() + 8.0f, 0.0f, 3.0f, 21.0f), 1.5f);
         }
 
-        const auto dot = juce::Rectangle<float> (18.0f, 3.0f, 15.0f, 15.0f);
+        const auto dot = juce::Rectangle<float> ((float) listColumnX (18, getWidth()), 3.0f, 15.0f, 15.0f);
         g.setColour (colour);
         g.fillEllipse (dot);
         g.setColour (colours::textPrimary);
@@ -2048,14 +2133,14 @@ void EqEditor::BandList::paint (juce::Graphics& g)
     g.setFont (font (Weight::regular, 10.0f).withExtraKerningFactor (0.06f));
 
     for (const auto& [name, x] : listColumns)
-        g.drawText (name, x, headerY, 70, 12, juce::Justification::centredLeft, false);
+        g.drawText (name, listColumnX (x, getWidth()), headerY, 70, 12, juce::Justification::centredLeft, false);
 }
 
 void EqEditor::BandList::AddRow::paint (juce::Graphics& g)
 {
     g.setColour (colours::textSecondary);
     g.setFont (font (Weight::regular, 12.0f));
-    g.drawText ("+ Add band", 18, 0, 120, getHeight(), juce::Justification::centredLeft, false);
+    g.drawText ("+ Add band", listColumnX (18, getWidth()), 0, 120, getHeight(), juce::Justification::centredLeft, false);
 }
 
 void EqEditor::BandList::AddRow::mouseUp (const juce::MouseEvent& event)
