@@ -168,6 +168,7 @@ Approval, then one push: the parameter, the oversampler, the drawer row, tests, 
 
 ### 7. As built (24 November 2026, built with the Duck in one push)
 
+- **Green:** run 45514445844 (commit `81e8f1e`, Windows and Mac): error below 20 kHz Off -37.2, 2x -57.7, 4x -71.9 dB; latency 55 samples at 2x and 68 at 4x.
 - **Parameter:** `clipOs` (Off, 2x, 4x; Off), appended, not automatable, since it changes the latency (as Gate's lookahead).
 - **The clip stage** lives in `KickerProcessor` (the engine stays free of JUCE): `KickerDsp::process` takes an optional `Deferred`, with which it leaves each sample before its soft clip and bypass mix and records the sample's clip and bypass amounts. The processor then runs the block, in chunks of 512, through a `fancy::dsp::SwitchedOversampler` (linear phase, one stereo copy), clips each oversampled sample with its base sample's amount, brings it back, and mixes the bypass against the input and bypass amount delayed by the oversampler's latency. Switching uses the oversampler's own fade, hold and fade-in; once Off has faded fully back in, the processor returns to the plain path. Off and settled, `KickerDsp::process` runs as before, to the bit (test 1).
 - **Latency:** the oversampler's plus the Ceiling's, reported per block, so it drops to 0 when Off has switched through: 55 samples at 2x and 68 at 4x, at 48 kHz (69 at 4x with the allpass, before the fix below).
@@ -235,6 +236,7 @@ Run on `docs/research/kicker-duck-model.py`'s own signals, at Duck 6 dB on the w
 
 ### 7. As built (24 November 2026, built with item 45 in one push)
 
+- **Green:** run 45514445844 (commit `81e8f1e`, Windows and Mac). `kicker-duck` and `kicker-duck-edit` match mockup 63 after the Main | Duck and clip switch was widened to 200 px and the drawer brought in front of the DUCK tag.
 - **Parameters,** appended after Ceiling: `duck` (0 to 24 dB, 0), `duckRelease` (20 to 500 ms, log, 120), `duckFrom` (Sidechain, Host sync), `duckRate` (Gate's list, 1/4) and `duckShape` (5 to 100 %, 50). An optional stereo **Sidechain** input bus, off, mono or stereo, as Room's.
 - **The detector,** `plugins/kicker/src/KickerDucker.h`: the key's peak, held instantly and released over 30 ms; the duck wanted is Duck times where that peak sits between -24 and -12 dBFS, in dB; the duck moves towards it over a 1 ms attack and Release, and lets go fully once it's under 0.0001 dB with nothing wanted, so an idle Duck gives a gain of exactly 1. The key is the sidechain's larger channel, or, with Host sync, `fancy::dsp::TempoTrigger`'s flat pulse (Gate's), which runs on at 120 BPM without a host tempo.
 - **What's ducked:** the whole output, as a gain on each sample before the soft clip (Decision 1 A), so a ducked bass also drives the clipper less. With Duck 0 and fully let go, the processor takes the plain path, to the bit (test 1). `SidechainWatch` shows "No sidechain signal" while Duck is above 0 from a silent sidechain.
