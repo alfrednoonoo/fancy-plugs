@@ -1,27 +1,46 @@
 # Fancy Plugs
 
-Sixteen effects for Windows 10 and 11 (x64, VST3) and macOS 11 or later (Intel and Apple silicon, VST3 and Audio Units), built for personal use and signed off by ear in REAPER. Version **1.7.0**.
+Sixteen effects for Windows 10 and 11 (x64, VST3) and macOS 11 or later (Intel and Apple silicon, VST3 and Audio Units), built for personal use and signed off by ear in REAPER. Version **1.7.1**.
 
 | Plugin | What it does |
 |---|---|
-| Fancy Kicker | Low-end enhancer: Boost (one big Freq knob, Wet and Dry) or, new in 1.3.0, Sub, which adds an octave or two below |
-| Fancy Exciter | Parallel high-frequency exciter with clip boost and a mix-back control |
-| Fancy Comp | Compressor with a Threshold fader over the input meter, a filtered detector, a sidechain and an output limiter; new in 1.4.0, Character, upward compression, Auto threshold and a detector EQ |
-| Fancy EQ | Up to 24 bands with draggable handles, a live analyzer, dynamic bands and, new in 1.4.0, mid/side per band and Match |
-| Fancy Verb | Convolution reverb built from a chain of modules: impulse file, filters, echo generator, normalize; new in 1.5.0, a built-in IR library, true stereo and Modulate |
-| Fancy Delay | Up to 16 delay taps, each with its own feedback, loop filters, bit crush, width, pan and ping-pong; new in 1.5.0, Tape and BBD character, modulation, diffusion, ducking and swing |
-| Fancy MultiComp | Up to 8 bands of compression behind flat-summing crossovers, with upward compression and, new in 1.5.0, lookahead and mid/side per band |
-| Fancy FIR | Spectral processor: drawable EQ, Gate, Compressor, noise Subtract and Convolve, with adaptive noise tracking and, new in 1.6.0, Resonance |
-| Fancy Gate | Gate with a filtered detector, a sidechain and a MIDI trigger output |
+| Fancy Kicker | Low-end enhancer: Boost (one big Freq knob, Wet and Dry) or, new in 1.3.0, Sub, which adds an octave or two below; new in 1.7.1, Duck and clip oversampling |
+| Fancy Exciter | Parallel high-frequency exciter with clip boost and a mix-back control; new in 1.7.1, Band 2, Punch, High cut and Width |
+| Fancy Comp | Compressor with a Threshold fader over the input meter, a filtered detector, a sidechain and an output limiter; new in 1.4.0, Character, upward compression, Auto threshold and a detector EQ, which has six bands from 1.7.1, with link modes |
+| Fancy EQ | Up to 24 bands with draggable handles, a live analyzer, dynamic bands and, new in 1.4.0, mid/side per band and Match; new in 1.7.1, a brickwall slope, Character and a band list with groups |
+| Fancy Verb | Convolution reverb built from a chain of modules: impulse file, filters, echo generator, normalize; new in 1.5.0, a built-in IR library, true stereo and Modulate; new in 1.7.1, Attack and Extra width |
+| Fancy Delay | Up to 16 delay taps, each with its own feedback, loop filters, bit crush, width, pan and ping-pong; new in 1.5.0, Tape and BBD character, modulation, diffusion, ducking and swing; new in 1.7.1, LFO shape and stereo phase |
+| Fancy MultiComp | Up to 8 bands of compression behind flat-summing crossovers, with upward compression and, new in 1.5.0, lookahead and mid/side per band; new in 1.7.1, lookahead and a detector EQ in each band, a slope per crossover and a GR history |
+| Fancy FIR | Spectral processor: drawable EQ, Gate, Compressor, noise Subtract and Convolve, with adaptive noise tracking and, new in 1.6.0, Resonance; new in 1.7.1, a ratio curve and Mid/Side |
+| Fancy Gate | Gate with a filtered detector, a sidechain and a MIDI trigger output; new in 1.7.1, a Transient detector and Upward mode |
 | Fancy Limit | New in 1.3.0: true-peak brickwall limiter with lookahead, three styles, Auto release, a loudness meter and dither |
-| Fancy DS | New in 1.3.0: de-esser with a relative threshold, split or wide cuts, minimum- or linear-phase split filters and a history display |
-| Fancy DS-Mini | New in 1.3.0: one-knob de-esser with voice and instrument profiles, on the same engine as Fancy DS |
-| Fancy Sature | New in 1.3.0: saturator with Tape, Tube, Transistor and Clip curves, even/odd Character, Tone, oversampling and auto gain |
-| Fancy Room | New in 1.3.0: algorithmic reverb from small room to long hall, with Freeze, tempo-synced pre-delay, a send mode and ducking |
+| Fancy DS | New in 1.3.0: de-esser with a relative threshold, split or wide cuts, minimum- or linear-phase split filters and a history display; new in 1.7.1, Hiss mode and Reduce |
+| Fancy DS-Mini | New in 1.3.0: one-knob de-esser with voice and instrument profiles, on the same engine as Fancy DS; new in 1.7.1, a Hiss profile |
+| Fancy Sature | New in 1.3.0: saturator with Tape, Tube, Transistor and Clip curves, even/odd Character, Tone, oversampling and auto gain; new in 1.7.1, Diode and Fold, cuts, Spread and Channels |
+| Fancy Room | New in 1.3.0: algorithmic reverb from small room to long hall, with Freeze, tempo-synced pre-delay, a send mode and ducking; new in 1.7.1, Low decay, Attack and sidechain ducking |
 | Fancy TS | New in 1.7.0: transient shaper that turns each hit's attack and sustain up or down, whatever the level, with Pump, a sidechain and a soft clipper |
 | Fancy Chorus | New in 1.7.0: chorus with five modes (Classic, Ensemble, Dimension, Doubler, Flange), 1 to 6 voices, Tempo sync, Age and ducking |
 
-## What's new in 1.7.0
+## What's new in 1.7.1
+
+Something new in thirteen plugins (each plugin's manual has the details):
+
+- **Gate:** a Transient detector that opens on hits, not level, and an Upward mode that lifts what's above Threshold, with an output ceiling.
+- **Comp:** six detector bands with types, 12, 24 or 48 dB/oct detector cuts, link modes (Stereo, Mid/Side, M>S, S>M) and a level history in dB.
+- **EQ:** a Brickwall (96 dB/oct) cut slope, a Character output stage, and a band list with groups.
+- **Verb:** Attack on the Reverb generator, and Extra width up to 200 %.
+- **Room:** Low decay, Attack and ducking from a sidechain.
+- **Delay:** a sine or triangle LFO and its stereo phase, per tap.
+- **MultiComp:** a lookahead and a detector EQ (HP, LP and Tilt) for each band, a slope for each crossover, and a gain-reduction history.
+- **FIR:** a ratio curve, so Compressor can be a different ratio at each frequency, and Mid/Side for every mode but Convolve. Changing engine settings no longer dips the level.
+- **DS and DS-Mini:** Hiss, which turns the highs down in the gaps, and Reduce (Both, Mid or Side) in DS.
+- **Sature:** Diode and Fold curves, Offset, low and high cuts, Spread, and Mid or Side only.
+- **Exciter:** Band 2, Punch, High cut and Width.
+- **Kicker:** Duck, from a sidechain or the host's tempo, and clip oversampling.
+
+Gate, Delay, FIR, Kicker and Room have slightly larger windows to fit the new controls. Projects saved with 1.0 to 1.7.0 load and sound exactly as before. Every new setting defaults to the old behaviour.
+
+## What was new in 1.7.0
 
 - **Mac.** Every plugin now comes for macOS 11 or later as a universal VST3 and Audio Unit (Intel and Apple silicon), in its own zip. Fancy Gate's Audio Unit is a music effect, so it can send MIDI.
 - **Two new plugins:** **Fancy TS**, a transient shaper, and **Fancy Chorus**, a chorus with five modes (table above).
@@ -90,7 +109,7 @@ The screenshots below are rendered by CI from the current build, at 2× scale.
 
 ### Fancy Kicker
 
-<img src="docs/images/kicker.png" width="392" alt="Fancy Kicker in Boost mode"> <img src="docs/images/kicker-sub.png" width="392" alt="Fancy Kicker in Sub mode">
+<img src="docs/images/kicker.png" width="432" alt="Fancy Kicker in Boost mode"> <img src="docs/images/kicker-sub.png" width="432" alt="Fancy Kicker in Sub mode">
 
 ### Fancy Exciter
 
@@ -124,11 +143,11 @@ A true-stereo hall from the built-in library:
 
 ### Fancy Delay
 
-<img src="docs/images/delay.png" width="760" alt="Fancy Delay">
+<img src="docs/images/delay.png" width="820" alt="Fancy Delay">
 
 The Motion page, with a Tape tap:
 
-<img src="docs/images/delay-motion.png" width="760" alt="Fancy Delay's Motion page">
+<img src="docs/images/delay-motion.png" width="820" alt="Fancy Delay's Motion page">
 
 ### Fancy MultiComp
 
@@ -144,15 +163,15 @@ Band 2 set to Mid (the M chip and the M on its handle):
 
 Shown in Subtract mode with Adaptive tracking. The dashed line is the tracked noise profile.
 
-<img src="docs/images/fir-adaptive.png" width="760" alt="Fancy FIR with adaptive noise tracking">
+<img src="docs/images/fir-adaptive.png" width="830" alt="Fancy FIR with adaptive noise tracking">
 
 Resonance mode, turning down resonances at 700 Hz and 3 kHz:
 
-<img src="docs/images/fir-resonance.png" width="760" alt="Fancy FIR in Resonance mode">
+<img src="docs/images/fir-resonance.png" width="830" alt="Fancy FIR in Resonance mode">
 
 ### Fancy Gate
 
-<img src="docs/images/gate.png" width="740" alt="Fancy Gate">
+<img src="docs/images/gate.png" width="790" alt="Fancy Gate">
 
 ### Fancy Limit
 
@@ -216,7 +235,7 @@ Click the preset name in the header to open the preset browser. It works the sam
 - The star marks a favourite without loading the preset.
 - The ‹ › arrows on the preset name step to the previous or next preset without opening the browser.
 
-**The full manual**, with every control of all sixteen plugins, quick starts and a glossary, is [`docs/manual/Fancy-Plugs-Manual-1.7.pdf`](docs/manual/Fancy-Plugs-Manual-1.7.pdf). Each plugin also has a manual and a REAPER checklist in `docs/`. `docs/PROGRESS.md` has the full history, test results and measurements.
+**The full manual**, with every control of all sixteen plugins, quick starts and a glossary, is [`docs/manual/Fancy-Plugs-Manual-1.7.1.pdf`](docs/manual/Fancy-Plugs-Manual-1.7.1.pdf). Each plugin also has a manual and a REAPER checklist in `docs/`. `docs/PROGRESS.md` has the full history, test results and measurements.
 
 ## How builds work
 

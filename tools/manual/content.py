@@ -1,7 +1,7 @@
 # Hand-written content for the Fancy Plugs manual: plugin metadata, quick starts, the shared
 # chapters, and descriptions for controls the per-plugin manuals don't table.
 
-VERSION = "1.7"
+VERSION = "1.7.1"
 
 PARTS = [
     ("Dynamics", "Plugins that react to level: they turn things down, or up, when the sound gets louder or quieter.",
