@@ -508,3 +508,36 @@ Approval of this note, then a short Python model of section 2's group arithmetic
 - **Tags:** a grouped band's handle carries its letter in a 15 x 14 grey tag 7 px right of and 17 px above its centre; its tab carries a 14 x 14 tag at the tab's right, with the number moved left. The handle's right-click menu has a **Group** submenu after Channel.
 - **Screenshots:** `eq-list` (List, mockup 66 panel 1: bands 2 and 3 in group A, band 3 dynamic, band 1 the Brickwall high-pass from the shot before) and `eq-groups` (Bands with the tags, panel 2), rather than changing the main `eq` shot, which now just shows the switch.
 - **Tests** (`tests/EqGroupsTests.cpp`, numbers from `docs/research/eq-groups-prepush.py`): a v1.7.0 state loads with no groups and on Bands; groups and List leave the output bit-identical; the arithmetic alone; through the editor, Freq, Gain and Q moves, a move stopped at 24 kHz, one undo step, and a high-pass that follows Freq but not Gain; automation without a gesture moves one band; the view and groups survive a reload, and an added band starts in no group. `EqTests`' pre-Q2.4 state test counts the eight new Group parameters of bands 17 to 24. **Fixed after run 45480208304:** the list's `juce::Viewport` wanted keyboard focus by default, which the host check "Editors leave the keyboard to the host" caught (its only failure of 763); it no longer does.
+
+## v1.7.2: the band list in a large window
+
+Design note, for approval. Mockup 68 (`reference/phase4/68__eq_list_large_mockup.png`, source `design/phase4-mockup-src/w3_mockups.py`), layout A approved by the user, 25 November 2026. Today the list is always 178 px tall with its columns at the left, so a larger window shows no more rows.
+
+### 1. Layout
+
+All in 1x units, from `EqEditor::layoutEditors`. Only List in the normal view changes; Bands and Compact mode keep their layout at every size.
+
+- **List height:** `max (178, min (44 + 22 x rows, height - 50 - 344))`, where `rows` is the bands in use, plus one for **+ Add band** while there are fewer than 24, and `height` is the body's. 344 px is the graph's height in the default window, so the list only takes height the window has beyond that. In the default window and smaller ones the list is 178 px, as today.
+- **All 24 bands** (572 px) show from a window 1039 px tall, title strip included. With more rows than fit, the list scrolls, as today.
+- **Columns:** `span = clamp (contentWidth, 734, 1100)`. Each column's x is today's x times `span / 734`, rounded, plus `(contentWidth - span) / 2` when the content is wider than `span`. Below 734 px (the minimum window is 666 px of content) the columns stay as they are today. Every control keeps its size. The header text, the selected row's bar and **+ Add band** move with the columns.
+- **The graph** ends at the list's top. MATCH's card floats over the graph's bottom, as today. The EDIT drawer starts at the list's top, so no part of the list shows above it; its contents stay where they are in it.
+- The height follows the bands in use: adding, deleting, undo, a preset and automation of a band's use all lay the window out again, on the editor's existing timer.
+
+### 2. Parameters, state, latency, CPU
+
+None changes: no parameter, no state, no DSP. The renders are bit-identical by construction.
+
+### 3. Tests (`tests/EqGroupsTests.cpp`)
+
+1. Default window: list 178 px and graph 344 px with 5, 6, 12 and 24 bands.
+2. Largest window with 12 bands: list 330 px, so the graph is 152 px shorter than in Bands.
+3. A window 1019 px tall without its title strip and 24 bands: list 572 px, graph 344 px, nothing to scroll.
+4. Columns: at the default width the Freq cell's x is 196; at 1732 px of content it is `round (196 x 1100 / 734) + 316` = 610.
+5. Bands, then Compact mode, at the largest size: the graph's height is as it is today.
+
+A new screenshot `eq-list-large` (the largest window, twelve bands, List) is compared with mockup 68.
+
+### 4. Decisions
+
+1. **While a drag or a typed value is in progress** the list doesn't change height (none of them adds or deletes a band), so nothing moves under the mouse. A: as described (recommended).
+2. **EDIT drawer over a tall list.** A: it covers the whole list (recommended). B: it keeps its 228 px height and the list's top rows stay visible above it.
