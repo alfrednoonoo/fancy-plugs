@@ -196,8 +196,8 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 
 ## Band list in a large window (v1.7.2)
 
-- [ ] List on, default window: looks as before, six rows.
-- [ ] Add bands to twelve and drag the window taller: more rows show and the graph shrinks, never below its default height. Drag it wide: the columns spread and stay centred.
-- [ ] Add and delete bands in a tall window: the list follows. Click EDIT: the drawer covers the whole list.
-- [ ] Drag the window to its smallest: the delete cross still shows and works.
-- [ ] Bands and Compact mode look as before at any size.
+- [x] List on, default window: looks as before, six rows.
+- [x] Add bands to twelve and drag the window taller: more rows show and the graph shrinks, never below its default height. Drag it wide: the columns spread and stay centred.
+- [x] Add and delete bands in a tall window: the list follows. Click EDIT: the drawer covers the whole list.
+- [x] Drag the window to its smallest: the delete cross still shows and works.
+- [x] Bands and Compact mode look as before at any size.

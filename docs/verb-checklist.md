@@ -162,5 +162,5 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 
 ## IR search (v1.7.2)
 
-- [ ] Load an IR far down the library, then open the File dropdown: the list opens showing that IR.
-- [ ] Type "hall": the halls show from the top.
+- [x] Load an IR far down the library, then open the File dropdown: the list opens showing that IR.
+- [x] Type "hall": the halls show from the top.
