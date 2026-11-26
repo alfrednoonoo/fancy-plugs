@@ -4,11 +4,16 @@
 #include <fancy/dsp/DelayTime.h>
 #include <fancy/plugin/ParamHelpers.h>
 
+#include <cmath>
 #include <limits>
 
 namespace
 {
 constexpr double minBpm = 20.0, maxBpm = 999.0;
+
+// Phase 4 Wave 3 (docs/room.md, decision 1 A): Shimmer's intervals, in semitones, in the menu's
+// order, as Verb's.
+constexpr double shimmerSemitones[] { 12.0, 7.0, 5.0, 19.0, 24.0, -12.0 };
 
 juce::String msText (float value)
 {
@@ -159,6 +164,11 @@ fancy::FancyProcessor::Layout createLayout()
                                            .withStringFromValueFunction ([] (float value, int) { return msText (value); })
                                            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
     layout.add (std::make_unique<Choice> (juce::ParameterID { "duckFrom", 1 }, "Duck from", juce::StringArray { "Input", "Sidechain" }, 0));
+
+    // Phase 4 Wave 3, appended (docs/room.md): Shimmer. At 0 % the sound is as before.
+    layout.add (fancy::percentParameter ("shimmer", "Shimmer", 0.0f));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "shimmerPitch", 1 }, "Shimmer interval",
+                                          juce::StringArray { "Octave up", "Fifth up", "Fourth up", "Octave and fifth up", "Two octaves up", "Octave down" }, 0));
     return layout;
 }
 
@@ -249,7 +259,10 @@ double RoomProcessor::getTailLengthSeconds() const
     if (isOn ("freeze"))
         return std::numeric_limits<double>::infinity();
 
-    return RoomDsp::tailSeconds (getPredelayMs(), (double) read ("size") / 100.0, (double) read ("decay"));
+    // Phase 4 Wave 3: Shimmer lengthens the tail (to about twice at 100 %), so the host gets three
+    // times as long while it's up, as Verb does.
+    const auto tail = RoomDsp::tailSeconds (getPredelayMs(), (double) read ("size") / 100.0, (double) read ("decay"));
+    return read ("shimmer") > 0.0f ? 3.0 * tail : tail;
 }
 
 RoomDsp::Targets RoomProcessor::readTargets() const
@@ -296,6 +309,10 @@ RoomDsp::Targets RoomProcessor::readTargets() const
     targets.attackMs = (double) read ("attack");
     targets.duckSidechain = isOn ("duckFrom");
     targets.listenDucking = isListening();
+
+    // Phase 4 Wave 3.
+    targets.shimmer = (double) read ("shimmer") / 100.0;
+    targets.shimmerRatio = std::exp2 (shimmerSemitones[juce::jlimit (0, 5, juce::roundToInt (read ("shimmerPitch")))] / 12.0);
     return targets;
 }
 

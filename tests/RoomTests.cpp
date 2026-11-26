@@ -704,6 +704,13 @@ TEST_CASE ("room measurements", "[.measure]")
     std::printf ("room cpu W2 (median of 5): Normal with Low decay x2 %.3f %%, with Attack 150 ms %.3f %%, with both %.3f %%\n",
                  cpuShelved, cpuSwelled, cpuShaped);
 
+    // Phase 4 Wave 3: Shimmer's loop at 100 %, +12 st (target: under 0.3 % over Normal).
+    auto shimmered = normal;
+    shimmered.shimmer = 1.0;
+    const auto cpuShimmer = medianOfFive ([&] { return roomCpu (shimmered); });
+    std::printf ("room cpu W3 (median of 5): Normal with Shimmer 100 %% %.3f %% (+%.3f, target < 0.3)\n",
+                 cpuShimmer, cpuShimmer - cpuNormal);
+
    #if FANCY_HAS_COMP
     const auto comp = medianOfFive ([]
     {

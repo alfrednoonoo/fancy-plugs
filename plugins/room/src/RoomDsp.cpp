@@ -37,6 +37,10 @@ constexpr double autoTrimMs = 50.0, gateOpenMs = 1.0;
 // copies, so their scaling moves from keeping the amplitude (at 0) to keeping the energy.
 constexpr double attackEnergyMs = 10.0;
 
+// Phase 4 Wave 3: Shimmer's loop (docs/room.md, section 3).
+constexpr double shimmerHighpassHz = 200.0;
+constexpr double shimmerRmsMs = 50.0, shimmerAttackMs = 10.0, shimmerReleaseMs = 100.0;
+
 double frac (double x) noexcept
 {
     return x - std::floor (x);
@@ -128,6 +132,24 @@ double RoomDsp::autoGainDb (double sizeValue, double decaySeconds) noexcept
     return -10.0 * std::log10 (energy (sizeValue, decaySeconds) / energy (autoGainSize, autoGainDecay));
 }
 
+double RoomDsp::loopEnergy (double sizeValue, double decaySeconds, int numLines) noexcept
+{
+    const auto lines = numLines < 16 ? 8 : 16;
+    const auto scale = sizeScale (std::clamp (sizeValue, 0.0, 1.0)) * 0.001;
+    const auto t = std::clamp (decaySeconds, 0.1, 20.0);
+    auto sum = 0.0;
+
+    for (int i = 0; i < lines; ++i)
+    {
+        const auto ms = lineMsTable[(size_t) (lines == 16 ? i : 2 * i)];
+        const auto g2 = std::pow (10.0, -6.0 * ms * scale / t);
+        sum += g2 / (1.0 - g2);
+    }
+
+    const auto a = std::max (1.0e-6, sum / lines);
+    return 2.0 * a / lines * (1.14 + 0.44 * a / (a + 2.25));
+}
+
 double RoomDsp::tailSeconds (double predelayMs, double sizeValue, double decaySeconds) noexcept
 {
     return std::clamp (predelayMs, 0.0, maxPredelayMs) * 0.001 + longestReflectionSeconds (sizeValue) + 1.5 * decaySeconds;
@@ -178,6 +200,15 @@ void RoomDsp::prepare (double newSampleRate)
     // Phase 4 Wave 2.
     lowDecay.setTime (smoothingMs, sampleRate);
     attack.setTime (smoothingMs, sampleRate);
+
+    // Phase 4 Wave 3.
+    shimmerAmount.setTime (smoothingMs, sampleRate);
+    loopHighpass.set (shimmerHighpassHz, 0.70710678118654752, sampleRate);
+    shifter.prepare (sampleRate);
+    shifter.setMode (fancy::dsp::PitchShifter::Mode::plain);
+    shimmerRms = 1.0 - std::exp (-1.0 / (shimmerRmsMs * 0.001 * sampleRate));
+    shimmerAttack = 1.0 - std::exp (-1.0 / (shimmerAttackMs * 0.001 * sampleRate));
+    shimmerRelease = 1.0 - std::exp (-1.0 / (shimmerReleaseMs * 0.001 * sampleRate));
 
     gateOpenStep = 1.0 / std::max (1.0, gateOpenMs * 0.001 * sampleRate);
 
@@ -277,6 +308,28 @@ void RoomDsp::reset()
     lastLowDecay = lowDecay.getCurrent();
     updateModulation (network, 0);
     updateFilters();
+
+    // Phase 4 Wave 3: the loop starts empty, running if Shimmer is up.
+    resetShimmer();
+    shimmerRunning = ! (shimmerAmount.getCurrent() == 0.0 && shimmerAmount.isSettled());
+}
+
+void RoomDsp::resetShimmer() noexcept
+{
+    for (auto* filter : { &loopLowCut, &loopHighCut })
+        for (auto& channel : *filter)
+            channel.reset();
+
+    for (auto& filter : loopHighpassFilters)
+        filter.reset();
+
+    shifter.reset();
+    shimmerPending.fill (0.0);
+    shimmerInput = shimmerPeak = shimmerFeedback = 0.0;
+    shimmerGuard = 1.0;
+    shimmerHoldLeft = 0;
+    loopSize = loopDecay = -1.0;
+    loopLines = 0;
 }
 
 void RoomDsp::setTargets (const Targets& newTargets)
@@ -320,6 +373,9 @@ void RoomDsp::setTargets (const Targets& newTargets)
     eqQ.setTarget (std::clamp (targets.eqMidQ, 0.3, 8.0));
     autoTrim.setTarget (targets.autoGain ? std::pow (10.0, autoGainDb (targets.size, targets.decay) / 20.0) : 1.0);
 
+    // Phase 4 Wave 3.
+    shimmerAmount.setTarget (std::clamp (targets.shimmer, 0.0, 1.0));
+
     const auto quality = std::clamp (targets.quality, (int) eco, (int) high);
 
     if (prepared && quality != networks[(size_t) activeNetwork].quality)
@@ -338,7 +394,7 @@ void RoomDsp::snapToTargets (const Targets& newTargets)
     for (auto* smoother : { &predelay, &size, &decay, &diffusion, &mod, &width, &damping, &logLowCut, &logHighCut,
                             &erGain, &ducking, &wet, &dry, &output, &bypass,
                             &modRate, &eqLogHz[0], &eqLogHz[1], &eqLogHz[2], &eqGain[0], &eqGain[1], &eqGain[2], &eqQ, &autoTrim,
-                            &lowDecay, &attack })
+                            &lowDecay, &attack, &shimmerAmount })
         smoother->snapToTarget();
 
     if (prepared)
@@ -464,6 +520,13 @@ void RoomDsp::updateFilters() noexcept
         filter.setButterworthHighPass (std::exp (lastLowLog), sampleRate);
 
     for (auto& filter : highCut)
+        filter.setButterworthLowPass (std::exp (lastHighLog), sampleRate);
+
+    // Phase 4 Wave 3: Shimmer's loop has its own copies, with the same settings.
+    for (auto& filter : loopLowCut)
+        filter.setButterworthHighPass (std::exp (lastLowLog), sampleRate);
+
+    for (auto& filter : loopHighCut)
         filter.setButterworthLowPass (std::exp (lastHighLog), sampleRate);
 }
 
@@ -736,10 +799,62 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples,
         lowDecay.next();
         const auto attackNow = attack.next();
 
+        // Phase 4 Wave 3: Shimmer runs while it isn't settled at 0; stopping empties the loop.
+        const auto shimmerNow = shimmerAmount.next();
+        const auto shimmerOn = ! (shimmerNow == 0.0 && shimmerAmount.isSettled());
+
+        if (shimmerOn != shimmerRunning)
+        {
+            resetShimmer();
+            shimmerRunning = shimmerOn;
+        }
+
         freezeAmount = targets.freeze ? std::min (1.0, freezeAmount + freezeStep) : std::max (0.0, freezeAmount - freezeStep);
 
         if (sampleCount % modStep == 0)
+        {
             runKnot();
+
+            // Phase 4 Wave 3: the loop gain and the guard's hold follow Size, Decay and Quality
+            // at the knots, so block sizes don't change them.
+            if (shimmerRunning)
+            {
+                const auto sizeKnot = size.getCurrent(), decayKnot = decay.getCurrent();
+                const auto lines = networks[(size_t) activeNetwork].numLines;
+
+                if (sizeKnot != loopSize || decayKnot != loopDecay || lines != loopLines)
+                {
+                    loopSize = sizeKnot;
+                    loopDecay = decayKnot;
+                    loopLines = lines;
+                    loopScale = 0.9 / std::sqrt (loopEnergy (sizeKnot, decayKnot, lines));
+
+                    const auto rt60 = std::max (0.05, decayKnot) * sampleRate;
+                    shimmerHold = (int) std::min (rt60, 60.0 * sampleRate);
+                    shimmerLetGo = std::pow (10.0, -6.0 / rt60); // in power: 60 dB per Decay
+                }
+            }
+        }
+
+        // Phase 4 Wave 3: the guard's reference, the input's 50 ms RMS, held at its peak.
+        if (shimmerRunning)
+        {
+            shimmerInput += (0.5 * (xL * xL + xR * xR) - shimmerInput) * shimmerRms;
+
+            if (shimmerInput >= shimmerPeak)
+            {
+                shimmerPeak = shimmerInput;
+                shimmerHoldLeft = shimmerHold;
+            }
+            else if (shimmerHoldLeft > 0)
+            {
+                --shimmerHoldLeft;
+            }
+            else
+            {
+                shimmerPeak *= shimmerLetGo;
+            }
+        }
 
         const auto t = (double) (sampleCount - knotStart) / modStep;
 
@@ -797,6 +912,13 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples,
             }
         }
 
+        // Phase 4 Wave 3: Shimmer's feedback joins the diffusers' input, after the Attack taps.
+        if (shimmerRunning)
+        {
+            diffused[0] += shimmerPending[0];
+            diffused[1] += shimmerPending[1];
+        }
+
         for (size_t ch = 0; ch < 2; ++ch)
         {
             auto s = diffused[ch];
@@ -843,6 +965,27 @@ void RoomDsp::process (float* const* channels, int numChannels, int numSamples,
 
             lateL += left * network.ringFade;
             lateR += right * network.ringFade;
+        }
+
+        // Phase 4 Wave 3: the late output, through the loop, for the next sample.
+        if (shimmerRunning)
+        {
+            const double cut[2] { loopHighCut[0].process (loopLowCut[0].process (lateL)),
+                                  loopHighCut[1].process (loopLowCut[1].process (lateR)) };
+            const double in[2] { loopHighpassFilters[0].tick (loopHighpass, cut[0]).high,
+                                 loopHighpassFilters[1].tick (loopHighpass, cut[1]).high };
+            double shifted[2];
+            shifter.process (in, shifted, 2, targets.shimmerRatio);
+
+            const auto gain = shimmerNow * loopScale;
+            const auto l = gain * shifted[0], r = gain * shifted[1];
+            shimmerFeedback += (0.5 * (l * l + r * r) - shimmerFeedback) * shimmerRms;
+
+            const auto wanted = shimmerFeedback > shimmerPeak && shimmerFeedback > 1.0e-30 ? std::sqrt (shimmerPeak / shimmerFeedback) : 1.0;
+            shimmerGuard += (wanted - shimmerGuard) * (wanted < shimmerGuard ? shimmerAttack : shimmerRelease);
+
+            shimmerPending[0] = std::isfinite (l) ? l * shimmerGuard : 0.0;
+            shimmerPending[1] = std::isfinite (r) ? r * shimmerGuard : 0.0;
         }
 
         auto wetL = lateL + erNow * eL;

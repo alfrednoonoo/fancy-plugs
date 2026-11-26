@@ -55,6 +55,16 @@
 - [ ] Duck from Sidechain with nothing routed and Ducking above 0: "No sidechain signal" shows after about 2 s, and the reverb isn't ducked until something is routed.
 - [ ] **Listen to ducking**: plays only what's taken away; it's dim at Ducking 0, off after closing and reopening the window, and not in the saved project.
 
+## Shimmer (Phase 4 Wave 3, v1.7.2)
+
+- [ ] Open a project saved with v1.7.1 that uses Fancy Room: it sounds as before; the EDIT drawer shows Shimmer 0 % and Interval Octave up, in the bottom-left corner, level with Decay shape, and the window is still 529 px tall.
+- [ ] Shimmer 50 %, Octave up, on a slow melody or a pad: octaves rise out of the tail and it fades out. 100 %: longer and brighter, and it still fades out, also at Decay 10 s and Size 100 %.
+- [ ] Try each Interval: Fifth up, Fourth up, Octave and fifth up, Two octaves up, Octave down. None runs away or gets harsh in the highs; High cut darkens the octaves.
+- [ ] Shimmer 100 %, Fifth up, on a held sine or a single sustained synth note: the tail never gets much louder than the note itself.
+- [ ] Shimmer 75 %, then Freeze: the held sound keeps its octaves and stays at one level.
+- [ ] Turn Shimmer up and down while a tail rings, and switch Interval: no clicks.
+- [ ] Automate Shimmer, render offline twice: the renders match.
+
 ## Mac (docs/mac.md, step 5)
 
 On a Mac (Apple silicon, and Intel if one is available), after installing with `install.sh`:

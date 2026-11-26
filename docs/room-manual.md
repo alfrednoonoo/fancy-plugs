@@ -54,10 +54,22 @@ The tail's level over 0 to 3 s, longer when Decay needs it, from 0 to −60 dB: 
 | Listen to ducking | on, off | off | Plays only what Ducking takes away from the reverb, without the dry signal, to hear what it does. Temporary: it's never saved, and it switches off when the window closes. Dimmed while Ducking is 0 |
 | Decay shape: Low decay | ×0.25 to ×4 | ×1.00 | How long the lows (below about 250 Hz) ring compared with Decay: ×2 doubles their decay time, ×0.5 halves it. The change fades out by 1 kHz; Damping still sets the highs. At ×1 it's out of the path |
 | Decay shape: Attack | 0 to 500 ms | 0 ms | Makes the late tail swell in over this time instead of starting at full level, keeping its overall level. The early reflections still start at once. On sharp hits at long settings the swell can sound like a quick flam |
+| Shimmer | 0 to 100 % | 0 % | Feeds the tail back into the room an interval higher on each pass (see Shimmer). At 0 % it's off |
+| Shimmer: Interval | Octave up, Fifth up, Fourth up, Octave and fifth up, Two octaves up, Octave down | Octave up | How far each pass is shifted |
 
 The window is 64 px taller than before (529 px at 100 %) to fit the Decay shape group.
 
 CPU at 48 kHz is in `docs/measurements/room.txt`.
+
+## Shimmer (Phase 4)
+
+**Shimmer** and **Interval**, in the EDIT drawer's bottom-left corner under the gate, feed the room's tail back into it through a pitch shifter, so each pass comes back an interval higher: octaves rising out of the tail, the classic shimmer sound on pads and slow melodies.
+
+- **Shimmer** (0 to 100 %): how much goes round. At 0 % it's off and Room sounds as it did before. Higher values make the tail longer and brighter, but it always dies away, even at 100 % with a long Decay; Freeze is the way to hold it.
+- **Interval**: **Octave up** (the default), **Fifth up**, **Fourth up**, **Octave and fifth up**, **Two octaves up** or **Octave down**, the same list as Fancy Verb's. These stay consonant as they stack; Octave down thickens the tail instead of brightening it.
+- What goes round passes through Low cut and High cut first, and only what's above 200 Hz, so the low end doesn't pile up and the highest octaves thin out the way the room's highs do. A guard stops a held note from building up much louder than your playing: on a sustained pure tone the tail can bloom a few dB, never more.
+- Freeze with Shimmer: freezing stops the loop along with the input, so the held sound keeps the octaves that were sounding and stays at one level.
+- Shimmer roughly doubles the tail's length at 100 %, so Room tells the host its tail is three times as long while Shimmer is up.
 
 ## Presets
 

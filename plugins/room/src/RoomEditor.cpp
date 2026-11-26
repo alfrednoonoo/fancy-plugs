@@ -357,7 +357,9 @@ RoomEditor::RoomEditor (RoomProcessor& processor)
       duckFromDropdown (parameter ("duckFrom")),
       listenCheckbox (processor, "Listen to ducking", purple),
       lowDecayKnob (parameter ("lowDecay"), "Low decay", purple, drawerKnobStyle, true),
-      attackKnob (parameter ("attack"), "Attack", purple, drawerKnobStyle)
+      attackKnob (parameter ("attack"), "Attack", purple, drawerKnobStyle),
+      shimmerKnob (parameter ("shimmer"), "Shimmer", purple, drawerKnobStyle),
+      intervalDropdown (parameter ("shimmerPitch"))
 {
     auto& body = getBody();
 
@@ -503,6 +505,26 @@ RoomEditor::RoomEditor (RoomProcessor& processor)
              &duckFromTitle, &shapeTitle, &duckFromDropdown, &listenCheckbox, &lowDecayKnob, &attackKnob })
         drawer.addAndMakeVisible (item);
 
+    // Phase 4 Wave 3 (reference/phase4/73__room_w3_mockup.png, A): Shimmer in the empty corner
+    // under the gate, its title and knob level with Decay shape's, Interval and its note beside it.
+    setUpLabel (shimmerTitle, "SHIMMER", juce::Justification::centredLeft, 10.0f, colours::textSecondary);
+    setUpLabel (intervalLabel, "Interval", juce::Justification::centredLeft, 12.0f, colours::textPrimary);
+    setUpLabel (shimmerNote, "Feeds the tail back an interval higher on each pass. It always dies away.",
+                juce::Justification::topLeft, 11.0f, colours::textSecondary);
+    shimmerTitle.setBounds (24, 345, 120, 12);
+    placeKnob (shimmerKnob, 68, 359);
+    intervalLabel.setBounds (120, 363, 56, 24);
+    intervalDropdown.setBounds (180, 363, 150, 24);
+    shimmerNote.setBounds (120, 395, 250, 30);
+
+    shimmerKnob.setTooltip ("Shimmer: feeds the tail back into the room through a pitch shifter, so each pass comes back an interval higher. "
+                            "0 % is off; Freeze holds it.");
+    intervalDropdown.setTooltip ("How far each pass of Shimmer is shifted: Octave up gives the classic rising octaves.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> {
+             &shimmerTitle, &intervalLabel, &shimmerNote, &shimmerKnob, &intervalDropdown })
+        drawer.addAndMakeVisible (item);
+
     body.addChildComponent (drawer);
     editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
 
@@ -586,6 +608,12 @@ void RoomEditor::showPreview (bool drawerOpen)
     outMeter.show (-11.2f, -10.8f);
 
     drawer.setVisible (drawerOpen);
+}
+
+void RoomEditor::showShimmerPreview()
+{
+    showPreview (true);
+    setValue (parameter ("shimmer"), 50.0f);
 }
 
 juce::Colour RoomEditor::getAccentColour()

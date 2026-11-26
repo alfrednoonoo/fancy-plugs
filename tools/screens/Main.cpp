@@ -873,6 +873,22 @@ int main (int argc, char** argv)
    #endif
    #if FANCY_HAS_ROOM
     ok = renderPlugin<RoomProcessor, RoomEditor> ("room", outputDir) && ok;
+
+    // v1.7.2 (mockup 73, panel 2): the drawer with Shimmer at 50 %.
+    {
+        RoomProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<RoomEditor*> (base.get()))
+        {
+            editor->showShimmerPreview();
+            ok = writeBothScales (*editor, "room-shimmer", outputDir) && ok;
+        }
+        else
+        {
+            ok = false;
+        }
+    }
    #endif
 
     Gallery gallery;

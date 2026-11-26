@@ -144,7 +144,8 @@ MORE = {
                ("sature-type-fold", "Fold chosen: the curve folds back past its ceiling", "Diode and Fold (Phase 4)"),
                ("sature-page-shape", "The EDIT drawer's Shape page, with Offset", "Shape and Tone and stereo (Phase 4)"),
                ("sature-page-tone", "The EDIT drawer's Tone and stereo page", "Shape and Tone and stereo (Phase 4)")],
-    "Room": [("room-edit", "The EDIT drawer", "EDIT")],
+    "Room": [("room-edit", "The EDIT drawer", "EDIT"),
+             ("room-shimmer", "The EDIT drawer with Shimmer at 50 %, Octave up", "Shimmer (Phase 4)")],
     "TS": [("ts-edit", "The EDIT drawer", "EDIT drawer"), ("ts-listening", "Listen to change on", "Listen to change")],
     "Chorus": [("chorus-edit", "The EDIT drawer", "EDIT drawer"), ("chorus-listening", "Listen to wet on", "Listen to wet")],
 }

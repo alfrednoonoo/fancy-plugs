@@ -17,6 +17,9 @@ public:
     // For rendered screenshots: the mockup's values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
 
+    // Phase 4 Wave 3 (reference/phase4/73__room_w3_mockup.png, panel 2): the drawer with Shimmer at 50 %.
+    void showShimmerPreview();
+
 private:
     class Panels final : public juce::Component
     {
@@ -83,6 +86,12 @@ private:
     fancy::ui::ParamDropdown duckFromDropdown;
     fancy::ui::ListenCheckbox listenCheckbox;
     fancy::ui::Knob lowDecayKnob, attackKnob;
+
+    // Phase 4 Wave 3 (reference/phase4/73__room_w3_mockup.png, A): the Shimmer group in the
+    // drawer's bottom-left corner, level with Decay shape.
+    juce::Label shimmerTitle, intervalLabel, shimmerNote;
+    fancy::ui::Knob shimmerKnob;
+    fancy::ui::ParamDropdown intervalDropdown;
 
     // The I/O pill counts the sidechain's two pins.
     int getShownInputs() override

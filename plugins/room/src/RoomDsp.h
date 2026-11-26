@@ -2,7 +2,9 @@
 
 #include <fancy/dsp/Biquad.h>
 #include <fancy/dsp/MatchedFilters.h>
+#include <fancy/dsp/PitchShifter.h>
 #include <fancy/dsp/Smoother.h>
+#include <fancy/dsp/Svf.h>
 
 #include <array>
 #include <cstdint>
@@ -59,7 +61,21 @@ public:
         double attackMs = 0.0;                              // 0 to 500: the late tail swells in
         bool duckSidechain = false;                         // Ducking keyed by the sidechain
         bool listenDucking = false;                         // plays what Ducking takes away (never saved)
+
+        // Phase 4 Wave 3 (docs/room.md): Shimmer. At 0 the loop isn't run and the output is
+        // v1.7.1's, to the bit.
+        double shimmer = 0.0;                               // 0 to 1
+        double shimmerRatio = 2.0;                          // the interval, as a frequency ratio
     };
+
+    // Phase 4 Wave 3: the energy one late channel passes, for Shimmer's loop gain
+    // (Shimmer x 0.9 / sqrt of it). From Auto gain's per-line energy, less the direct pass, times a
+    // fit for the lines' correlation (docs/research/room-w3-prepush.py), so Shimmer 100 % passes
+    // 0.70 to 0.81 of the energy round the loop at any Size, Decay and Quality.
+    static double loopEnergy (double size, double decay, int numLines) noexcept;
+
+    // Shimmer's loop guard now (1: not pulling down), for the tests.
+    double getShimmerGuardGain() const noexcept { return shimmerGuard; }
 
     // Phase 4 Wave 1: the wet trim Auto gain applies, in dB, for a Size and Decay. 0 at the
     // defaults (Size 55 %, Decay 1.8 s). From the network's decay: each line's energy is
@@ -151,6 +167,7 @@ private:
     void updateFilters() noexcept;
     void runKnot() noexcept;
     double runNetwork (Network& network, const double* diffused, double f, double t, double depth, double& lateRight) noexcept;
+    void resetShimmer() noexcept; // Phase 4 Wave 3
     void switchQuality (int quality);
     void updateEq() noexcept;    // Phase 4 Wave 1
     void applyModRate() noexcept;
@@ -229,4 +246,27 @@ private:
     fancy::dsp::Smoother attack;
     std::array<double, attackTaps> attackWeight {};
     double attackWeightSum = 0.0;
+
+    // Phase 4 Wave 3 ----------------------------------------------------------------------------
+
+    // Shimmer: the late output, through copies of Low cut and High cut, a 200 Hz high-pass and the
+    // pitch shifter, scaled by the loop gain and the guard, joins the next sample's diffuser
+    // input. It runs while Shimmer isn't settled at 0.
+    fancy::dsp::Smoother shimmerAmount;
+    bool shimmerRunning = false;
+    std::array<fancy::dsp::Biquad, 2> loopLowCut, loopHighCut;
+    fancy::dsp::SvfCoefficients loopHighpass;
+    std::array<fancy::dsp::Svf, 2> loopHighpassFilters;
+    fancy::dsp::PitchShifter shifter;
+    std::array<double, 2> shimmerPending {};
+    double loopScale = 0.0;                    // 0.9 / sqrt (loopEnergy), at the knots
+    double loopSize = -1.0, loopDecay = -1.0;
+    int loopLines = 0;
+
+    // The guard: the feedback's 50 ms RMS held under the input's peak 50 ms RMS, which is held
+    // for Decay and then falls 60 dB per Decay.
+    double shimmerRms = 0.0, shimmerAttack = 0.0, shimmerRelease = 0.0;
+    double shimmerInput = 0.0, shimmerPeak = 0.0, shimmerFeedback = 0.0, shimmerGuard = 1.0;
+    double shimmerLetGo = 1.0;
+    int shimmerHold = 0, shimmerHoldLeft = 0;
 };
