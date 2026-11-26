@@ -549,7 +549,7 @@ A new screenshot `eq-list-large` (the largest window, twelve bands, List) is com
 
 ## Phase 4 Wave 3: spectral dynamics
 
-**Draft, for the user's approval.** Item 3 of Wave 3 (`docs/enhancements.md`; backlog item 8 of section 4), for v1.7.2. Modelled first: `docs/research/eq-spectral-model.py`.
+**Approved by the user on 26 November 2026: A in every decision, with the B options kept as fallbacks (section 4).** Item 3 of Wave 3 (`docs/enhancements.md`; backlog item 8 of section 4), for v1.7.2. Modelled first: `docs/research/eq-spectral-model.py`.
 
 ### 1. What it adds
 
@@ -583,6 +583,8 @@ Pink noise at −24 dBFS with a 2.5 kHz tone at −14 dBFS that sounds for 0.5 s
 - **CPU:** one stereo STFT, two forward and two inverse 1024-point FFTs per 256-sample hop, plus each spectral band's gain computer over its bins. Target: four spectral bands under 1 % at 48 kHz and 128 samples (§0.4), against the 1.5 % for eight dynamic bands today.
 
 ### 4. Decisions
+
+Chosen: A in all five (user, 26 November 2026). Each B stays written here as the fallback if A disappoints in the build or in REAPER: a drawer FFT size if low resonances need finer bins, Reserve spectral latency if automating Spectral is awkward, and so on.
 
 - **Decision 1: the FFT size.**
   - **A (R).** 1024 points at 48 kHz (21 ms), scaled with the rate: about 47 Hz bins, fine enough to single out a resonance above 200 Hz, and the shorter wait.
