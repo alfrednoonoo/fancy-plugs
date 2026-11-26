@@ -5,6 +5,7 @@
 import sys
 
 import w2b_mockups as m
+from w2_mockups import caption
 from w2b_mockups import cover, outline, shot, w1
 
 m.PLUGINS.clear()
@@ -202,6 +203,64 @@ def delay_w3():
 
 
 m.PAGE_HEIGHTS["delay-w3"] = 2000
+
+# ---------------------------------------------------------------------------------------------
+# Verb's Freeze and Shimmer (docs/verb.md, Phase 4 Wave 3, decisions A). Screenshots: verb@2x.png and verb-edit@2x.png of
+# run 45799546744 (commit db30e13), 866 x 697. The IR display is x 0 to 734, y 73 to 273; its info text ends at x 718,
+# y 100. The SETUP drawer is the rack's bounds (y 273 to 625); Ducking's knob is centred at x 378, the Gate row's
+# knobs at 466, 546 and 626, and the Gate row ends at y 571. The chain strip is y 625 to 697.
+VERB_W, VERB_H, VERB_GROW = 866, 697, 96
+PURPLE, TEAL = "#9A59B5", "#00A985"
+
+
+def verb_freeze(on):
+    button = (f'<div class="o new" style="left:648px;top:108px;width:70px;height:22px;border-radius:3px;display:flex;align-items:center;'
+              f'justify-content:center;font-size:14px;background:{PURPLE if on else "#303030"};color:#fff;font-weight:{600 if on else 400}">Freeze</div>')
+    return (m.dim(0, 73, 734, 200, "154,89,181", 0.10) if on else "") + button
+
+
+def shimmer_row(top, interval="Octave up", value="0 %", v=0.0):
+    """The Shimmer row under the Gate row: the knob in Ducking's column, Interval and its caption beside it."""
+    return (m.knob(378, top, "Shimmer", value, TEAL, v, size=42, fs=13)
+            + f'<div class="o" style="left:428px;top:{top + 24}px;font-size:13px;color:#fff">Interval</div>'
+            + f'<div class="o" style="left:490px;top:{top + 20}px">{m.dd(interval, 150)}</div>'
+            + caption(428, top + 52, "Feeds the reverb back into itself an interval higher, so the tail rises in octaves. "
+                                     "It always dies away; Freeze holds it.", 290)
+            + outline(334, top - 4, 400, 108))
+
+
+@m.plugin("verb-w3", "72__verb_w3_mockup.png")
+def verb_w3():
+    W2, H2 = m.grow("verb-edit-v172", "verb-edit-v172-tall", VERB_GROW, [(0, 734, 622), (734, 866, 630)], axis="y")
+    over_strip = cover(0, 625, 734, 72, "#262626") + shimmer_row(584, "Octave up", "50 %", 0.5)
+    return w1.page("Fancy Verb: v1.7.2 mockup (Freeze and Shimmer)",
+                   m.lead("docs/verb.md, Phase 4 Wave 3: Freeze and shimmer", "Decisions 1 to 4 A (user, 26 November 2026)"), [
+        ("1 · The main window: Freeze at the top right of the IR display",
+         "<b>Freeze</b> is a toggle button under the display's info line, 70 x 22 like Delay's. "
+         "It holds what the reverb is playing for as long as it's on; new input no longer enters the reverb, and the dry signal is unaffected. Automatable.",
+         shot("verb-v172", VERB_W, VERB_H, verb_freeze(False),
+              "Off is today's sound, to the bit. The tooltip reads \"Freeze: holds the reverb as it is, for as long as it's on. "
+              "Turned off, it dies away at the IR's own decay.\" The window keeps its size.")),
+        ("2 · Freeze on",
+         "The button lights in Verb's purple and the display takes a faint purple tint, so a frozen reverb shows even when the button is out of sight of the mouse.",
+         shot("verb-v172", VERB_W, VERB_H, verb_freeze(True),
+              "The waveform, trim handles and the right-click menu work as usual while frozen; a change to the IR is heard once Freeze is off.")),
+        ("3 · A (recommended): the SETUP drawer reaches over the chain strip, and Shimmer gets its own row under the Gate",
+         "The drawer covers the rack today; with SETUP open the chain strip has nothing to show, so the drawer takes its 72 px too and the window keeps 866 x 697. "
+         "<b>Shimmer</b> (0 to 100 %, 0 by default) sits in Ducking's column, with <b>Interval</b> (Octave up, Fifth up, Fourth up, Octave and fifth up, "
+         "Two octaves up, Octave down) beside it.",
+         shot("verb-edit-v172", VERB_W, VERB_H, over_strip,
+              "At 0 % the output is today's, to the bit, and Interval does nothing. No existing control moves or changes size. "
+              "Closing SETUP (Done, or the SETUP button) brings the strip back.")),
+        (f"4 · B: the window grows {VERB_GROW} px taller ({W2} x {H2}), and the strip stays",
+         f"The drawer and the module cards grow {VERB_GROW} px; the cards' knobs stay where they are, with the new height empty under them. "
+         "The Wet and Dry faders keep their length.",
+         shot("verb-edit-v172-tall", W2, H2, shimmer_row(616),
+              "Costs height on every screen for one row that only SETUP shows.")),
+    ])
+
+
+m.PAGE_HEIGHTS["verb-w3"] = 3400
 
 if __name__ == "__main__":
     for key in sys.argv[1:] or list(m.PLUGINS):
