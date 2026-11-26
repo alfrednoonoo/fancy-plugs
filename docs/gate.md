@@ -529,3 +529,94 @@ Built with item 11 in one push; `tests/GateW2bTests.cpp`.
 - Ceiling is `fancy::dsp::OutputCeiling` after the gate in `GateProcessor`, in every mode, as DS has it; Off is out of the path with no latency. It's a dropdown in the drawer (mockup 54) of common values plus "Type a value..."; Ctrl-click types one too.
 - **Test 4 changed:** on a plain noise bed (no drums) the chorus 4 dB over Threshold rises by the formula's 2.0 dB (+-0.25), and the verse by under 0.05 dB. The note's 2.5 to 3.5 dB came from the model's song with drums, whose peaks push the RMS level higher.
 - Test 5 runs through `GateProcessor`: Upward with Boost 12 on a 0.98 sine passes +6 dBFS with Ceiling Off (latency 0) and stays under -0.9 dBFS at -1 dBTP (latency reported). The host test checks that turning Ceiling on and off reaches the host once each way.
+
+## Phase 4 Wave 3: multiband gating
+
+**Layout A of mockup 75 approved by the user on 26 November 2026; this note waits for approval.** Item 2 of Wave 3 (`docs/enhancements.md`; backlog item 7 of section 9, ▲), for v1.7.2. Modelled first: `docs/research/gate-multiband-model.py`.
+
+### 1. What it adds
+
+**Bands** (1 to 3, default 1): the audio and the detector are split by the same crossover, and each band is gated on its own by its own band of the detector, with its own **Threshold** (an offset from the Threshold fader) and **Range** (a depth of the Range knob). The gated bands are summed. Attack, Hold, Release, Hysteresis, Pre-open, the mode and the detector's settings stay shared. One band skips the split, so a saved project renders as v1.7.1, to the bit.
+
+What it's for: a close mic hears more than its own drum. On a tom mic, a wideband gate set low enough to keep the tom is held open by the cymbals, and one set high enough to shut in the gaps still lets every cymbal through while the tom rings. With the lows in their own band, the tom opens the lows, and the highs open only for the stick and stay shut on the cymbals.
+
+### 2. What the model found
+
+A tom close mic: six hits (a 110 Hz body decaying over 180 ms, peaking at +1 dBFS, and a 4 ms stick click), cymbal bleed above 3 kHz at -22 dBFS peak with two crashes to -11.5, and snare bleed around 200 Hz to 2 kHz at -29. The gate as Fancy Gate's state machine on a peak detector: Hysteresis -6 dB, Attack 0.5 ms, Hold 40 ms, Release 120 ms, Range -40 dB. "Cymbal with toms" is the output above 2 kHz in the 30 to 400 ms after each hit against the input's; "bleed in gaps" the same between hits; "tom tail" the tom body's energy in the same 30 to 400 ms.
+
+| Setting | Tom tail kept | Cymbal with toms | Bleed in gaps | Opens (false) |
+|---|---|---|---|---|
+| Wideband, Threshold -18 dB | -0.0 dB | +0.0 dB | -0.1 dB | 1 (0): never closes |
+| Wideband, Threshold -12 dB | -0.0 | +0.0 | -0.6 | 4 (0) |
+| Wideband, Threshold -6 dB | -0.1 | -1.3 | -32.7 | 6 (0) |
+| **2 bands at 250 Hz, offsets 0 / +6 dB** | **-0.2** | **-11.8** | **-40.0** | 8 (0) |
+| 3 bands at 250 Hz and 2.5 kHz, 0 / 0 / +6 dB | -0.2 | -13.3 | -40.0 | 7 (0) |
+| 3 bands, the top band's depth 50 % (-20 dB) | -0.2 | -12.3 | -20.1 | 7 (0) |
+| 3 bands, every offset 0 (the fader alone) | -0.2 | -3.0 | -3.2 | 12 (2) |
+| **The proposed defaults, 3 bands: 0 / +6 / +6 dB** | **-0.2** | **-13.3** | **-40.0** | 7 (0) |
+
+Threshold -12 dB is the base for the band rows.
+
+- **It works for what it's for:** with the lows in their own band, the cymbal while the tom rings drops by 12 to 13 dB, and in the gaps by the full Range, with the tom kept. The best wideband setting keeps the gaps clean but lets the cymbals through with every hit.
+- **Each band needs its own threshold:** with every band at the fader's threshold, the cymbal band opens on the bleed (two false opens) and the gain is lost. A +6 dB offset on the upper bands is enough here, so the defaults are 0, +6 and +6 dB, which work for 2 and 3 bands alike.
+- **A band's depth** keeps some of its sound: at 50 % the top band leaves the cymbals 20 dB down in the gaps instead of gone, for a mic whose bleed is part of the kit's sound.
+- **3 bands do little more than 2 here** (a tom has one body); they're for sources with something to keep in the middle, such as a snare's crack against hi-hat bleed.
+- **The crossover sums flat:** the same cascade as Limit's (`fancy::dsp::MinPhaseCrossover`), an all-pass within 0.0001 dB.
+
+### 3. How it's built
+
+- **The split:** two `fancy::dsp::MinPhaseCrossover`s, one for the audio and one for the detector (after the source is chosen: main, sidechain, Mid or Side), at the same frequencies. LR 24 and LR 48, minimum phase, as Limit's decision 3 A: no latency. Crossovers are kept in order and a third of an octave apart (`sanitiseCrossovers`), smoothed over 20 ms in log frequency.
+- **Each band** gets its own `Machine` per channel (one when Link is on), its own detector state (peak or RMS, the Transient follower, the expander and Upward boost), and its own gain ring, written with the detector's timing and read after the lookahead delay, as the wideband gain is now. Its open threshold is Threshold plus the band's offset; its close threshold adds Hysteresis. Its Range is the Range knob's times the band's depth, in dB (a Range of -inf counts as the curve's -120 dB floor, so 50 % is -60 dB).
+- **Dry** goes through the crossover's all-pass (the bands summed ungated), so Wet and Dry stay in phase when mixed; at one band it's the input, as now. Bypass crossfades to the delayed input, as now.
+- **Displays:** the BANDS card's strip shows each band's attenuation, falling from the top in its colour, and each band's open or shut state (atomics read by the editor's timer). The Gain meter, the light, the history's gain line and the Noise fader's open amount follow the most open band (decision 4).
+- **Unchanged:** Lookahead (it delays every band alike), Preview filter (it plays the detector), Wet, Noise, Output, Ceiling and MIDI in.
+- **CPU:** four LR 24 sections per crossover per channel, for the audio and the detector, the all-passes, and a machine per band and channel. Target: three bands add under 2 times Fancy Comp at its defaults (§0.4, the ratio printed in the same test).
+
+### 4. Decisions
+
+- **Decision 1: each band's Threshold.**
+  - **A (R).** An offset from the Threshold fader, -24 to +24 dB (defaults 0, +6, +6): the fader still moves every band, and Auto threshold (Wave 1) still sets one value.
+  - **B.** Each band's own threshold in dB; the fader dims while Bands is over 1.
+- **Decision 2: each band's Range.**
+  - **A (R).** A depth, 0 to 100 % of the Range knob's (default 100 %), its read-out showing the band's resulting Range in dB, as mockup 75 draws it: the Range knob still sets every band, and a band can be gated less.
+  - **B.** Each band's own Range in dB; the Level card's Range knob dims while Bands is over 1.
+  - **C.** No per-band Range; each band has only its Threshold (one knob per band).
+- **Decision 3: the detector filters with bands.**
+  - **A (R).** Lowpass, Highpass and De-bleed don't apply while Bands is over 1, and dim: each band's detector is already its band, and a 120 Hz high-pass would leave the low band's detector empty. At one band they work as now.
+  - **B.** They filter the detector before the split, as now; the manual warns that they can starve a band.
+- **Decision 4: what the light, MIDI out, the Gain meter, the history and Noise follow.**
+  - **A (R).** The most open band: the gate is "open" while any band is; MIDI out's note-on comes as the first band opens and its note-off as the last one closes; velocity from the band that opened it.
+  - **B.** Band 1 only.
+
+Every band runs the whole gain computer, so Gate, Duck, Upward, Ratio and the Transient detector work per band with their shared settings. MIDI in and Host sync replace the detector, so every band opens together; the bands then differ only in depth.
+
+### 5. Parameters
+
+| ID | Name | Range | Default | Unit | Skew |
+|---|---|---|---|---|---|
+| `bands` | Bands | 1, 2, 3 | 1 | | |
+| `crossoverType` | Crossover | LR 24 dB · Min phase, LR 48 dB · Min phase | LR 24 | | |
+| `crossover1` | Crossover 1 | 20 to 20000 | 250 | Hz | log |
+| `crossover2` | Crossover 2 | 20 to 20000 | 2500 | Hz | log |
+| `bandThreshold1` to `bandThreshold3` | Band 1 to 3 threshold | -24 to +24 | 0, +6, +6 | dB | linear |
+| `bandDepth1` to `bandDepth3` | Band 1 to 3 range | 0 to 100 | 100 | % | linear |
+
+Appended after `ceiling`. No state migration: a state without them loads Bands 1. Bands and Crossover aren't automatable, as Limit's (a step in the phase); the rest are. Two bands use Crossover 1, three use both.
+
+### 6. Tests
+
+1. Legacy: Bands 1 renders exactly as v1.7.1 in Gate, Duck and Upward, with Lookahead, Link, Ratio, Transient, de-bleed and the sidechain on and off, whatever the band settings.
+2. Crossover: Bands 2 and 3 at LR 24 and LR 48, every band open (Threshold at its floor): the output's magnitude within 0.05 dB of the input's from 20 Hz to 20 kHz.
+3. The model's tom mic at 2 bands, the defaults: the cymbal with toms at least 8 dB down (model -11.8), the gaps at least 30 dB down (-40), the tom tail within 1 dB (-0.2); a wideband gate at -6 dB lets the cymbal with toms through within 3 dB (-1.3).
+4. Band independence: a 100 Hz burst over Threshold and a steady 5 kHz tone under the upper band's threshold, 2 bands: the 100 Hz band opens and the 5 kHz tone stays at Range.
+5. Depth: a band at 50 % with Range -40 dB is 20 dB down (+-0.5) when shut; with Range -inf, 60 dB.
+6. Offsets: a band at +6 dB opens 6 dB later (+-0.5) on a rising tone.
+7. Dry: Wet 0, Dry 0 dB at 3 bands: the output is the crossover's all-pass of the input (flat magnitude); Wet and Dry both at 0 dB with the gate open: no comb (within 0.05 dB).
+8. Display: the light, the Gain meter and MIDI out follow the most open band; one note per opening of any band, none while a second band opens during the first.
+9. Sweeps: the crossovers, offsets and depths automated through their ranges: no NaN, no step over 0.1 on a 100 Hz sine; Bands switched while playing fades and stays finite.
+10. Offline renders bit-identical to real time and random block sizes at 3 bands; automation enabled without a change leaves the output bit-identical.
+11. CPU (§0.4): 2 and 3 bands at the defaults, with the ratio to Fancy Comp.
+
+### 7. Build order
+
+Approval, then one push: the band stage in `GateDsp` (the crossover is already in `fancy-core`), the parameters, the BANDS card (mockup 75 A, window 790 x 637, its minimum too), tests from a pre-push port of the model, manual and checklist.
