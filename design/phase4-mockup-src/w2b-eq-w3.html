@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fancy EQ: v1.7.2 mockup (the SPECTRAL chip)</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#121212;color:#EDEDED;font-family:Inter,sans-serif;padding:24px;width:1500px}
+h1{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px}
+.lead{font-size:11.5px;color:#8D8D8D;line-height:1.5;max-width:1400px;margin-bottom:18px}
+.sec{margin-bottom:26px}
+.h{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px}
+.n{font-size:11px;color:#8D8D8D;line-height:1.5;max-width:1400px;margin-bottom:8px}
+.row{display:flex;gap:24px;align-items:flex-start}
+.shot{position:relative;flex:none;overflow:hidden;border:1px solid #2a2a2a}
+.shot img{display:block}
+.side{font-size:11px;color:#8D8D8D;line-height:1.55;width:330px}
+.side b{color:#ddd}
+.o{position:absolute}
+.new{outline:1.5px dashed #FFCF07;outline-offset:2px;border-radius:3px}
+.cover{position:absolute;background:var(--bg,#303030)}
+.cb{display:flex;align-items:center;gap:7px;font-size:14px;color:#fff;white-space:nowrap}
+.cb i{width:14px;height:14px;border-radius:3px;background:#1E1E1E;border:1px solid #8D8D8D;display:inline-block;position:relative;flex:none}
+.cb i.x{background:var(--a,#00A985);border-color:var(--a,#00A985)}
+.cb i.x:after{content:"";position:absolute;left:4px;top:1px;width:3.5px;height:7px;border:solid #141414;border-width:0 1.6px 1.6px 0;transform:rotate(45deg)}
+.btn{background:#303030;border-radius:3px;font-size:13px;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.pill{border-radius:12px;font-size:12px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.dd{background:#303030;border-radius:3px;font-size:13px;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;white-space:nowrap}
+.dd:after{content:"\2303\2304";font-size:7px;color:#8D8D8D;writing-mode:vertical-lr;line-height:5px}
+.lbl{font-size:14px;color:#fff;white-space:nowrap}
+.cap{font-size:11px;color:#8D8D8D;white-space:nowrap}
+.val{font-size:13px;white-space:nowrap}
+.menu{background:#262626;border:1px solid #434343;border-radius:6px;padding:4px 0;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.menu div{padding:4px 12px;white-space:nowrap}
+.menu .on{background:#383838}
+</style></head><body><h1>Fancy EQ: v1.7.2 mockup (the SPECTRAL chip)</h1><div class="lead">docs/eq.md, Phase 4 Wave 3: spectral dynamics, Decisions 1 to 5 A (user, 26 November 2026). New things in dashed yellow, on the plugin's real screenshot (1x coordinates).</div><div class="sec"><div class="h">1 · The band editor, band 2 dynamic: SPECTRAL off, as it loads</div><div class="n"><b>SPECTRAL</b> (per band, off by default) sits under ST and DYN, spanning both (94 x 24, the DYN chip's height), in the column's empty space: no control moves or changes size, and the window stays 802 x 645. It shows only while DYN is on, like Threshold to Release.</div><div class="row"><div class="shot" style="width:802px;height:645px"><div style="position:absolute;left:0px;top:0px;width:802px;height:645px"><img src="../../docs/images/../../design/phase4-mockup-src/img/eq-v172-dyn-w2b.png" style="width:802px;height:645px"><div class="o new" style="left:22px;top:553px;width:94px;height:24px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;letter-spacing:.04em;background:#262626;color:#FFFFFF">SPECTRAL</div></div></div><div class="side">Off is today's dynamic band, to the bit, with no latency. Tooltip: "Spectral: works per frequency inside the band, so a resonance is cut on its own and the rest of the band is left alone. Adds 21 ms of latency."</div></div></div><div class="sec"><div class="h">2 · SPECTRAL on</div><div class="n">The chip lights in the band's colour. The band's Threshold, Range, Attack, Release, Above | Below, Sidechain and Reach act per frequency. On the graph the white total curve shows a narrow dip at whatever is being cut, instead of the whole bell moving; "now" reads the deepest point.</div><div class="row"><div class="shot" style="width:802px;height:645px"><div style="position:absolute;left:0px;top:0px;width:802px;height:645px"><img src="../../docs/images/../../design/phase4-mockup-src/img/eq-v172-dyn-w2b.png" style="width:802px;height:645px"><div class="o new" style="left:22px;top:553px;width:94px;height:24px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;letter-spacing:.04em;background:#9A59B5;color:#1E1E1E;font-weight:500">SPECTRAL</div></div></div><div class="side">The first spectral band adds 1024 samples of latency (21 ms at 48 kHz), reported to the host; the last one off takes it away. Threshold is the level at one frequency, so set it by the resonance's level.</div></div></div><div class="sec"><div class="h">3 · Linear phase: the chip is disabled</div><div class="n">Spectral needs Minimum phase, as DYN does; in Linear mode the chip greys out and spectral bands play their static settings.</div><div class="row"><div class="shot" style="width:802px;height:645px"><div style="position:absolute;left:0px;top:0px;width:802px;height:645px"><img src="../../docs/images/../../design/phase4-mockup-src/img/eq-v172-dyn-w2b.png" style="width:802px;height:645px"><div class="o new" style="left:22px;top:553px;width:94px;height:24px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;letter-spacing:.04em;background:#262626;color:#5A5A5A">SPECTRAL</div><div class="o" style="left:22px;top:584px;padding:4px 8px;border-radius:3px;background:#141414;border:1px solid #4C4C4C;font-size:12px;color:#fff;white-space:nowrap">Spectral bands need Minimum phase</div></div></div><div class="side">The tooltip shows on hover.</div></div></div><div class="sec"><div class="h">4 · Compact mode</div><div class="n">The same chip under ST and DYN in the floating panel, at the same size, inside its bottom edge.</div><div class="row"><div class="shot" style="width:802px;height:645px"><div style="position:absolute;left:0px;top:0px;width:802px;height:645px"><img src="../../docs/images/../../design/phase4-mockup-src/img/eq-v172-dyn-compact-w2b.png" style="width:802px;height:645px"><div class="o new" style="left:19px;top:541px;width:94px;height:24px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;letter-spacing:.04em;background:#9A59B5;color:#1E1E1E;font-weight:500">SPECTRAL</div></div></div><div class="side"></div></div></div><div class="sec"><div class="h">5 · The band list: a spectral band's DYN cell</div><div class="n">Band 3 made spectral: its DYN cell keeps the reach and adds a ringed <b>S</b> in the band's colour.</div><div class="row"><div class="shot" style="width:802px;height:645px"><div style="position:absolute;left:0px;top:0px;width:802px;height:645px"><img src="../../docs/images/../../design/phase4-mockup-src/img/eq-v172-list-w2b.png" style="width:802px;height:645px"><div class="o" style="left:532px;top:511px;width:11px;height:11px;border-radius:50%;box-sizing:border-box;background:#141414;border:1px solid #3598DB;color:#3598DB;font-size:6.5px;font-weight:600;display:flex;align-items:center;justify-content:center">S</div><div class="o new" style="left:474px;top:504px;width:76px;height:26px"></div></div></div><div class="side">Dynamic bands that aren't spectral show their reach as today.</div></div></div><script>
+const P=(cx,cy,r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];
+function arc(cx,cy,r,a0,a1){const[x0,y0]=P(cx,cy,r,a0),[x1,y1]=P(cx,cy,r,a1);const lg=Math.abs(a1-a0)>Math.PI?1:0;return `M${x0},${y0} A${r},${r} 0 ${lg} ${a1>a0?1:0} ${x1},${y1}`}
+document.querySelectorAll('[data-k]').forEach((el,i)=>{const v=+el.dataset.v,c=el.dataset.c||'#00A985',s=+(el.dataset.s||36),bi=el.dataset.bi!==undefined;
+const R=s/2,cx=R+5,cy=R+5,A=Math.PI*5/6,a=-A+v*2*A,a0=bi?0:-A,tip=P(cx,cy,R*.62,a);
+el.style.display='flex';el.style.flexDirection='column';el.style.alignItems='center';
+el.innerHTML=`<div class="lbl" style="font-size:${el.dataset.fs||13}px">${el.dataset.l||''}</div><svg width="${s+10}" height="${s+10}">
+<defs><linearGradient id="kg${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4F4F4F"/><stop offset="1" stop-color="#454545"/></linearGradient></defs>
+<path d="${arc(cx,cy,R+2.5,Math.min(a0,a),Math.max(a0,a)+.0001)}" stroke="${c}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<circle cx="${cx}" cy="${cy}" r="${R-2}" fill="url(#kg${i})" stroke="rgba(0,0,0,.2)"/>
+<polygon points="${tip.join(',')} ${P(cx,cy,R*.3,a-.42).join(',')} ${P(cx,cy,R*.3,a+.42).join(',')}" fill="${c}"/></svg>
+<div class="val" style="color:${c}">${el.dataset.t||''}</div>`});
+</script></body></html>

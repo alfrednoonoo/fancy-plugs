@@ -262,6 +262,59 @@ def verb_w3():
 
 m.PAGE_HEIGHTS["verb-w3"] = 3400
 
+# ---------------------------------------------------------------------------------------------
+# EQ's SPECTRAL chip (docs/eq.md, Phase 4 Wave 3, decision 4 A). Screenshots: eq-dynamic@2x.png,
+# eq-dynamic-compact@2x.png and eq-list@2x.png of run 45799546744 (commit db30e13), 802 x 645. In the band
+# editor ST is at (22, 523) and DYN (66, 523, 50 x 24); under them the column is empty down to the strip's
+# end (y 594). In Compact mode they sit at (19, 513) and (63, 513), and the panel ends at y 570.
+EQ_PURPLE = "#9A59B5"
+
+
+def spectral_chip(x, y, state):
+    """state: off, on or disabled (Linear phase)."""
+    bg, fg, extra = {"off": ("#262626", "#FFFFFF", ""), "on": (EQ_PURPLE, "#1E1E1E", ";font-weight:500"),
+                     "disabled": ("#262626", "#5A5A5A", "")}[state]
+    return (f'<div class="o new" style="left:{x}px;top:{y}px;width:94px;height:24px;border-radius:3px;display:flex;align-items:center;'
+            f'justify-content:center;font-size:13px;letter-spacing:.04em;background:{bg};color:{fg}{extra}">SPECTRAL</div>')
+
+
+def eq_tip(x, y, text):
+    return (f'<div class="o" style="left:{x}px;top:{y}px;padding:4px 8px;border-radius:3px;background:#141414;border:1px solid #4C4C4C;'
+            f'font-size:12px;color:#fff;white-space:nowrap">{text}</div>')
+
+
+@m.plugin("eq-w3", "71__eq_w3_mockup.png")
+def eq_w3():
+    W, H = 802, 645
+    s_badge = tab_badge(532, 511, "S", "#3598DB") + outline(474, 504, 76, 26)
+    return w1.page("Fancy EQ: v1.7.2 mockup (the SPECTRAL chip)",
+                   m.lead("docs/eq.md, Phase 4 Wave 3: spectral dynamics", "Decisions 1 to 5 A (user, 26 November 2026)"), [
+        ("1 · The band editor, band 2 dynamic: SPECTRAL off, as it loads",
+         "<b>SPECTRAL</b> (per band, off by default) sits under ST and DYN, spanning both (94 x 24, the DYN chip's height), in the column's empty space: "
+         "no control moves or changes size, and the window stays 802 x 645. It shows only while DYN is on, like Threshold to Release.",
+         shot("eq-v172-dyn", W, H, spectral_chip(22, 553, "off"),
+              "Off is today's dynamic band, to the bit, with no latency. Tooltip: \"Spectral: works per frequency inside the band, so a resonance is cut "
+              "on its own and the rest of the band is left alone. Adds 21 ms of latency.\"")),
+        ("2 · SPECTRAL on",
+         "The chip lights in the band's colour. The band's Threshold, Range, Attack, Release, Above | Below, Sidechain and Reach act per frequency. "
+         "On the graph the white total curve shows a narrow dip at whatever is being cut, instead of the whole bell moving; \"now\" reads the deepest point.",
+         shot("eq-v172-dyn", W, H, spectral_chip(22, 553, "on"),
+              "The first spectral band adds 1024 samples of latency (21 ms at 48 kHz), reported to the host; the last one off takes it away. "
+              "Threshold is the level at one frequency, so set it by the resonance's level.")),
+        ("3 · Linear phase: the chip is disabled",
+         "Spectral needs Minimum phase, as DYN does; in Linear mode the chip greys out and spectral bands play their static settings.",
+         shot("eq-v172-dyn", W, H, spectral_chip(22, 553, "disabled") + eq_tip(22, 584, "Spectral bands need Minimum phase"),
+              "The tooltip shows on hover.")),
+        ("4 · Compact mode", "The same chip under ST and DYN in the floating panel, at the same size, inside its bottom edge.",
+         shot("eq-v172-dyn-compact", W, H, spectral_chip(19, 541, "on"))),
+        ("5 · The band list: a spectral band's DYN cell",
+         "Band 3 made spectral: its DYN cell keeps the reach and adds a ringed <b>S</b> in the band's colour.",
+         shot("eq-v172-list", W, H, s_badge, "Dynamic bands that aren't spectral show their reach as today.")),
+    ])
+
+
+m.PAGE_HEIGHTS["eq-w3"] = 3600
+
 if __name__ == "__main__":
     for key in sys.argv[1:] or list(m.PLUGINS):
         m.render(key)
