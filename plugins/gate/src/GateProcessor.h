@@ -34,6 +34,11 @@ public:
     static double syncStepBeats (int index) noexcept;
     static constexpr int defaultSyncRate = 9;
 
+    // Phase 4 Wave 3: the band parameters' IDs (message thread only).
+    static juce::String crossoverId (int index) { return "crossover" + juce::String (index + 1); }
+    static juce::String bandThresholdId (int band) { return "bandThreshold" + juce::String (band + 1); }
+    static juce::String bandDepthId (int band) { return "bandDepth" + juce::String (band + 1); }
+
 private:
     float read (const char* parameterId) const;
     bool isOn (const char* parameterId) const;

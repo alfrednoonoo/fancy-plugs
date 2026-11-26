@@ -110,3 +110,15 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] Mode **Upward** on a mix with a quiet verse and a loud chorus, Threshold between them, RMS size 50 ms: the chorus comes up by about Boost or less, the verse doesn't change. Range becomes Boost, Ratio in the drawer becomes Up ratio, Hysteresis dims, the light reads "boost".
 - [ ] Switch Gate, Duck and Upward while playing: no clicks.
 - [ ] Ceiling in the drawer: pick -1.0 dBTP from the list, then Type a value... and type -3; Ctrl-click opens the box too. Upward with Boost 12 on a loud track stays under it; the host's latency compensation keeps the track in time when you turn it on and off. Off adds no latency.
+
+## Bands (Phase 4 Wave 3)
+
+- [ ] The window is taller (790 x 637): the BANDS card sits between the history and the envelope card, and nothing else is squeezed. A project saved with v1.7.1 opens with Bands at 1 and sounds as before.
+- [ ] A tom mic with cymbal bleed, Bands 2 (crossover about 250 Hz), Threshold set on the toms: the toms ring as before, and the cymbals while a tom rings are much quieter than at Bands 1; band 1's "open" lights with each hit, band 2's stays "shut" on the cymbals.
+- [ ] Raise band 2's Threshold: it needs more high end to open. Lower band 2's Range to 50 %: the cymbals come back, about half as far down; the knob reads the band's Range in dB.
+- [ ] Drag a blue crossover line: it moves, stops a third of an octave from its neighbour, and the sound follows without clicks. Click a line without dragging: a box asks for the frequency; `2.5k` works. Ctrl+Z takes it back.
+- [ ] Bands 2 or 3: Lowpass, Highpass and De-bleed (EDIT) dim. Bands 1: they work again.
+- [ ] Change Bands while playing: it fades out and back in, with no click; REAPER's PDC doesn't change.
+- [ ] MIDI out with 2 bands: one note per hit even when both bands open; the light and the Gain meter follow whichever band is open.
+- [ ] Wet and Dry both up with 3 bands: no thin or hollow sound (no comb).
+- [ ] Render offline twice at 3 bands: the renders match.

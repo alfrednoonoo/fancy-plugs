@@ -532,7 +532,7 @@ Built with item 11 in one push; `tests/GateW2bTests.cpp`.
 
 ## Phase 4 Wave 3: multiband gating
 
-**Layout A of mockup 75 approved by the user on 26 November 2026; this note waits for approval.** Item 2 of Wave 3 (`docs/enhancements.md`; backlog item 7 of section 9, ▲), for v1.7.2. Modelled first: `docs/research/gate-multiband-model.py`.
+**Layout A of mockup 75 and this note approved by the user on 26 November 2026, every decision A.** Item 2 of Wave 3 (`docs/enhancements.md`; backlog item 7 of section 9, ▲), for v1.7.2. Modelled first: `docs/research/gate-multiband-model.py`.
 
 ### 1. What it adds
 
@@ -620,3 +620,10 @@ Appended after `ceiling`. No state migration: a state without them loads Bands 1
 ### 7. Build order
 
 Approval, then one push: the band stage in `GateDsp` (the crossover is already in `fancy-core`), the parameters, the BANDS card (mockup 75 A, window 790 x 637, its minimum too), tests from a pre-push port of the model, manual and checklist.
+
+### 8. As built
+
+- **DSP** (`GateDsp`): the per-sample state (machines, detectors, Transient followers, expander and Upward boosts, gain rings) is per band, `[band][channel]`. One band runs the same arithmetic as v1.7.1, held to the bit by `tests/LegacyGateW2bDsp.*`, a copy of v1.7.1's `GateDsp`. At 2 or 3 bands, two `MinPhaseCrossover`s (audio and detector, compensated, so the bands sum to an all-pass) are run a sample at a time inside the gate's loop, so Host sync's grid and the MIDI trigger stay sample-exact; each band's audio has its own ring for Lookahead. Band depths are smoothed over 20 ms. Bands changes through the same fade, swap and fade-in as Lookahead, which also resets the band state and the crossovers. With Host sync, every band hears the unsplit pulse.
+- **Displays:** `takeBandReduction` and `isBandOpen` per band; the light is open while any band is opening or open, else hold while any holds. MIDI out sends a band's event only when no other band is open, and the velocity comes from the band that opened the note.
+- **Editor:** the BANDS card is Limit's (strip, crossover drag and typed dialog), with a 40 dB scale, each band's Threshold (bipolar) and Range knobs, and its open or shut state. The Range knobs show the band's Range in dB and dim in Upward. Lowpass, Highpass and De-bleed dim with a tooltip saying why while Bands is over 1. Window 790 x 637; the envelope card, the Level and filter cards and the footer move down 172 px; the meters and faders lengthen.
+- **Tests:** `tests/GateW3Tests.cpp`, 1 to 11 of section 6, with figures from `docs/research/gate-w3-prepush.py` (GateDsp's own curve and machine): the tom mic's two bands keep the tail within 0.2 dB and cut the cymbal while the toms ring by 13.4 dB and in the gaps by 40 dB; a wideband gate at -6 dB cuts the cymbal while the toms ring by 1.5 dB; an offset of +6 dB opens 6.00 dB later. `HostRenderTests` renders Gate at 2 bands offline as well.

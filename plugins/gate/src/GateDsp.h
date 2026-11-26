@@ -2,6 +2,7 @@
 
 #include <fancy/dsp/Detector.h>
 #include <fancy/dsp/MeterTap.h>
+#include <fancy/dsp/MinPhaseCrossover.h>
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/Svf.h>
 #include <fancy/dsp/TempoTrigger.h>
@@ -29,6 +30,10 @@ public:
     // Ratio at or above this is the gate's own open/close fade (Phase 4 Wave 1).
     static constexpr double infiniteRatio = 100.0;
     static constexpr int maxIncomingNotes = 256;
+
+    // Phase 4 Wave 3 (docs/gate.md, "multiband gating", decisions A): up to three bands, each
+    // gated on its own band of the detector.
+    static constexpr int maxBands = 3;
 
     struct Targets
     {
@@ -60,7 +65,19 @@ public:
         double riseDb = 8.0;
         bool upward = false;
         double boostDb = 4.0, upRatio = 1.5;
+
+        // Phase 4 Wave 3: multiband gating. One band skips the split, so it's the gate as it was,
+        // to the bit. Each band's threshold is an offset from thresholdDb, and its Range a share
+        // (0 to 1) of rangeDb's depth.
+        int bands = 1;
+        bool crossoverLr48 = false;
+        std::array<double, maxBands - 1> crossoverHz { 250.0, 2500.0 };
+        std::array<double, maxBands> bandOffsetDb { 0.0, 6.0, 6.0 };
+        std::array<double, maxBands> bandDepth { 1.0, 1.0, 1.0 };
     };
+
+    // The crossovers as the band stage uses them for this many bands: in order, 1/3 octave apart.
+    static std::array<double, maxBands - 1> sanitisedCrossovers (const Targets& targets, int bands) noexcept;
 
     // Phase 4 Wave 2: the host's position at the start of the next block, for Host sync.
     void setTransport (const fancy::dsp::TempoTrigger::Position& position) noexcept { trigger.setPosition (position); }
@@ -117,6 +134,12 @@ public:
     float takeReduction() noexcept { return reduction.exchange (0.0f, std::memory_order_relaxed); }
     bool isSidechainMissing() const noexcept { return sidechainMissing.load (std::memory_order_relaxed); }
 
+    // Phase 4 Wave 3: the bands in use, each band's largest attenuation in dB since the last call,
+    // and whether it's open (anything but closed).
+    int getActiveBands() const noexcept { return shownBands.load (std::memory_order_relaxed); }
+    float takeBandReduction (int band) noexcept { return bandReductions[(size_t) band].exchange (0.0f, std::memory_order_relaxed); }
+    bool isBandOpen (int band) const noexcept { return bandOpen[(size_t) band].load (std::memory_order_relaxed); }
+
     struct HistoryColumn
     {
         float levelDb, gainDb;
@@ -140,7 +163,9 @@ private:
 
     void clearRings() noexcept;
     void updateFilters() noexcept;
-    double gainFor (double position) noexcept;
+    double gainFor (double position, int band) noexcept;
+    void resetBands() noexcept;
+    void configureCrossovers (const Targets& targets, int bands, bool snap) noexcept;
     void schedule (std::int64_t time, bool on, int velocity) noexcept;
     void flushEvents (juce::MidiBuffer* midi, std::int64_t blockStart, int numSamples) noexcept;
     void midiEvent (Machine::Event event, std::int64_t detectorTime) noexcept;
@@ -153,7 +178,7 @@ private:
     std::array<IncomingNote, maxIncomingNotes> incomingNotes {};
     int numIncomingNotes = 0;
     int heldNotes = 0;
-    double expanderDb[2] { 0.0, 0.0 };
+    double expanderDb[maxBands][2] {};
     fancy::dsp::DetectorFilter bleedLevels[2];
 
     // Phase 4 Wave 2: Host sync's pulse.
@@ -162,25 +187,37 @@ private:
     // Phase 4 Wave 2, v1.7.1: the Transient detector's level and its own average, linear, per
     // machine; and Upward's boost in dB, with its hold, per channel. upBlend fades the curve between
     // Gate or Duck and Upward when Mode changes.
-    double transientLevel[2] { 0.0, 0.0 }, transientAverage[2] { 0.0, 0.0 };
-    bool transientArmed[2] { true, true };
-    double boostDb[2] { 0.0, 0.0 }, heldBoostDb[2] { 0.0, 0.0 };
-    int boostHoldLeft[2] { 0, 0 };
+    // Phase 4 Wave 3: all of these are per band.
+    double transientLevel[maxBands][2] {}, transientAverage[maxBands][2] {};
+    bool transientArmed[maxBands][2] {};
+    double boostDb[maxBands][2] {}, heldBoostDb[maxBands][2] {};
+    int boostHoldLeft[maxBands][2] {};
     fancy::dsp::Smoother upBlend;
 
     int lookaheadSamples = 2400;
     bool activeLookahead = false;
     int ringSize = 1, ringMask = 0;
-    std::vector<float> audioRing[2], filteredRing[2], gainRing[2], openRing;
+    std::vector<float> audioRing[2], filteredRing[2], gainRing[maxBands][2], openRing;
+    std::vector<float> bandRing[maxBands][2];   // Phase 4 Wave 3: each band's audio, at two bands or more
     int holdOffSamples = 0;
 
-    fancy::dsp::DetectorFilter detectors[2];
+    fancy::dsp::DetectorFilter detectors[maxBands][2];
     fancy::dsp::SvfCoefficients highpassCoefficients, lowpassCoefficients;
     fancy::dsp::Smoother logHighpass, logLowpass, highpassBlend, lowpassBlend, rms;
     double rmsCoefficient = 1.0;
 
-    Machine machines[2];
-    double cachedPosition[2] { -1.0, -1.0 }, cachedGain[2] { 0.0, 0.0 };
+    Machine machines[maxBands][2];
+    double cachedPosition[maxBands][2] {}, cachedGain[maxBands][2] {};
+
+    // Phase 4 Wave 3: the band stage. The audio and the detector each have their own crossover at
+    // the same frequencies; activeBands changes only through the switch fade, as Lookahead does.
+    fancy::dsp::MinPhaseCrossover audioCrossover, detectorCrossover;
+    int activeBands = 1;
+    int velocityBand = 0;   // the band whose opening started the note in flight
+    std::array<fancy::dsp::Smoother, maxBands> depths;
+    std::array<std::atomic<float>, maxBands> bandReductions {};
+    std::array<std::atomic<bool>, maxBands> bandOpen {};
+    std::atomic<int> shownBands { 1 };
 
     // Range and the Gate/Duck switch move the curve smoothly. Range is smoothed as a linear gain,
     // 0 for -inf, so a jump from -inf to 0 dB settles like any gain change rather than creeping

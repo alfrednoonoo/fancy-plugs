@@ -5,6 +5,8 @@
 #include <fancy/ui/Meter.h>
 #include <fancy/ui/ShellEditor.h>
 
+#include <array>
+#include <memory>
 #include <vector>
 
 class GateEditor final : public fancy::ui::ShellEditor
@@ -26,6 +28,9 @@ public:
     // in Upward with a ceiling.
     void showModePreview (bool upward);
     void showUpwardDrawerPreview();
+
+    // Phase 4 Wave 3: mockup 75's panel 1, three bands gating a drum overhead.
+    void showBandsPreview();
 
     // The hint the locked Pre-open knob shows.
     static const char* const preOpenHint;
@@ -84,6 +89,66 @@ private:
         bool upward = false;
     };
 
+    // Phase 4 Wave 3 (mockup 75 A; docs/gate.md, "multiband gating"): the crossover strip, each
+    // band's attenuation falling from the top in its colour. Drag a crossover's blue line to move
+    // it, or click it to type a frequency.
+    class BandStrip final : public juce::Component, public juce::SettableTooltipClient
+    {
+    public:
+        explicit BandStrip (GateProcessor& processor);
+
+        void setAttenuations (const std::array<float, GateDsp::maxBands>& attenuationsDb);
+        void askForCrossover (int index);
+
+        void paint (juce::Graphics&) override;
+        void mouseDown (const juce::MouseEvent&) override;
+        void mouseDrag (const juce::MouseEvent&) override;
+        void mouseUp (const juce::MouseEvent&) override;
+
+        static constexpr float stripHeight = 44.0f, scaleDb = 40.0f;
+
+    private:
+        float xForHz (double hz) const noexcept;
+        double hzForX (float x) const noexcept;
+        int crossoverAt (juce::Point<float> position) const;
+
+        GateProcessor& gateProcessor;
+        std::array<float, GateDsp::maxBands> attenuations {};
+        int dragging = -1;
+        bool dragged = false;
+    };
+
+    // The BANDS card: the band count, the crossover type, the strip, and each band's Threshold
+    // offset, Range depth and open or shut state.
+    class BandsCard final : public juce::Component
+    {
+    public:
+        explicit BandsCard (GateProcessor& processor);
+
+        void update (float seconds);
+
+        // For screenshots: fixed attenuations and states, no updates.
+        void showValues (const std::array<float, GateDsp::maxBands>& attenuationsDb, const std::array<bool, GateDsp::maxBands>& open);
+
+        void paint (juce::Graphics&) override;
+
+        BandStrip strip;
+
+    private:
+        void refreshBands();
+        static float cellX (int band) noexcept;
+
+        GateProcessor& gateProcessor;
+        juce::Label crossoverLabel;
+        fancy::ui::ParamSegments bandsSegments;
+        fancy::ui::ParamDropdown crossoverDropdown;
+        std::array<std::unique_ptr<fancy::ui::Knob>, GateDsp::maxBands> thresholdKnobs, rangeKnobs;
+        std::array<float, GateDsp::maxBands> shown {};
+        std::array<bool, GateDsp::maxBands> opened {};
+        int bands = 1;
+        bool frozen = false;
+    };
+
     // Phase 4 Wave 2 (mockup 54): Ceiling as a dropdown of common values. A ctrl-click, or
     // "Type a value...", opens the typed-value box, as a knob's value does.
     class CeilingDropdown final : public fancy::ui::ParamClickControl, public fancy::ui::MenuTarget
@@ -140,6 +205,7 @@ private:
     Light light;
 
     History history;
+    BandsCard bandsCard; // Phase 4 Wave 3
 
     fancy::ui::Knob preOpenKnob, attackKnob, holdKnob, releaseKnob, hysteresisKnob;
     fancy::ui::Knob rangeKnob, rmsKnob, lowpassKnob, highpassKnob;

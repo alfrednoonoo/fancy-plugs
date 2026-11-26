@@ -1182,7 +1182,7 @@ TEST_CASE ("the gate editor opens at its size", "[gate]")
 
     REQUIRE (editor != nullptr);
     CHECK (editor->getWidth() == 790);   // Phase 4 Wave 2, v1.7.1: mockups 53 and 54
-    CHECK (editor->getHeight() == 445 + fancy::ui::ShellEditor::titleHeight);
+    CHECK (editor->getHeight() == 445 + 172 + fancy::ui::ShellEditor::titleHeight);   // Phase 4 Wave 3: mockup 75 A
 
     processor.editorBeingDeleted (editor.get());
 }

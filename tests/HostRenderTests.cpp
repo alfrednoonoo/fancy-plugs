@@ -498,8 +498,9 @@ TEST_CASE ("FIR: an offline render matches playback, through an FFT-size change"
 TEST_CASE ("Gate: an offline render matches playback", "[host][offline]")
 {
     const auto lookahead = GENERATE (0.0f, 1.0f);
-    checkRenders<GateProcessor> (lookahead > 0.5f ? "Gate, lookahead" : "Gate",
-                                 { { { "lookahead", lookahead } },
+    const auto bands = GENERATE (0.0f, 1.0f); // Phase 4 Wave 3: 1 band, and 2
+    checkRenders<GateProcessor> ((juce::String (lookahead > 0.5f ? "Gate, lookahead" : "Gate") + (bands > 0.5f ? ", 2 bands" : "")).toRawUTF8(),
+                                 { { { "lookahead", lookahead }, { "bands", bands } },
                                    join ({ alternate ("threshold", -40.0f, -20.0f), alternate ("release", 50.0f, 200.0f, 888) }), {} });
 }
 #endif

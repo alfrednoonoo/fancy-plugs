@@ -116,9 +116,30 @@ Use it on a drum mic whose bleed changes level through a song, such as a tom mic
 - It raises peaks by up to Boost, so the output can pass 0 dBFS. Set **Ceiling** in the EDIT drawer, or turn **Output** down by about Boost.
 - It lifts a whole drum loop alike, hits and decays, so it adds no punch: that's Fancy TS's job.
 
+## Bands (Phase 4)
+
+The **BANDS** card, between the history and the envelope card, splits the signal into up to three frequency bands and gates each one on its own sound. A close mic hears more than its own drum: on a tom mic, a gate set low enough to keep the tom's ring is held open by the cymbals, and one set high enough to shut in the gaps still lets every cymbal through while the tom rings. With the lows in their own band, the tom opens the lows, and the highs open only when there's enough high end of their own. On a test tom mic, two bands cut the cymbal while the tom rang by about 13 dB and in the gaps by the full Range, with the tom kept; the best single-band setting cut the cymbal while the tom rang by under 2 dB.
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Bands | 1, 2, 3 | 1 | How many bands. 1 gates the whole signal, exactly as before. More add no latency |
+| Crossover | LR 24 dB, LR 48 dB (minimum phase) | LR 24 | The crossovers' slope. Both add back up flat |
+| Crossovers | 20 Hz to 20 kHz | 250 Hz, 2.5 kHz | Where the bands meet: the blue lines on the strip. Drag one, or click it to type a frequency (`2500` or `2.5k`). They stay at least a third of an octave apart. 2 bands use the first, 3 both |
+| Threshold (each band) | -24 to +24 dB | 0, +6, +6 dB | Where that band opens, above or below the **Threshold** fader. The fader still moves every band, and Learn still sets it |
+| Range (each band) | 0 to 100 % | 100 % | How much of the **Range** knob that band uses. The knob reads the band's own Range: at 50 %, a Range of -40 dB gives -20 dB, and -inf counts as -120 dB, so -60 dB. Lower it to keep some of a band's bleed. It has no part in Upward |
+| open / shut (each band) | | | Lit yellow while that band is open |
+
+- The strip shows each band's gain reduction falling from the top in its colour, down to 40 dB. With one band it shows the gate's own.
+- Attack, Hold, Release, Hysteresis, Pre-open, Lookahead, the mode, the detector and its RMS size or Rise are shared: each band runs them on its own sound. Gate, Duck, Upward, Ratio and the Transient detector all work per band.
+- **Lowpass, Highpass and De-bleed** dim and do nothing while Bands is 2 or 3: each band's detector already hears only its own band. Preview filter then plays the whole detector input.
+- **Detector input** still picks the source: a sidechain, Mid or Side is split at the same crossovers. With **MIDI trigger** or **Host sync**, every band opens together, and the bands differ only in Range.
+- The light, the Gain meter, the history's gain line and the **Noise** fader follow the most open band. **MIDI out** sends one note while any band is open: the note-on as the first band opens (its velocity from that band), the note-off as the last one closes.
+- **Dry** is the bands added back up ungated, so Wet and Dry stay in phase when you mix them.
+- Changing Bands while playing fades out and back in.
+
 ## Latency
 
-0 samples with Lookahead off. 50 ms with it on, at every sample rate. Ceiling adds a little more while it's on.
+0 samples with Lookahead off. 50 ms with it on, at every sample rate. Ceiling adds a little more while it's on. Bands add none.
 
 ## Using it in other hosts
 

@@ -199,6 +199,40 @@ fancy::FancyProcessor::Layout createLayout()
             .withValueFromStringFunction ([] (const juce::String& text)
                                           { return text.trim().equalsIgnoreCase ("off") ? (float) fancy::dsp::OutputCeiling::offDb : juce::jlimit (-12.0f, 0.0f, fancy::parseNumber (text)); })));
 
+    // Phase 4 Wave 3, appended (docs/gate.md, "multiband gating", decisions A): one band is the
+    // gate as it was. Bands and the crossover type change the phase in a step, so, as Limit's,
+    // they're deliberate settings that automation doesn't flip.
+    const auto dot = juce::String::charToString (0x00b7);
+
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "bands", 1 }, "Bands", juce::StringArray { "1", "2", "3" }, 0,
+                                          juce::AudioParameterChoiceAttributes {}.withAutomatable (false)));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "crossoverType", 1 }, "Crossover",
+                                          juce::StringArray { "LR 24 dB " + dot + " Min phase", "LR 48 dB " + dot + " Min phase" }, 0,
+                                          juce::AudioParameterChoiceAttributes {}.withAutomatable (false)));
+
+    const float crossoverDefaults[] { 250.0f, 2500.0f };
+
+    for (int i = 0; i < GateDsp::maxBands - 1; ++i)
+        layout.add (fancy::floatParameter (
+            GateProcessor::crossoverId (i), "Crossover " + juce::String (i + 1), fancy::logRange (20.0f, 20000.0f, 0.1f), crossoverDefaults[i],
+            juce::AudioParameterFloatAttributes {}
+                .withLabel ("Hz")
+                .withStringFromValueFunction ([] (float value, int) { return fancy::formatHz (value); })
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); })));
+
+    const float offsetDefaults[] { 0.0f, 6.0f, 6.0f };
+
+    for (int i = 0; i < GateDsp::maxBands; ++i)
+        layout.add (fancy::floatParameter (
+            GateProcessor::bandThresholdId (i), "Band " + juce::String (i + 1) + " threshold", juce::NormalisableRange<float> (-24.0f, 24.0f, 0.1f), offsetDefaults[i],
+            juce::AudioParameterFloatAttributes {}
+                .withLabel ("dB")
+                .withStringFromValueFunction ([] (float value, int) { return (value >= 0.0f ? "+" : "") + fancy::formatFixed (value, 1) + " dB"; })
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
+    for (int i = 0; i < GateDsp::maxBands; ++i)
+        layout.add (fancy::percentParameter (GateProcessor::bandDepthId (i), "Band " + juce::String (i + 1) + " range", 100.0f));
+
     return layout;
 }
 
@@ -307,6 +341,23 @@ GateDsp::Targets GateProcessor::readTargets() const
     targets.riseDb = (double) read ("rise");
     targets.boostDb = (double) read ("boost");
     targets.upRatio = (double) read ("upRatio");
+
+    // Phase 4 Wave 3. Fixed IDs, so nothing builds a String on the audio thread.
+    static constexpr const char* crossoverIds[] { "crossover1", "crossover2" };
+    static constexpr const char* thresholdIds[] { "bandThreshold1", "bandThreshold2", "bandThreshold3" };
+    static constexpr const char* depthIds[] { "bandDepth1", "bandDepth2", "bandDepth3" };
+
+    targets.bands = juce::jlimit (1, GateDsp::maxBands, juce::roundToInt (read ("bands")) + 1);
+    targets.crossoverLr48 = juce::roundToInt (read ("crossoverType")) == 1;
+
+    for (int i = 0; i < GateDsp::maxBands - 1; ++i)
+        targets.crossoverHz[(size_t) i] = (double) read (crossoverIds[i]);
+
+    for (int i = 0; i < GateDsp::maxBands; ++i)
+    {
+        targets.bandOffsetDb[(size_t) i] = (double) read (thresholdIds[i]);
+        targets.bandDepth[(size_t) i] = (double) read (depthIds[i]) * 0.01;
+    }
 
     return targets;
 }

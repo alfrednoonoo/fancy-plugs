@@ -17,19 +17,26 @@ namespace
 constexpr int baseWidth = 790;
 constexpr int growY = 24;
 
+// Phase 4 Wave 3 (mockup 75 A): the BANDS card goes where the envelope card was, and the window
+// grows 172 px taller (790 x 637); the cards and the footer move down, and the meters and faders
+// lengthen.
+constexpr int bandsGrow = 172;
+constexpr int bandsCardY = 118, bandsCardHeight = 164;
+constexpr int tallY = growY + bandsGrow;
+
 // Phase 4 Wave 2: Host sync's small Shape knob, 66 tall with its label and value (Comp's).
 constexpr fancy::ui::Knob::Style syncKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
-constexpr int bodyHeight = 368 + growY;
+constexpr int bodyHeight = 368 + tallY;
 constexpr int baseHeight = ShellEditor::headerHeight + bodyHeight;
 constexpr int rightColumnX = 640;
 
 constexpr int centreX = 120, centreWidth = 506;
 constexpr int historyY = 40, historyHeight = 70;
-constexpr int envelopeY = 118, cardHeight = 96;
-constexpr int lowerY = 222, lowerHeight = cardHeight + growY, lowerKnobY = lowerY + growY;
+constexpr int envelopeY = 118 + bandsGrow, cardHeight = 96;
+constexpr int lowerY = 222 + bandsGrow, lowerHeight = cardHeight + growY, lowerKnobY = lowerY + growY;
 constexpr int levelWidth = 251, filterX = 379, filterWidth = 247;
-constexpr int footerY = 336 + growY;
-constexpr int faderTop = 26, faderHeight = 331 + growY;
+constexpr int footerY = 336 + tallY;
+constexpr int faderTop = 26, faderHeight = 331 + tallY;
 
 constexpr float labelHeight = 10.5f;   // the mockup's captions and checkboxes
 constexpr float historyFloorDb = -90.0f;
@@ -37,16 +44,20 @@ constexpr float historyFloorDb = -90.0f;
 const juce::Colour gateYellow = colours::accentYellow;
 const juce::Colour noiseGrey { 0xff909090 };
 
+// Phase 4 Wave 3: the bands' colours, as Limit's and MultiComp's, and their small knobs.
+const juce::Colour bandColours[] { colours::uiRed, colours::uiPurple, colours::uiBlue };
+constexpr fancy::ui::Knob::Style bandKnobStyle = syncKnobStyle;
+
 // The wells grow with the window, over the same dB range.
-constexpr OutMeter::Geometry outGeometry { 14.5f, 16.0f, 316.0f + growY, 26.0f, 4.9f * (290.0f + growY) / 290.0f, 324.0f + growY, false, true };
-constexpr GainReductionMeter::Geometry gainGeometry { 16.0f, 14.0f, 232.0f + growY, true, "Gain" };
+constexpr OutMeter::Geometry outGeometry { 14.5f, 16.0f, 316.0f + tallY, 26.0f, 4.9f * (290.0f + tallY) / 290.0f, 324.0f + tallY, false, true };
+constexpr GainReductionMeter::Geometry gainGeometry { 16.0f, 14.0f, 232.0f + tallY, true, "Gain" };
 
 ThresholdMeter::Style thresholdStyle()
 {
     ThresholdMeter::Style style;
     style.wellX = 8.0f;
     style.wellTop = 14.0f;
-    style.wellHeight = 232.0f + growY;
+    style.wellHeight = 232.0f + tallY;
     style.lowestDb = -90.0f;
     style.accent = gateYellow;
     style.labelHeight = labelHeight;
@@ -87,6 +98,12 @@ void cardKnobs (std::initializer_list<Knob*> knobs, int x, int width, int y)
         knob->setBounds (juce::roundToInt (centre) - knobWidth / 2, y + 2, knobWidth, knobHeight);
     }
 }
+} // namespace
+
+namespace
+{
+const char* const deBleedTip = "Raises Threshold while the sound outside Lowpass and Highpass is louder than inside, so bleed can't open the gate.";
+const char* const bandsFilterNote = "Off while Bands is 2 or 3: each band's detector already hears only its own band.";
 } // namespace
 
 const char* const GateEditor::preOpenHint = "Pre-open needs Lookahead. Tick 'Lookahead (+50 ms latency)' above to use it.";
@@ -311,6 +328,336 @@ void GateEditor::Light::paint (juce::Graphics& g)
     g.drawText (text, juce::Rectangle<float> (left + 11.0f, 0.0f, textWidth + 2.0f, (float) getHeight()), juce::Justification::centredLeft, false);
 }
 
+// BandStrip (Phase 4 Wave 3) --------------------------------------------------------
+
+GateEditor::BandStrip::BandStrip (GateProcessor& processor)
+    : gateProcessor (processor)
+{
+    setTooltip ("Each band's gain reduction, falling from the top in its colour. Drag a blue line to move a crossover, "
+                "or click it to type a frequency.");
+}
+
+void GateEditor::BandStrip::setAttenuations (const std::array<float, GateDsp::maxBands>& attenuationsDb)
+{
+    if (attenuationsDb != attenuations)
+    {
+        attenuations = attenuationsDb;
+        repaint();
+    }
+}
+
+float GateEditor::BandStrip::xForHz (double hz) const noexcept
+{
+    return (float) getWidth() * (float) std::log10 (juce::jlimit (20.0, 20000.0, hz) / 20.0) / 3.0f;
+}
+
+double GateEditor::BandStrip::hzForX (float x) const noexcept
+{
+    return 20.0 * std::pow (1000.0, juce::jlimit (0.0, 1.0, (double) x / (double) juce::jmax (1, getWidth())));
+}
+
+int GateEditor::BandStrip::crossoverAt (juce::Point<float> position) const
+{
+    const auto targets = gateProcessor.readTargets();
+    const auto hz = GateDsp::sanitisedCrossovers (targets, targets.bands);
+
+    for (int i = 0; i < targets.bands - 1; ++i)
+        if (std::abs (position.x - xForHz (hz[(size_t) i])) <= 5.0f && position.y <= stripHeight)
+            return i;
+
+    return -1;
+}
+
+void GateEditor::BandStrip::paint (juce::Graphics& g)
+{
+    const auto width = (float) getWidth();
+    const auto h = stripHeight;
+    const auto targets = gateProcessor.readTargets();
+    const auto count = targets.bands;
+    const auto hz = GateDsp::sanitisedCrossovers (targets, count);
+
+    g.setColour (colours::bgWell);
+    g.fillRect (0.0f, 0.0f, width, h);
+
+    std::array<float, GateDsp::maxBands + 1> edges {};
+    edges[0] = 0.0f;
+
+    for (int i = 0; i < count - 1; ++i)
+        edges[(size_t) i + 1] = xForHz (hz[(size_t) i]);
+
+    edges[(size_t) count] = width;
+
+    for (int i = 0; i < count; ++i)
+    {
+        const auto x0 = edges[(size_t) i], x1 = edges[(size_t) i + 1];
+        const auto colour = bandColours[i];
+        const auto drop = h * juce::jlimit (0.0f, scaleDb, attenuations[(size_t) i]) / scaleDb;
+
+        g.setColour (colour.withAlpha (0.10f));
+        g.fillRect (x0, 0.0f, x1 - x0, h);
+        g.setColour (colour.withAlpha (0.75f));
+        g.fillRect (x0 + 1.0f, 0.0f, juce::jmax (0.0f, x1 - x0 - 2.0f), drop);
+
+        const auto centre = juce::Point<float> ((x0 + x1) * 0.5f, h - 13.0f);
+        g.setColour (colours::bgWell);
+        g.fillEllipse (juce::Rectangle<float> (15.0f, 15.0f).withCentre (centre));
+        g.setColour (colour);
+        g.drawEllipse (juce::Rectangle<float> (15.0f, 15.0f).withCentre (centre), 1.5f);
+        g.setColour (colours::textPrimary);
+        g.setFont (font (Weight::semiBold, 9.5f));
+        g.drawText (juce::String (i + 1), juce::Rectangle<float> (20.0f, 14.0f).withCentre (centre), juce::Justification::centred, false);
+    }
+
+    for (int i = 0; i < count - 1; ++i)
+    {
+        const auto x = edges[(size_t) i + 1];
+        g.setColour (colours::uiBlue);
+        g.fillRect (x - 0.75f, 0.0f, 1.5f, h);
+        g.fillRoundedRectangle (x - 3.0f, h - 8.0f, 6.0f, 8.0f, 1.5f);
+    }
+
+    g.setColour (colours::textSecondary);
+    g.setFont (font (Weight::regular, 9.0f));
+
+    const std::pair<double, const char*> labels[] { { 50.0, "50" }, { 100.0, "100" }, { 200.0, "200" }, { 500.0, "500" },
+                                                     { 1000.0, "1k" }, { 2000.0, "2k" }, { 5000.0, "5k" }, { 10000.0, "10k" } };
+
+    for (const auto& [labelHz, text] : labels)
+        g.drawText (text, juce::Rectangle<float> (xForHz (labelHz) - 20.0f, h + 1.0f, 40.0f, 12.0f), juce::Justification::centred, false);
+}
+
+void GateEditor::BandStrip::mouseDown (const juce::MouseEvent& event)
+{
+    dragging = event.mods.isPopupMenu() ? -1 : crossoverAt (event.position);
+    dragged = false;
+}
+
+void GateEditor::BandStrip::mouseDrag (const juce::MouseEvent& event)
+{
+    if (dragging < 0 || (! dragged && event.getDistanceFromDragStart() < 3))
+        return;
+
+    dragged = true;
+
+    // Between its neighbours, 1/3 octave from each, as the stage keeps them.
+    const auto targets = gateProcessor.readTargets();
+    const auto hz = GateDsp::sanitisedCrossovers (targets, targets.bands);
+    constexpr auto gap = 1.2599210498948732;
+    const auto low = dragging > 0 ? hz[(size_t) dragging - 1] * gap : 20.0;
+    const auto high = dragging < targets.bands - 2 ? hz[(size_t) dragging + 1] / gap : 20000.0;
+
+    gateProcessor.setParameter (GateProcessor::crossoverId (dragging), (float) juce::jlimit (low, high, hzForX (event.position.x)));
+    repaint();
+}
+
+void GateEditor::BandStrip::mouseUp (const juce::MouseEvent&)
+{
+    if (dragging >= 0 && ! dragged)
+        askForCrossover (dragging);
+
+    dragging = -1;
+    dragged = false;
+}
+
+void GateEditor::BandStrip::askForCrossover (int index)
+{
+    const auto targets = gateProcessor.readTargets();
+    const auto hz = GateDsp::sanitisedCrossovers (targets, juce::jmax (2, targets.bands));
+
+    DialogSpec spec;
+    spec.title = "Crossover " + juce::String (index + 1);
+    spec.body = "Between bands " + juce::String (index + 1) + " and " + juce::String (index + 2) + ", from 20 Hz to 20 kHz: 2500 or 2.5k.";
+    spec.action = "Set";
+    spec.fields.push_back ({ "Frequency (Hz)", fancy::formatHz ((float) hz[(size_t) index]) });
+    spec.validate = [] (const juce::StringArray& values)
+    {
+        const auto value = fancy::parseHz (values[0]);
+
+        if (values[0].trim().isEmpty() || ! std::isfinite (value) || value < 20.0f || value > 20000.0f)
+            return juce::String ("Enter a frequency from 20 Hz to 20 kHz.");
+
+        return juce::String {};
+    };
+
+    showDialog (*this, spec, [safe = juce::Component::SafePointer<BandStrip> (this), index] (bool accepted, const juce::StringArray& values)
+    {
+        if (safe == nullptr || ! accepted)
+            return;
+
+        fancy::FancyProcessor::UserEdit edit (safe->gateProcessor, "Crossover");
+        safe->gateProcessor.setParameter (GateProcessor::crossoverId (index), fancy::parseHz (values[0]));
+        safe->repaint();
+    });
+}
+
+// BandsCard (Phase 4 Wave 3) ------------------------------------------------------
+
+GateEditor::BandsCard::BandsCard (GateProcessor& processor)
+    : strip (processor),
+      gateProcessor (processor),
+      bandsSegments (*processor.getApvts().getParameter ("bands"), gateYellow, colours::bgWell),
+      crossoverDropdown (*processor.getApvts().getParameter ("crossoverType"))
+{
+    // mockup 75 A, at the card's own coordinates.
+    styleLabel (crossoverLabel, "Crossover", colours::textSecondary, juce::Justification::centredLeft, 12.0f);
+    crossoverLabel.setBounds (273, 5, 62, 24);
+
+    bandsSegments.setBounds (66, 8, 90, 20);
+    bandsSegments.setTextHeight (12.0f);
+    bandsSegments.setTooltip ("How many bands to split the signal into. Each band opens on its own sound, so cymbals can't hold "
+                              "a tom's gate open. 1 gates the whole signal.");
+
+    // Limit's and MultiComp's width for the same text at 12 px.
+    crossoverDropdown.setBounds (337, 7, 157, 22);
+    crossoverDropdown.setTextHeight (12.0f);
+    crossoverDropdown.setTooltip ("The crossovers' slope. Both sum back flat.");
+
+    strip.setBounds (12, 34, 482, (int) BandStrip::stripHeight + 13);
+
+    for (int band = 0; band < GateDsp::maxBands; ++band)
+    {
+        const auto centre = cellX (band);
+        const auto name = juce::String (band + 1);
+
+        auto threshold = std::make_unique<Knob> (*processor.getApvts().getParameter (GateProcessor::bandThresholdId (band)), "Threshold",
+                                                 bandColours[band], bandKnobStyle, true);
+        threshold->setBounds (juce::roundToInt (centre + 58.0f) - 32, 94, 64, 66);
+        threshold->setShowDefaultMark (true);
+        threshold->setTooltip ("Band " + name + " opens this far above or below the Threshold fader, which still moves every band.");
+        addChildComponent (*threshold);
+        thresholdKnobs[(size_t) band] = std::move (threshold);
+
+        auto range = std::make_unique<Knob> (*processor.getApvts().getParameter (GateProcessor::bandDepthId (band)), "Range",
+                                             bandColours[band], bandKnobStyle);
+        range->setBounds (juce::roundToInt (centre + 124.0f) - 32, 94, 64, 66);
+        range->setTooltip ("How much of the Range knob band " + name + " uses, shown as its own Range: at 50 %, -40 dB is -20 dB. "
+                           "Lower it to keep some of this band's bleed.");
+        addChildComponent (*range);
+        rangeKnobs[(size_t) band] = std::move (range);
+    }
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &crossoverLabel, &bandsSegments, &crossoverDropdown, &strip })
+        addAndMakeVisible (item);
+
+    refreshBands();
+}
+
+float GateEditor::BandsCard::cellX (int band) noexcept
+{
+    return 12.0f + 482.0f / 3.0f * (float) band;
+}
+
+void GateEditor::BandsCard::refreshBands()
+{
+    const auto targets = gateProcessor.readTargets();
+    const auto count = targets.bands;
+
+    // Each Range knob reads the band's own Range in dB (decision 2 A); -inf counts as -120 dB.
+    const auto rangeDb = targets.rangeDb <= GateDsp::rangeFloorDb ? GateDsp::curveFloorDb : targets.rangeDb;
+
+    for (int band = 0; band < GateDsp::maxBands; ++band)
+    {
+        const auto visible = count > 1 && band < count;
+        thresholdKnobs[(size_t) band]->setVisible (visible);
+        rangeKnobs[(size_t) band]->setVisible (visible);
+
+        const auto depth = targets.bandDepth[(size_t) band];
+        const auto bandDb = rangeDb * depth;
+        const auto text = depth >= 1.0 && targets.rangeDb <= GateDsp::rangeFloorDb ? juce::String ("-inf")
+                                                                                    : (bandDb > -0.5 ? juce::String ("0") : juce::String (juce::roundToInt (bandDb))) + " dB";
+        rangeKnobs[(size_t) band]->setValueTextOverride (text);
+
+        // Upward boosts rather than cuts, so a band's Range has no part in it.
+        rangeKnobs[(size_t) band]->setAlpha (targets.upward ? 0.4f : 1.0f);
+    }
+
+    if (count != bands)
+    {
+        bands = count;
+        repaint();
+    }
+}
+
+void GateEditor::BandsCard::update (float seconds)
+{
+    refreshBands();
+
+    if (frozen)
+        return;
+
+    auto& dsp = gateProcessor.getDsp();
+    auto changed = false;
+
+    for (int band = 0; band < GateDsp::maxBands; ++band)
+    {
+        auto taken = juce::jmin (dsp.takeBandReduction (band), 80.0f);
+
+        if (band >= bands)
+            taken = 0.0f;
+
+        const auto next = juce::jmax (taken, shown[(size_t) band] - 60.0f * seconds, 0.0f);
+        const auto open = band < bands && dsp.isBandOpen (band);
+
+        if (std::abs (next - shown[(size_t) band]) > 0.01f || open != opened[(size_t) band])
+        {
+            shown[(size_t) band] = next;
+            opened[(size_t) band] = open;
+            changed = true;
+        }
+    }
+
+    strip.setAttenuations (shown);
+
+    if (changed)
+        repaint();
+}
+
+void GateEditor::BandsCard::showValues (const std::array<float, GateDsp::maxBands>& attenuationsDb, const std::array<bool, GateDsp::maxBands>& open)
+{
+    frozen = true;
+    shown = attenuationsDb;
+    opened = open;
+    refreshBands();
+    strip.setAttenuations (shown);
+    repaint();
+}
+
+void GateEditor::BandsCard::paint (juce::Graphics& g)
+{
+    g.setColour (colours::bgSection);
+    g.fillRoundedRectangle (getLocalBounds().toFloat(), 6.0f);
+
+    g.setColour (colours::textSecondary);
+    g.setFont (font (Weight::semiBold, 12.0f).withExtraKerningFactor (0.06f));
+    g.drawText ("BANDS", 12, 6, 120, 24, juce::Justification::centredLeft, false);
+
+    if (bands < 2)
+    {
+        g.setFont (font (Weight::regular, 11.0f));
+        g.drawFittedText ("One band gates the whole signal with the cards below. Choose 2 or 3 to gate each band on its own "
+                          "sound, with its own Threshold and Range.",
+                          12, 100, 482, 34, juce::Justification::topLeft, 2, 1.0f);
+        return;
+    }
+
+    for (int band = 0; band < bands; ++band)
+    {
+        const auto x = cellX (band);
+        const auto chip = juce::Rectangle<float> (x + 2.0f, 108.0f, 18.0f, 18.0f);
+
+        g.setColour (bandColours[band]);
+        g.drawRoundedRectangle (chip.reduced (0.75f), 3.0f, 1.5f);
+        g.setColour (colours::textPrimary);
+        g.setFont (font (Weight::semiBold, 11.0f));
+        g.drawText (juce::String (band + 1), chip, juce::Justification::centred, false);
+
+        const auto open = opened[(size_t) band];
+        g.setColour (open ? gateYellow : colours::textSecondary);
+        g.setFont (font (Weight::regular, 10.0f));
+        g.drawText (open ? "open" : "shut", juce::Rectangle<float> (x - 2.0f, 130.0f, 26.0f, 12.0f), juce::Justification::centred, false);
+    }
+}
+
 // CeilingDropdown -------------------------------------------------------------
 
 void GateEditor::CeilingDropdown::paint (juce::Graphics& g)
@@ -440,6 +787,7 @@ GateEditor::GateEditor (GateProcessor& processor)
       thresholdMeter (parameter ("threshold"), thresholdStyle()),
       gainMeter (gainGeometry),
       history (processor.getDsp(), parameter ("threshold"), parameter ("hysteresis")),
+      bandsCard (processor),
       preOpenKnob (parameter ("preopen"), "Pre-open", gateYellow, Knob::tightStyle),
       attackKnob (parameter ("attack"), "Attack", gateYellow, Knob::tightStyle),
       holdKnob (parameter ("hold"), "Hold", gateYellow, Knob::tightStyle),
@@ -497,13 +845,14 @@ GateEditor::GateEditor (GateProcessor& processor)
     modeSegments.setTextHeight (labelHeight);
 
     // Left column.
-    thresholdMeter.setBounds (8, historyY, 58, 276 + growY);
-    gainMeter.setBounds (68, historyY, 40, 269 + growY);
-    light.setBounds (60, historyY + 271 + growY, 56, 16);
+    thresholdMeter.setBounds (8, historyY, 58, 276 + tallY);
+    gainMeter.setBounds (68, historyY, 40, 269 + tallY);
+    light.setBounds (60, historyY + 271 + tallY, 56, 16);
     light.setInterceptsMouseClicks (false, false);
 
     // Centre.
     history.setBounds (centreX, historyY, centreWidth, historyHeight);
+    bandsCard.setBounds (centreX, bandsCardY, centreWidth, bandsCardHeight); // Phase 4 Wave 3
 
     cardKnobs ({ &preOpenKnob, &attackKnob, &holdKnob, &releaseKnob, &hysteresisKnob }, centreX, centreWidth, envelopeY);
     cardKnobs ({ &rangeKnob, &rmsKnob }, centreX, levelWidth, lowerKnobY);
@@ -589,7 +938,7 @@ GateEditor::GateEditor (GateProcessor& processor)
     ratioKnob.setBounds (296, 40, 90, 99);
     ratioKnob.setTooltip ("Below inf:1 the gate becomes an expander: the level falls this many dB for each dB under Threshold, never deeper than Range.");
     deBleedKnob.setBounds (396, 40, 90, 99);
-    deBleedKnob.setTooltip ("Raises Threshold while the sound outside Lowpass and Highpass is louder than inside, so bleed can't open the gate.");
+    deBleedKnob.setTooltip (deBleedTip);
     styleLabel (drawerNote, "De-bleed needs Lowpass and Highpass set: out-of-band thumps can't open the gate.",
                 colours::textSecondary, juce::Justification::topLeft, 11.0f);
     drawerNote.setBounds (300, 146 + growY, 190, 44);
@@ -629,7 +978,7 @@ GateEditor::GateEditor (GateProcessor& processor)
     history.onColumns = [this] (const GateDsp::HistoryColumn* columns, int count) { learnFrom (columns, count); };
 
     // Right column.
-    outMeter.setBounds (rightColumnX + 6, 10, 46, 350 + growY);
+    outMeter.setBounds (rightColumnX + 6, 10, 46, 350 + tallY);
 
     styleLabel (wetLabel, "Wet", colours::textSecondary, juce::Justification::centred, labelHeight);
     styleLabel (dryLabel, "Dry", colours::textSecondary, juce::Justification::centred, labelHeight);
@@ -648,7 +997,7 @@ GateEditor::GateEditor (GateProcessor& processor)
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &detectorLabel, &detectorDropdown, &lookaheadCheckbox, &latencyLabel, &modeLabel, &modeSegments,
-             &thresholdMeter, &gainMeter, &light, &history,
+             &thresholdMeter, &gainMeter, &light, &history, &bandsCard,
              &preOpenKnob, &attackKnob, &holdKnob, &releaseKnob, &hysteresisKnob,
              &rangeKnob, &rmsKnob, &lowpassKnob, &highpassKnob,
              &previewCheckbox, &linkCheckbox, &midiCheckbox, &midiDropdown, &velocityCheckbox,
@@ -709,6 +1058,17 @@ void GateEditor::updateLocks()
     ratioKnob.setAlpha (transient ? 0.4f : 1.0f);     // Ratio is the Level detector's expander
     hysteresisKnob.setAlpha (transient || targets.upward ? 0.4f : 1.0f);
     light.setUpward (targets.upward);
+
+    // Phase 4 Wave 3 (decision 3 A): with bands, each band's detector is already its band, so the
+    // detector's Lowpass, Highpass and De-bleed are out.
+    const auto multiband = targets.bands > 1;
+
+    for (auto* knob : { &lowpassKnob, &highpassKnob, &deBleedKnob })
+        knob->setAlpha (multiband ? 0.4f : 1.0f);
+
+    lowpassKnob.setTooltip (multiband ? juce::String (bandsFilterNote) : juce::String {});
+    highpassKnob.setTooltip (multiband ? juce::String (bandsFilterNote) : juce::String {});
+    deBleedKnob.setTooltip (multiband ? bandsFilterNote : deBleedTip);
 }
 
 void GateEditor::updateSyncGroup()
@@ -743,6 +1103,7 @@ void GateEditor::onTick (float seconds)
     light.setState (dsp.getLight());
     history.setWarning (dsp.isSidechainMissing());
     history.update();
+    bandsCard.update (seconds); // Phase 4 Wave 3
     outMeter.update (processor.outputMeter, seconds);
 
     if (learnSeconds >= 0.0f)
@@ -861,6 +1222,21 @@ void GateEditor::showUpwardDrawerPreview()
     drawer.setVisible (true);
     updateLocks();
     updateSyncGroup();
+}
+
+void GateEditor::showBandsPreview()
+{
+    // mockup 75's panel 1: a drum overhead, the lows open, the mids shut on bleed, the highs part-way.
+    showPreview (false);
+    setValue (parameter ("bands"), 2.0f);
+    setValue (parameter ("crossover1"), 200.0f);
+    setValue (parameter ("crossover2"), 3000.0f);
+    setValue (parameter ("bandThreshold1"), 0.0f);
+    setValue (parameter ("bandThreshold2"), 6.0f);
+    setValue (parameter ("bandThreshold3"), 3.0f);
+    setValue (parameter ("bandDepth3"), 50.0f);
+    updateLocks();
+    bandsCard.showValues ({ 0.0f, 40.0f, 12.0f }, { true, false, true });
 }
 
 juce::Colour GateEditor::getAccentColour()

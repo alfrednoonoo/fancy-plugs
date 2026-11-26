@@ -816,6 +816,22 @@ int main (int argc, char** argv)
             ok = writeBothScales (*editor, view, outputDir) && ok;
         }
     }
+
+    // v1.7.2 (mockup 75 A, panel 1): three bands gating.
+    {
+        GateProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<GateEditor*> (base.get()))
+        {
+            editor->showBandsPreview();
+            ok = writeBothScales (*editor, "gate-bands", outputDir) && ok;
+        }
+        else
+        {
+            ok = false;
+        }
+    }
    #endif
 
    #if FANCY_HAS_LIMIT

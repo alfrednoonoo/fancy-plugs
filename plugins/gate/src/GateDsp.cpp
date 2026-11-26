@@ -212,8 +212,20 @@ void GateDsp::prepare (double sampleRate)
     {
         audioRing[ch].assign ((size_t) ringSize, 0.0f);
         filteredRing[ch].assign ((size_t) ringSize, 0.0f);
-        gainRing[ch].assign ((size_t) ringSize, 0.0f);
+
+        for (int band = 0; band < maxBands; ++band)
+        {
+            gainRing[band][ch].assign ((size_t) ringSize, 0.0f);
+            bandRing[band][ch].assign ((size_t) ringSize, 0.0f);
+        }
     }
+
+    // Phase 4 Wave 3: the band stage.
+    audioCrossover.prepare (sampleRate, true);
+    detectorCrossover.prepare (sampleRate, true);
+
+    for (auto& depth : depths)
+        depth.setTime (parameterMs, rate);
 
     openRing.assign ((size_t) ringSize, 0.0f);
 
@@ -239,10 +251,41 @@ void GateDsp::clearRings() noexcept
     {
         std::fill (audioRing[ch].begin(), audioRing[ch].end(), 0.0f);
         std::fill (filteredRing[ch].begin(), filteredRing[ch].end(), 0.0f);
-        std::fill (gainRing[ch].begin(), gainRing[ch].end(), 0.0f);
+
+        for (int band = 0; band < maxBands; ++band)
+        {
+            std::fill (gainRing[band][ch].begin(), gainRing[band][ch].end(), 0.0f);
+            std::fill (bandRing[band][ch].begin(), bandRing[band][ch].end(), 0.0f);
+        }
     }
 
     std::fill (openRing.begin(), openRing.end(), 0.0f);
+}
+
+void GateDsp::resetBands() noexcept
+{
+    for (int band = 0; band < maxBands; ++band)
+    {
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            expanderDb[band][ch] = 0.0;
+            transientLevel[band][ch] = transientAverage[band][ch] = 0.0;
+            transientArmed[band][ch] = true;
+            boostDb[band][ch] = heldBoostDb[band][ch] = 0.0;
+            boostHoldLeft[band][ch] = 0;
+            detectors[band][ch].reset();
+            machines[band][ch].reset();
+            cachedPosition[band][ch] = -1.0;
+            cachedGain[band][ch] = 0.0;
+        }
+
+        bandReductions[(size_t) band].store (0.0f, std::memory_order_relaxed);
+        bandOpen[(size_t) band].store (false, std::memory_order_relaxed);
+    }
+
+    audioCrossover.reset();
+    detectorCrossover.reset();
+    velocityBand = 0;
 }
 
 void GateDsp::reset()
@@ -250,27 +293,12 @@ void GateDsp::reset()
     heldNotes = 0;
     numIncomingNotes = 0;
     trigger.reset();
-    expanderDb[0] = expanderDb[1] = 0.0;
-
-    for (int ch = 0; ch < 2; ++ch)
-    {
-        transientLevel[ch] = transientAverage[ch] = 0.0;
-        transientArmed[ch] = true;
-        boostDb[ch] = heldBoostDb[ch] = 0.0;
-        boostHoldLeft[ch] = 0;
-    }
 
     for (auto& bleed : bleedLevels)
         bleed.reset();
 
     clearRings();
-
-    for (int ch = 0; ch < 2; ++ch)
-    {
-        detectors[ch].reset();
-        machines[ch].reset();
-        cachedPosition[ch] = -1.0;
-    }
+    resetBands();
 
     queued = 0;
     noteSounding = false;
@@ -280,9 +308,39 @@ void GateDsp::reset()
     sidechainMissing.store (false);
 }
 
+std::array<double, GateDsp::maxBands - 1> GateDsp::sanitisedCrossovers (const Targets& targets, int bands) noexcept
+{
+    auto hz = targets.crossoverHz;
+    fancy::dsp::sanitiseCrossovers (hz.data(), std::clamp (bands, 1, (int) maxBands) - 1);
+    return hz;
+}
+
+void GateDsp::configureCrossovers (const Targets& targets, int bands, bool snap) noexcept
+{
+    const auto count = std::clamp (bands, 1, (int) maxBands);
+    const auto hz = sanitisedCrossovers (targets, count);
+
+    for (auto* crossover : { &audioCrossover, &detectorCrossover })
+    {
+        crossover->setSteep (targets.crossoverLr48);
+        crossover->setBandCount (count);
+        crossover->setFrequencies (hz.data(), count - 1);
+
+        if (snap)
+            crossover->snap();
+    }
+}
+
 void GateDsp::setTargets (const Targets& targets) noexcept
 {
     current = targets;
+    current.bands = std::clamp (targets.bands, 1, (int) maxBands);
+
+    // Phase 4 Wave 3: the crossovers follow the bands in use, which change through the switch fade.
+    configureCrossovers (targets, activeBands, false);
+
+    for (int band = 0; band < maxBands; ++band)
+        depths[(size_t) band].setTarget (std::clamp (targets.bandDepth[(size_t) band], 0.0, 1.0));
 
     trigger.setStep (targets.syncStepBeats);
     trigger.setShape (targets.syncShape);
@@ -314,10 +372,25 @@ void GateDsp::snapToTargets (const Targets& targets) noexcept
                             &curveRange, &duckBlend, &upBlend })
         smoother->snapToTarget();
 
+    for (auto& depth : depths)
+        depth.snapToTarget();
+
     activeLookahead = targets.lookahead;
     holdOffSamples = 0;
     switchGain.snapTo (1.0);
-    cachedPosition[0] = cachedPosition[1] = -1.0;
+
+    // Phase 4 Wave 3.
+    if (current.bands != activeBands)
+    {
+        activeBands = current.bands;
+        resetBands();
+    }
+
+    configureCrossovers (current, activeBands, true);
+    shownBands.store (activeBands, std::memory_order_relaxed);
+
+    for (auto& band : cachedPosition)
+        band[0] = band[1] = -1.0;
     updateCurveRangeDb();
 
     updateFilters();
@@ -338,13 +411,18 @@ void GateDsp::updateCurveRangeDb() noexcept
     curveRangeDb = gain >= 1.0 ? 0.0 : std::max (curveFloorDb, 20.0 * std::log10 (std::max (gain, 1.0e-12)));
 }
 
-double GateDsp::gainFor (double position) noexcept
+double GateDsp::gainFor (double position, int band) noexcept
 {
-    const auto range = curveRangeDb;
+    // Phase 4 Wave 3: a band's Range is its share of the Range knob's depth in dB (-inf counts as
+    // curveFloorDb). One band is the whole depth, exactly as before.
+    const auto multiband = activeBands > 1;
+    const auto depth = multiband ? depths[(size_t) band].getCurrent() : 1.0;
+    const auto range = multiband ? curveRangeDb * depth : curveRangeDb;
     const auto blend = duckBlend.getCurrent();
 
     // Fully shut at -inf is exact silence, not -120 dB.
     if (curveRange.isSettled() && curveRange.getCurrent() <= 0.0 && duckBlend.isSettled()
+        && (! multiband || (depth >= 1.0 && depths[(size_t) band].isSettled()))
         && ((blend == 0.0 && position <= 0.0) || (blend == 1.0 && position >= 1.0)))
         return 0.0;
 
@@ -530,7 +608,6 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
     const auto transientAttack = 1.0 - std::exp (-1.0 / (0.001 * rate));
     const auto transientRelease = 1.0 - std::exp (-1.0 / (0.020 * rate));
     const auto transientAverageStep = 1.0 - std::exp (-1.0 / (0.050 * rate));
-    const auto deBleeding = settings.deBleed > 0.0 && ! hostSyncing;
     const auto expanderSlope = settings.ratio - 1.0;
     const auto expanderFloorDb = settings.rangeDb <= rangeFloorDb ? curveFloorDb : settings.rangeDb;
     const auto expanderAttack = 1.0 - std::exp (-1.0 / attackSamples);
@@ -541,8 +618,9 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
         heldNotes = 0;
     const auto numChannels = std::min (numMain, 2);
 
-    // Lookahead changes fade out, swap and fade back in, as a deliberate setting.
-    if (settings.lookahead != activeLookahead)
+    // Lookahead and (Phase 4 Wave 3) the band count change through a fade out, a swap and a fade
+    // back in, as deliberate settings.
+    if (settings.lookahead != activeLookahead || settings.bands != activeBands)
     {
         switchGain.setTarget (0.0);
 
@@ -559,6 +637,14 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
             activeLookahead = settings.lookahead;
             clearRings();
             holdOffSamples = activeLookahead ? lookaheadSamples : 0;
+
+            if (settings.bands != activeBands)
+            {
+                activeBands = settings.bands;
+                resetBands();
+                configureCrossovers (settings, activeBands, true);
+                shownBands.store (activeBands, std::memory_order_relaxed);
+            }
         }
     }
     else if (holdOffSamples <= 0)
@@ -566,7 +652,14 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
         switchGain.setTarget (1.0);
     }
 
+    // Phase 4 Wave 3: one band is the gate as it was. With more, the detector's Lowpass, Highpass
+    // and De-bleed are out (decision 3 A): each band's detector is already its band.
+    const auto numBands = activeBands;
+    const auto multiband = numBands > 1;
+    const auto deBleeding = settings.deBleed > 0.0 && ! hostSyncing && ! multiband;
+
     auto mainPeak = 0.0, sidechainPeak = 0.0, reductionPeak = 0.0;
+    double bandReductionPeak[maxBands] {};
     const auto delay = activeLookahead ? lookaheadSamples : 0;
 
     for (int i = 0; i < numSamples; ++i)
@@ -584,7 +677,7 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
         const auto highBlend = highpassBlend.next();
         const auto lowBlend = lowpassBlend.next();
         const auto preOpenSamples = (int) std::lround (preOpen.next());
-        const auto curveMoving = ! curveRange.isSettled() || ! duckBlend.isSettled();
+        auto curveMoving = ! curveRange.isSettled() || ! duckBlend.isSettled();
         if (! curveRange.isSettled())
         {
             curveRange.next();
@@ -593,6 +686,20 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
 
         duckBlend.next();
         const auto upAmount = upBlend.next();
+
+        if (multiband)
+        {
+            for (int band = 0; band < numBands; ++band)
+            {
+                auto& depth = depths[(size_t) band];
+
+                if (! depth.isSettled())
+                {
+                    depth.next();
+                    curveMoving = true;
+                }
+            }
+        }
 
         double in[2], key[2];
 
@@ -611,7 +718,9 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
         if (midSide)
             detectorIn[0] = detectorIn[1] = settings.detector == mid ? 0.5 * (in[0] + in[1]) : 0.5 * (in[0] - in[1]);
 
-        double filtered[2], level[2];
+        // filtered[band][ch] is what each band's detector hears; heardDetector what Preview plays.
+        double filtered[maxBands][2] {}, level[maxBands][2] {}, heardDetector[2];
+        double bandAudio[maxBands * 2] {};
 
         // Phase 4 Wave 2: Host sync's pulse goes straight in, past the filters (they're for audio).
         // One sample at a time, so the grid lands to the sample whatever the block size.
@@ -622,29 +731,44 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
             detectorIn[0] = detectorIn[1] = (double) pulse;
         }
 
-        for (int ch = 0; ch < 2; ++ch)
+        if (! multiband)
         {
-            filtered[ch] = hostSyncing ? detectorIn[ch] : detectors[ch].filter (detectorIn[ch], highpassCoefficients, lowpassCoefficients, highBlend, lowBlend);
-            level[ch] = detectors[ch].levelDb (filtered[ch], rmsCoefficient);
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                filtered[0][ch] = hostSyncing ? detectorIn[ch] : detectors[0][ch].filter (detectorIn[ch], highpassCoefficients, lowpassCoefficients, highBlend, lowBlend);
+                level[0][ch] = detectors[0][ch].levelDb (filtered[0][ch], rmsCoefficient);
+                heardDetector[ch] = filtered[0][ch];
+            }
+        }
+        else
+        {
+            // Phase 4 Wave 3: the audio and the detector split at the same crossovers. Host sync's
+            // pulse isn't audio, so every band hears all of it and they open together.
+            const float audioIn[2] { (float) in[0], (float) in[1] };
+            audioCrossover.process (&audioIn[0], &audioIn[1], bandAudio, 1, 1);
+
+            double detectorBands[maxBands * 2] {};
+
+            if (! hostSyncing)
+            {
+                const float keyIn[2] { (float) detectorIn[0], (float) detectorIn[1] };
+                detectorCrossover.process (&keyIn[0], &keyIn[1], detectorBands, 1, 1);
+            }
+
+            for (int band = 0; band < numBands; ++band)
+            {
+                for (int ch = 0; ch < 2; ++ch)
+                {
+                    filtered[band][ch] = hostSyncing ? detectorIn[ch] : detectorBands[band * 2 + ch];
+                    level[band][ch] = detectors[band][ch].levelDb (filtered[band][ch], rmsCoefficient);
+                }
+            }
+
+            heardDetector[0] = detectorIn[0];
+            heardDetector[1] = detectorIn[1];
         }
 
-        const auto loudest = std::max (level[0], level[1]);
         const auto numMachines = settings.link ? 1 : 2;
-
-        // De-bleed: the threshold rises by how much louder the sound outside the detector's band
-        // is than inside it, scaled by De-bleed.
-        double raise[2] { 0.0, 0.0 };
-
-        if (deBleeding)
-        {
-            double outside[2];
-
-            for (int ch = 0; ch < 2; ++ch)
-                outside[ch] = bleedLevels[ch].levelDb (detectorIn[ch] - filtered[ch], rmsCoefficient);
-
-            for (int ch = 0; ch < 2; ++ch)
-                raise[ch] = settings.deBleed * std::max (0.0, settings.link ? std::max (outside[0], outside[1]) - loudest : outside[ch] - level[ch]);
-        }
 
         // The MIDI trigger: a held note opens the gate, its release closes it.
         if (settings.midiIn)
@@ -656,53 +780,183 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
             }
         }
 
-        for (int m = 0; m < numMachines; ++m)
+        const auto writeAt = (int) (now & ringMask);
+        auto historyLevel = -1.0e300, historyGain = 0.0, openAmount = 0.0;
+
+        for (int band = 0; band < numBands; ++band)
         {
-            auto heard = settings.link ? loudest : level[m];
+            const auto loudest = std::max (level[band][0], level[band][1]);
+            const auto bandOpenDb = multiband ? openDb + settings.bandOffsetDb[(size_t) band] : openDb;
+            const auto bandCloseDb = multiband ? closeDb + settings.bandOffsetDb[(size_t) band] : closeDb;
 
-            if (settings.midiIn)
-                heard = heldNotes > 0 ? 200.0 : -400.0;
+            // De-bleed: the threshold rises by how much louder the sound outside the detector's band
+            // is than inside it, scaled by De-bleed.
+            double raise[2] { 0.0, 0.0 };
 
-            Machine::Event event;
-
-            if (transienting)
+            if (deBleeding)
             {
-                // Transient: a hit is a rise of Rise dB over the level's own 50 ms average, with
-                // the level over Threshold as a floor. It re-arms once the rise has passed.
-                const auto x = settings.link ? std::max (std::abs (filtered[0]), std::abs (filtered[1])) : std::abs (filtered[m]);
-                auto& follower = transientLevel[m];
-                follower += (x - follower) * (x > follower ? transientAttack : transientRelease);
-                transientAverage[m] += (x - transientAverage[m]) * transientAverageStep;
+                double outside[2];
 
-                const auto followerDb = 20.0 * std::log10 (std::max (follower, 1.0e-15));
-                const auto riseDb = followerDb - 20.0 * std::log10 (std::max (transientAverage[m], 1.0e-15));
+                for (int ch = 0; ch < 2; ++ch)
+                    outside[ch] = bleedLevels[ch].levelDb (detectorIn[ch] - filtered[0][ch], rmsCoefficient);
 
-                if (riseDb < 0.5 * settings.riseDb)
-                    transientArmed[m] = true;
-
-                const auto hit = transientArmed[m] && riseDb >= settings.riseDb && followerDb >= openDb + raise[m];
-
-                if (hit)
-                    transientArmed[m] = false;
-
-                event = machines[m].stepTransient (hit, 1.0 / attackSamples, 1.0 / releaseSamples, holdSamples);
-            }
-            else
-            {
-                // Upward has no hysteresis: it boosts while the level is over Threshold.
-                const auto closeAt = settings.upward ? openDb : closeDb;
-                event = machines[m].step (heard, openDb + raise[m], closeAt + raise[m],
-                                          1.0 / attackSamples, 1.0 / releaseSamples, holdSamples);
+                for (int ch = 0; ch < 2; ++ch)
+                    raise[ch] = settings.deBleed * std::max (0.0, settings.link ? std::max (outside[0], outside[1]) - loudest : outside[ch] - level[0][ch]);
             }
 
-            // MIDI follows the linked state, or the left channel's when unlinked.
-            if (m == 0 && settings.midi && event != Machine::none)
-                midiEvent (event, now);
+            for (int m = 0; m < numMachines; ++m)
+            {
+                auto heard = settings.link ? loudest : level[band][m];
+
+                if (settings.midiIn)
+                    heard = heldNotes > 0 ? 200.0 : -400.0;
+
+                Machine::Event event;
+
+                if (transienting)
+                {
+                    // Transient: a hit is a rise of Rise dB over the level's own 50 ms average, with
+                    // the level over Threshold as a floor. It re-arms once the rise has passed.
+                    const auto x = settings.link ? std::max (std::abs (filtered[band][0]), std::abs (filtered[band][1])) : std::abs (filtered[band][m]);
+                    auto& follower = transientLevel[band][m];
+                    follower += (x - follower) * (x > follower ? transientAttack : transientRelease);
+                    transientAverage[band][m] += (x - transientAverage[band][m]) * transientAverageStep;
+
+                    const auto followerDb = 20.0 * std::log10 (std::max (follower, 1.0e-15));
+                    const auto riseDb = followerDb - 20.0 * std::log10 (std::max (transientAverage[band][m], 1.0e-15));
+
+                    if (riseDb < 0.5 * settings.riseDb)
+                        transientArmed[band][m] = true;
+
+                    const auto hit = transientArmed[band][m] && riseDb >= settings.riseDb && followerDb >= bandOpenDb + raise[m];
+
+                    if (hit)
+                        transientArmed[band][m] = false;
+
+                    event = machines[band][m].stepTransient (hit, 1.0 / attackSamples, 1.0 / releaseSamples, holdSamples);
+                }
+                else
+                {
+                    // Upward has no hysteresis: it boosts while the level is over Threshold.
+                    const auto closeAt = settings.upward ? bandOpenDb : bandCloseDb;
+                    event = machines[band][m].step (heard, bandOpenDb + raise[m], closeAt + raise[m],
+                                                    1.0 / attackSamples, 1.0 / releaseSamples, holdSamples);
+                }
+
+                // MIDI follows the linked state, or the left channel's when unlinked. With bands
+                // (decision 4 A), the note starts as the first band opens and ends as the last closes.
+                if (m == 0 && settings.midi && event != Machine::none)
+                {
+                    auto othersOpen = false;
+
+                    for (int other = 0; other < numBands; ++other)
+                        if (other != band && machines[other][0].state != Machine::closed)
+                            othersOpen = true;
+
+                    if (! othersOpen)
+                    {
+                        if (event != Machine::shut)
+                            velocityBand = band;
+
+                        midiEvent (event, now);
+                    }
+                }
+            }
+
+            // The gain curve, written into the rings with the detector's timing.
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                auto& machine = machines[band][settings.link ? 0 : ch];
+                auto& position = cachedPosition[band][ch];
+                auto& gain = cachedGain[band][ch];
+
+                if (machine.position != position || curveMoving)
+                {
+                    position = machine.position;
+                    gain = gainFor (machine.position, band);
+                }
+
+                // Ratio below inf: an expander, the level falling (ratio - 1) dB for each dB under
+                // Threshold, never deeper than Range, on Attack and Release (Gate mode only).
+                if (expanding)
+                {
+                    auto heard = settings.link ? loudest : level[band][ch];
+
+                    if (settings.midiIn)
+                        heard = heldNotes > 0 ? 200.0 : -400.0;
+
+                    const auto floorDb = multiband ? expanderFloorDb * std::clamp (settings.bandDepth[(size_t) band], 0.0, 1.0) : expanderFloorDb;
+                    const auto target = std::max (floorDb, std::min (0.0, (heard - (bandOpenDb + raise[settings.link ? 0 : ch])) * expanderSlope));
+                    auto& expander = expanderDb[band][ch];
+                    expander += (target - expander) * (target > expander ? expanderAttack : expanderRelease);
+                    gain = std::pow (10.0, expander / 20.0);
+                    position = -1.0;
+                }
+
+                // Upward: above Threshold the level is raised by (level - Threshold) x (Up ratio - 1)
+                // dB, at most Boost, on Attack and Release, and held for Hold once it drops under.
+                // With Transient, each hit is lifted by Boost along the machine's curve.
+                if (upAmount > 0.0)
+                {
+                    const auto index = settings.link ? 0 : ch;
+                    double upDb;
+
+                    if (transienting)
+                    {
+                        upDb = settings.boostDb * (0.5 - 0.5 * std::cos (std::numbers::pi * machine.position));
+                    }
+                    else
+                    {
+                        auto heard = settings.link ? loudest : level[band][ch];
+
+                        if (settings.midiIn)
+                            heard = heldNotes > 0 ? 200.0 : -400.0;
+
+                        const auto over = heard - (bandOpenDb + raise[index]);
+                        double want;
+
+                        if (over >= 0.0)
+                        {
+                            want = std::min (settings.boostDb, over * upSlope);
+                            heldBoostDb[band][ch] = want;
+                            boostHoldLeft[band][ch] = holdSamples;
+                        }
+                        else if (boostHoldLeft[band][ch] > 0)
+                        {
+                            --boostHoldLeft[band][ch];
+                            want = heldBoostDb[band][ch];
+                        }
+                        else
+                        {
+                            want = 0.0;
+                        }
+
+                        auto& boost = boostDb[band][ch];
+                        boost += (want - boost) * (want > boost ? expanderAttack : expanderRelease);
+                        upDb = boost;
+                    }
+
+                    const auto upGain = std::pow (10.0, upDb / 20.0);
+                    gain = upAmount >= 1.0 ? upGain : gain + (upGain - gain) * upAmount;
+                    position = -1.0;
+                }
+
+                gainRing[band][ch][(size_t) writeAt] = (float) gain;
+
+                if (multiband)
+                    bandRing[band][ch][(size_t) writeAt] = (float) bandAudio[band * 2 + ch];
+            }
+
+            // The light, the history, the Noise fader and the Gain meter follow the most open band
+            // (decision 4 A); at one band, that band.
+            historyLevel = std::max (historyLevel, loudest);
+            historyGain = band == 0 ? cachedGain[0][0] : std::max (historyGain, cachedGain[band][0]);
+            openAmount = std::max (openAmount, 0.5 - 0.5 * std::cos (std::numbers::pi * machines[band][0].position));
         }
 
         if (velocityPending)
         {
-            velocityPeak = std::max ({ velocityPeak, std::abs (filtered[0]), std::abs (filtered[1]) });
+            velocityPeak = std::max ({ velocityPeak, std::abs (filtered[velocityBand][0]), std::abs (filtered[velocityBand][1]) });
 
             if (now + 1 >= velocityDue)
             {
@@ -714,92 +968,15 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
             }
         }
 
-        // The gain curve, written into the rings with the detector's timing.
-        const auto writeAt = (int) (now & ringMask);
-
         for (int ch = 0; ch < 2; ++ch)
         {
-            auto& machine = machines[settings.link ? 0 : ch];
-
-            if (machine.position != cachedPosition[ch] || curveMoving)
-            {
-                cachedPosition[ch] = machine.position;
-                cachedGain[ch] = gainFor (machine.position);
-            }
-
-            // Ratio below inf: an expander, the level falling (ratio - 1) dB for each dB under
-            // Threshold, never deeper than Range, on Attack and Release (Gate mode only).
-            if (expanding)
-            {
-                auto heard = settings.link ? loudest : level[ch];
-
-                if (settings.midiIn)
-                    heard = heldNotes > 0 ? 200.0 : -400.0;
-
-                const auto target = std::max (expanderFloorDb, std::min (0.0, (heard - (openDb + raise[settings.link ? 0 : ch])) * expanderSlope));
-                auto& current = expanderDb[ch];
-                current += (target - current) * (target > current ? expanderAttack : expanderRelease);
-                cachedGain[ch] = std::pow (10.0, current / 20.0);
-                cachedPosition[ch] = -1.0;
-            }
-
-            // Upward: above Threshold the level is raised by (level - Threshold) x (Up ratio - 1)
-            // dB, at most Boost, on Attack and Release, and held for Hold once it drops under.
-            // With Transient, each hit is lifted by Boost along the machine's curve.
-            if (upAmount > 0.0)
-            {
-                const auto index = settings.link ? 0 : ch;
-                double upDb;
-
-                if (transienting)
-                {
-                    upDb = settings.boostDb * (0.5 - 0.5 * std::cos (std::numbers::pi * machine.position));
-                }
-                else
-                {
-                    auto heard = settings.link ? loudest : level[ch];
-
-                    if (settings.midiIn)
-                        heard = heldNotes > 0 ? 200.0 : -400.0;
-
-                    const auto over = heard - (openDb + raise[index]);
-                    double want;
-
-                    if (over >= 0.0)
-                    {
-                        want = std::min (settings.boostDb, over * upSlope);
-                        heldBoostDb[ch] = want;
-                        boostHoldLeft[ch] = holdSamples;
-                    }
-                    else if (boostHoldLeft[ch] > 0)
-                    {
-                        --boostHoldLeft[ch];
-                        want = heldBoostDb[ch];
-                    }
-                    else
-                    {
-                        want = 0.0;
-                    }
-
-                    auto& boost = boostDb[ch];
-                    boost += (want - boost) * (want > boost ? expanderAttack : expanderRelease);
-                    upDb = boost;
-                }
-
-                const auto upGain = std::pow (10.0, upDb / 20.0);
-                cachedGain[ch] = upAmount >= 1.0 ? upGain : cachedGain[ch] + (upGain - cachedGain[ch]) * upAmount;
-                cachedPosition[ch] = -1.0;
-            }
-
-            gainRing[ch][(size_t) writeAt] = (float) cachedGain[ch];
             audioRing[ch][(size_t) writeAt] = (float) in[ch];
-            filteredRing[ch][(size_t) writeAt] = (float) filtered[ch];
+            filteredRing[ch][(size_t) writeAt] = (float) heardDetector[ch];
         }
 
-        const auto openAmount = 0.5 - 0.5 * std::cos (std::numbers::pi * machines[0].position);
         openRing[(size_t) writeAt] = (float) openAmount;
 
-        // The audio from `delay` ago, with the gain from Pre-open after it.
+        // The audio from the lookahead ago, with the gain from Pre-open after it.
         const auto audioAt = (int) ((now - delay) & ringMask);
         const auto gainAt = (int) ((now - (activeLookahead ? std::max (0, delay - preOpenSamples) : 0)) & ringMask);
 
@@ -813,18 +990,51 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
         for (int ch = 0; ch < numChannels; ++ch)
         {
             const auto delayed = (double) audioRing[ch][(size_t) audioAt];
-            const auto gain = (double) gainRing[ch][(size_t) gainAt];
+            double processed, gain;
 
-            double processed;
-
-            if (settings.preview)
+            if (! multiband)
             {
-                processed = (double) filteredRing[ch][(size_t) audioAt] * outputGain;
+                gain = (double) gainRing[0][ch][(size_t) gainAt];
+
+                if (settings.preview)
+                {
+                    processed = (double) filteredRing[ch][(size_t) audioAt] * outputGain;
+                }
+                else
+                {
+                    const auto noiseSample = noiseGain > 0.0 ? (double) whiteNoise (noiseState[ch]) * (double) openRing[(size_t) gainAt] * noiseGain : 0.0;
+                    processed = (delayed * gain * wetGain + delayed * dryGain + noiseSample) * outputGain;
+                }
+
+                bandReductionPeak[0] = std::max (bandReductionPeak[0], gain > 0.0 ? -20.0 * std::log10 (gain) : 120.0);
             }
             else
             {
-                const auto noiseSample = noiseGain > 0.0 ? (double) whiteNoise (noiseState[ch]) * (double) openRing[(size_t) gainAt] * noiseGain : 0.0;
-                processed = (delayed * gain * wetGain + delayed * dryGain + noiseSample) * outputGain;
+                // Each band gated and summed; Dry is the bands summed ungated, the crossover's
+                // all-pass, so Wet and Dry stay in phase.
+                auto wetSum = 0.0, drySum = 0.0;
+                gain = 0.0;
+
+                for (int band = 0; band < numBands; ++band)
+                {
+                    const auto bandSample = (double) bandRing[band][ch][(size_t) audioAt];
+                    const auto bandGain = (double) gainRing[band][ch][(size_t) gainAt];
+
+                    wetSum += bandSample * bandGain;
+                    drySum += bandSample;
+                    gain = std::max (gain, bandGain);
+                    bandReductionPeak[band] = std::max (bandReductionPeak[band], bandGain > 0.0 ? -20.0 * std::log10 (bandGain) : 120.0);
+                }
+
+                if (settings.preview)
+                {
+                    processed = (double) filteredRing[ch][(size_t) audioAt] * outputGain;
+                }
+                else
+                {
+                    const auto noiseSample = noiseGain > 0.0 ? (double) whiteNoise (noiseState[ch]) * (double) openRing[(size_t) gainAt] * noiseGain : 0.0;
+                    processed = (wetSum * wetGain + drySum * dryGain + noiseSample) * outputGain;
+                }
             }
 
             const auto mixed = bypassAmount >= 1.0 ? delayed : processed + (delayed - processed) * bypassAmount;
@@ -833,7 +1043,7 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
             reductionPeak = std::max (reductionPeak, gain > 0.0 ? -20.0 * std::log10 (gain) : 120.0);
         }
 
-        pushHistory ((float) loudest, (float) (cachedGain[0] > 0.0 ? 20.0 * std::log10 (cachedGain[0]) : -120.0));
+        pushHistory ((float) historyLevel, (float) (historyGain > 0.0 ? 20.0 * std::log10 (historyGain) : -120.0));
 
         if (holdOffSamples > 0)
             --holdOffSamples;
@@ -851,11 +1061,29 @@ void GateDsp::process (float* const* main, int numMain, const float* const* side
 
     flushEvents (midi, blockStart, numSamples);
 
-    // Lights and meters.
-    const auto& shown = machines[0];
-    light.store (shown.state == Machine::hold ? lightHold
-                                              : (shown.state == Machine::opening || shown.state == Machine::open ? lightOpen : lightClosed),
-                 std::memory_order_relaxed);
+    // Lights and meters: open while any band is opening or open, else hold while any band holds.
+    auto shownLight = (int) lightClosed;
+
+    for (int band = 0; band < numBands; ++band)
+    {
+        const auto state = machines[band][0].state;
+
+        if (state == Machine::opening || state == Machine::open)
+            shownLight = lightOpen;
+        else if (state == Machine::hold && shownLight == lightClosed)
+            shownLight = lightHold;
+
+        bandOpen[(size_t) band].store (state != Machine::closed, std::memory_order_relaxed);
+
+        auto storedBand = bandReductions[(size_t) band].load (std::memory_order_relaxed);
+        const auto newBandPeak = (float) std::min (bandReductionPeak[band], 120.0);
+
+        while (newBandPeak > storedBand && ! bandReductions[(size_t) band].compare_exchange_weak (storedBand, newBandPeak, std::memory_order_relaxed))
+        {
+        }
+    }
+
+    light.store (shownLight, std::memory_order_relaxed);
 
     auto stored = reduction.load (std::memory_order_relaxed);
     const auto newPeak = (float) std::min (reductionPeak, 120.0);
