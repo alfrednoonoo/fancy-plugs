@@ -164,3 +164,17 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 
 - [x] Load an IR far down the library, then open the File dropdown: the list opens showing that IR.
 - [x] Type "hall": the halls show from the top.
+
+## Freeze and Shimmer (Phase 4 Wave 3, v1.7.2)
+
+- [ ] Open a project saved with v1.7.1 that uses Fancy Verb: it sounds as before; Freeze is off and SETUP's Shimmer reads 0 %.
+- [ ] A chord through a hall, Freeze on as it rings: the sound holds, steady, with no looping or pumping, as wide as it was. The button lights purple and the display tints.
+- [ ] Play while frozen: the new notes are heard dry only; nothing new enters the held sound.
+- [ ] Freeze off: the held sound dies away like the hall's own tail, not cut short; new playing reverberates again.
+- [ ] Toggle Freeze quickly on and off several times: no clicks.
+- [ ] SETUP, Shimmer 50 %, Octave up, on a slow melody: octaves rise out of the tail and it fades out. 100 %: longer and brighter, and it still fades out.
+- [ ] Try each Interval: Fifth up, Fourth up, Octave and fifth up, Two octaves up, Octave down. None runs away or gets harsh in the highs.
+- [ ] Shimmer 100 %, Fifth up, with the library's Metal Ping: it never gets much louder than the notes themselves.
+- [ ] Shimmer 75 %, then Freeze: the held sound keeps its octaves and stays at one level.
+- [ ] SETUP open: its panel covers the module strip; close it and the strip is back.
+- [ ] Automate Freeze and Shimmer, render offline twice: the renders match.

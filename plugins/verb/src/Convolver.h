@@ -48,6 +48,18 @@ public:
 
     int getLatency() const noexcept { return latencyOf (convolverMode); }
 
+    // Phase 4 Wave 3 (docs/verb.md): the energy the IR passes (the larger of what reaches either
+    // output) and its broadband RT60, measured by the builder, for Shimmer's loop gain, its guard
+    // and Freeze's release. Set before the convolver is offered.
+    void setLoopInfo (double energy, double rt60Seconds) noexcept
+    {
+        loopEnergy = energy;
+        rt60 = rt60Seconds;
+    }
+
+    double getLoopEnergy() const noexcept { return loopEnergy; }
+    double getRt60() const noexcept { return rt60; }
+
     void reset() noexcept;
 
     // Adds to the output buffers. Any block size. With offline set, late background work is
@@ -119,6 +131,7 @@ private:
 
     Mode convolverMode;
     bool trueStereo = false;
+    double loopEnergy = 1.0, rt60 = 1.0;
     int chunkSize = 2048;
     bool hasDirect = false;
 

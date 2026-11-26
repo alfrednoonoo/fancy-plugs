@@ -294,6 +294,13 @@ bool renderVerb (const juce::File& outputDir)
     editor->showPreview (VerbEditor::Preview::setup);
     ok = writeBothScales (*editor, "verb-edit", outputDir) && ok;
 
+    // Phase 4 Wave 3 (reference/phase4/72__verb_w3_mockup.png): Freeze on, and Shimmer at 50 %.
+    editor->showPreview (VerbEditor::Preview::frozen);
+    ok = writeBothScales (*editor, "verb-frozen", outputDir) && ok;
+
+    editor->showPreview (VerbEditor::Preview::shimmer);
+    ok = writeBothScales (*editor, "verb-shimmer", outputDir) && ok;
+
     editor->showPreview (VerbEditor::Preview::scrolled);
     ok = writeBothScales (*editor, "verb-scrolled", outputDir) && ok;
 

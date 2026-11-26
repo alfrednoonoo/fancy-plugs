@@ -77,7 +77,10 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
       gateHoldKnob (parameter ("gateHold"), "Hold", colours::uiTeal, Knob::tightStyle),
       gateDecayKnob (parameter ("gateDecay"), "Decay", colours::uiTeal, Knob::tightStyle),
       gateCheckbox (parameter ("gate"), "Gate"),
-      extraWidthKnob (parameter ("extraWidth"), "Extra width", colours::uiTeal, Knob::tightStyle)
+      extraWidthKnob (parameter ("extraWidth"), "Extra width", colours::uiTeal, Knob::tightStyle),
+      freezeToggle (parameter ("freeze"), "Freeze", colours::uiPurple),
+      shimmerKnob (parameter ("shimmer"), "Shimmer", colours::uiTeal, Knob::tightStyle),
+      intervalDropdown (parameter ("shimmerPitch"))
 {
     // Phase 2.1 W.1: room in the header for undo, redo, A/B and Compare.
     setPresetDropdownWidth (230);
@@ -187,6 +190,30 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
              &gateCheckbox, &gateThresholdKnob, &gateHoldKnob, &gateDecayKnob })
         drawer.addAndMakeVisible (item);
 
+    // Phase 4 Wave 3 (reference/phase4/72__verb_w3_mockup.png, A): Shimmer's row under the Gate,
+    // in the drawer's new height over the chain strip.
+    styleLabel (intervalLabel, "Interval", colours::textPrimary, juce::Justification::centredLeft, 13.0f);
+    styleLabel (shimmerNote, "Feeds the reverb back into itself an interval higher, so the tail rises in octaves. "
+                             "It always dies away; Freeze holds it.",
+                colours::textSecondary, juce::Justification::topLeft, 11.0f);
+    shimmerNote.setMinimumHorizontalScale (1.0f);
+
+    shimmerKnob.setBounds (340, 310, 76, 92);
+    intervalLabel.setBounds (428, 332, 60, 24);
+    intervalDropdown.setBounds (490, 330, 150, 24);
+    shimmerNote.setBounds (428, 362, 290, 32);
+
+    shimmerKnob.setTooltip ("Shimmer: feeds the reverb's output back into it through a pitch shifter, so each pass comes back an interval higher. "
+                            "0 % is off.");
+    intervalDropdown.setTooltip ("How far each pass of Shimmer is shifted. Octave up is the classic shimmer.");
+
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &shimmerKnob, &intervalLabel, &intervalDropdown, &shimmerNote })
+        drawer.addAndMakeVisible (item);
+
+    // Phase 4 Wave 3: Freeze at the IR display's top right, under its info line.
+    freezeToggle.setTooltip ("Freeze: holds the reverb as it is, for as long as it's on. Turned off, it dies away at the IR's own decay.");
+    getBody().addAndMakeVisible (freezeToggle);
+
     getBody().addChildComponent (drawer);
 
     bodyResized();
@@ -199,8 +226,12 @@ void VerbEditor::bodyResized()
     rack.setBounds (0, displayHeight, rackWidth, ModuleCard::height);
     strip.setBounds (0, displayHeight + ModuleCard::height, rackWidth, stripHeight);
 
-    drawer.setBounds (rack.getBounds());
+    // Phase 4 Wave 3 (mockup 72, A): the drawer covers the chain strip too, for Shimmer's row.
+    drawer.setBounds (rack.getBounds().withHeight (ModuleCard::height + stripHeight));
     drawer.toFront (false);
+
+    freezeToggle.setBounds (rackWidth - 86, 35, 70, 22);
+    freezeToggle.toFront (false);
 
     const auto column = rackWidth;
 
@@ -272,6 +303,9 @@ void VerbEditor::onTick (float)
 {
     centerLabel.setText (parameter ("center").getCurrentValueAsText(), juce::dontSendNotification);
     widthLabel.setText (parameter ("width").getCurrentValueAsText(), juce::dontSendNotification);
+
+    // Phase 4 Wave 3: the display tints while frozen.
+    display.setFrozen (parameter ("freeze").getValue() >= 0.5f);
 
     // Phase 4 Wave 2: the Gate's knobs dim while it's off.
     {
@@ -419,7 +453,11 @@ void VerbEditor::showPreview (Preview preview)
     if (preview == Preview::scrolled)
         rack.setScroll (rack.getContentWidth());
 
-    drawer.setVisible (preview == Preview::setup);
+    drawer.setVisible (preview == Preview::setup || preview == Preview::shimmer);
+
+    // Phase 4 Wave 3: Freeze on, and Shimmer at 50 % (reference/phase4/72__verb_w3_mockup.png).
+    setValue ("freeze", preview == Preview::frozen ? 1.0f : 0.0f);
+    setValue ("shimmer", preview == Preview::shimmer ? 50.0f : 0.0f);
     onTick (0.0f);
     strip.repaint();
 

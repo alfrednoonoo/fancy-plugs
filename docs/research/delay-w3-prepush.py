@@ -55,7 +55,7 @@ class Head:
 
 
 class PitchShifter:
-    window_ms, search_ms, minimum_ms, max_grain_ms, match_ms, max_ratio = 40.0, 10.0, 1.0, 400.0, 10.0, 2.0
+    window_ms, search_ms, minimum_ms, max_grain_ms, match_ms, max_ratio = 40.0, 10.0, 1.0, 400.0, 10.0, 4.0
     centre_bias = 0.05  # of the score, at the ends of the search: equal matches go to the middle
 
     def __init__(self, rate=RATE, aligned=True):
@@ -152,7 +152,7 @@ class PitchShifter:
         self.countdown = max(1, length // 2)
 
     def process(self, x, ratio):
-        ratio = min(max(ratio, 0.5), 2.0)
+        ratio = min(max(ratio, 1.0 / self.max_ratio), self.max_ratio)
         if ratio != self.filter_ratio:
             self.filter_countdown -= 1
             if self.filter_countdown <= 0:

@@ -10,7 +10,7 @@ class VerbEditor final : public fancy::ui::ShellEditor
 public:
     static constexpr int baseWidth = 866, baseHeight = 677;
 
-    enum class Preview { rack, addPanel, setup, scrolled, library, generators, eqModule, picker, drop };
+    enum class Preview { rack, addPanel, setup, scrolled, library, generators, eqModule, picker, drop, frozen, shimmer };
 
     explicit VerbEditor (VerbProcessor& processor);
 
@@ -68,6 +68,13 @@ private:
     // Phase 4 Wave 2 (reference/phase4/64__verb_w2_attack_width_mockup.png): Extra width.
     fancy::ui::Knob extraWidthKnob;
     juce::Label extraWidthNote;
+
+    // Phase 4 Wave 3 (reference/phase4/72__verb_w3_mockup.png, A): Freeze on the IR display, and
+    // Shimmer under the Gate, in a drawer that also covers the chain strip.
+    fancy::ui::ParamTextToggle freezeToggle;
+    fancy::ui::Knob shimmerKnob;
+    juce::Label intervalLabel, shimmerNote;
+    fancy::ui::ParamDropdown intervalDropdown;
 
     std::unique_ptr<juce::FileChooser> chooser;
 

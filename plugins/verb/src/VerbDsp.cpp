@@ -55,6 +55,11 @@ void VerbDsp::prepare (double newSampleRate, int newLatency)
 
     switchGain.setTime (3.0, sampleRate);
 
+    // Phase 4 Wave 3: Freeze and Shimmer. The loop gain moves through a convolver crossfade.
+    freezer.prepare (sampleRate);
+    loop.prepare (sampleRate, maxChunk);
+    loopGain.setTime (crossfadeMs / 4.0, sampleRate);
+
     reset();
 }
 
@@ -84,6 +89,17 @@ void VerbDsp::reset() noexcept
     ducker.reset();
     wetGate.reset();
 
+    // Phase 4 Wave 3.
+    freezer.reset();
+    loop.reset();
+    freezeState = FreezeState::idle;
+    freezeIn = 0.0;
+    freezeLevel = liveGain = inputGain = 1.0;
+    loopRunning = false;
+    loopLeft = 0;
+    snapLoopGain = true;
+    loopGain.snapTo (0.0);
+
     predelayWrite = dryWrite = 0;
     switchGain.snapTo (1.0);
     lateBlocks.store (0, std::memory_order_relaxed);
@@ -110,6 +126,28 @@ void VerbDsp::snapToTargets (const Targets& targets) noexcept
     output.snapTo (targets.output);
     bypass.snapTo (targets.bypass ? 1.0 : 0.0);
     duckAmount.snapTo (std::clamp (targets.ducking, 0.0, 1.0));
+    snapLoopGain = true;
+}
+
+bool VerbDsp::loopWanted() const noexcept
+{
+    return current.shimmer > 0.0 || loopGain.getCurrent() > 0.0 || loopLeft > 0;
+}
+
+// Phase 4 Wave 3: Freeze turned on. From a release, the frozen sound carries on from the level it
+// had reached, so nothing jumps.
+void VerbDsp::startFreeze() noexcept
+{
+    freezer.capture();
+
+    if (freezeState == FreezeState::releasing)
+        freezeIn = std::asin (std::clamp (std::sin (freezeIn * juce::MathConstants<double>::halfPi) * freezeLevel, 0.0, 1.0))
+                 / juce::MathConstants<double>::halfPi;
+    else
+        freezeIn = 0.0;
+
+    freezeLevel = 1.0;
+    freezeState = FreezeState::holding;
 }
 
 void VerbDsp::offer (std::unique_ptr<Convolver> convolver)
@@ -176,6 +214,34 @@ void VerbDsp::processChunk (float* const* channels, int numChannels, const float
 
     const auto dryDelay = latency.load (std::memory_order_relaxed);
 
+    // Phase 4 Wave 3: Shimmer's loop gain, g = Shimmer x 0.9 / sqrt (E), and Freeze's edges.
+    const auto rt60 = active != nullptr ? active->getRt60() : 1.0;
+    {
+        const auto target = active != nullptr ? std::clamp (current.shimmer, 0.0, 1.0) * 0.9 / std::sqrt (std::max (active->getLoopEnergy(), 1.0e-12)) : 0.0;
+
+        if (snapLoopGain && active != nullptr)
+        {
+            loopGain.snapTo (target);
+            snapLoopGain = false;
+        }
+        else
+        {
+            loopGain.setTarget (target);
+        }
+    }
+
+    const auto loopOn = loopWanted();
+
+    if (loopOn && ! loopRunning)
+        loop.reset();
+
+    loopRunning = loopOn;
+
+    if (current.freeze && freezeState != FreezeState::holding)
+        startFreeze();
+    else if (! current.freeze && freezeState == FreezeState::holding)
+        freezeState = FreezeState::releasing;
+
     // Phase 4 Wave 2: Ducking and the Gate run only while on, or still letting go.
     const auto dynamics = current.ducking > 0.0 || ! duckAmount.isSettled() || duckAmount.getCurrent() > 0.0 || ! ducker.isIdle()
                        || current.gate || wetGate.getGain() < 1.0;
@@ -238,6 +304,24 @@ void VerbDsp::processChunk (float* const* channels, int numChannels, const float
         predelayWrite = (predelayWrite + 1) % predelayLength;
     }
 
+    // Phase 4 Wave 3: the loop's feedback joins the input, and Freeze mutes both over 20 ms.
+    if (loopRunning)
+        loop.addFeedback (wetInput[0].data(), wetInput[1].data(), numSamples, rt60);
+
+    const auto inputStep = 1.0 / (inputFadeMs * 0.001 * sampleRate);
+
+    if (freezeState == FreezeState::holding || inputGain < 1.0)
+    {
+        const auto target = freezeState == FreezeState::holding ? 0.0 : 1.0;
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            inputGain = target < inputGain ? std::max (target, inputGain - inputStep) : std::min (target, inputGain + inputStep);
+            wetInput[0][(size_t) i] *= (float) inputGain;
+            wetInput[1][(size_t) i] *= (float) inputGain;
+        }
+    }
+
     for (auto* buffer : { &wetNew, &wetOld })
         for (auto& channel : *buffer)
             std::fill (channel.begin(), channel.begin() + numSamples, 0.0f);
@@ -259,6 +343,10 @@ void VerbDsp::processChunk (float* const* channels, int numChannels, const float
 
     const auto mono = numChannels == 1;
 
+    // Phase 4 Wave 3: the crossfade into the frozen sound, and its fall at the IR's RT60.
+    const auto freezeStep = 1.0 / (freezeFadeMs * 0.001 * sampleRate);
+    const auto releaseDecay = std::pow (10.0, -3.0 / (std::max (0.05, rt60) * sampleRate));
+
     for (int i = 0; i < numSamples; ++i)
     {
         const auto index = (size_t) i;
@@ -273,8 +361,42 @@ void VerbDsp::processChunk (float* const* channels, int numChannels, const float
             --fadeLeft;
         }
 
-        const auto wetLeft = (double) wetNew[0][index] * fadeNew + (double) wetOld[0][index] * fadeOld;
-        const auto wetRight = (double) wetNew[1][index] * fadeNew + (double) wetOld[1][index] * fadeOld;
+        auto wetLeft = (double) wetNew[0][index] * fadeNew + (double) wetOld[0][index] * fadeOld;
+        auto wetRight = (double) wetNew[1][index] * fadeNew + (double) wetOld[1][index] * fadeOld;
+
+        // Phase 4 Wave 3: Shimmer takes the convolver's output; Freeze replaces it.
+        if (loopRunning)
+            loop.feed (wetLeft, wetRight, i, current.shimmerRatio, loopGain.next());
+
+        if (freezeState != FreezeState::idle)
+        {
+            double frozenLeft = 0.0, frozenRight = 0.0;
+            freezer.next (frozenLeft, frozenRight);
+
+            if (freezeState == FreezeState::holding)
+            {
+                freezeIn = std::min (1.0, freezeIn + freezeStep);
+                liveGain = std::min (liveGain, std::cos (freezeIn * juce::MathConstants<double>::halfPi));
+            }
+            else
+            {
+                liveGain = std::min (1.0, liveGain + inputStep);
+                freezeLevel *= releaseDecay;
+            }
+
+            const auto frozenGain = std::sin (freezeIn * juce::MathConstants<double>::halfPi) * freezeLevel;
+            wetLeft = wetLeft * liveGain + frozenLeft * frozenGain;
+            wetRight = wetRight * liveGain + frozenRight * frozenGain;
+
+            if (freezeState == FreezeState::releasing && freezeLevel < 1.0e-5 && liveGain >= 1.0)
+            {
+                freezeState = FreezeState::idle;
+                freezeIn = 0.0;
+                freezeLevel = 1.0;
+            }
+        }
+
+        freezer.push (wetLeft, wetRight);
 
         const auto pan = center.next();
         const auto mid = (wetLeft + wetRight) * 0.5;
@@ -314,6 +436,9 @@ void VerbDsp::processChunk (float* const* channels, int numChannels, const float
         }
     }
 
+    if (loopRunning)
+        loopLeft = loopGain.getCurrent() > 0.0 ? loop.getLoopDelay() : std::max (0, loopLeft - numSamples);
+
     if (fadeLeft == 0 && outgoing != nullptr && retired.load (std::memory_order_acquire) == nullptr)
     {
         retired.store (outgoing, std::memory_order_release);
@@ -328,7 +453,10 @@ void VerbDsp::process (float* const* channels, int numChannels, const float* con
 
     for (int position = 0; position < numSamples;)
     {
-        const auto chunk = std::min (numSamples - position, (int) maxChunk);
+        // Phase 4 Wave 3: while Shimmer's loop runs, the convolver takes at most the loop's delay
+        // at a time, so what it feeds back is ready before it's needed.
+        const auto limit = loopWanted() ? loop.getLoopDelay() : (int) maxChunk;
+        const auto chunk = std::min (numSamples - position, limit);
         processChunk (channels, numChannels, sidechain, numSidechain, position, chunk, offline);
         position += chunk;
     }

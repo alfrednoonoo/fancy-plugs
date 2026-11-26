@@ -18,6 +18,9 @@ public:
     // A right-click, with its position (Phase 4 Wave 1: Export IR, Reset trim).
     std::function<void (juce::Point<float>)> onContextMenu;
 
+    // Phase 4 Wave 3: a faint purple tint while Freeze is on.
+    void setFrozen (bool frozen);
+
     void paint (juce::Graphics&) override;
     void mouseMove (const juce::MouseEvent&) override;
     void mouseDown (const juce::MouseEvent&) override;
@@ -36,4 +39,5 @@ private:
     verb::IrPreview preview;
     double trimStart = 0.0, trimEnd = 0.0;
     Handle dragged = Handle::none;
+    bool tinted = false;
 };

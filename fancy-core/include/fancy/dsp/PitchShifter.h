@@ -36,7 +36,9 @@ public:
 
     static constexpr int maxChannels = 2;
     static constexpr double windowMs = 40.0, searchMs = 10.0, minimumMs = 1.0, maxGrainMs = 400.0, matchMs = 10.0;
-    static constexpr double maxRatio = 2.0;
+    // Two octaves either way: Verb's and Room's shimmer go to +24 st (Delay's taps stay within +-12).
+    // Only the line's length depends on it, so a shift inside +-12 st reads exactly as before.
+    static constexpr double maxRatio = 4.0;
     static constexpr double centreBias = 0.05; // of the match score, at the ends of the search
 
     void prepare (double sampleRate)
@@ -101,7 +103,7 @@ public:
         filterCountdown = 0;
     }
 
-    // One sample of each channel in, one out. ratio is 2^(semitones / 12), 0.5 to 2.
+    // One sample of each channel in, one out. ratio is 2^(semitones / 12), 0.25 to 4.
     void process (const double* in, double* out, int numChannels, double ratio) noexcept
     {
         numChannels = std::clamp (numChannels, 1, maxChannels);

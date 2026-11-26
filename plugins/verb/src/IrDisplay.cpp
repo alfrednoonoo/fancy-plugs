@@ -33,6 +33,15 @@ void IrDisplay::setPreview (verb::IrPreview newPreview, double trimStartSeconds,
     repaint();
 }
 
+void IrDisplay::setFrozen (bool frozen)
+{
+    if (frozen != tinted)
+    {
+        tinted = frozen;
+        repaint();
+    }
+}
+
 double IrDisplay::windowSeconds() const noexcept
 {
     return preview.fullSeconds > 0.0 ? preview.fullSeconds : emptyWindowSeconds;
@@ -206,4 +215,8 @@ void IrDisplay::paint (juce::Graphics& g)
     g.setColour (colours::textSecondary);
     g.drawText (info, getLocalBounds().toFloat().withTrimmedRight (16.0f).withTrimmedTop (8.0f).withHeight (19.0f),
                 juce::Justification::centredRight, false);
+
+    // Phase 4 Wave 3 (reference/phase4/72__verb_w3_mockup.png): frozen.
+    if (tinted)
+        g.fillAll (colours::uiPurple.withAlpha (0.10f));
 }

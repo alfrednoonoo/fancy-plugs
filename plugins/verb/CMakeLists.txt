@@ -104,6 +104,7 @@ fancy_add_plugin(FancyVerb
         src/VerbChain.cpp
         src/VerbLibrary.cpp
         src/VerbDsp.cpp
+        src/VerbW3.cpp
         src/VerbProcessor.cpp
         src/IrDisplay.cpp
         src/ModuleRack.cpp

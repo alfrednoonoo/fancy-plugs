@@ -5,6 +5,7 @@
 #include <fancy/plugin/ParamHelpers.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 using verb::Convolver;
@@ -15,6 +16,48 @@ namespace
 constexpr float mixFloorDb = -60.0f;
 constexpr int workerIntervalMs = 25;
 constexpr juce::int64 embedLimitBytes = 10 * 1024 * 1024;
+
+// Phase 4 Wave 3 (docs/verb.md, decision 3 A): Shimmer's intervals, in semitones, in the menu's order.
+constexpr double shimmerSemitones[] { 12.0, 7.0, 5.0, 19.0, 24.0, -12.0 };
+
+// Phase 4 Wave 3: what Shimmer's loop and Freeze's release need from a built IR: the energy that
+// reaches the busier output (stereo: every path the IR has), and the broadband RT60, measured
+// from -5 to -35 dB as the Decay module measures. With Modulate the tail is added back first.
+std::pair<double, double> loopInfoOf (const verb::BuiltIr& built, double sampleRate)
+{
+    const auto& audio = built.audio;
+    const auto channels = audio.getNumChannels();
+    const auto length = audio.getNumSamples();
+    const auto withTail = built.modulation.on && built.tailA.getNumChannels() >= channels;
+
+    std::array<double, 4> energy {};
+    std::vector<double> envelope ((size_t) length, 0.0);
+
+    for (int ch = 0; ch < std::min (channels, 4); ++ch)
+    {
+        const auto* samples = audio.getReadPointer (ch);
+        const auto* tail = withTail && built.tailA.getNumSamples() >= length ? built.tailA.getReadPointer (ch) : nullptr;
+
+        for (int i = 0; i < length; ++i)
+        {
+            const auto value = (double) samples[i] + (tail != nullptr ? (double) tail[i] : 0.0);
+            energy[(size_t) ch] += value * value;
+            envelope[(size_t) i] += value * value;
+        }
+    }
+
+    // Channels: left to left, right to right, then right to left (RL) and left to right (LR).
+    const auto toLeft = energy[0] + energy[2], toRight = energy[1] + energy[3];
+    const auto fromLeft = energy[0] + energy[3], fromRight = energy[1] + energy[2];
+    const auto loopEnergy = std::max ({ toLeft, toRight, fromLeft, fromRight });
+
+    auto rt60 = verb::schroederRt60 (envelope, sampleRate);
+
+    if (! (rt60 > 0.0))
+        rt60 = std::max (0.1, (double) length / sampleRate);
+
+    return { loopEnergy, std::clamp (rt60, 0.05, verb::maxIrSeconds) };
+}
 
 fancy::FancyProcessor::Layout createLayout()
 {
@@ -91,6 +134,12 @@ fancy::FancyProcessor::Layout createLayout()
                                            .withLabel ("%")
                                            .withStringFromValueFunction ([] (float value, int) { return juce::String (juce::roundToInt (value)) + " %"; })
                                            .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
+
+    // Phase 4 Wave 3, appended (docs/verb.md): Freeze and Shimmer. Off and 0 % are the sound as before.
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "freeze", 1 }, "Freeze", false));
+    layout.add (fancy::percentParameter ("shimmer", "Shimmer", 0.0f));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "shimmerPitch", 1 }, "Shimmer interval",
+                                          juce::StringArray { "Octave up", "Fifth up", "Fourth up", "Octave and fifth up", "Two octaves up", "Octave down" }, 0));
 
     return layout;
 }
@@ -233,6 +282,7 @@ VerbProcessor::VerbProcessor()
     }
 
     getApvts().state.appendChild (verb::makeChain(), nullptr);
+    shimmerAmount = getApvts().getRawParameterValue ("shimmer");
     pendingChain = verb::readChain (getChain());
 
     dsp.prepare (48000.0, Convolver::latencyOf (readMode()));
@@ -287,6 +337,11 @@ VerbDsp::Targets VerbProcessor::readTargets()
     targets.gateThresholdDb = read ("gateThr");
     targets.gateHoldMs = read ("gateHold");
     targets.gateDecayMs = read ("gateDecay");
+
+    // Phase 4 Wave 3.
+    targets.freeze = read ("freeze") >= 0.5f;
+    targets.shimmer = read ("shimmer") * 0.01;
+    targets.shimmerRatio = std::exp2 (shimmerSemitones[juce::jlimit (0, 5, juce::roundToInt (read ("shimmerPitch")))] / 12.0);
     return targets;
 }
 
@@ -334,6 +389,10 @@ void VerbProcessor::buildNow()
     };
 
     auto convolver = makeConvolver (built.audio);
+
+    // Phase 4 Wave 3: Shimmer's loop gain and Freeze's release follow the IR.
+    const auto [loopEnergy, rt60] = loopInfoOf (built, buildRate.load());
+    convolver->setLoopInfo (loopEnergy, rt60);
 
     // Modulate: the early part here, and the two tails crossfaded by the convolver.
     if (built.modulation.on)
@@ -468,7 +527,10 @@ void VerbProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiBu
 
 double VerbProcessor::getTailLengthSeconds() const
 {
-    return irSeconds.load() + 0.5;
+    // Phase 4 Wave 3: Shimmer lengthens the tail; at 100 % it takes about half as long again to die
+    // away (the model), so three times the IR covers it.
+    const auto shimmer = shimmerAmount != nullptr && shimmerAmount->load (std::memory_order_relaxed) > 0.0f;
+    return irSeconds.load() * (shimmer ? 3.0 : 1.0) + 0.5;
 }
 
 juce::ValueTree VerbProcessor::getChain()

@@ -132,6 +132,8 @@ Those five, Extra width in SETUP and the header's Output knob can be automated. 
 | Equal loudness | Sets the wet level so every IR plays about as loud as any other, so a small room and a cathedral don't jump 12 dB apart. The gain it applied shows beside it. Off by default |
 | Extra width | 100–200 %, 100 % by default. Widens the reverb past the right column's Width: the two multiply, so Width 100W with Extra width 150 % puts one and a half times the side in the wet signal. It raises only the side, so the mono sum stays exactly the same, and each side gets up to 3 dB louder at 200 %. Past about 150 % the left and right are more opposed than alike: check in mono, and keep to 120–150 % for most mixes. It can be automated and changes smoothly, as Width does |
 
+After the reverb holds Ducking and the Gate (see Ducking and the Gate) and, under them, Shimmer and its Interval (see Freeze and Shimmer).
+
 The late-block counter should stay at 0. If it climbs, a background job missed its deadline and a slice of the tail dropped out, so try Low CPU.
 
 ## Moved files
@@ -184,3 +186,15 @@ In **SETUP > After the reverb**, two stages act live on the wet signal after the
 - **Source**: what both listen to, this track's input (**Main**) or the **Sidechain** input (pins 3/4 in REAPER), so a vocal can duck a reverb on a send. With nothing routed there, Sidechain acts as Main.
 
 Both wait for Low CPU mode's latency, so they act on the wet sound you hear, not 85 ms ahead of it. At Ducking 0 and the Gate off they don't run.
+
+## Freeze and Shimmer (Phase 4)
+
+**Freeze**, the button at the top right of the display, holds what the reverb is playing for as long as it's on: a pad from the last chord, a held swell under a quiet passage. New playing no longer enters the reverb (the dry signal still plays). It lights purple and the display takes a purple tint while it's on. It fades in over a fifth of a second and never repeats or loops, because it replays the reverb's sound of the last quarter second as a spectrum, not as a recording, and it keeps its stereo width. Turned off, the held sound dies away as the reverb would have, at the IR's own decay time, and the reverb takes new playing again. Freeze can be automated.
+
+**Shimmer** and **Interval**, in **SETUP > After the reverb** under the Gate, feed the reverb's output back into it through a pitch shifter, so each pass comes back an interval higher: the classic shimmer, a choir of octaves rising out of the tail.
+
+- **Shimmer** (0 to 100 %): how much goes round. At 0 % it's off. Higher values make the tail longer and brighter, but it always dies away, even at 100 %; Freeze is the way to hold it.
+- **Interval**: **Octave up** (the default), **Fifth up**, **Fourth up**, **Octave and fifth up**, **Two octaves up** or **Octave down**. These stay consonant as they stack; Octave down thickens the tail instead of brightening it.
+- Only what's above 200 Hz goes round, so the low end doesn't pile up mud, and a guard stops a ringing IR (Metal Ping, for one) from building up louder than your playing.
+
+Freeze and Shimmer together: freezing stops the loop along with the input, and the held sound keeps the octaves that were sounding. While SETUP is open its panel covers the module strip too; the strip comes back when you close it.

@@ -139,6 +139,9 @@ private:
     // Modulate's live settings (Phase 3 Q2.8), read by the audio thread.
     std::atomic<float> modulationRate { 0.3f }, modulationDepth { 0.5f }, modulationSpread { 1.0f };
 
+    // Phase 4 Wave 3: read by getTailLengthSeconds(), which is const.
+    std::atomic<float>* shimmerAmount = nullptr;
+
     BuildThread buildThread;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VerbProcessor)

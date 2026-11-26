@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Convolver.h"
+#include "VerbW3.h"
 
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/WetDynamics.h>
@@ -35,6 +36,11 @@ public:
         bool duckSidechain = false;
         bool gate = false;
         double gateThresholdDb = -30.0, gateHoldMs = 80.0, gateDecayMs = 40.0;
+
+        // Phase 4 Wave 3 (docs/verb.md): Freeze, and Shimmer's amount (0 to 1) and pitch ratio.
+        // Off and 0 run neither, so the output is as before, to the bit.
+        bool freeze = false;
+        double shimmer = 0.0, shimmerRatio = 2.0;
     };
 
     ~VerbDsp();
@@ -56,6 +62,11 @@ public:
     // The gate's gain now, for tests (1 open, 0 closed).
     double getGateGain() const noexcept { return wetGate.getGain(); }
 
+    // Phase 4 Wave 3, for tests: the shimmer loop's guard gain, and whether Freeze is sounding.
+    double getGuardGain() const noexcept { return loop.getGuardGain(); }
+    bool isFreezeSounding() const noexcept { return freezeState != FreezeState::idle; }
+    int getLoopDelay() const noexcept { return loop.getLoopDelay(); }
+
     // Worker thread. A convolver that was never picked up is replaced and freed.
     void offer (std::unique_ptr<verb::Convolver> convolver);
     std::unique_ptr<verb::Convolver> takeRetired() noexcept;
@@ -72,6 +83,8 @@ private:
     void dropConvolvers() noexcept;
     void acceptIncoming() noexcept;
     void startFade (double milliseconds) noexcept;
+    bool loopWanted() const noexcept;
+    void startFreeze() noexcept;
     void processChunk (float* const* channels, int numChannels, const float* const* sidechain, int numSidechain, int offset, int numSamples,
                        bool offline) noexcept;
 
@@ -102,4 +115,19 @@ private:
     fancy::dsp::WetDucker ducker;
     fancy::dsp::WetGate wetGate;
     fancy::dsp::Smoother duckAmount;
+
+    // Phase 4 Wave 3: Freeze and Shimmer (VerbW3.h).
+    enum class FreezeState { idle, holding, releasing };
+    static constexpr double freezeFadeMs = 200.0, inputFadeMs = 20.0;
+
+    verb::SpectralFreeze freezer;
+    verb::ShimmerLoop loop;
+    FreezeState freezeState = FreezeState::idle;
+    double freezeIn = 0.0;          // 0 to 1 over freezeFadeMs: the equal-power crossfade into the frozen sound
+    double freezeLevel = 1.0;       // falls at the IR's RT60 once Freeze is off
+    double liveGain = 1.0;          // the live wet, faded out under the frozen sound and back in on release
+    double inputGain = 1.0;         // the convolver's input, muted while frozen
+    bool loopRunning = false, snapLoopGain = true;
+    int loopLeft = 0;               // samples of feedback still in the loop's ring
+    fancy::dsp::Smoother loopGain;
 };
