@@ -152,7 +152,7 @@ class Freeze:
             s ^= (s << 13) & 0xffffffff
             s ^= s >> 17
             s ^= (s << 5) & 0xffffffff
-            out[i] = s / 4294967296.0
+            out[i] = (s >> 22) / 1024.0   # one of 1024 angles, as SpectralFreeze::nextStep
         self.seed = s
         return out
 
@@ -174,7 +174,7 @@ class Freeze:
             self.add(off)
 
     def add(self, off):
-        step = np.exp(1j * (2 * self.rand(self.bins) - 1) * np.pi)
+        step = np.exp(2j * np.pi * self.rand(self.bins))
         for ch in range(2):
             self.ph[ch] = self.ph[ch] * step
             spec = self.mag[ch] * self.ph[ch]

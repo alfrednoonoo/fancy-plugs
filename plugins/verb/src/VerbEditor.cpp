@@ -201,7 +201,7 @@ VerbEditor::VerbEditor (VerbProcessor& processorToUse)
     shimmerKnob.setBounds (340, 310, 76, 92);
     intervalLabel.setBounds (428, 332, 60, 24);
     intervalDropdown.setBounds (490, 330, 150, 24);
-    shimmerNote.setBounds (428, 362, 290, 32);
+    shimmerNote.setBounds (428, 362, 290, 48);
 
     shimmerKnob.setTooltip ("Shimmer: feeds the reverb's output back into it through a pitch shifter, so each pass comes back an interval higher. "
                             "0 % is off.");
@@ -457,6 +457,10 @@ void VerbEditor::showPreview (Preview preview)
 
     // Phase 4 Wave 3: Freeze on, and Shimmer at 50 % (reference/phase4/72__verb_w3_mockup.png).
     setValue ("freeze", preview == Preview::frozen ? 1.0f : 0.0f);
+
+    // The mockup shows the rack from its first card.
+    if (preview == Preview::frozen)
+        rack.setScroll (0);
     setValue ("shimmer", preview == Preview::shimmer ? 50.0f : 0.0f);
     onTick (0.0f);
     strip.repaint();

@@ -20,7 +20,9 @@ namespace verb
 // Hann frames (4096 points at 48 kHz, scaled with the rate, hop a quarter of that) per channel, and
 // the last frame's phases. From then the spectrum is resynthesised one frame per hop: each bin turns
 // by a new random step, the same for both channels, so the difference between them (the image)
-// stays as it was captured. The steps come from a seeded generator, so offline renders repeat.
+// stays as it was captured. The steps come from a seeded generator, so offline renders repeat:
+// one of stepCount equally spaced angles, from a table. Both channels go through one complex
+// inverse FFT (left real, right imaginary), half the work of two real ones.
 //
 // prepare() allocates; push(), capture() and next() don't.
 class SpectralFreeze
@@ -28,6 +30,7 @@ class SpectralFreeze
 public:
     static constexpr int numFrames = 8;
     static constexpr int baseSize = 4096;
+    static constexpr int stepBits = 10, stepCount = 1 << stepBits;
 
     void prepare (double sampleRate);
     void reset() noexcept;
@@ -47,16 +50,18 @@ public:
 
 private:
     void addFrame (int offset) noexcept; // a new frame, starting `offset` hops before now
-    double nextRandom() noexcept;
+    int nextStep() noexcept;
 
     int size = baseSize, hop = baseSize / 4, bins = baseSize / 2 + 1;
     int historySize = 1, historyMask = 0, historyWrite = 0;
     int position = 0;
-    double scale = 1.0, inverseCorrection = 1.0;
+    double scale = 1.0, inverseCorrection = 1.0, complexCorrection = 1.0;
     std::uint32_t seed = 0x9e3779b9u;
 
     std::unique_ptr<juce::dsp::FFT> fft;
     std::vector<float> window, buffer;
+    std::vector<juce::dsp::Complex<float>> packed, unpacked;
+    std::vector<double> stepCos, stepSin;
     std::array<std::vector<float>, 2> history, accumulator;
     std::array<std::vector<float>, 2> magnitude;
     std::array<std::vector<double>, 2> phaseRe, phaseIm;

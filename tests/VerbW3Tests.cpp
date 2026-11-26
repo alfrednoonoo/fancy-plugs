@@ -428,7 +428,7 @@ TEST_CASE ("Verb W3: Freeze holds the captured spectrum and image without repeat
     const auto captureFrom = (size_t) (at - (int) (0.25 * rate));
     const auto frozenFrom = (size_t) (at + second / 2), frozenTo = frozenFrom + (size_t) (10 * second);
 
-    // Third octaves within 20 dB of the strongest (the model: 1.65 dB; 1.6 to 3.7 dB over four IR
+    // Third octaves within 20 dB of the strongest (the model: 2.00 dB; 1.6 to 3.7 dB over four IR
     // draws, because a 250 ms reference is itself a rough estimate; docs/verb.md, As built).
     const auto frozen = thirdOctaves (out.left, frozenFrom, frozenTo);
     const auto captured = thirdOctaves (out.left, captureFrom, (size_t) at);
@@ -439,11 +439,11 @@ TEST_CASE ("Verb W3: Freeze holds the captured spectrum and image without repeat
         if (captured[b] > strongest - 20.0)
             worst = std::max (worst, std::abs (frozen[b] - captured[b]));
 
-    // The 50 ms level wanders as a steady noisy tail does (the model: 3.46 dB).
+    // The 50 ms level wanders as a steady noisy tail does (the model: 3.33 dB).
     const auto envelope = envelopeDb (out.left, frozenFrom, frozenTo);
     const auto wander = percentile (envelope, 95.0) - percentile (envelope, 5.0);
 
-    // No repetition of the envelope at lags of 0.2 to 5 s (the model: 0.12).
+    // No repetition of the envelope at lags of 0.2 to 5 s (the model: 0.14).
     std::vector<double> linear;
 
     for (const auto value : envelope)
@@ -549,7 +549,7 @@ TEST_CASE ("Verb W3: after Freeze, the held sound dies away at the IR's RT60", "
 
     const auto measured = -60.0 / (sxy / sxx);
 
-    // The model: 2.506 s against 2.494 s.
+    // The model: 2.509 s against 2.494 s.
     CAPTURE (measured, out.rt60);
     CHECK (std::abs (measured / out.rt60 - 1.0) < 0.1);
 }
@@ -712,7 +712,7 @@ TEST_CASE ("Verb W3: freezing mutes Shimmer's loop and the held level stays put"
         levels.push_back (10.0 * std::log10 (sum / second));
     }
 
-    // The model: 0.53 dB.
+    // The model: 0.58 dB.
     const auto span = *std::max_element (levels.begin(), levels.end()) - *std::min_element (levels.begin(), levels.end());
     CAPTURE (span);
     CHECK (span < 2.0);

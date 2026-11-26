@@ -47,6 +47,21 @@ void SpectralFreeze::prepare (double sampleRate)
     fft->performRealOnlyInverseTransform (buffer.data());
     inverseCorrection = std::abs (buffer[0]) > 1.0e-12f ? 1.0 / (double) buffer[0] : 1.0;
 
+    // The same for the complex inverse that synthesises both channels at once.
+    packed.assign ((size_t) size, { 1.0f, 0.0f });
+    unpacked.assign ((size_t) size, { 0.0f, 0.0f });
+    fft->perform (packed.data(), unpacked.data(), true);
+    complexCorrection = std::abs (unpacked[0].real()) > 1.0e-12f ? 1.0 / (double) unpacked[0].real() : 1.0;
+
+    stepCos.resize ((size_t) stepCount);
+    stepSin.resize ((size_t) stepCount);
+
+    for (int i = 0; i < stepCount; ++i)
+    {
+        stepCos[(size_t) i] = std::cos (2.0 * std::numbers::pi * (double) i / (double) stepCount);
+        stepSin[(size_t) i] = std::sin (2.0 * std::numbers::pi * (double) i / (double) stepCount);
+    }
+
     // Random phases add frames by power: a Hann window's mean square is 3/8, and four of them
     // overlapping at a quarter hop sum to 3/2 in power.
     scale = 1.0 / std::sqrt (0.375 * 1.5);
@@ -86,12 +101,13 @@ void SpectralFreeze::push (double left, double right) noexcept
     historyWrite = (historyWrite + 1) & historyMask;
 }
 
-double SpectralFreeze::nextRandom() noexcept
+// A random step: the generator's top stepBits bits pick one of stepCount angles round the circle.
+int SpectralFreeze::nextStep() noexcept
 {
     seed ^= seed << 13;
     seed ^= seed >> 17;
     seed ^= seed << 5;
-    return (double) seed * (1.0 / 4294967296.0);
+    return (int) (seed >> (32 - stepBits));
 }
 
 void SpectralFreeze::capture() noexcept
@@ -143,8 +159,8 @@ void SpectralFreeze::addFrame (int offset) noexcept
     // One random step per bin, turning both channels alike.
     for (int k = 0; k < bins; ++k)
     {
-        const auto angle = (2.0 * nextRandom() - 1.0) * std::numbers::pi;
-        const auto c = std::cos (angle), s = std::sin (angle);
+        const auto step = (size_t) nextStep();
+        const auto c = stepCos[step], s = stepSin[step];
 
         for (int ch = 0; ch < 2; ++ch)
         {
@@ -159,26 +175,33 @@ void SpectralFreeze::addFrame (int offset) noexcept
     }
 
     const auto skip = offset * hop;
-    const auto gain = (float) (inverseCorrection * scale);
+    const auto gain = (float) (complexCorrection * scale);
 
-    for (int ch = 0; ch < 2; ++ch)
+    // Z = L + i R over the whole circle: L and R are each conjugate-symmetric, so the inverse is
+    // left in the real part and right in the imaginary part.
+    for (int k = 0; k < bins; ++k)
     {
-        std::fill (buffer.begin(), buffer.end(), 0.0f);
+        const auto edge = k == 0 || k == bins - 1;
+        const auto ml = (double) magnitude[0][(size_t) k], mr = (double) magnitude[1][(size_t) k];
+        const auto lr = ml * phaseRe[0][(size_t) k], li = edge ? 0.0 : ml * phaseIm[0][(size_t) k];
+        const auto rr = mr * phaseRe[1][(size_t) k], ri = edge ? 0.0 : mr * phaseIm[1][(size_t) k];
 
-        for (int k = 0; k < bins; ++k)
-        {
-            const auto m = (double) magnitude[(size_t) ch][(size_t) k];
-            const auto edge = k == 0 || k == bins - 1;
-            buffer[(size_t) (2 * k)] = (float) (m * phaseRe[(size_t) ch][(size_t) k]);
-            buffer[(size_t) (2 * k + 1)] = edge ? 0.0f : (float) (m * phaseIm[(size_t) ch][(size_t) k]);
-        }
+        packed[(size_t) k] = { (float) (lr - ri), (float) (li + rr) };
 
-        fft->performRealOnlyInverseTransform (buffer.data());
+        if (! edge)
+            packed[(size_t) (size - k)] = { (float) (lr + ri), (float) (rr - li) };
+    }
 
-        auto& sum = accumulator[(size_t) ch];
+    fft->perform (packed.data(), unpacked.data(), true);
 
-        for (int n = skip; n < size; ++n)
-            sum[(size_t) (n - skip)] += buffer[(size_t) n] * window[(size_t) n] * gain;
+    auto& left = accumulator[0];
+    auto& right = accumulator[1];
+
+    for (int n = skip; n < size; ++n)
+    {
+        const auto w = window[(size_t) n] * gain;
+        left[(size_t) (n - skip)] += unpacked[(size_t) n].real() * w;
+        right[(size_t) (n - skip)] += unpacked[(size_t) n].imag() * w;
     }
 }
 
