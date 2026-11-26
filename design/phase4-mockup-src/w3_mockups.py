@@ -130,6 +130,70 @@ def eq_list_large():
 m.PAGE_WIDTHS["eq-list-large"] = 1880
 m.PAGE_HEIGHTS["eq-list-large"] = 3800
 
+# ---------------------------------------------------------------------------------------------
+# Delay's Tone page with Pitch and Reverse (docs/delay.md, Phase 4 Wave 3, decision 4 A). Screenshots: delay@2x.png and
+# delay-motion@2x.png of run 45649213148 (commit a74c0a1), 820 x 472. The Tone knobs' faces are centred at x 246 + 64 i
+# (1x), the Motion page's five at 383 to 618; seven Tone knobs at 62 px reach Diffusion's place, x 618.
+TONE_X0, TONE_OLD, TONE_NEW = 246, 64, 62
+
+
+def tone_seven():
+    """Moves the six real Tone columns (label, knob, value) to 62 px spacing, leaving the seventh place empty."""
+    from PIL import Image
+    folder = m.pathlib.Path(__file__).resolve().parent / "img"
+    im = Image.open(folder / "delay-v172-w2b.png").convert("RGB")
+    top, bottom = 600, 806
+    cols = [im.crop((2 * (TONE_X0 + TONE_OLD * i) - 62, top, 2 * (TONE_X0 + TONE_OLD * i) + 62, bottom)) for i in range(6)]
+    im.paste((38, 38, 38), (2 * TONE_X0 - 66, top, 1296, bottom))
+    for i, col in enumerate(cols):
+        im.paste(col, (round(2 * (TONE_X0 + TONE_NEW * i)) - 62, top))
+    im.save(folder / "delay-v172-tone7-w2b.png")
+
+
+def tab_badge(x, y, glyph, colour=YELLOW):
+    """An 11 px ringed badge, as ColourTabs draws a Character letter."""
+    return (f'<div class="o" style="left:{x}px;top:{y}px;width:11px;height:11px;border-radius:50%;box-sizing:border-box;background:#141414;'
+            f'border:1px solid {colour};color:{colour};font-size:6.5px;font-weight:600;display:flex;align-items:center;justify-content:center">{glyph}</div>')
+
+
+def direction(selected):
+    return m.seg(TONE_X0 - 25, 408, 50, 17, ["&#9654;&#xFE0E;", "&#9664;&#xFE0E;"], selected, YELLOW, fs=9)
+
+
+def pitch(value, v):
+    x = TONE_X0 + 6 * TONE_NEW
+    return m.knob(x, 305, "Pitch", value, YELLOW, v, size=50, fs=13, bi=True, width=60) + outline(x - 31, 305, 62, 98)
+
+
+@m.plugin("delay-w3", "69__delay_w3_mockup.png")
+def delay_w3():
+    tone_seven()
+    W, H = 820, 472
+    moved = outline(TONE_X0 - 34, 305, 5 * TONE_NEW + 66, 98)
+    rev_tab = tab_badge(24, 278, "&#9664;")
+    return w1.page("Fancy Delay: v1.7.2 mockup (Reverse and Pitch on the Tone page)",
+                   m.lead("docs/delay.md, Phase 4 Wave 3: reverse and pitch-shifted taps", "Decisions 1 to 4 A (user, 26 November 2026)"), [
+        ("1 · The Tone page, tap 1 as it loads: forward, 0 st",
+         "<b>Pitch</b> (&minus;12 to +12 st, 0 by default, centred) is a seventh knob after Pan. The six knobs move from 64 to 62 px apart, "
+         "the Motion page's spacing, so Pitch takes Diffusion's place; no knob or label changes size and the window stays 820 x 472. "
+         "<b>Reverse</b> is a two-way direction switch, <b>&#9654; | &#9664;</b>, under Feedback, where the wave switch sits under Rate on the Motion page.",
+         shot("delay-v172-tone7", W, H, moved + direction(0) + outline(TONE_X0 - 27, 406, 54, 21) + pitch("0.00 st", 0.5),
+              "Forward and 0 st are today's sound, to the bit. Both are per tap, like Feedback and Pan.")),
+        ("2 · Tap 1 reversed, +7 st",
+         "With &#9664; chosen the tap plays each window of one tap time backwards, so a note swells in and ends on its attack. "
+         "Its tab gets a small <b>&#9664;</b> in its bottom-right corner, so a reversed tap shows on every page.",
+         shot("delay-v172-tone7", W, H, moved + direction(1) + outline(TONE_X0 - 27, 406, 54, 21) + pitch("+7.00 st", 19 / 24)
+              + rev_tab + outline(11, 265, 26, 28),
+              "Pitch shifts each repeat again, inside the feedback loop: +12 st gives rising octaves, &minus;12 falling ones, &plusmn;0.1 st a slow drift. "
+              "Typed values take 7, -12 or -0.1. A tooltip on the switch reads \"Forward\" or \"Reverse: plays each window of one tap time backwards\".")),
+        ("3 · The Motion page of the same tap",
+         "The Character letter keeps the top-right corner and the &#9664; takes the bottom-right one, so a Tape tap that's reversed shows both. Nothing else on the page changes.",
+         shot("delay-v172-motion", W, H, rev_tab + outline(11, 265, 26, 28), "", crop=(0, 250, 420, 200))),
+    ])
+
+
+m.PAGE_HEIGHTS["delay-w3"] = 2000
+
 if __name__ == "__main__":
     for key in sys.argv[1:] or list(m.PLUGINS):
         m.render(key)
