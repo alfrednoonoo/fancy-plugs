@@ -180,6 +180,7 @@ TEST_CASE ("StftFrames: the paired calls match analyse() and synthesise() on eac
 
     const auto spectrumSize = (size_t) single.getSpectrumSize();
     std::vector<float> a (spectrumSize), b (spectrumSize), pa (spectrumSize), pb (spectrumSize);
+    std::vector<float> shapedA (spectrumSize), shapedB (spectrumSize); // synthesise() transforms in place
     const auto left = noise (20000, 5), right = noise (20000, 6, 0.3f);
     std::vector<float> singleOut[2] { std::vector<float> (left.size()), std::vector<float> (left.size()) };
     std::vector<float> pairedOut[2] { std::vector<float> (left.size()), std::vector<float> (left.size()) };
@@ -210,6 +211,8 @@ TEST_CASE ("StftFrames: the paired calls match analyse() and synthesise() on eac
                             single.analyse (1, b);
                             shape (a, 0);
                             shape (b, 1);
+                            shapedA = a;
+                            shapedB = b;
                             single.synthesise (0, a);
                             single.synthesise (1, b);
                         },
@@ -223,8 +226,8 @@ TEST_CASE ("StftFrames: the paired calls match analyse() and synthesise() on eac
 
                             for (size_t j = 0; j < (size_t) (2 * single.getBins()); ++j)
                             {
-                                worstSpectrum = std::max ({ worstSpectrum, std::abs ((double) pa[j] - (double) a[j]), std::abs ((double) pb[j] - (double) b[j]) });
-                                largest = std::max ({ largest, std::abs ((double) a[j]), std::abs ((double) b[j]) });
+                                worstSpectrum = std::max ({ worstSpectrum, std::abs ((double) pa[j] - (double) shapedA[j]), std::abs ((double) pb[j] - (double) shapedB[j]) });
+                                largest = std::max ({ largest, std::abs ((double) shapedA[j]), std::abs ((double) shapedB[j]) });
                             }
 
                             paired.synthesisePair (0, 1, pa, pb);
