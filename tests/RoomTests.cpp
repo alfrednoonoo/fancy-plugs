@@ -2,6 +2,7 @@
 // docs/research/room-model.py runs them (the same signals and the same measurements), and the
 // plugin's own checks. Limits are the brief's; the model's figures are in docs/room.md.
 
+#include "CompCpuReference.h"
 #include "RoomDsp.h"
 #include "RoomEditor.h"
 #include "RoomProcessor.h"
@@ -708,8 +709,6 @@ TEST_CASE ("room measurements", "[.measure]")
     auto shimmered = normal;
     shimmered.shimmer = 1.0;
     const auto cpuShimmer = medianOfFive ([&] { return roomCpu (shimmered); });
-    std::printf ("room cpu W3 (median of 5): Normal with Shimmer 100 %% %.3f %% (+%.3f, target < 0.3)\n",
-                 cpuShimmer, cpuShimmer - cpuNormal);
 
    #if FANCY_HAS_COMP
     const auto comp = medianOfFive ([]
@@ -719,7 +718,15 @@ TEST_CASE ("room measurements", "[.measure]")
         compDsp.snapToTargets (CompDsp::Targets {});
         return measure ([&] (float* const* channels) { compDsp.process (channels, 2, nullptr, 0, measureBlock); });
     });
+   #else
+    const auto comp = 0.0;
+   #endif
 
+    const auto x = [comp] (double percent) { return fancytest::timesComp (percent, comp); };
+    std::printf ("room cpu W3 (median of 5): Fancy Comp default %.3f %%; Normal %.3f %%%s; with Shimmer 100 %% %.3f %%%s (+%.3f %%%s, target < 0.3)\n",
+                 comp, cpuNormal, x (cpuNormal).c_str(), cpuShimmer, x (cpuShimmer).c_str(), cpuShimmer - cpuNormal, x (cpuShimmer - cpuNormal).c_str());
+
+   #if FANCY_HAS_COMP
     std::printf ("room cpu reference: Fancy Comp default %.3f %% in the same run; Normal / comp = %.2f, Eco / comp = %.2f, High / comp = %.2f\n",
                  comp, cpuNormal / comp, cpuEco / comp, cpuHigh / comp);
    #endif

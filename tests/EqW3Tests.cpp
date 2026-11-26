@@ -2,6 +2,7 @@
 // section 6). The limits were run first through docs/research/eq-spectral-prepush.py, a port of
 // eq::SpectralStage; test 8 (FIR on the shared framing) is in StftFramesTests.cpp.
 
+#include "CompCpuReference.h"
 #include "EqDsp.h"
 #include "EqProcessor.h"
 #include "LegacyEqW2Dsp.h"
@@ -571,8 +572,11 @@ TEST_CASE ("eq w3 cpu measurement", "[.measure]")
         return values[runs / 2];
     };
 
+    const auto comp = fancytest::compDefaultCpu();
     const auto dynamicOnly = median (0), spectral = median (4);
-    std::printf ("eq w3 cpu (median of %d, 48 kHz, 128 samples, stereo): four dynamic bands %.3f %%; four spectral bands %.3f %% (target < 1)\n",
-                 runs, dynamicOnly, spectral);
+    const auto x = [comp] (double percent) { return fancytest::timesComp (percent, comp); };
+    std::printf ("eq w3 cpu (median of %d, 48 kHz, 128 samples, stereo): Fancy Comp default %.3f %%; four dynamic bands %.3f %%%s; "
+                 "four spectral bands %.3f %%%s (target < 1)\n",
+                 runs, comp, dynamicOnly, x (dynamicOnly).c_str(), spectral, x (spectral).c_str());
     SUCCEED();
 }

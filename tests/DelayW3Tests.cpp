@@ -2,6 +2,7 @@
 // section 6). The numbers were run first through docs/research/delay-w3-prepush.py, measured the
 // same way.
 
+#include "CompCpuReference.h"
 #include "DelayDsp.h"
 #include "DelayProcessor.h"
 #include "LegacyDelayW2Dsp.h"
@@ -721,10 +722,14 @@ TEST_CASE ("delay w3 cpu measurement", "[.measure]")
         return values[runs / 2];
     };
 
+    const auto comp = fancytest::compDefaultCpu();
     const auto plain = median (0.0, false), pitched = median (12.0, false), reversed = median (0.0, true), both = median (7.0, true);
+    const auto x = [comp] (double percent) { return fancytest::timesComp (percent, comp); };
 
-    std::printf ("delay w3 cpu (median of %d, 48 kHz, 128 samples, stereo, 4 taps at 50 %% feedback): unpitched %.3f %%; "
-                 "+12 st %.3f %% (+%.3f, target < 1); reversed %.3f %% (+%.3f); reversed at +7 st %.3f %%\n",
-                 runs, plain, pitched, pitched - plain, reversed, reversed - plain, both);
+    std::printf ("delay w3 cpu (median of %d, 48 kHz, 128 samples, stereo, 4 taps at 50 %% feedback): Fancy Comp default %.3f %%; "
+                 "unpitched %.3f %%%s; +12 st %.3f %%%s (+%.3f %%%s, target about +0.6 Mac, < +2 Windows); "
+                 "reversed %.3f %%%s (+%.3f %%%s); reversed at +7 st %.3f %%%s\n",
+                 runs, comp, plain, x (plain).c_str(), pitched, x (pitched).c_str(), pitched - plain, x (pitched - plain).c_str(),
+                 reversed, x (reversed).c_str(), reversed - plain, x (reversed - plain).c_str(), both, x (both).c_str());
     SUCCEED();
 }

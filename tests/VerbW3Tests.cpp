@@ -3,6 +3,7 @@
 // same IRs: the noise here is the model's portable generator (xorshift32 and Box-Muller), not the
 // standard library's, so both make the same samples.
 
+#include "CompCpuReference.h"
 #include "IrBuilder.h"
 #include "LegacyVerbW2Dsp.h"
 #include "VerbDsp.h"
@@ -771,10 +772,13 @@ TEST_CASE ("verb w3 cpu measurement", "[.measure]")
         return values[runs / 2];
     };
 
+    const auto comp = fancytest::compDefaultCpu();
     const auto plain = median (0.0, false), shimmered = median (0.5, false), frozen = median (0.0, true);
+    const auto x = [comp] (double percent) { return fancytest::timesComp (percent, comp); };
 
-    std::printf ("verb w3 cpu (median of %d, 48 kHz, 128 samples, stereo, 3 s IR, zero latency): plain %.3f %%; "
-                 "Shimmer 50 %% +12 st %.3f %% (+%.3f, target < 0.5); frozen %.3f %% (+%.3f, target < 0.3)\n",
-                 runs, plain, shimmered, shimmered - plain, frozen, frozen - plain);
+    std::printf ("verb w3 cpu (median of %d, 48 kHz, 128 samples, stereo, 3 s IR, zero latency): Fancy Comp default %.3f %%; plain %.3f %%%s; "
+                 "Shimmer 50 %% +12 st %.3f %%%s (+%.3f %%%s, target < 0.5); frozen %.3f %%%s (+%.3f %%%s, target < 0.3 Windows, < 0.4 Mac)\n",
+                 runs, comp, plain, x (plain).c_str(), shimmered, x (shimmered).c_str(), shimmered - plain, x (shimmered - plain).c_str(),
+                 frozen, x (frozen).c_str(), frozen - plain, x (frozen - plain).c_str());
     SUCCEED();
 }
