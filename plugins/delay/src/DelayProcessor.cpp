@@ -28,6 +28,13 @@ float parsePan (const juce::String& text)
     return text.containsIgnoreCase ("L") ? -std::abs (value) : value;
 }
 
+// Phase 4 Wave 3: "+7.00 st", "-0.10 st" and "0.00 st".
+juce::String pitchText (float value)
+{
+    const auto rounded = std::round (value * 100.0f) / 100.0f;
+    return (rounded > 0.0f ? "+" : "") + fancy::formatFixed (rounded == 0.0f ? 0.0f : rounded, 2) + " st";
+}
+
 // 1/8 or plain 8 both reach the eighth note, and anything between lands on the nearest.
 int parseNote (const juce::String& text)
 {
@@ -222,6 +229,20 @@ fancy::FancyProcessor::Layout createLayout()
                                                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseNumber (text); })));
     }
 
+    // Phase 4 Wave 3 (docs/delay.md, "reverse and pitch-shifted taps"), appended per tap: Reverse
+    // off and Pitch 0 are the tap as it was.
+    for (int tap = 0; tap < delay::maxTaps; ++tap)
+    {
+        const auto prefix = "Tap " + juce::String (tap + 1) + " ";
+
+        layout.add (toggle (DelayProcessor::id (tap, "reverse"), prefix + "Reverse", false));
+        layout.add (fancy::floatParameter (DelayProcessor::id (tap, "pitch"), prefix + "Pitch", juce::NormalisableRange<float> (-12.0f, 12.0f, 0.01f), 0.0f,
+                                           juce::AudioParameterFloatAttributes {}
+                                               .withLabel ("st")
+                                               .withStringFromValueFunction ([] (float value, int) { return pitchText (value); })
+                                               .withValueFromStringFunction ([] (const juce::String& text) { return juce::jlimit (-12.0f, 12.0f, fancy::parseNumber (text)); })));
+    }
+
     return layout;
 }
 
@@ -290,7 +311,7 @@ DelayProcessor::DelayProcessor()
                                     value ("mult"), value ("fb"), value ("lp"), value ("hp"), value ("bits"), value ("width"), value ("vol"),
                                     value ("pan"), value ("ping"), value ("inloop"), value ("sat"),
                                     value ("char"), value ("charAmt"), value ("modRate"), value ("modDepth"), value ("modRand"), value ("diff"),
-                                    value ("modShape"), value ("modStereo") };
+                                    value ("modShape"), value ("modStereo"), value ("reverse"), value ("pitch") };
     }
 }
 
@@ -350,6 +371,9 @@ DelayDsp::TapSpec DelayProcessor::readTap (int tap) const
     spec.modShape = load (values.modShape) >= 0.5f ? DelayDsp::triangle : DelayDsp::sine;
     spec.modStereoDegrees = (double) load (values.modStereo);
 
+    spec.reverse = isOn (values.reverse);
+    spec.pitchSemitones = (double) load (values.pitch);
+
     return spec;
 }
 
@@ -388,6 +412,11 @@ void DelayProcessor::updateTempo()
                 tempo.store (juce::jlimit (minBpm, maxBpm, *bpm), std::memory_order_relaxed);
                 hostTempo.store (true, std::memory_order_relaxed);
             }
+
+            // Phase 4 Wave 3: where the host is, for Note-mode reverse windows.
+            const auto ppq = position->getPpqPosition();
+            transportPlaying = position->getIsPlaying() && ppq.hasValue();
+            transportPpq = ppq.hasValue() ? *ppq : 0.0;
         }
     }
 }
@@ -431,7 +460,11 @@ void DelayProcessor::processAudio (juce::AudioBuffer<float>& buffer, juce::MidiB
 
     inputMeter.push (channels, numChannels, numSamples);
 
-    dsp.setTargets (readTargets(), numChannels < 2);
+    auto targets = readTargets();
+    targets.hostPlaying = transportPlaying;
+    targets.hostPpq = transportPpq;
+
+    dsp.setTargets (targets, numChannels < 2);
     dsp.process (channels, numChannels, numSamples);
 
     // Phase 4 Wave 1: the output ceiling, out of the path while Off.
@@ -456,7 +489,8 @@ void DelayProcessor::setParameter (const juce::String& parameterId, float value)
 void DelayProcessor::resetTap (int tap)
 {
     static const char* const suffixes[] { "on", "solo", "mode", "ms", "note", "feel", "mult", "fb", "lp", "hp", "bits", "width", "vol", "pan", "ping", "inloop", "sat",
-                                          "char", "charAmt", "modRate", "modDepth", "modRand", "diff", "modShape", "modStereo" };
+                                          "char", "charAmt", "modRate", "modDepth", "modRand", "diff", "modShape", "modStereo",
+                                          "reverse", "pitch" };
 
     for (const auto* suffix : suffixes)
     {

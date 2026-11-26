@@ -51,6 +51,16 @@ constexpr double diffuserMs[] { 7.3, 11.9, 17.1, 23.7 };
 constexpr double maxDiffusion = 0.65;
 constexpr double duckRangeDb = 6.0; // Amount is reached 6 dB over the threshold
 
+// Phase 4 Wave 3 ---------------------------------------------------------------------------
+
+// The reverse windows' fades, and the longest window before it shortens (docs/delay.md, Phase 4
+// Wave 3, section 3).
+constexpr double reverseFadeMs = 5.0, reverseLongestMs = 5000.0, reverseShortestMs = 50.0;
+constexpr double maxPitchSemitones = 12.0;
+
+// Longer than the shifter's farthest read (51 ms, and its 20 ms look back).
+constexpr double shifterWarmMs = 75.0;
+
 // Phase 4 Wave 2 ---------------------------------------------------------------------------
 
 // The triangle's corners are rounded over this share of the cycle: its slope turns over as a
@@ -174,6 +184,15 @@ void DelayDsp::prepare (double sampleRate)
         for (auto* smoother : { &tap.tapeMix, &tap.bbdMix })
             smoother->setTime (characterMs, rate);
 
+        // Phase 4 Wave 3.
+        tap.shifter.prepare (rate);
+        tap.pitch.setTime (parameterMs, rate);
+        tap.pitchMix.setTime (crossfadeMs, rate);
+        tap.reverseMix.setTime (crossfadeMs, rate);
+        tap.pitch.snapTo (0.0);
+        tap.pitchMix.snapTo (0.0);
+        tap.reverseMix.snapTo (0.0);
+
         // Phase 4 Wave 2.
         tap.shapeMix.setTime (characterMs, rate);
         tap.stereoOffset.setTime (parameterMs, rate);
@@ -191,6 +210,10 @@ void DelayDsp::prepare (double sampleRate)
 
         tap.lastCharacterAmount = tap.lastCutoff = -1.0;
     }
+
+    pitchLead = std::max (1, (int) std::lround (taps[0].shifter.getAverageDelaySamples()));
+    reverseFade = std::max (1, (int) std::lround (reverseFadeMs * 0.001 * rate));
+    shifterWarm = std::max (1, (int) std::lround (shifterWarmMs * 0.001 * rate));
 
     duckAmount.setTime (parameterMs, rate);
     duckAttack = 1.0 - std::exp (-1.0 / (0.001 * rate));
@@ -239,6 +262,19 @@ void DelayDsp::reset()
         tap.modCos = 1.0;
         tap.walkCountdown = 0;
         tap.noiseState = 1;
+
+        // Phase 4 Wave 3.
+        tap.shifter.reset();
+        tap.shifterRunning = false;
+        tap.warmed = 0;
+
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            tap.reverseLowpass[ch].reset();
+            tap.reverseHighpass[ch].reset();
+        }
+
+        restartReverse (tap);
     }
 
     duckEnvelope = 0.0;
@@ -261,6 +297,13 @@ void DelayDsp::setTapTargets (Tap& tap, const TapSpec& spec, bool anySolo, doubl
     // Phase 4 Wave 2. 90 degrees is a quarter cycle, exactly.
     tap.shapeMix.setTarget (spec.modShape == triangle ? 1.0 : 0.0);
     tap.stereoOffset.setTarget (std::clamp (spec.modStereoDegrees, 0.0, 180.0) / 360.0);
+
+    // Phase 4 Wave 3. A reversed tap is shifted by its reverse head's speed, not the shifter.
+    const auto semitones = std::clamp (spec.pitchSemitones, -maxPitchSemitones, maxPitchSemitones);
+    tap.pitch.setTarget (semitones);
+    tap.pitchWanted = spec.used && semitones != 0.0 && ! spec.reverse;
+    tap.reverseMix.setTarget (spec.used && spec.reverse ? 1.0 : 0.0);
+    tap.noteMode = spec.noteMode;
 
     const auto active = spec.used && spec.on;
     const auto audible = active && (! anySolo || spec.solo);
@@ -320,10 +363,15 @@ void DelayDsp::setTapTargets (Tap& tap, const TapSpec& spec, bool anySolo, doubl
 
 void DelayDsp::snapTap (Tap& tap) noexcept
 {
+    // A tap starts from a silent ring, so its shifter needs no warming.
+    tap.pitchMix.setTarget (tap.pitchWanted ? 1.0 : 0.0);
+    tap.warmed = shifterWarm;
+
     for (auto* smoother : { &tap.feedback, &tap.width, &tap.volume, &tap.panLeft, &tap.panRight, &tap.inGate, &tap.outGate,
                             &tap.lowpassMix, &tap.highpassMix, &tap.crushMix, &tap.loopMix, &tap.saturateMix, &tap.pingMix,
                             &tap.startLeft, &tap.lowpassOctaves, &tap.highpassOctaves, &tap.bits,
-                            &tap.modDepth, &tap.tapeMix, &tap.bbdMix, &tap.diffusion, &tap.shapeMix, &tap.stereoOffset })
+                            &tap.modDepth, &tap.tapeMix, &tap.bbdMix, &tap.diffusion, &tap.shapeMix, &tap.stereoOffset,
+                            &tap.pitch, &tap.pitchMix, &tap.reverseMix })
         smoother->snapToTarget();
 
     tap.headA = tap.headB = tap.targetDelay;
@@ -333,6 +381,59 @@ void DelayDsp::snapTap (Tap& tap) noexcept
     tap.lowpassCoefficients.set (std::exp2 (tap.lowpassOctaves.getCurrent()), filterQ, rate);
     tap.highpassCoefficients.set (std::exp2 (tap.highpassOctaves.getCurrent()), filterQ, rate);
     tap.crushScale = std::exp2 (tap.bits.getCurrent() - 1.0);
+
+    // Phase 4 Wave 3: the reverse windows start from when the tap starts running.
+    tap.ratio = std::exp2 (tap.pitch.getCurrent() / 12.0);
+    tap.ratioFor = tap.pitch.getCurrent();
+    tap.shifter.reset();
+    tap.shifterRunning = false;
+    restartReverse (tap);
+}
+
+// Phase 4 Wave 3 ----------------------------------------------------------------------------
+
+int DelayDsp::reverseWindowFor (const Tap& tap) const noexcept
+{
+    // One tap time, up to 5 s; above that, what's left of the ring's 10 s, at least 50 ms. The
+    // head reaches (1 + ratio) windows back at its far end, so a raised pitch shortens a long window.
+    const auto longest = (int) std::lround (reverseLongestMs * 0.001 * rate);
+    const auto shortest = (int) std::lround (reverseShortestMs * 0.001 * rate);
+    const auto window = tap.targetDelay <= longest ? tap.targetDelay : std::max (shortest, maxDelaySamples - tap.targetDelay);
+    const auto reach = (int) ((double) (maxDelaySamples - 4) / (1.0 + std::max (1.0, tap.ratio)));
+
+    return std::clamp (window, 2, reach);
+}
+
+void DelayDsp::restartReverse (Tap& tap) noexcept
+{
+    tap.reverseWindow = reverseWindowFor (tap);
+    tap.reverseK = 0;
+    tap.reverseDelay = 0.0;
+    tap.sinceJump = 1 << 30;
+}
+
+void DelayDsp::followHostGrid (Tap& tap) noexcept
+{
+    // Decision 2 A: while the host plays, a Note-mode tap's windows start on its own note grid,
+    // counted from the host's position. Off the grid by more than a sample, the head jumps there
+    // and fades in again.
+    if (! hostPlaying || ! tap.noteMode || hostBpm <= 0.0)
+        return;
+
+    const auto window = (double) tap.reverseWindow;
+    const auto position = hostPpq * 60.0 / hostBpm * rate;
+    const auto phase = position - std::floor (position / window) * window;
+    const auto wanted = (int) std::lround (phase) % tap.reverseWindow;
+
+    auto apart = std::abs (wanted - tap.reverseK);
+    apart = std::min (apart, tap.reverseWindow - apart);
+
+    if (apart <= 1)
+        return;
+
+    tap.reverseK = wanted;
+    tap.reverseDelay = (double) wanted * (1.0 + tap.ratio);
+    tap.sinceJump = 0;
 }
 
 void DelayDsp::setTargets (const Targets& targets, bool isMono) noexcept
@@ -356,6 +457,11 @@ void DelayDsp::setTargets (const Targets& targets, bool isMono) noexcept
 
     // Phase 4 Wave 1.
     freezeOn = targets.freeze;
+
+    // Phase 4 Wave 3.
+    hostPlaying = targets.hostPlaying;
+    hostPpq = targets.hostPpq;
+    hostBpm = targets.bpm;
 }
 
 void DelayDsp::snapToTargets (const Targets& targets, bool isMono) noexcept
@@ -538,6 +644,28 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
         const auto stereoOffset = tap.stereoOffset.next();
         const auto characterOn = tapeMix > 0.0 || bbdMix > 0.0;
 
+        // Phase 4 Wave 3: Pitch's glide and the two crossfades, each 0 while it's off.
+        const auto semitones = tap.pitch.next();
+
+        if (tap.pitchWanted && tap.warmed < shifterWarm)
+        {
+            ++tap.warmed;
+            tap.pitchMix.setTarget (0.0);
+        }
+        else
+        {
+            tap.pitchMix.setTarget (tap.pitchWanted ? 1.0 : 0.0);
+        }
+
+        const auto pitchMix = tap.pitchMix.next();
+        const auto reverseMix = tap.reverseMix.next();
+
+        if (semitones != tap.ratioFor)
+        {
+            tap.ratio = std::exp2 (semitones / 12.0);
+            tap.ratioFor = semitones;
+        }
+
         if (characterOn)
         {
             updateCharacter (tap);
@@ -650,11 +778,26 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
         double read[2];
         const auto modulated = depthCents > 0.0;
 
+        // Phase 4 Wave 3: a pitched tap reads the ring the shifter's average delay sooner, so its
+        // repeats still land on the tap time. Read beside today's heads, which stay as they were.
+        const auto pitching = pitchMix > 0.0 || tap.pitchWanted;
+        double pitchedIn[2] { 0.0, 0.0 };
+
+        const auto readSooner = [&] (int ch, int head)
+        {
+            return modulated ? (double) readAt (tap, ch, writeAt, std::max (2.0, (double) (head - pitchLead) + offset[ch]))
+                             : (double) readHead (tap, ch, writeAt, std::max (2, head - pitchLead));
+        };
+
         if (tap.smoothTime)
         {
             for (int ch = 0; ch < 2; ++ch)
                 read[ch] = modulated ? (double) readAt (tap, ch, writeAt, (double) tap.headA + offset[ch])
                                      : (double) readHead (tap, ch, writeAt, tap.headA);
+
+            if (pitching)
+                for (int ch = 0; ch < 2; ++ch)
+                    pitchedIn[ch] = readSooner (ch, tap.headA);
 
             if (tap.fadeLeft > 0)
             {
@@ -663,6 +806,10 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
                 for (int ch = 0; ch < 2; ++ch)
                     read[ch] += ((modulated ? (double) readAt (tap, ch, writeAt, (double) tap.headB + offset[ch])
                                             : (double) readHead (tap, ch, writeAt, tap.headB)) - read[ch]) * position;
+
+                if (pitching)
+                    for (int ch = 0; ch < 2; ++ch)
+                        pitchedIn[ch] += (readSooner (ch, tap.headB) - pitchedIn[ch]) * position;
 
                 if (--tap.fadeLeft == 0)
                     tap.headA = tap.headB;
@@ -674,6 +821,10 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
                 read[ch] = modulated ? (double) readAt (tap, ch, writeAt, tap.glidePosition + offset[ch])
                                      : (double) readGlide (tap, ch, writeAt);
 
+            if (pitching)
+                for (int ch = 0; ch < 2; ++ch)
+                    pitchedIn[ch] = (double) readAt (tap, ch, writeAt, std::max (2.0, tap.glidePosition - (double) pitchLead) + offset[ch]);
+
             const auto target = (double) tap.targetDelay;
 
             if (tap.glidePosition != target)
@@ -683,6 +834,29 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
                 if (std::abs (target - tap.glidePosition) < 0.001)
                     tap.glidePosition = target;
             }
+        }
+
+        // What Freeze writes back: the ring as read, which for a pitched tap is the shifter's
+        // input, so a frozen loop holds instead of climbing.
+        double held[2] { read[0], read[1] };
+
+        if (pitching)
+        {
+            double shifted[2];
+            tap.shifter.process (pitchedIn, shifted, 2, tap.ratio);
+            tap.shifterRunning = true;
+
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                read[ch] += (shifted[ch] - read[ch]) * pitchMix;
+                held[ch] += (pitchedIn[ch] - held[ch]) * pitchMix;
+            }
+        }
+        else if (tap.shifterRunning)
+        {
+            tap.shifter.reset();
+            tap.shifterRunning = false;
+            tap.warmed = 0;
         }
 
         // Filters, resolution and shaping ---------------------------------------------------
@@ -731,7 +905,51 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
 
         if (hold > 0.0)
             for (int ch = 0; ch < 2; ++ch)
-                loop[ch] += (read[ch] - loop[ch]) * hold;
+                loop[ch] += (held[ch] - loop[ch]) * hold;
+
+        // Phase 4 Wave 3: the reverse head. Inside each window it runs backwards from the write
+        // head at the pitch's speed, so its delay grows from 0 by 1 + ratio a sample, and each
+        // window fades in and out over 5 ms. It plays the forward loop backwards: Feedback and the
+        // loop are as they were (decision 1 A). Its own filters and resolution follow the tap's.
+        if (tap.reverseK == 0)
+        {
+            tap.reverseWindow = reverseWindowFor (tap);
+            tap.reverseDelay = 0.0;
+        }
+
+        if (reverseMix > 0.0)
+        {
+            const auto fade = (double) std::min (reverseFade, std::max (1, tap.reverseWindow / 2));
+            const auto edge = (double) std::min ({ tap.reverseK, tap.reverseWindow - tap.reverseK, tap.sinceJump });
+            const auto envelope = edge >= fade ? 1.0 : 0.5 - 0.5 * std::cos (std::numbers::pi * edge / fade);
+
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                auto value = (double) readAt (tap, ch, writeAt, std::max (2.0, tap.reverseDelay) + offset[ch]);
+
+                if (lowpassMix > 0.0)
+                    value += (tap.reverseLowpass[ch].tick (tap.lowpassCoefficients, value).low - value) * lowpassMix;
+                else
+                    tap.reverseLowpass[ch].reset();
+
+                if (highpassMix > 0.0)
+                    value += (tap.reverseHighpass[ch].tick (tap.highpassCoefficients, value).high - value) * highpassMix;
+                else
+                    tap.reverseHighpass[ch].reset();
+
+                if (crushMix > 0.0)
+                    value += (std::round (value * tap.crushScale) / tap.crushScale - value) * crushMix;
+
+                const auto reversed = (shaped ? shape (value, saturation, useFastTanh) : value) * envelope;
+                output[ch] += (reversed - output[ch]) * reverseMix;
+            }
+        }
+
+        tap.reverseDelay = std::min (tap.reverseDelay + 1.0 + tap.ratio, (double) (maxDelaySamples - 4));
+        tap.sinceJump = std::min (tap.sinceJump + 1, 1 << 30);
+
+        if (++tap.reverseK >= tap.reverseWindow)
+            tap.reverseK = 0;
 
         // Back into the ring ----------------------------------------------------------------
 
@@ -820,6 +1038,11 @@ void DelayDsp::processTap (Tap& tap, const float* inLeft, const float* inRight, 
 void DelayDsp::process (float* const* channels, int numChannels, int numSamples) noexcept
 {
     double wetLeft[chunkSize], wetRight[chunkSize];
+
+    // Phase 4 Wave 3: the host's position is for the block's first sample.
+    for (auto& tap : taps)
+        if (! tap.asleep)
+            followHostGrid (tap);
 
     for (int start = 0; start < numSamples;)
     {

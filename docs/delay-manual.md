@@ -39,6 +39,8 @@ Note lengths stop at 10 seconds. If the host gives no tempo, the plugin keeps th
 | Width | 0.00-2.00 | 0 is mono, 1 is unchanged, above 1 is wider |
 | Pan | 100 L-100 R | Balance, so the centre is unchanged and a hard pan silences the other side |
 | Volume | -inf to +12 dB | The tap's level |
+| Pitch | -12 to +12 st, 0 is off | Shifts the tap's repeats in pitch, again on every pass through the feedback loop (see Reverse and Pitch below) |
+| Direction (the switch under Feedback) | Forward, Reverse | Drawn as a right- and a left-pointing triangle; hover over either for its name. Reverse plays the repeats backwards (see Reverse and Pitch below) |
 
 Feedback above 100 % only applies with Saturate on. If it's set higher and Saturate is off, the knob keeps its position but the tap runs at 100 %.
 
@@ -64,6 +66,7 @@ To type a value, click it, or Ctrl-click anywhere on a knob or fader. Enter or c
 - Pan accepts `60 L`, `L60`, `60 R` or `-60`.
 - Length in Note mode accepts `1/8` or `8`.
 - Length in ms mode takes milliseconds.
+- Pitch accepts `7`, `-12` or `-0.1`, and shows `+7.00 st`.
 
 The header knob has no value text, so it opens with Ctrl-click. Output in EDIT is the same control.
 
@@ -100,6 +103,16 @@ None.
 
 - **Freeze** (tap graph): the repeats hold for as long as it's on and new input isn't heard, for pads and transitions. It fades in and out over 30 ms and can be automated.
 - **Ceiling** (drawer): holds the output's true peak under this level, so feedback at 100 % and over can't clip the bus. Off at the bottom.
+
+## Reverse and Pitch
+
+Both are on the Tone page and belong to the selected tap. The window is 884 px wide to fit Pitch beside the other six knobs.
+
+**Reverse** (the direction switch under Feedback, on ◀) plays the tap's repeats backwards. The tap cuts what comes in into windows one tap time long and plays each window backwards, so a note swells in and ends on its attack. Where a note lands depends on where it fell in its window: the swell always ends at a window's edge. Each window fades in and out over 5 ms, so its edges don't click. In Note mode, while the host plays, the windows start on the tap's own note grid, so swells end on the beat; in ms mode, or with the transport stopped, they count from when the tap started. Feedback works as usual: every repeat comes back reversed. Lowpass, Highpass and Resolution colour the reversed sound; Character and Diffusion colour the repeats after the first. A reversed tap's tab shows a small ◀ in its bottom-right corner, on both pages. Windows longer than 5 s, or long ones with Pitch raised, are shortened so the tap never reads further back than its 10 seconds of memory.
+
+**Pitch** shifts the tap's repeats. The shift sits inside the feedback loop, so each repeat is shifted again: +12 st climbs in octaves (440, 880, 1760 Hz and on), -12 falls, +7 climbs in fifths, and a small amount such as ±0.1 st drifts slowly out of tune. With Feedback at 0 it's one shifted echo. The repeats still land on the tap time, except on taps shorter than 27 ms, which land that much late. Feedback keeps its meaning: each pass loses about 0.2 dB more than without Pitch. Rising repeats are filtered before each shift, so nothing folds back down from above the top of the range. Turning Pitch on fades the shifted sound in over about a tenth of a second; moving it glides over 30 ms.
+
+With Reverse on, Pitch changes the reversed playback's speed instead: each echo is shifted once rather than climbing. With **Freeze** on, a pitched loop holds where it is instead of climbing.
 
 ## Memory
 

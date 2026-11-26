@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fancy/dsp/DelayTime.h>
+#include <fancy/dsp/PitchShifter.h>
 
 #include <fancy/dsp/Smoother.h>
 #include <fancy/dsp/Svf.h>
@@ -36,6 +37,11 @@ public:
         // Sine at 90 degrees is the modulation as it was, to the bit.
         int modShape = sine;
         double modStereoDegrees = 90.0; // 0 to 180
+
+        // Phase 4 Wave 3: the repeats played backwards, and shifted in pitch. Off and 0 are the
+        // tap as it was, to the bit.
+        bool reverse = false;
+        double pitchSemitones = 0.0;    // -12 to 12
     };
 
     struct Targets
@@ -52,6 +58,11 @@ public:
 
         // Phase 4 Wave 1 (docs/delay.md): the loops hold and the input stops. Off is the delay as it was.
         bool freeze = false;
+
+        // Phase 4 Wave 3: the host's transport at the start of the block, so a Note-mode reverse
+        // tap's windows start on its note grid.
+        bool hostPlaying = false;
+        double hostPpq = 0.0;
     };
 
     // tanh within 5e-4, never above 1 in size (Phase 3 Q2.3).
@@ -75,6 +86,11 @@ public:
 
     // The tap's current delay. Exposed for tests.
     int getDelaySamples (int tap) const noexcept { return taps[(size_t) tap].targetDelay; }
+
+    // Phase 4 Wave 3: how far ahead of the tap time a pitched tap reads the ring, the shifter's
+    // average delay; and the reverse window, for tests.
+    int getPitchLeadSamples() const noexcept { return pitchLead; }
+    int getReverseWindowSamples (int tap) const noexcept { return taps[(size_t) tap].reverseWindow; }
     bool isTapAsleep (int tap) const noexcept { return taps[(size_t) tap].asleep; }
 
 private:
@@ -135,6 +151,25 @@ private:
         std::vector<float> diffusers[2][4];
         int diffuserLength[2][4] {};
         int diffuserIndex[2][4] {};
+
+        // Phase 4 Wave 3. Pitch in semitones, glided; the pitched path's and the reverse head's
+        // crossfades. The shifter runs only while its crossfade is above 0.
+        fancy::dsp::PitchShifter shifter;
+        Smoother pitch, pitchMix, reverseMix;
+        double ratio = 1.0, ratioFor = 0.0;
+        bool shifterRunning = false, noteMode = true;
+
+        // Pitch is wanted; the pitched path's crossfade waits until the shifter has heard
+        // shifterWarmMs of the ring, so it never fades in on its own empty line.
+        bool pitchWanted = false;
+        int warmed = 0;
+
+        // The reverse head: the window it is in (latched at each window's start), the sample
+        // within it, its delay (growing by 1 + ratio a sample), and the fade-in after a jump to
+        // the host's grid.
+        int reverseWindow = 1, reverseK = 0, sinceJump = 1 << 30;
+        double reverseDelay = 0.0;
+        fancy::dsp::Svf reverseLowpass[2], reverseHighpass[2];
     };
 
     void updateCoefficients (Tap&) noexcept;
@@ -147,6 +182,11 @@ private:
     double diffuse (Tap&, int channel, double value, double coefficient) noexcept;
     void setTapTargets (Tap&, const TapSpec&, bool anySolo, double bpm, double swing, bool smoothTime, bool isMono) noexcept;
     void snapTap (Tap&) noexcept;
+
+    // Phase 4 Wave 3.
+    int reverseWindowFor (const Tap&) const noexcept;
+    void restartReverse (Tap&) noexcept;
+    void followHostGrid (Tap&) noexcept;
 
     double rate = 44100.0;
     int ringSize = 0, ringMask = 0, maxDelaySamples = 1, fadeSamples = 1;
@@ -169,4 +209,10 @@ private:
     double duckGain = 1.0, duckStep = 0.0;
     int duckCountdown = 0;
     bool useFastTanh = false;
+
+    // Phase 4 Wave 3: the shifter's average delay in whole samples, the reverse windows' 5 ms
+    // fades, and the host's transport for this block.
+    int pitchLead = 1, reverseFade = 1, shifterWarm = 1;
+    bool hostPlaying = false;
+    double hostPpq = 0.0, hostBpm = 120.0;
 };

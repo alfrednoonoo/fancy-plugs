@@ -24,6 +24,9 @@ public:
     // Phase 3 Q2.3: tap 1 on Tape, its Motion page showing.
     void showMotionPreview();
 
+    // Phase 4 Wave 3: tap 1 reversed at +7 st, as drawn in reference/phase4/69__delay_w3_mockup.png.
+    void showReversePreview();
+
 private:
     class Panels final : public juce::Component
     {
@@ -44,6 +47,19 @@ private:
     // Phase 4 Wave 2: the LFO shape, drawn as a sine wave and a triangle wave, with the names
     // in the tooltip of the segment under the mouse.
     class WaveSwitch final : public fancy::ui::ParamSegments
+    {
+    public:
+        using ParamSegments::ParamSegments;
+
+        juce::String getTooltip() override;
+
+    private:
+        void paintSegment (juce::Graphics&, int index, juce::Rectangle<float> area, juce::Colour ink) override;
+    };
+
+    // Phase 4 Wave 3: Forward or Reverse, drawn as a right- and a left-pointing triangle, with
+    // the names in the tooltip of the segment under the mouse.
+    class DirectionSwitch final : public fancy::ui::ParamSegments
     {
     public:
         using ParamSegments::ParamSegments;
@@ -112,10 +128,16 @@ private:
         WaveSwitch shapeSwitch;
         fancy::ui::Knob stereoKnob;
 
+        // Phase 4 Wave 3: Pitch after Pan, and the direction under Feedback, on the Tone page.
+        fancy::ui::Knob pitchKnob;
+        DirectionSwitch directionSwitch;
+
     public:
         void showMotion (bool motion) { showPage (motion); }
         fancy::ui::Knob& getStereoKnob() noexcept { return stereoKnob; }
         WaveSwitch& getShapeSwitch() noexcept { return shapeSwitch; }
+        fancy::ui::Knob& getPitchKnob() noexcept { return pitchKnob; }
+        DirectionSwitch& getDirectionSwitch() noexcept { return directionSwitch; }
     };
 
     void onTick (float seconds) override;

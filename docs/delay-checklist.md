@@ -122,3 +122,18 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 
 - [x] The window is a little taller, and Freeze sits above the tap handles. Set a tap near 375 ms to full volume: its handle stays clear of Freeze and can be dragged.
 - [x] A saved project opens with the same sound.
+
+## Reverse and Pitch (Phase 4 Wave 3)
+
+- [ ] The window is 884 px wide at 100 % (and can't be made narrower). Tone page: seven knobs, Pitch last, with the ▶ | ◀ switch under Feedback; Motion page: its five knobs evenly spaced. Nothing overlaps, at 100 % or 200 %.
+- [ ] A project saved with v1.7.1 that uses Fancy Delay sounds exactly as before, with every tap forward and at 0 st.
+- [ ] Hover over ▶ and ◀: each names itself. Click ◀ on a tap while it plays: the repeats turn backwards with no click, notes swell in and end on their attack, and the tab shows a small ◀ in its corner (on the Motion page too).
+- [ ] A 1/4 reverse tap in Note mode with the transport playing: the swells end on the beats. Stop, start from another bar: they still do.
+- [ ] Lowpass on a reversed tap darkens the reversed sound.
+- [ ] Pitch +12 st at 60 % Feedback on a short note: the repeats climb in octaves, each a little quieter, and still land in time. -12 falls; +7 climbs in fifths; 0.10 st drifts slowly.
+- [ ] Turn Pitch from 0 while a tap plays: the shifted sound fades in with no click. Move it while playing: it glides. Back to 0: the plain repeats return, no click.
+- [ ] A held chord through +7 st: the repeats are steady, with no warble.
+- [ ] +12 st at 95 % Feedback for half a minute: it climbs out of hearing without turning into low rumble or noise, and nothing runs away.
+- [ ] Freeze with Pitch +12: the frozen loop holds its pitch instead of climbing.
+- [ ] Reverse with Pitch +7: the reversed repeats are higher, each echo once.
+- [ ] Type `7`, `-12` and `-0.1` into Pitch: they show `+7.00 st`, `-12.00 st` and `-0.10 st`.

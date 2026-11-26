@@ -288,6 +288,7 @@ public:
         int id;
         juce::Colour colour;
         juce::String badge {}; // a letter in the tab's top-right corner, such as Fancy Delay's T or B
+        bool reversed = false; // a backwards triangle in the bottom-right corner, Fancy Delay's reversed taps
     };
 
     void setTabs (std::vector<Tab> newTabs, int selectedId);

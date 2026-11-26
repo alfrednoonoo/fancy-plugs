@@ -59,6 +59,9 @@ private:
 
         // Phase 4 Wave 2.
         std::atomic<float>* modShape, *modStereo;
+
+        // Phase 4 Wave 3.
+        std::atomic<float>* reverse, *pitch;
     };
 
     float read (const char* parameterId) const;
@@ -67,6 +70,10 @@ private:
     std::array<TapValues, delay::maxTaps> tapValues {};
     std::atomic<double> tempo { 120.0 };
     std::atomic<bool> hostTempo { false };
+
+    // Phase 4 Wave 3: the host's transport, for Note-mode reverse windows. Audio thread only.
+    bool transportPlaying = false;
+    double transportPpq = 0.0;
     DelayDsp dsp;
     fancy::dsp::OutputCeiling ceiling; // Phase 4 Wave 1
 

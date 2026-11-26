@@ -726,6 +726,18 @@ int main (int argc, char** argv)
             ok = writeBothScales (*editor, "delay-motion", outputDir) && ok;
         }
     }
+
+    {
+        // Phase 4 Wave 3: tap 1 reversed at +7 st (reference/phase4/69__delay_w3_mockup.png, picture 2).
+        DelayProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<DelayEditor*> (base.get()))
+        {
+            editor->showReversePreview();
+            ok = writeBothScales (*editor, "delay-reverse", outputDir) && ok;
+        }
+    }
    #endif
 
     {

@@ -11,16 +11,20 @@ namespace
 // it 60 px wider for the Motion page's Stereo knob: the tap graph and the knob card widen, and
 // everything right of them moves across. v1.7.2 (reference/phase4/67__delay_freeze_mockup.png, A) grows
 // it 24 px taller: the tap graph has a label strip for Freeze, so everything under it moves down.
-constexpr int baseWidth = 820;
+// Wave 3 (reference/phase4/69__delay_w3_mockup.png) grows it 64 px wider for the
+// Tone page's Pitch knob: the tap graph and the knob card widen, everything right of
+// them moves across, and the Motion page's knobs spread to the Tone page's 64 px.
+constexpr int grownWidth = 64;
+constexpr int baseWidth = 820 + grownWidth;
 constexpr int bodyHeight = 399;
 constexpr int baseHeight = ShellEditor::headerHeight + bodyHeight;
-constexpr int rightColumnX = 716;
+constexpr int rightColumnX = 716 + grownWidth;
 
-constexpr int mapX = 13, mapY = 10, mapWidth = 670, mapHeight = 174;
+constexpr int mapX = 13, mapY = 10, mapWidth = 670 + grownWidth, mapHeight = 174;
 constexpr int tabRowY = 194, tabRowHeight = 22;
 constexpr int cardY = 222, cardHeight = 145;
 constexpr int timeCardX = 13, timeCardWidth = 186;
-constexpr int controlsCardX = 207, controlsCardWidth = 499;
+constexpr int controlsCardX = 207, controlsCardWidth = 499 + grownWidth;
 constexpr int footerY = 375;
 constexpr int faderTop = 26, faderHeight = 345;
 
@@ -148,6 +152,31 @@ void DelayEditor::WaveSwitch::paintSegment (juce::Graphics& g, int index, juce::
     g.strokePath (wave, juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 }
 
+// DirectionSwitch -------------------------------------------------------------
+
+void DelayEditor::DirectionSwitch::paintSegment (juce::Graphics& g, int index, juce::Rectangle<float> area, juce::Colour ink)
+{
+    // A 7 x 8 triangle, pointing right for Forward and left for Reverse.
+    const auto c = area.getCentre();
+    juce::Path triangle;
+
+    if (index == 0)
+        triangle.addTriangle (c.x - 3.0f, c.y - 4.0f, c.x - 3.0f, c.y + 4.0f, c.x + 4.0f, c.y);
+    else
+        triangle.addTriangle (c.x + 3.0f, c.y - 4.0f, c.x + 3.0f, c.y + 4.0f, c.x - 4.0f, c.y);
+
+    g.setColour (ink);
+    g.fillPath (triangle);
+}
+
+juce::String DelayEditor::DirectionSwitch::getTooltip()
+{
+    const auto reverse = getMouseXYRelative().x >= getWidth() / 2;
+
+    return reverse ? "Reverse: plays each window of one tap time backwards, so notes swell in"
+                   : "Forward: the repeats play as they came in";
+}
+
 juce::String DelayEditor::WaveSwitch::getTooltip()
 {
     const auto triangle = getMouseXYRelative().x >= getWidth() / 2;
@@ -194,7 +223,9 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
       randomKnob (tapParameter (processor, tapIndex, "modRand"), "Random", tapColour (tapIndex), tapKnobStyle),
       diffusionKnob (tapParameter (processor, tapIndex, "diff"), "Diffusion", tapColour (tapIndex), tapKnobStyle),
       shapeSwitch (tapParameter (processor, tapIndex, "modShape"), tapColour (tapIndex), colours::bgWell),
-      stereoKnob (tapParameter (processor, tapIndex, "modStereo"), "Stereo", tapColour (tapIndex), tapKnobStyle)
+      stereoKnob (tapParameter (processor, tapIndex, "modStereo"), "Stereo", tapColour (tapIndex), tapKnobStyle),
+      pitchKnob (tapParameter (processor, tapIndex, "pitch"), "Pitch", tapColour (tapIndex), tapKnobStyle, true),
+      directionSwitch (tapParameter (processor, tapIndex, "reverse"), tapColour (tapIndex), colours::bgWell)
 {
     setInterceptsMouseClicks (false, true);
 
@@ -222,13 +253,18 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
     placeKnob (widthKnob, 4);
     placeKnob (panKnob, 5);
 
-    volumeLabel.setFont (font (Weight::regular, labelHeight));
-    volumeLabel.setBounds (650, cardY + 7, 52, 17);
-    volumeFader.setBounds (654, cardY + 26, 44, 112);
+    // Phase 4 Wave 3 (reference/phase4/69__delay_w3_mockup.png): Pitch in the seventh place, and
+    // the direction switch under Feedback, as the wave switch sits under Rate.
+    placeKnob (pitchKnob, 6);
+    directionSwitch.setBounds (firstCentre - 25, cardY + 113, 50, 17);
 
-    soloButton.setBounds (623, tabRowY, 23, tabRowHeight);
-    powerIcon.setBounds (657, tabRowY + 5, 12, 13);
-    closeButton.setBounds (690, tabRowY + 7, 8, 8);
+    volumeLabel.setFont (font (Weight::regular, labelHeight));
+    volumeLabel.setBounds (650 + grownWidth, cardY + 7, 52, 17);
+    volumeFader.setBounds (654 + grownWidth, cardY + 26, 44, 112);
+
+    soloButton.setBounds (623 + grownWidth, tabRowY, 23, tabRowHeight);
+    powerIcon.setBounds (657 + grownWidth, tabRowY + 5, 12, 13);
+    closeButton.setBounds (690 + grownWidth, tabRowY + 7, 8, 8);
 
     loopCheckbox.setBounds (15, footerY, 178, 20);
     pingCheckbox.setBounds (205, footerY, 86, 20);
@@ -239,8 +275,8 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &modeSwitch, &msKnob, &noteKnob, &noteDropdown, &feelSwitch, &resultLabel,
-             &feedbackKnob, &lowpassKnob, &highpassKnob, &resolutionKnob, &widthKnob, &panKnob, &volumeLabel, &volumeFader,
-             &soloButton, &powerIcon, &closeButton, &loopCheckbox, &pingCheckbox, &saturateCheckbox })
+             &feedbackKnob, &lowpassKnob, &highpassKnob, &resolutionKnob, &widthKnob, &panKnob, &pitchKnob, &directionSwitch,
+             &volumeLabel, &volumeFader, &soloButton, &powerIcon, &closeButton, &loopCheckbox, &pingCheckbox, &saturateCheckbox })
         addAndMakeVisible (item);
 
     closeButton.onClick = [&owner] { owner.removeSelectedTap(); };
@@ -284,14 +320,12 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
         constexpr int knobWidth = 66, knobHeight = 99, knobTop = cardY + 9, firstX = controlsCardX + 144;
         int index = 0;
 
-        for (auto* knob : { &modRateKnob, &modDepthKnob, &randomKnob })
-            knob->setBounds (firstX + (index++) * 58, knobTop, knobWidth, knobHeight);
+        // Phase 4 Wave 3 (reference/phase4/69__delay_w3_mockup.png): Rate, Depth, Random, Stereo
+        // (Wave 2) and Diffusion 64 px apart, the Tone page's spacing, in the width the window
+        // gained. The wave switch stays under Rate.
+        for (auto* knob : { &modRateKnob, &modDepthKnob, &randomKnob, &stereoKnob, &diffusionKnob })
+            knob->setBounds (firstX + (index++) * 64, knobTop, knobWidth, knobHeight);
 
-        // Phase 4 Wave 2 (reference/phase4/57__delay_w2_mockup.png): Stereo after Random, centred
-        // at x 555, and Diffusion where the 60 px the window grew put it. The wave switch sits
-        // under Rate.
-        stereoKnob.setBounds (555 - knobWidth / 2, knobTop, knobWidth, knobHeight);
-        diffusionKnob.setBounds (firstX + 3 * 58 + 60, knobTop, knobWidth, knobHeight);
         shapeSwitch.setBounds (364, cardY + 113, 50, 17);
     }
 
@@ -306,6 +340,9 @@ DelayEditor::TapEditor::TapEditor (DelayProcessor& processor, int tapIndex, Dela
     modDepthKnob.setTooltip ("The peak pitch change of the wow and flutter. 0 is none.");
     randomKnob.setTooltip ("How much of the motion is a slow random wander rather than a steady wobble.");
     diffusionKnob.setTooltip ("Smears each repeat into the next, inside the feedback loop.");
+    pitchKnob.setTooltip ("Shifts the repeats, again on each pass through the feedback loop: +12 st climbs in octaves, "
+                          "a small amount drifts. 0 is off.");
+
     stereoKnob.setTooltip (juce::String::fromUTF8 ("How far ahead the right channel's wobble runs. 0\xc2\xb0 moves both sides together; "
                                                    "180\xc2\xb0 moves them in opposition, the widest. 90\xc2\xb0 is the default."));
 
@@ -318,7 +355,8 @@ void DelayEditor::TapEditor::showPage (bool motion)
     pageSwitch.motion = motion;
     pageSwitch.repaint();
 
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &feedbackKnob, &lowpassKnob, &highpassKnob, &resolutionKnob, &widthKnob, &panKnob })
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &feedbackKnob, &lowpassKnob, &highpassKnob, &resolutionKnob, &widthKnob, &panKnob,
+                                                                           &pitchKnob, &directionSwitch })
         item->setVisible (! motion);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &characterLabel, &characterSegments, &amountKnob, &modRateKnob, &modDepthKnob,
@@ -411,8 +449,8 @@ void DelayEditor::TapEditor::paint (juce::Graphics& g)
     g.drawText (detailText(), row.withTrimmedLeft (46), juce::Justification::centredLeft, true);
 
     g.setColour (colours::bgSection);
-    g.fillRoundedRectangle (652.0f, (float) tabRowY, 23.0f, (float) tabRowHeight, 3.0f);
-    g.fillRoundedRectangle (682.0f, (float) tabRowY, 24.0f, (float) tabRowHeight, 3.0f);
+    g.fillRoundedRectangle ((float) (652 + grownWidth), (float) tabRowY, 23.0f, (float) tabRowHeight, 3.0f);
+    g.fillRoundedRectangle ((float) (682 + grownWidth), (float) tabRowY, 24.0f, (float) tabRowHeight, 3.0f);
 }
 
 // DelayEditor -----------------------------------------------------------------
@@ -466,16 +504,16 @@ DelayEditor::DelayEditor (DelayProcessor& processor)
 
     smoothCheckbox.setBounds (431, footerY, 151, 20);
     smoothCheckbox.setLabelHeight (labelHeight);
-    editLink.setBounds (642, footerY - 2, 64, 24);
-    outMeter.setBounds (710, 10, 46, 364);
+    editLink.setBounds (642 + grownWidth, footerY - 2, 64, 24);
+    outMeter.setBounds (710 + grownWidth, 10, 46, 364);
 
     styleLabel (wetLabel, "Wet", colours::textSecondary, juce::Justification::centred);
     styleLabel (dryLabel, "Dry", colours::textSecondary, juce::Justification::centred);
 
-    wetLabel.setBounds (750, 10, 33, 17);
-    dryLabel.setBounds (783, 10, 33, 17);
-    wetFader.setBounds (750, faderTop, 33, faderHeight);
-    dryFader.setBounds (783, faderTop, 33, faderHeight);
+    wetLabel.setBounds (750 + grownWidth, 10, 33, 17);
+    dryLabel.setBounds (783 + grownWidth, 10, 33, 17);
+    wetFader.setBounds (750 + grownWidth, faderTop, 33, faderHeight);
+    dryFader.setBounds (783 + grownWidth, faderTop, 33, faderHeight);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &smoothCheckbox, &editLink, &outMeter, &wetLabel, &dryLabel, &wetFader, &dryFader })
         body.addAndMakeVisible (item);
@@ -610,9 +648,11 @@ void DelayEditor::updateSelection()
     for (int tap = 0; tap < delay::maxTaps; ++tap)
         if (processor.isTapUsed (tap))
         {
-            // Phase 3 Q2.3: T or B on a tap with Tape or BBD character.
-            const auto character = processor.readTap (tap).character;
-            used.push_back ({ tap, tapColour (tap), character == DelayDsp::tape ? "T" : character == DelayDsp::bbd ? "B" : "" });
+            // Phase 3 Q2.3: T or B on a tap with Tape or BBD character; Phase 4 Wave 3: a ring
+            // with a backwards triangle on a reversed tap.
+            const auto spec = processor.readTap (tap);
+            const auto character = spec.character;
+            used.push_back ({ tap, tapColour (tap), character == DelayDsp::tape ? "T" : character == DelayDsp::bbd ? "B" : "", spec.reverse });
         }
 
     if (! used.empty() && ! processor.isTapUsed (selectedTap))
@@ -700,6 +740,18 @@ void DelayEditor::showMotionPreview()
     tapEditors[0]->showMotion (true);
 }
 
+void DelayEditor::showReversePreview()
+{
+    showPreview (false);
+
+    // reference/phase4/69__delay_w3_mockup.png, picture 2.
+    setValue (parameter (DelayProcessor::id (0, "reverse")), 1.0f);
+    setValue (parameter (DelayProcessor::id (0, "pitch")), 7.0f);
+
+    updateSelection();
+    tapEditors[0]->showMotion (false);
+}
+
 juce::Colour DelayEditor::getAccentColour()
 {
     return colours::accentYellow;
@@ -726,6 +778,14 @@ std::vector<ShellEditor::PopupOpener> DelayEditor::getPopupOpeners()
                              updateSelection();
                              editor.showMotion (true);
                              showTip (editor.getShapeSwitch(), "Triangle: a steady detune that flips each half cycle");
+                         } });
+    openers.push_back ({ "tooltip-direction", [this]
+                         {
+                             // After tooltip-wave, which left the Motion page showing.
+                             auto& editor = *tapEditors[(size_t) selectedTap];
+                             drawer.setVisible (false);
+                             editor.showMotion (false);
+                             showTip (editor.getDirectionSwitch(), "Reverse: plays each window of one tap time backwards, so notes swell in");
                          } });
     return openers;
 }

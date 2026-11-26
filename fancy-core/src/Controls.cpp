@@ -817,6 +817,23 @@ void ColourTabs::paint (juce::Graphics& g)
             g.drawText (tab.badge, badge, juce::Justification::centred, false);
             g.setFont (font (Weight::regular, bodyFontSize));
         }
+
+        if (tab.reversed)
+        {
+            // Phase 4 Wave 3 (reference/phase4/69__delay_w3_mockup.png): the same ring, in the
+            // bottom-right corner, holding a small left-pointing triangle.
+            const auto mark = juce::Rectangle<float> (11.0f, 11.0f).withPosition (area.getRight() - 11.0f, area.getBottom() - 11.0f);
+
+            g.setColour (colours::bgWell);
+            g.fillEllipse (mark);
+            g.setColour (tab.colour);
+            g.drawEllipse (mark.reduced (0.5f), 1.0f);
+
+            const auto c = mark.getCentre();
+            juce::Path triangle;
+            triangle.addTriangle (c.x - 2.6f, c.y, c.x + 2.0f, c.y - 2.6f, c.x + 2.0f, c.y + 2.6f);
+            g.fillPath (triangle);
+        }
     }
 
     if (showAddButton)
