@@ -373,6 +373,130 @@ def room_w3():
 
 m.PAGE_HEIGHTS["room-w3"] = 2200
 
+# ---------------------------------------------------------------------------------------------
+# Limit's multiband limiting (docs/enhancements.md, section 10 item 6, ▲: layout first). Screenshot: limit@2x.png of
+# run 45855736195 (commit 00a2d21), 760 x 465. Measured at 1x: header to y 72; the display card is x 119 to 629,
+# y 117 to 276 (history x 119 to 479, loudness panel x 480 to 629); the LIMITER card is x 119 to 629, y 285 to 411,
+# its knobs centred at x 183, 310, 437 and 559, labels at y 317, values at y 403; the left column (Threshold, GR)
+# is x 0 to 118 and the right one (Out, LUFS) x 640 to 760; the footer's checkboxes are at y 444.
+LIMIT_W, LIMIT_H = 760, 465
+LIMIT_RED = "#E74D3D"
+LIMIT_GROW = 172  # A: the BANDS card (164) and its gap
+BAND_COLOURS = [LIMIT_RED, "#9A59B5", "#3598DB", "#1BBC9C"]
+
+
+def limit_graph(x, y, w, h, splits, gr, scale_db=12.0, labels=True):
+    """The crossover strip: bands shaded in their colours, each one's reduction falling from the top, the splits as
+    handles. splits in Hz, gr in dB per band."""
+    import math
+
+    def fx(hz):
+        return w * math.log10(hz / 20.0) / 3.0
+
+    edges = [0.0] + [fx(s) for s in splits] + [w]
+    parts = [f'<rect width="{w}" height="{h}" fill="#141414"/>']
+    for i in range(len(edges) - 1):
+        x0, x1, c = edges[i], edges[i + 1], BAND_COLOURS[i]
+        drop = h * min(gr[i], scale_db) / scale_db
+        parts.append(f'<rect x="{x0:.1f}" y="0" width="{x1 - x0:.1f}" height="{h}" fill="{c}" fill-opacity=".10"/>')
+        parts.append(f'<rect x="{x0 + 1:.1f}" y="0" width="{x1 - x0 - 2:.1f}" height="{drop:.1f}" fill="{c}" fill-opacity=".75"/>')
+        cx = (x0 + x1) / 2
+        parts.append(f'<circle cx="{cx:.1f}" cy="{h - 13}" r="7.5" fill="#141414" stroke="{c}" stroke-width="1.5"/>'
+                     f'<text x="{cx:.1f}" y="{h - 9.5}" fill="#fff" font-size="9.5" font-weight="600" text-anchor="middle">{i + 1}</text>')
+    for s in splits:
+        sx = fx(s)
+        parts.append(f'<line x1="{sx:.1f}" y1="0" x2="{sx:.1f}" y2="{h}" stroke="#3598DB" stroke-width="1.5"/>'
+                     f'<rect x="{sx - 3:.1f}" y="{h - 8}" width="6" height="8" rx="1.5" fill="#3598DB"/>')
+    full = h + (13 if labels else 0)
+    if labels:
+        for hz, text in [(50, "50"), (100, "100"), (200, "200"), (500, "500"), (1000, "1k"), (2000, "2k"), (5000, "5k"), (10000, "10k")]:
+            parts.append(f'<text x="{fx(hz):.1f}" y="{h + 11}" fill="#8D8D8D" font-size="9" text-anchor="middle">{text}</text>')
+    return (f'<svg class="o" style="left:{x}px;top:{y}px" width="{w}" height="{full}" viewBox="0 0 {w} {full}">'
+            + "".join(parts) + "</svg>")
+
+
+def band_chip(x, y, i, on=False, size=18):
+    c = BAND_COLOURS[i]
+    style = f"background:{c};color:#fff" if on else f"border:1.5px solid {c};color:#fff;box-sizing:border-box"
+    return (f'<div class="o" style="left:{x}px;top:{y}px;width:{size}px;height:{size}px;border-radius:3px;{style};font-size:11px;'
+            f'font-weight:600;display:flex;align-items:center;justify-content:center">{i + 1}</div>')
+
+
+def limit_bands_card(top, bands, releases, grs, splits):
+    """A: the BANDS card, x 119 to 629, 164 tall, between the display and the LIMITER card."""
+    x0, w = 119, 511
+    html = f'<div class="o" style="left:{x0}px;top:{top}px;width:{w}px;height:164px;background:#262626;border-radius:4px"></div>'
+    html += ('<div class="o" style="left:131px;top:%dpx;font-size:12px;font-weight:600;letter-spacing:.04em;color:#8D8D8D">BANDS</div>' % (top + 11))
+    html += m.seg(186, top + 8, 116, 20, ["1", "2", "3", "4"], bands - 1, LIMIT_RED, text="#fff")
+    html += '<div class="o" style="left:410px;top:%dpx;font-size:12px;color:#8D8D8D">Crossover</div>' % (top + 11)
+    html += '<div class="o dd" style="left:474px;top:%dpx;width:143px;height:22px;font-size:12px">LR 24 dB &middot; Min phase</div>' % (top + 7)
+    if bands == 1:
+        html += limit_graph(131, top + 34, 486, 44, [], [grs[0]])
+        html += caption(131, top + 100, "One band is today's limiter, to the bit: the band row is empty and the LIMITER card does everything.", 486)
+        return html + outline(x0 - 2, top - 2, w + 4, 168)
+    html += limit_graph(131, top + 34, 486, 44, splits, grs)
+    cell = 486 / 4
+    for i in range(4):
+        cx = 131 + cell * i
+        if i >= bands:
+            continue
+        html += band_chip(cx + 4, top + 118, i)
+        html += m.knob(cx + 58, top + 94, "Release", releases[i], BAND_COLOURS[i], min(1.0, 0.15 + 0.2 * i), size=28, fs=12, width=70)
+        html += (f'<div class="o" style="left:{cx + 88:.0f}px;top:{top + 112}px;width:30px;font-size:10px;color:#8D8D8D;text-align:center">GR</div>'
+                 f'<div class="o" style="left:{cx + 84:.0f}px;top:{top + 126}px;width:38px;font-size:12px;color:#fff;text-align:center">-{grs[i]:.1f}</div>')
+    return html + outline(x0 - 2, top - 2, w + 4, 168)
+
+
+def limit_b():
+    """B: the window stays 760 x 465. The display card's history gets a Bands view; the LIMITER card gets band chips,
+    and its Release follows the selected band."""
+    html = cover(119, 117, 361, 160, "#141414")
+    html += m.seg(125, 122, 112, 20, ["History", "Bands"], 1, "#424242", fs=11, text="#fff")
+    html += m.seg(330, 122, 140, 20, ["1", "2", "3", "4"], 2, LIMIT_RED, fs=11, text="#fff")
+    html += '<div class="o" style="left:286px;top:125px;font-size:11px;color:#8D8D8D">Bands</div>'
+    html += limit_graph(125, 148, 349, 112, [150, 3000], [4.0, 1.5, 2.5])
+    html += outline(117, 115, 365, 164)
+    # The LIMITER card's title row: band chips; Release shows band 2's.
+    html += band_chip(204, 292, 0) + band_chip(226, 292, 1, on=True) + band_chip(248, 292, 2)
+    html += outline(200, 289, 72, 24)
+    html += cover(262, 312, 96, 100)
+    html += m.knob(310, 317, "Release", "45 ms", BAND_COLOURS[1], 0.25, size=46, fs=13, width=96)
+    html += outline(262, 314, 96, 98)
+    return html
+
+
+@m.plugin("limit-w3", "74__limit_w3_layout_mockup.png")
+def limit_w3():
+    WA, HA = m.grow("limit-v172", "limit-v172-tall", LIMIT_GROW, [(0, 119, 260), (119, 640, 281), (640, 760, 266)], axis="y")
+    splits3, grs3 = [150, 3000], [4.0, 1.5, 2.5]
+    return w1.page("Fancy Limit: v1.7.2 layout mockup (multiband limiting, ▲)",
+                   "docs/enhancements.md, section 10 item 6: 2 to 4 bands with a release each. It changes the visible layout, so the layout comes before "
+                   "the design note. Changed things in dashed yellow, on the plugin's real screenshot (1x coordinates). The parameters drawn here "
+                   "(band count, crossovers, a release per band) are proposals the note will set out as decisions.", [
+        (f"1 · A (recommended): a BANDS card between the display and the LIMITER card; the window grows {LIMIT_GROW} px taller ({WA} x {HA})",
+         "<b>Bands</b> 1 to 4 (1 by default, today's limiter), the <b>Crossover</b> type (MultiComp's list), and a strip with each band's reduction "
+         "falling from the top in its colour. Drag a blue handle to move a crossover, or click its frequency to type one. Under the strip, each band "
+         "has its own small <b>Release</b> knob and GR read-out. The bands are limited first and summed; the LIMITER card's Ceiling, Release, "
+         "Lookahead and True peak then hold the final ceiling across the whole signal, as now.",
+         shot("limit-v172-tall", WA, HA, limit_bands_card(285, 3, ["40 ms", "80 ms", "120 ms", ""], grs3, splits3),
+              f"Nothing existing moves sideways or shrinks: the LIMITER card and footer move down {LIMIT_GROW} px, the Threshold, GR, Out and LUFS "
+              f"meters lengthen with the window (their scales are respaced evenly in the build; the mockup only stretches the picture), and the minimum height grows to {HA}. With Auto release on, each band's knob reads Auto.")),
+        ("2 · A with four bands", "A fourth band; each crossover can be dragged or typed.",
+         shot("limit-v172-tall", WA, HA, limit_bands_card(285, 4, ["30 ms", "60 ms", "100 ms", "150 ms"], [4.5, 2.0, 1.0, 2.5], [120, 1000, 6000]),
+              "", crop=(105, 275, 540, 180))),
+        ("3 · A at its default, one band", "The card stays, so the window doesn't jump when the count changes; the strip shows the one reduction.",
+         shot("limit-v172-tall", WA, HA, limit_bands_card(285, 1, ["", "", "", ""], [3.0], []), "", crop=(105, 275, 540, 180))),
+        ("4 · B: the window stays 760 x 465; the display card switches between History and Bands, and the LIMITER card's Release follows a band",
+         "A <b>History | Bands</b> switch, as MultiComp's Spectrum | GR history, puts the crossover strip in the history's place with the band count beside it. "
+         "Band chips in the LIMITER card's title row choose whose Release the knob shows (band 2's here, in its colour). The crossover type goes in the EDIT drawer.",
+         shot("limit-v172", LIMIT_W, LIMIT_H, limit_b(),
+              "No size change, but the history and the bands can't be seen together, and one knob changes meaning with the selected chip, "
+              "so a band's release is never in view beside the others'.")),
+    ])
+
+
+m.PAGE_HEIGHTS["limit-w3"] = 3000
+
 if __name__ == "__main__":
     for key in sys.argv[1:] or list(m.PLUGINS):
         m.render(key)
