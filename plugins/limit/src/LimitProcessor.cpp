@@ -213,11 +213,15 @@ LimitDsp::Targets LimitProcessor::readTargets() const
     targets.bands = juce::jlimit (1, LimitDsp::maxBands, juce::roundToInt (read ("bands")) + 1);
     targets.crossoverLr48 = juce::roundToInt (read ("crossoverType")) == 1;
 
+    // Fixed IDs: this runs on the audio thread every block, so no juce::String is built here.
+    static constexpr const char* crossoverIds[] { "crossover1", "crossover2", "crossover3" };
+    static constexpr const char* releaseIds[] { "bandRelease1", "bandRelease2", "bandRelease3", "bandRelease4" };
+
     for (int i = 0; i < LimitDsp::maxBands - 1; ++i)
-        targets.crossoverHz[(size_t) i] = (double) read (crossoverId (i).toRawUTF8());
+        targets.crossoverHz[(size_t) i] = (double) read (crossoverIds[i]);
 
     for (int i = 0; i < LimitDsp::maxBands; ++i)
-        targets.bandReleaseMs[(size_t) i] = (double) read (bandReleaseId (i).toRawUTF8());
+        targets.bandReleaseMs[(size_t) i] = (double) read (releaseIds[i]);
 
     return targets;
 }
