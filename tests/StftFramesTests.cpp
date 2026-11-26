@@ -168,3 +168,86 @@ TEST_CASE ("StftFrames: unchanged frames give back the input, delayed by the lat
     CAPTURE (worst);
     CHECK (worst < 1.0e-5);
 }
+
+TEST_CASE ("StftFrames: the paired calls match analyse() and synthesise() on each channel", "[stft][w3]")
+{
+    const auto lowLatency = GENERATE (false, true);
+    const auto size = GENERATE (1024, 2048);
+
+    fancy::dsp::StftFrames single, paired;
+    single.prepare ({ size, lowLatency, false, 0, 1 });
+    paired.prepare ({ size, lowLatency, false, 0, 1 });
+
+    const auto spectrumSize = (size_t) single.getSpectrumSize();
+    std::vector<float> a (spectrumSize), b (spectrumSize), pa (spectrumSize), pb (spectrumSize);
+    const auto left = noise (20000, 5), right = noise (20000, 6, 0.3f);
+    std::vector<float> singleOut[2] { std::vector<float> (left.size()), std::vector<float> (left.size()) };
+    std::vector<float> pairedOut[2] { std::vector<float> (left.size()), std::vector<float> (left.size()) };
+
+    // A different gain per bin and channel, edges included, so the outputs differ from the input.
+    const auto shape = [&] (std::vector<float>& spectrum, int channel)
+    {
+        for (int k = 0; k < single.getBins(); ++k)
+        {
+            const auto g = 0.5f + 0.5f * std::cos ((float) (k * (channel + 1)) * 0.01f);
+            spectrum[(size_t) (2 * k)] *= g;
+            spectrum[(size_t) (2 * k + 1)] *= g;
+        }
+    };
+
+    auto worstSpectrum = 0.0, largest = 0.0;
+
+    for (size_t i = 0; i < left.size(); ++i)
+    {
+        single.write (0, left[i]);
+        single.write (1, right[i]);
+        paired.write (0, left[i]);
+        paired.write (1, right[i]);
+
+        single.advance ([&] (int)
+                        {
+                            single.analyse (0, a);
+                            single.analyse (1, b);
+                            shape (a, 0);
+                            shape (b, 1);
+                            single.synthesise (0, a);
+                            single.synthesise (1, b);
+                        },
+                        [] {});
+
+        paired.advance ([&] (int)
+                        {
+                            paired.analysePair (0, 1, pa, pb);
+                            shape (pa, 0);
+                            shape (pb, 1);
+
+                            for (size_t j = 0; j < (size_t) (2 * single.getBins()); ++j)
+                            {
+                                worstSpectrum = std::max ({ worstSpectrum, std::abs ((double) pa[j] - (double) a[j]), std::abs ((double) pb[j] - (double) b[j]) });
+                                largest = std::max ({ largest, std::abs ((double) a[j]), std::abs ((double) b[j]) });
+                            }
+
+                            paired.synthesisePair (0, 1, pa, pb);
+                        },
+                        [] {});
+
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            singleOut[ch][i] = single.read (ch);
+            single.clear (ch);
+            pairedOut[ch][i] = paired.read (ch);
+            paired.clear (ch);
+        }
+    }
+
+    auto worstOutput = 0.0;
+
+    for (int ch = 0; ch < 2; ++ch)
+        for (size_t i = 0; i < left.size(); ++i)
+            worstOutput = std::max (worstOutput, std::abs ((double) pairedOut[ch][i] - (double) singleOut[ch][i]));
+
+    CAPTURE (worstSpectrum, largest, worstOutput);
+    REQUIRE (largest > 1.0);
+    CHECK (worstSpectrum < 1.0e-5 * largest);
+    CHECK (worstOutput < 1.0e-5);
+}

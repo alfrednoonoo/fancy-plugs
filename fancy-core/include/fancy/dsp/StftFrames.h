@@ -27,6 +27,9 @@ namespace fancy::dsp
 // over its last part. Convolving: no windows, frames of frameLength zero-padded to twice that,
 // a hop of frameLength.
 //
+// analysePair() and synthesisePair() put two channels through one complex FFT each way, with the
+// same results (to rounding) as analyse() and synthesise() on each: Fancy EQ uses them, FIR doesn't.
+//
 // prepare() allocates; everything else doesn't.
 class StftFrames
 {
@@ -64,6 +67,7 @@ public:
         stageInterval = extra / numStages;
 
         fft = std::make_unique<juce::dsp::FFT> (juce::roundToInt (std::log2 ((double) fftLength)));
+        measurePairScaling();
 
         analysisWindow.assign ((size_t) frameLength, 1.0f);
         synthesisWindow.assign ((size_t) frameLength, 1.0f);
@@ -218,6 +222,71 @@ public:
             ring[(size_t) ((frameEnd - frameLength + n) & outputMask)] += spectrum[(size_t) n] * synthesisWindow[(size_t) n];
     }
 
+    // analyse() of two inputs at once: input A in the real part, B in the imaginary, one complex
+    // transform, then each spectrum taken from the conjugate symmetry.
+    void analysePair (int inputA, int inputB, std::vector<float>& spectrumA, std::vector<float>& spectrumB) noexcept
+    {
+        const auto& ringA = inputRings[(size_t) inputA];
+        const auto& ringB = inputRings[(size_t) inputB];
+
+        for (int n = 0; n < frameLength; ++n)
+        {
+            const auto position = (size_t) ((frameEnd - frameLength + n) & inputMask);
+            const auto window = analysisWindow[(size_t) n];
+            pairIn[(size_t) n] = { ringA[position] * window, ringB[position] * window };
+        }
+
+        std::fill (pairIn.begin() + frameLength, pairIn.end(), juce::dsp::Complex<float> {});
+
+        fft->perform (pairIn.data(), pairOut.data(), false);
+
+        const auto half = 0.5f * forwardPairScale;
+
+        for (int k = 0; k < bins; ++k)
+        {
+            const auto z = pairOut[(size_t) k];
+            const auto w = pairOut[(size_t) ((fftLength - k) & (fftLength - 1))];
+            const auto i = (size_t) (2 * k);
+
+            spectrumA[i] = half * (z.real() + w.real());
+            spectrumA[i + 1] = half * (z.imag() - w.imag());
+            spectrumB[i] = half * (z.imag() + w.imag());
+            spectrumB[i + 1] = half * (w.real() - z.real());
+        }
+    }
+
+    // synthesise() of two spectra at once: Z = A + i B over the whole circle, one complex inverse,
+    // A's signal left in the real part and B's in the imaginary. DC's and Nyquist's imaginary parts
+    // are taken as 0, as a real inverse takes them.
+    void synthesisePair (int outputA, int outputB, const std::vector<float>& spectrumA, const std::vector<float>& spectrumB) noexcept
+    {
+        for (int k = 0; k < bins; ++k)
+        {
+            const auto i = (size_t) (2 * k);
+            const auto edge = k == 0 || k == bins - 1;
+            const auto ar = spectrumA[i], ai = edge ? 0.0f : spectrumA[i + 1];
+            const auto br = spectrumB[i], bi = edge ? 0.0f : spectrumB[i + 1];
+
+            pairIn[(size_t) k] = { ar - bi, ai + br };
+
+            if (! edge)
+                pairIn[(size_t) (fftLength - k)] = { ar + bi, br - ai };
+        }
+
+        fft->perform (pairIn.data(), pairOut.data(), true);
+
+        auto& ringA = outputRings[(size_t) outputA];
+        auto& ringB = outputRings[(size_t) outputB];
+
+        for (int n = 0; n < frameLength; ++n)
+        {
+            const auto position = (size_t) ((frameEnd - frameLength + n) & outputMask);
+            const auto window = synthesisWindow[(size_t) n] * inversePairScale;
+            ringA[position] += pairOut[(size_t) n].real() * window;
+            ringB[position] += pairOut[(size_t) n].imag() * window;
+        }
+    }
+
     // Convolving: the inverse transform of spectrum, all fftLength samples added unwindowed to
     // every output given.
     void synthesiseUnwindowed (std::vector<float>& spectrum, int firstOutput, int lastOutput) noexcept
@@ -234,6 +303,30 @@ public:
     }
 
 private:
+    // The complex transform's scaling against the real-only one's, whatever the FFT engine.
+    void measurePairScaling()
+    {
+        pairIn.assign ((size_t) fftLength, {});
+        pairOut.assign ((size_t) fftLength, {});
+        std::vector<float> real ((size_t) (2 * fftLength), 0.0f);
+
+        real[0] = 1.0f;
+        fft->performRealOnlyForwardTransform (real.data(), true);
+        pairIn[0] = { 1.0f, 0.0f };
+        fft->perform (pairIn.data(), pairOut.data(), false);
+        forwardPairScale = std::abs (pairOut[0].real()) > 1.0e-12f ? real[0] / pairOut[0].real() : 1.0f;
+
+        std::fill (real.begin(), real.end(), 0.0f);
+
+        for (int k = 0; k < bins; ++k)
+            real[(size_t) (2 * k)] = 1.0f;
+
+        fft->performRealOnlyInverseTransform (real.data());
+        std::fill (pairIn.begin(), pairIn.end(), juce::dsp::Complex<float> { 1.0f, 0.0f });
+        fft->perform (pairIn.data(), pairOut.data(), true);
+        inversePairScale = std::abs (pairOut[0].real()) > 1.0e-12f ? real[0] / pairOut[0].real() : 1.0f;
+    }
+
     static int nextPowerOfTwo (int value) noexcept
     {
         auto size = 1;
@@ -255,6 +348,8 @@ private:
 
     std::unique_ptr<juce::dsp::FFT> fft;
     std::vector<float> analysisWindow, synthesisWindow;
+    std::vector<juce::dsp::Complex<float>> pairIn, pairOut;
+    float forwardPairScale = 1.0f, inversePairScale = 1.0f;
     double levelScale = 1.0, powerScale = 1.0;
 
     int inputSize = 1, inputMask = 0, outputSize = 1, outputMask = 0;

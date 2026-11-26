@@ -25,6 +25,12 @@ double distancePast (double distanceDb) noexcept
 
     return distanceDb;
 }
+
+// 10^(dB / 20), by exp: cheaper than pow.
+float dbToGain (float db) noexcept
+{
+    return std::exp (db * 0.11512925464970228f);
+}
 } // namespace
 
 void SpectralStage::prepare (double sampleRate)
@@ -227,10 +233,10 @@ const std::vector<float>& SpectralStage::levelsFor (bool key, int domain) noexce
 
 void SpectralStage::runFrame() noexcept
 {
-    frames.analyse (0, spectra[0]);
-
     if (frameChannels > 1)
-        frames.analyse (1, spectra[1]);
+        frames.analysePair (0, 1, spectra[0], spectra[1]);
+    else
+        frames.analyse (0, spectra[0]);
 
     auto keyAnalysed = false;
 
@@ -261,8 +267,7 @@ void SpectralStage::runFrame() noexcept
 
         if (useKey && ! keyAnalysed)
         {
-            frames.analyse (2, spectra[2]);
-            frames.analyse (3, spectra[3]);
+            frames.analysePair (2, 3, spectra[2], spectra[3]);
             keyAnalysed = true;
         }
 
@@ -366,8 +371,8 @@ void SpectralStage::runFrame() noexcept
 
         for (int k = 0; k < bins; ++k)
         {
-            const auto midGain = domainUsed[2] && gainDb[2][(size_t) k] != 0.0f ? std::pow (10.0f, gainDb[2][(size_t) k] / 20.0f) : 1.0f;
-            const auto sideGain = domainUsed[3] && gainDb[3][(size_t) k] != 0.0f ? std::pow (10.0f, gainDb[3][(size_t) k] / 20.0f) : 1.0f;
+            const auto midGain = domainUsed[2] && gainDb[2][(size_t) k] != 0.0f ? dbToGain (gainDb[2][(size_t) k]) : 1.0f;
+            const auto sideGain = domainUsed[3] && gainDb[3][(size_t) k] != 0.0f ? dbToGain (gainDb[3][(size_t) k]) : 1.0f;
 
             if (midGain == 1.0f && sideGain == 1.0f)
                 continue;
@@ -397,16 +402,16 @@ void SpectralStage::runFrame() noexcept
             if (db == 0.0f)
                 continue;
 
-            const auto g = std::pow (10.0f, db / 20.0f);
+            const auto g = dbToGain (db);
             spectrum[(size_t) (2 * k)] *= g;
             spectrum[(size_t) (2 * k + 1)] *= g;
         }
     }
 
-    frames.synthesise (0, spectra[0]);
-
     if (frameChannels > 1)
-        frames.synthesise (1, spectra[1]);
+        frames.synthesisePair (0, 1, spectra[0], spectra[1]);
+    else
+        frames.synthesise (0, spectra[0]);
 
     // The graph: what a signal in both channels keeps, Left and Right averaged, plus Mid.
     for (int point = 0; point < curvePoints; ++point)
