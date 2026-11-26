@@ -183,6 +183,17 @@ Drag the window's edge in REAPER. The graph takes the extra room. The smallest s
 - **Brickwall slope** (Slope, for Low pass and High pass): 96 dB/oct. Everything past the corner goes and what's above it is untouched: a third of an octave past a 100 Hz high-pass is 32 dB down, a third of an octave inside it is level. In Minimum phase it rings about twice as long as 48 dB/oct (about 30 ms at 100 Hz, 100 ms at 30 Hz), which can smear a kick's low end; use Linear phase when that matters, with FIR length 16384 for a corner below about 300 Hz (a shorter FIR softens a low Brickwall's corner). If you've drawn automation for a band's Slope in an older project, it now lands one step lower on the list; the saved Slope itself loads as it was.
 - **Character** (EDIT drawer): **Clean** is the EQ as it always was. **Subtle** adds faint odd harmonics, about 0.1 % at -12 dBFS. **Warm** adds more, led by the 2nd harmonic, about 1.6 % at -6 dBFS. Quiet material passes at its own level; only peaks are coloured, and the level changes by under 0.25 dB at -6 dBFS. It runs at the oversampled rate when Oversampling is on. Auto gain doesn't count it. Changing it fades over 10 ms.
 
+## Spectral dynamics (Phase 4)
+
+A dynamic band moves its whole bell or shelf when the level in its region passes Threshold. With **SPECTRAL** on (the chip under ST and DYN, shown while DYN is on), it does the same per frequency inside its shape instead: each frequency has its own level, its own Attack and Release, and its change is weighted by the band's shape, full at its centre and nothing where its curve is flat. A resonance inside a wide band is then cut on its own, and the rest of the band is left alone: the tool for a ringing snare, a harsh vowel or a boomy note.
+
+- The band's **Threshold**, **Range**, **Reach**, **Attack**, **Release**, **Above | Below** and **Sidechain** keep their meaning, but **Threshold is the level at one frequency**: a tone at -20 dB triggers a spectral band as it triggers an ordinary one, while broadband sound spreads its level over many frequencies and rarely does. Set Threshold by the resonance's level, a little under it.
+- The band's static **Gain** still applies as before; only the dynamic part works per frequency.
+- On the graph the white total shows a narrow dip where something is being cut, instead of the whole bell moving, and **now** reads the deepest point.
+- The first spectral band adds **21 ms of latency** (1024 samples at 48 kHz), reported to the host; the last one switched off takes it away. Switching fades out and back in, as Linear phase does.
+- Spectral needs **Minimum phase**, as DYN does: in Linear phase the chip dims and spectral bands play their static settings.
+- In the band list a spectral band's DYN cell shows its reach and a ringed **S**.
+
 ## Band list and groups
 
 The switch at the left end of the band tabs has two views. **Bands** is the band editor: one band at a time, with its knobs. **List** shows every band in use as a row of a table, in the same place, so you can see and change them all at once.

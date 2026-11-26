@@ -6,6 +6,7 @@ fancy_add_plugin(FancyEq
     SOURCES
         src/LinearPhase.cpp
         src/EqDsp.cpp
+        src/EqSpectral.cpp
         src/EqMatch.cpp
         src/EqProcessor.cpp
         src/EqGraph.cpp

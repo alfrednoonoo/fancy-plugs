@@ -40,6 +40,11 @@ public:
 
     // A band's current dynamic gain change in dB, and whether it's dynamic now (Phase 2.1 D).
     float getDynamicChange (int band) const noexcept { return dsp.getDynamicChange (band); }
+
+    // Phase 4 Wave 3: whether a band is spectral now (dynamic, and Spectral on), and the spectral
+    // stage's summed change at a graph point (eq::SpectralStage::curveHz), in dB.
+    bool isSpectral (int band);
+    float getSpectralCurveDb (int point) const noexcept { return dsp.getSpectralCurveDb (point); }
     bool isDynamic (int band);
 
     // Test only: see EqDsp::setStepLength.
@@ -113,7 +118,7 @@ private:
 
     struct DynamicValues
     {
-        std::atomic<float>* on, *threshold, *range, *attack, *release, *mode, *sidechain, *reach;
+        std::atomic<float>* on, *threshold, *range, *attack, *release, *mode, *sidechain, *reach, *spectral;
     };
 
     SharedFlag logScale;

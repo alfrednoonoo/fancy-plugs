@@ -400,14 +400,17 @@ EqEditor::BandEditor::BandEditor (EqProcessor& processor, int bandIndex, EqEdito
       releaseKnob (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "release")), "Release", bandColour (bandIndex), Knob::tightStyle),
       modeSwitch (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dynMode")), juce::Colour (0xff434343), juce::Colours::white),
       sidechainCheckbox (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "dynSc")), "Sidechain", bandColour (bandIndex)),
-      reachField (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "reach")), "Reach", bandColour (bandIndex))
+      reachField (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "reach")), "Reach", bandColour (bandIndex)),
+      spectralChip (*processor.getApvts().getParameter (EqProcessor::id (bandIndex, "spectral")), "SPECTRAL", bandColour (bandIndex))
 {
     for (juce::Component* item : std::initializer_list<juce::Component*> { &typeDropdown, &channelChip, &frequencyKnob, &gainKnob, &qKnob, &powerIcon, &plusButton, &closeButton })
         addAndMakeVisible (item);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> { &dynamicChip, &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob,
-                                                                           &modeSwitch, &sidechainCheckbox, &reachField })
+                                                                           &modeSwitch, &sidechainCheckbox, &reachField, &spectralChip })
         addChildComponent (item);
+
+    spectralChip.setTooltip ("Spectral: works per frequency inside the band, so a resonance is cut on its own and the rest of the band is left alone. Adds 21 ms of latency.");
 
     reachField.setTooltip ("Reach: how far past Threshold the full Range is reached. 12 dB is the classic curve; lower is harder.");
 
@@ -459,6 +462,10 @@ void EqEditor::BandEditor::layoutDynamic (int dx, int dy, int buttonsX, int butt
     sidechainCheckbox.setBounds (dx + 578, dy + 64, 96, 20);
     reachField.setBounds (dx + 578, dy + 90, 96, 20);
 
+    // Phase 4 Wave 3 (mockup 71): under ST and DYN, spanning both; in Compact mode it sits 2 px
+    // higher, inside the card's bottom edge.
+    spectralChip.setBounds (dx + 12, dy + (isCompact ? 92 : 94), 94, 24);
+
     powerIcon.setBounds (buttonsX, buttonsDy + 17, isCompact ? 14 : 18, isCompact ? 15 : 19);
     plusButton.setBounds (buttonsX, buttonsDy + 56, isCompact ? 14 : 18, isCompact ? 14 : 18);
     closeButton.setBounds (buttonsX + 1, buttonsDy + 94, isCompact ? 12 : 14, isCompact ? 12 : 14);
@@ -481,7 +488,8 @@ void EqEditor::BandEditor::paint (juce::Graphics& g)
 
 void EqEditor::BandEditor::resized()
 {
-    for (juce::Component* item : std::initializer_list<juce::Component*> { &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob, &modeSwitch, &sidechainCheckbox, &reachField })
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob, &modeSwitch, &sidechainCheckbox, &reachField,
+                                                                           &spectralChip })
         item->setVisible (dynamicShown);
 
     dynamicChip.setVisible (chipShown);
@@ -553,8 +561,12 @@ void EqEditor::BandEditor::update()
         dynamicChip.setEnabled (! linear);
         dynamicChip.setTooltip (linear ? linearTooltip : "Dynamic: the band's gain follows the level in its own region, up to Range.");
 
+        // Phase 4 Wave 3: Spectral needs Minimum phase, as DYN does.
+        spectralChip.setEnabled (! linear);
+        spectralChip.setTooltip (linear ? "Spectral bands need Minimum phase" : "Spectral: works per frequency inside the band, so a resonance is cut on its own and the rest of the band is left alone. Adds 21 ms of latency.");
+
         for (juce::Component* item : std::initializer_list<juce::Component*> { &dynamicChip, &thresholdKnob, &rangeKnob, &attackKnob, &releaseKnob,
-                                                                               &modeSwitch, &sidechainCheckbox, &reachField })
+                                                                               &modeSwitch, &sidechainCheckbox, &reachField, &spectralChip })
             item->setAlpha (linear ? 0.4f : 1.0f);
     }
 
@@ -1588,6 +1600,24 @@ void EqEditor::showDynamicPreview (bool compact)
     graph.update();
 }
 
+void EqEditor::showSpectralPreview (bool list)
+{
+    if (list)
+    {
+        showListPreview();
+        eqProcessor().setParameter ("b3spectral", 1.0f);
+        bandList->update();
+    }
+    else
+    {
+        showDynamicPreview (false);
+        eqProcessor().setParameter ("b2spectral", 1.0f);
+        bandEditors[(size_t) selectedBand]->update();
+    }
+
+    graph.update();
+}
+
 void EqEditor::showChannelPreview()
 {
     applyPreviewValues();
@@ -1921,6 +1951,7 @@ public:
         }
 
         dyn.setText (text);
+        dyn.setSpectral (eqProcessor.isSpectral (band)); // Phase 4 Wave 3: the ringed S
 
         const auto on = spec.on;
 
@@ -1977,11 +2008,34 @@ private:
             }
         }
 
+        void setSpectral (bool isSpectral)
+        {
+            if (isSpectral != spectral)
+            {
+                spectral = isSpectral;
+                repaint();
+            }
+        }
+
         void paint (juce::Graphics& g) override
         {
-            g.setFont (font (Weight::regular, 12.5f));
+            const auto textFont = font (Weight::regular, 12.5f);
+            g.setFont (textFont);
             g.setColour (text.startsWithChar ((juce::juce_wchar) 0x2014) ? colours::textSecondary : colour);
             g.drawText (text, getLocalBounds(), juce::Justification::centredLeft, false);
+
+            // Phase 4 Wave 3 (mockup 71): a spectral band's ringed S after its reach.
+            if (spectral)
+            {
+                const auto x = juce::GlyphArrangement::getStringWidth (textFont, text) + 6.0f;
+                const auto ring = juce::Rectangle<float> (x, ((float) getHeight() - 11.0f) * 0.5f, 11.0f, 11.0f);
+                g.setColour (colours::bgWell);
+                g.fillEllipse (ring);
+                g.setColour (colour);
+                g.drawEllipse (ring.reduced (0.5f), 1.0f);
+                g.setFont (font (Weight::semiBold, 7.0f));
+                g.drawText ("S", ring, juce::Justification::centred, false);
+            }
         }
 
         void mouseUp (const juce::MouseEvent& event) override
@@ -1995,6 +2049,7 @@ private:
 
     private:
         juce::String text;
+        bool spectral = false;
     };
 
     // The Solo column: plays the band alone while it's held.

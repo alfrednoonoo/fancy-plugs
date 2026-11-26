@@ -53,6 +53,10 @@ struct DynamicSpec
     // is reached. 12 is the curve every dynamic band had before.
     double reachDb = 12.0;
 
+    // Fancy EQ's Spectral (docs/eq.md, Phase 4 Wave 3): the same gain computer per FFT bin inside
+    // the band's shape. Off is the band as before.
+    bool spectral = false;
+
     bool operator== (const DynamicSpec&) const = default;
 };
 

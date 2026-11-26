@@ -114,6 +114,8 @@ MORE = {
            ("eq-compact", "Compact mode", "Checkboxes"), ("eq-edit", "The EDIT drawer", "EDIT drawer"),
            ("eq-dynamic-compact", "A dynamic band's Reach, and Freeze on the graph", "Phase 4 additions"),
            ("eq-brickwall", "A Brickwall high-pass on band 1, and Character set to Warm in the EDIT drawer", "Phase 4 additions"),
+           ("eq-spectral", "Band 2 dynamic with SPECTRAL on", "Spectral dynamics (Phase 4)"),
+           ("eq-spectral-list", "The band list with band 3 spectral: its DYN cell's ringed S", "Spectral dynamics (Phase 4)"),
            ("eq-list", "List: every band as a row, bands 2 and 3 in group A", "Band list and groups"),
            ("eq-groups", "Bands, with group A's letter on its handles and tabs", "Band list and groups")],
     "Verb": [("verb-empty", "A new instance: an empty chain", "Getting started"), ("verb-add", "Add module", "The rack"),

@@ -184,6 +184,11 @@ fancy::FancyProcessor::Layout createLayout (const Flag& logScale)
 
     layout.add (setting ("bandView", "Band view", { "Bands", "List" }, 0));
 
+    // Phase 4 Wave 3 (docs/eq.md, "spectral dynamics"), appended: each band's Spectral switch. Off
+    // is the dynamic band as before, with no latency.
+    for (int band = 0; band < eq::maxBands; ++band)
+        layout.add (toggle (EqProcessor::id (band, "spectral"), "Band " + juce::String (band + 1) + " Spectral", false));
+
     return layout;
 }
 
@@ -255,7 +260,8 @@ EqProcessor::EqProcessor (SharedFlag logScaleFlag)
                                          apvts.getRawParameterValue (id (band, "release")),
                                          apvts.getRawParameterValue (id (band, "dynMode")),
                                          apvts.getRawParameterValue (id (band, "dynSc")),
-                                         apvts.getRawParameterValue (id (band, "reach")) };
+                                         apvts.getRawParameterValue (id (band, "reach")),
+                                         apvts.getRawParameterValue (id (band, "spectral")) };
 
     apvts.addParameterListener ("logFreq", this);
 }
@@ -320,6 +326,7 @@ eq::DynamicSpec EqProcessor::readDynamics (int band)
     spec.below = juce::roundToInt (load (values.mode)) == 1;
     spec.sidechain = load (values.sidechain) >= 0.5f;
     spec.reachDb = (double) load (values.reach);
+    spec.spectral = load (values.spectral) >= 0.5f; // Phase 4 Wave 3
     return spec;
 }
 
@@ -327,6 +334,11 @@ bool EqProcessor::isDynamic (int band)
 {
     const auto spec = readBand (band);
     return readDynamics (band).on && spec.on && eq::supportsDynamics (spec.type) && ! isOn ("phase");
+}
+
+bool EqProcessor::isSpectral (int band)
+{
+    return isDynamic (band) && readDynamics (band).spectral;
 }
 
 EqDsp::Targets EqProcessor::readTargets()
@@ -503,7 +515,8 @@ void EqProcessor::setParameter (const juce::String& parameterId, float value)
 void EqProcessor::resetBand (int band)
 {
     const UserEdit edit (*this);
-    for (const auto* suffix : { "on", "type", "freq", "gain", "q", "slope", "chan", "dyn", "thresh", "range", "attack", "release", "dynMode", "dynSc" })
+    for (const auto* suffix : { "on", "type", "freq", "gain", "q", "slope", "chan", "dyn", "thresh", "range", "attack", "release", "dynMode", "dynSc",
+                                "spectral" })
     {
         auto& parameter = *getApvts().getParameter (id (band, suffix));
         parameter.setValueNotifyingHost (parameter.getDefaultValue());

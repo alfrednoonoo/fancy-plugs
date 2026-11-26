@@ -59,6 +59,9 @@ public:
     // Phase 4 Wave 2 item 46, mockup 66 panel 1: the band list, bands 2 and 3 in group A; and
     // panel 2, the same in Bands, with the group tags.
     void showListPreview();
+
+    // Phase 4 Wave 3 (mockup 71): band 2 spectral in the band editor, or band 3 spectral in the list.
+    void showSpectralPreview (bool list);
     void showGroupsPreview();
 
     // v1.7.2, mockup 68: the list with twelve bands, for the largest window.
@@ -169,6 +172,9 @@ private:
         fancy::ui::ParamSegments modeSwitch;
         fancy::ui::ParamCheckbox sidechainCheckbox;
         ValueField reachField; // Phase 4 Wave 1
+
+        // Phase 4 Wave 3 (reference/phase4/71__eq_w3_mockup.png): SPECTRAL, under ST and DYN.
+        fancy::ui::ParamTextToggle spectralChip;
         int separatorX = -1, separatorTop = 0;
     };
 

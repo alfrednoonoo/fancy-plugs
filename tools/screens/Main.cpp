@@ -242,6 +242,14 @@ bool renderEq (const juce::File& outputDir)
         ok = writeBothScales (*editor, "eq-list-small", outputDir) && ok;
     }
 
+    // v1.7.2 (mockup 71): a spectral band in the band editor and in the list, at the default size.
+    editor->setSize (802, 645);
+    editor->showSpectralPreview (false);
+    ok = writeBothScales (*editor, "eq-spectral", outputDir) && ok;
+
+    editor->showSpectralPreview (true);
+    ok = writeBothScales (*editor, "eq-spectral-list", outputDir) && ok;
+
     return ok;
 }
 #endif

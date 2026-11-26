@@ -304,6 +304,7 @@ void EqGraph::update()
 
         if (dynamics.dynamic)
         {
+            dynamics.spectral = processor.isSpectral (b);
             dynamics.rangeDb = (float) processor.readDynamics (b).rangeDb;
             dynamics.changeDb = std::round ((b == previewBand ? previewChangeDb : processor.getDynamicChange (b)) * 20.0f) / 20.0f;
         }
@@ -312,6 +313,37 @@ void EqGraph::update()
         {
             lastDynamics[(size_t) b] = dynamics;
             needsRecalculation = true;
+        }
+    }
+
+    // Phase 4 Wave 3: a spectral band's change moves per frequency, so the total redraws as the
+    // stage's curve moves, in 0.05 dB steps.
+    {
+        auto anySpectral = false;
+
+        for (const auto& dynamics : lastDynamics)
+            anySpectral = anySpectral || dynamics.spectral;
+
+        if (anySpectral != spectralShown)
+        {
+            spectralShown = anySpectral;
+            needsRecalculation = true;
+        }
+
+        if (spectralShown)
+        {
+            spectralCurve.resize ((size_t) eq::SpectralStage::curvePoints, 0.0f);
+
+            for (int point = 0; point < eq::SpectralStage::curvePoints; ++point)
+            {
+                const auto value = std::round (processor.getSpectralCurveDb (point) * 20.0f) / 20.0f;
+
+                if (value != spectralCurve[(size_t) point])
+                {
+                    spectralCurve[(size_t) point] = value;
+                    needsRecalculation = true;
+                }
+            }
         }
     }
 
@@ -427,7 +459,10 @@ void EqGraph::recalculate()
             band.reachDb = notch ? juce::jmin (0.0f, dynamics.rangeDb) : dynamics.rangeDb;
             band.changeDb = dynamics.changeDb;
             reachShape.gainDb = shape.gainDb + band.reachDb;
-            liveShape.gainDb = shape.gainDb + band.changeDb;
+
+            // Phase 4 Wave 3: a spectral band's change isn't the whole bell moving; it's in the
+            // stage's curve, added to the total below. "now" still reads its deepest point.
+            liveShape.gainDb = shape.gainDb + (dynamics.spectral ? 0.0f : band.changeDb);
         }
 
         const auto filter = eq::design (shape, lastRate);
@@ -486,6 +521,21 @@ void EqGraph::recalculate()
 
             composite[(size_t) x] = (float) fancy::gainToDb (std::abs (path), -200.0);
             phase[(size_t) x] = linear ? 0.0f : (float) std::arg (path);
+        }
+    }
+
+    // Phase 4 Wave 3: the spectral stage's change, per frequency, on the white total.
+    if (spectralShown && spectralCurve.size() == (size_t) eq::SpectralStage::curvePoints)
+    {
+        constexpr auto last = eq::SpectralStage::curvePoints - 1;
+
+        for (int x = 0; x < width; ++x)
+        {
+            const auto hz = hzForX ((double) x, (double) width);
+            const auto position = juce::jlimit (0.0, (double) last, std::log (hz / 20.0) / std::log (1000.0) * (double) last);
+            const auto index = juce::jmin ((int) position, last - 1);
+            const auto fraction = (float) (position - (double) index);
+            composite[(size_t) x] += spectralCurve[(size_t) index] + fraction * (spectralCurve[(size_t) index + 1] - spectralCurve[(size_t) index]);
         }
     }
 

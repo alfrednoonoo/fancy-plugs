@@ -94,7 +94,15 @@ void EqDsp::prepare (double newSampleRate, int numChannels)
 
     linear.prepare (sampleRate);
 
-    const auto maxLatency = std::max ({ linear.getMaxLatencySamples(), oversamplerLatencies[0], oversamplerLatencies[1] });
+    // Phase 4 Wave 3: the spectral stage adds its latency to any oversampling.
+    spectral.prepare (sampleRate);
+    detectorDelayLength = spectral.getLatency() + maxChunk + 1;
+
+    for (auto& delay : detectorDelay)
+        delay.assign ((size_t) detectorDelayLength, 0.0f);
+
+    const auto maxLatency = std::max ({ linear.getMaxLatencySamples(), oversamplerLatencies[0] + spectral.getLatency(),
+                                        oversamplerLatencies[1] + spectral.getLatency() });
 
     dryLength = maxLatency + maxChunk + 1;
 
@@ -152,6 +160,13 @@ void EqDsp::reset()
         std::fill (delay.begin(), delay.end(), 0.0f);
 
     dryPosition = 0;
+
+    spectral.reset();
+
+    for (auto& delay : detectorDelay)
+        std::fill (delay.begin(), delay.end(), 0.0f);
+
+    detectorDelayPosition = 0;
 }
 
 EqDsp::Config EqDsp::configFor (const Targets& targets) const noexcept
@@ -160,6 +175,12 @@ EqDsp::Config EqDsp::configFor (const Targets& targets) const noexcept
     config.linearPhase = targets.linearPhase;
     config.firLength = targets.firLength;
     config.oversampling = targets.linearPhase ? 0 : targets.oversampling;
+
+    // Phase 4 Wave 3: the stage runs, and its latency counts, only while a band is spectral.
+    for (size_t b = 0; b < (size_t) eq::maxBands && ! targets.linearPhase; ++b)
+        config.spectral = config.spectral || (targets.dynamics[b].on && targets.dynamics[b].spectral && targets.bands[b].on
+                                              && eq::supportsDynamics (targets.bands[b].type));
+
     return config;
 }
 
@@ -168,7 +189,8 @@ int EqDsp::latencyOf (const Config& config) const noexcept
     if (config.linearPhase)
         return linear.getLatencySamples (config.firLength);
 
-    return config.oversampling > 0 ? oversamplerLatencies[(size_t) (config.oversampling - 1)] : 0;
+    return (config.oversampling > 0 ? oversamplerLatencies[(size_t) (config.oversampling - 1)] : 0)
+         + (config.spectral ? spectral.getLatency() : 0);
 }
 
 void EqDsp::setCoefficients (Band& band, const eq::BandSpec& spec, bool ramp) noexcept
@@ -236,7 +258,10 @@ void EqDsp::runDetectors (const float* const* main, int numMain, const float* co
     {
         auto& detector = detectors[(size_t) b];
         auto& changes = chunkChange[(size_t) b];
-        const auto dynamic = isDynamic (b);
+
+        // Phase 4 Wave 3: a spectral band's dynamics are the spectral stage's; its filter here
+        // keeps its static settings.
+        const auto dynamic = isDynamic (b) && ! current.dynamics[(size_t) b].spectral;
 
         // A band that isn't dynamic, and has let go, does nothing here.
         if (! dynamic && detector.change == 0.0)
@@ -367,7 +392,9 @@ void EqDsp::runDetectors (const float* const* main, int numMain, const float* co
     }
 
     for (int b = 0; b < eq::maxBands; ++b)
-        liveChange[(size_t) b].store ((float) detectors[(size_t) b].change, std::memory_order_relaxed);
+        liveChange[(size_t) b].store ((float) (activeConfig.spectral && current.dynamics[(size_t) b].spectral ? spectral.getDeepest (b)
+                                                                                                              : detectors[(size_t) b].change),
+                                      std::memory_order_relaxed);
 
     detectorClock = (detectorClock + numSamples) & (controlInterval - 1);
 }
@@ -414,6 +441,14 @@ void EqDsp::applyConfig (const Config& config)
         std::fill (delay.begin(), delay.end(), 0.0f);
 
     dryPosition = 0;
+
+    // Phase 4 Wave 3: the stage starts from silence, as the delays do.
+    spectral.reset();
+
+    for (auto& delay : detectorDelay)
+        std::fill (delay.begin(), delay.end(), 0.0f);
+
+    detectorDelayPosition = 0;
 }
 
 void EqDsp::snapToTargets (const Targets& targets)
@@ -786,7 +821,49 @@ void EqDsp::processChunk (float* const* channels, int numChannels, int offset, i
         for (int ch = 0; ch < sidechainChannels; ++ch)
             sidechainChunk[ch] = sidechain[ch] + offset;
 
-        runDetectors (signal, numChannels, sidechainChunk, sidechain != nullptr ? sidechainChannels : 0, numSamples);
+        const auto numKey = sidechain != nullptr ? sidechainChannels : 0;
+
+        if (activeConfig.spectral)
+        {
+            // Phase 4 Wave 3: the spectral stage first. The other dynamic bands' detectors hear
+            // the input (and sidechain) delayed as the stage delays the signal.
+            const float* delayedMain[maxChannels] {};
+            const float* delayedKey[maxChannels] {};
+            const auto stageDelay = spectral.getLatency();
+
+            for (int ch = 0; ch < numChannels + numKey; ++ch)
+            {
+                const auto* source = ch < numChannels ? signal[ch] : sidechainChunk[ch - numChannels];
+                auto& ring = detectorDelay[(size_t) ch];
+                auto& out = detectorChunk[(size_t) ch];
+
+                for (int i = 0; i < numSamples; ++i)
+                {
+                    const auto write = (detectorDelayPosition + i) % detectorDelayLength;
+                    ring[(size_t) write] = source[i];
+                    out[(size_t) i] = ring[(size_t) ((write - stageDelay + detectorDelayLength) % detectorDelayLength)];
+                }
+
+                if (ch < numChannels)
+                    delayedMain[ch] = out.data();
+                else
+                    delayedKey[ch - numChannels] = out.data();
+            }
+
+            detectorDelayPosition = (detectorDelayPosition + numSamples) % detectorDelayLength;
+
+            for (int b = 0; b < eq::maxBands; ++b)
+                spectralBands[(size_t) b] = isSpectral (b);
+
+            spectral.setBands (current.bands, current.dynamics, spectralBands);
+            spectral.process (signal, numChannels, numSamples, numKey > 0 ? sidechainChunk : nullptr, numKey);
+
+            runDetectors (delayedMain, numChannels, delayedKey, numKey, numSamples);
+        }
+        else
+        {
+            runDetectors (signal, numChannels, sidechainChunk, numKey, numSamples);
+        }
     }
 
     if (activeConfig.linearPhase)

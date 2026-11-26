@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EqFilters.h"
+#include "EqSpectral.h"
 #include "LinearPhase.h"
 
 #include <fancy/dsp/Saturation.h>
@@ -63,6 +64,11 @@ public:
     // Whether a band is dynamic now: DYN on, a type that allows it, and Minimum phase.
     bool isDynamic (int band) const noexcept;
 
+    // Phase 4 Wave 3 (docs/eq.md): whether a dynamic band runs per frequency, in the spectral
+    // stage, and that stage's summed change at a graph point (eq::SpectralStage::curveHz).
+    bool isSpectral (int band) const noexcept { return isDynamic (band) && current.dynamics[(size_t) band].spectral; }
+    float getSpectralCurveDb (int point) const noexcept { return spectral.getCurveDb (point); }
+
     // Test only: redesign moving bands every this many samples instead of 16.
     void setStepLength (int samples) noexcept { stepLength = std::clamp (samples, 1, (int) stepSamples); }
 
@@ -87,6 +93,7 @@ private:
         int oversampling = 0;
         int firLength = 2;
         bool linearPhase = false;
+        bool spectral = false; // Phase 4 Wave 3: any band spectral, so the stage runs
 
         bool operator== (const Config&) const = default;
     };
@@ -212,4 +219,12 @@ private:
     int dryLength = 1;
     int dryPosition = 0;
     juce::AudioBuffer<float> dryBuffer;
+
+    // Phase 4 Wave 3: the spectral stage, before the bands, and the main input and sidechain
+    // delayed by its latency for the other dynamic bands' detectors, so they stay in time.
+    eq::SpectralStage spectral;
+    std::array<bool, eq::maxBands> spectralBands {};
+    std::array<std::vector<float>, 2 * maxChannels> detectorDelay;
+    std::array<std::array<float, 512>, 2 * maxChannels> detectorChunk {};
+    int detectorDelayLength = 1, detectorDelayPosition = 0;
 };

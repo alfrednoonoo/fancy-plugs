@@ -90,6 +90,7 @@ private:
     struct DynamicState
     {
         bool dynamic = false;
+        bool spectral = false; // Phase 4 Wave 3: the change is per frequency, in spectralCurve
         float rangeDb = 0.0f, changeDb = 0.0f;
 
         bool operator== (const DynamicState&) const = default;
@@ -133,6 +134,11 @@ private:
 
     std::array<BandDisplay, eq::maxBands> bands;
     std::vector<float> composite, phase;
+
+    // Phase 4 Wave 3: the spectral stage's summed change (eq::SpectralStage::curvePoints, in 0.05
+    // dB steps), added to the white total while any band is spectral.
+    std::vector<float> spectralCurve;
+    bool spectralShown = false;
 
     // Phase 3 Q2.4: with any band off Stereo, the total is drawn for one channel: the selected
     // band's, or Mid for a Stereo band.
