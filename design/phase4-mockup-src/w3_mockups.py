@@ -497,6 +497,89 @@ def limit_w3():
 
 m.PAGE_HEIGHTS["limit-w3"] = 3000
 
+
+# ---------------------------------------------------------------------------------------------
+# Gate multiband (▲, docs/enhancements.md section 9 item 7: 2 to 3 bands), on Gate's screenshot from run 45897768844
+# (commit a24dff5), img/gate-v172-w2b.png, 790 x 465 at 1x. Measured from it and GateEditor.cpp (header 73 px):
+# the history graph is x 120 to 626, y 113 to 183; the envelope card (Pre-open to Hysteresis) starts at y 191 and the
+# Level and filter cards at y 295, all x 120 to 626; the footer's checkboxes are at y 433; the left column (Threshold,
+# Gain) is x 0 to 119 and the right one (Out, Wet, Dry, Noise) x 640 to 790. A: a BANDS card at y 191, as Limit's.
+GATE_W, GATE_H = 790, 465
+GATE_GROW = 172  # A: the BANDS card (164) and its gap, as Limit's
+
+
+def gate_bands_card(top, bands, thresholds, ranges, states, splits, attenuation):
+    """A: the BANDS card, x 120 to 626, 164 tall, between the graph and the envelope card."""
+    x0, w = 120, 506
+    html = f'<div class="o" style="left:{x0}px;top:{top}px;width:{w}px;height:164px;background:#262626;border-radius:4px"></div>'
+    html += ('<div class="o" style="left:132px;top:%dpx;font-size:12px;font-weight:600;letter-spacing:.04em;color:#8D8D8D">BANDS</div>' % (top + 11))
+    html += m.seg(186, top + 8, 90, 20, ["1", "2", "3"], bands - 1, YELLOW, text="#141414")
+    html += '<div class="o" style="left:393px;top:%dpx;font-size:12px;color:#8D8D8D">Crossover</div>' % (top + 11)
+    html += '<div class="o dd" style="left:457px;top:%dpx;width:157px;height:22px;font-size:12px">LR 24 dB &middot; Min phase</div>' % (top + 7)
+    if bands == 1:
+        html += limit_graph(132, top + 34, 482, 44, [], attenuation[:1], scale_db=40.0)
+        html += caption(132, top + 100, "One band is today's gate, to the bit: the band row is empty and the cards below do everything.", 482)
+        return html + outline(x0 - 2, top - 2, w + 4, 168)
+    html += limit_graph(132, top + 34, 482, 44, splits, attenuation, scale_db=40.0)
+    cell = 482 / 3
+    for i in range(bands):
+        cx = 132 + cell * i
+        html += band_chip(cx + 2, top + 108, i)
+        on = states[i] == "open"
+        html += (f'<div class="o" style="left:{cx - 2:.0f}px;top:{top + 130}px;width:26px;font-size:10px;text-align:center;'
+                 f'color:{YELLOW if on else "#8D8D8D"}">{states[i]}</div>')
+        html += m.knob(cx + 58, top + 94, "Threshold", thresholds[i], BAND_COLOURS[i], 0.5, size=28, fs=12, width=64, bi=True)
+        html += m.knob(cx + 124, top + 94, "Range", ranges[i], BAND_COLOURS[i], 0.45, size=28, fs=12, width=64)
+    return html + outline(x0 - 2, top - 2, w + 4, 168)
+
+
+def gate_b():
+    """B: the window stays 790 x 465. The history graph switches between History and Bands; each band's Threshold
+    and Range go in the EDIT drawer."""
+    html = cover(120, 113, 506, 70, "#141414")
+    html += m.seg(126, 116, 112, 18, ["History", "Bands"], 1, "#424242", fs=11, text="#fff")
+    html += '<div class="o" style="left:452px;top:117px;font-size:11px;color:#8D8D8D">Bands</div>'
+    html += m.seg(494, 116, 126, 18, ["1", "2", "3"], 2, YELLOW, fs=11, text="#141414")
+    html += limit_graph(126, 138, 494, 32, [180, 4000], [0.0, 40.0, 12.0], scale_db=40.0, labels=False)
+    return html + outline(118, 111, 510, 74)
+
+
+@m.plugin("gate-w3", "75__gate_w3_layout_mockup.png")
+def gate_w3():
+    WA, HA = m.grow("gate-v172", "gate-v172-tall", GATE_GROW, [(0, 120, 275), (120, 640, 187), (640, 790, 300)], axis="y")
+    splits3 = [180, 4000]
+    return w1.page("Fancy Gate: v1.7.2 layout mockup (multiband gating, ▲)",
+                   "docs/enhancements.md, section 9 item 7: 2 to 3 bands. It changes the visible layout, so the layout comes before the design "
+                   "note. Changed things in dashed yellow, on the plugin's real screenshot (1x coordinates). The parameters drawn here (band count, "
+                   "crossovers, each band's Threshold and Range) are proposals the note will set out as decisions.", [
+        (f"1 · A (recommended): a BANDS card between the graph and the envelope card, as Limit's; the window grows {GATE_GROW} px taller ({WA} x {HA})",
+         "<b>Bands</b> 1 to 3 (1 by default, today's gate), the <b>Crossover</b> type, and a strip with each band's attenuation falling from the top "
+         "in its colour: here a drum overhead, the lows open, the mids shut on bleed, the highs part-way. Drag a blue line to move a crossover, or "
+         "click it to type one. Under the strip each band has its own <b>Threshold</b> (an offset from the Threshold fader, so the fader still moves "
+         "them all) and <b>Range</b>, and its open or shut state. Attack, Hold, Release, Hysteresis and the detector stay shared, in the cards below.",
+         shot("gate-v172-tall", WA, HA,
+              gate_bands_card(191, 3, ["+0.0 dB", "+6.0 dB", "+3.0 dB"], ["-40 dB", "-40 dB", "-20 dB"], ["open", "shut", "open"], splits3, [0.0, 40.0, 12.0]),
+              f"Nothing existing moves sideways or shrinks: the envelope, Level and filter cards and the footer move down {GATE_GROW} px; the "
+              f"Threshold, Gain, Out, Wet, Dry and Noise meters and faders lengthen with the window (their scales are respaced evenly in the "
+              f"build; the mockup only stretches the picture), and the minimum height grows to {HA}. The Crossover dropdown is 157 px, "
+              "the width MultiComp and Limit need for its text.")),
+        ("2 · A with two bands", "One crossover; the second band's controls take its place, the third cell stays empty.",
+         shot("gate-v172-tall", WA, HA,
+              gate_bands_card(191, 2, ["+0.0 dB", "+6.0 dB", ""], ["-40 dB", "-30 dB", ""], ["open", "shut", ""], [250], [0.0, 30.0]),
+              "", crop=(105, 181, 540, 180))),
+        ("3 · A at its default, one band", "The card stays, so the window doesn't jump when the count changes; the strip shows the one attenuation.",
+         shot("gate-v172-tall", WA, HA, gate_bands_card(191, 1, [], [], [], [], [8.0]), "", crop=(105, 181, 540, 180))),
+        ("4 · B: the window stays 790 x 465; the graph switches between History and Bands, and each band's Threshold and Range go in the EDIT drawer",
+         "A <b>History | Bands</b> switch, as Limit's option B and MultiComp's Spectrum | GR history, puts the band strip in the graph's place with "
+         "the band count beside it. The crossover type and the six band knobs go in the EDIT drawer.",
+         shot("gate-v172", GATE_W, GATE_H, gate_b(),
+              "No size change, but the history and the bands can't be seen together, and the per-band settings are a drawer away from the strip "
+              "that shows what they do.")),
+    ])
+
+
+m.PAGE_HEIGHTS["gate-w3"] = 3000
+
 if __name__ == "__main__":
     for key in sys.argv[1:] or list(m.PLUGINS):
         m.render(key)
