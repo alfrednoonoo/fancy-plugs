@@ -372,3 +372,88 @@ A limiter keeps its own output under the ceiling, so it must hear itself. Keyed 
 ### 4. Both dropped
 
 `docs/enhancements.md` marks items 30 and 31 dropped with the reason, and Limit's manual says that Link 0 % is per-channel limiting. No code changes.
+
+## Phase 4 Wave 3: multiband limiting
+
+**Layout A of mockup 74 approved by the user on 26 November 2026; this note waits for approval.** Item 1 of Wave 3 (`docs/enhancements.md`; backlog item 6 of section 10, ▲), for v1.7.2. Modelled first: `docs/research/limit-multiband-model.py`.
+
+### 1. What it adds
+
+**Bands** (1 to 4, default 1): the signal is split by a crossover, each band is limited on its own with its own **Release**, the bands are summed, and today's limiter (the final stage: Ceiling, Release, Lookahead, Link, True peak, the clipper, oversampling and the guard) then holds the ceiling across the whole signal. One band skips the split and the band limiters, so a saved project renders as v1.7.1, to the bit, with the same latency.
+
+What it's for: a wideband limiter turns everything down when the kick hits, so the vocal and the hats pump with the kick. With the bass limited in its own band, the bands above keep their level.
+
+### 2. What the model found
+
+A mix of 60 Hz kicks every 0.5 s, a steady 1 kHz tone and hats above 6 kHz, pushed 8 dB into a 0 dBFS ceiling. Crossovers 150 Hz (2 bands); 150 Hz and 2.5 kHz (3); 150 Hz, 1 kHz and 6 kHz (4). Band releases low to high 120, 80, 50 (and 40) ms; the final stage 2 ms lookahead and 80 ms release, as Limit's defaults. "Dip" is how far the 1 kHz tone (and the hats) fall in the 150 ms after each kick against just before it: the deepest point and the mean.
+
+| Kick | Bands | Band ceiling | 1 kHz dip, deepest / mean | Hats, deepest / mean | Final stage GR, mean / max | Loudness |
+|---|---|---|---|---|---|---|
+| body only | 1 (today) | | −8.7 / −5.1 dB | −8.7 / −5.1 dB | (it is the limiter) | −9.9 dB |
+| body only | 3 | Ceiling | −4.2 / −2.4 | −4.2 / −2.4 | 0.9 / 5.0 dB | −10.0 |
+| body only | 3 | Ceiling − 3 dB | **−2.6 / −1.4** | **−2.6 / −1.4** | 0.5 / 3.5 | **−10.3** |
+| body only | 3 | Ceiling − 6 dB | −1.1 / −0.6 | −1.6 / −0.6 | 0.2 / 2.1 | −10.6 |
+| with a 3 ms click | 1 (today) | | −9.3 / −5.3 | −9.3 / −5.3 | | −10.1 |
+| with a 3 ms click | 3 | Ceiling − 3 dB | −2.3 / −1.1 | −11.6 / −3.0 | 0.3 / 3.0 | −10.0 |
+
+- **It works for what it's for:** the kick's body no longer pumps the mids and highs. With the bands limited at Ceiling, the mean dip halves (5.1 to 2.4 dB) at the same loudness; the rest comes from the final stage, because the limited bands add up past the ceiling. Limiting the bands 3 dB under Ceiling leaves the final stage less to do and halves the dip again, for 0.4 dB of loudness. 6 dB under gives up 0.7 dB.
+- **2, 3 and 4 bands do the same for a kick body**, which is all under 150 Hz. More bands help when the material has peaks in the middle too (with the click, the 1 kHz tone's mean dip is −2.1 dB at 3 bands against −3.7 at 2, where it shares a band with the click).
+- **A click still ducks the top band:** it's broadband, so it reaches every band, and the top band, limited alone, dips deeper at its lowest point than today's limiter (−11.6 against −9.3 dB), though for less time (mean −3.0 against −5.3). That's the clipper's job (Wave 2): the manual says to use Clip for clicky drums with Bands.
+- **The crossover sums flat:** MultiComp's minimum-phase Linkwitz-Riley cascade, each lower band through the all-passes of the crossovers above it, sums to an all-pass (within 0.0001 dB at 2, 3 and 4 bands), so with nothing limited the output's magnitude is the input's.
+
+### 3. How it's built
+
+- **Where:** after the DC filter and Threshold's push, at the base rate, before the clipper and the oversampler. The band limiters measure sample peaks; inter-sample peaks stay the final stage's (True peak), which still sees everything. Running the bands inside the oversampling would cost the band count times the factor more, for peaks the final stage already handles.
+- **The crossover:** MultiComp's `MinPhaseCrossover` moves into `fancy-core` as `fancy::dsp::MinPhaseCrossover` (Gate's multiband, the next item, uses it too), with MultiComp's legacy tests holding it to the bit. LR 24 and LR 48 only (decision 3). Crossover frequencies are kept in order and at least 1/3 octave apart by MultiComp's `sanitiseCrossovers`, smoothed in log frequency over 20 ms.
+- **Each band's limiter** is a `fancy::dsp::TruePeakLimiter` (True peak off), as the final stage's: the same Style, Link, Lookahead window and Release curve; its own Release from the band's knob. Its ceiling is the Ceiling minus the band headroom (decision 1). Its lookahead delay is a fixed 5 ms, so Lookahead still doesn't change latency.
+- **Latency:** with Bands 2 to 4 the band stage adds 5 ms (240 samples at 48 kHz), reported to the host; Bands 1 adds nothing (decision 2). The dry paths (Listen to removed, bypass) are delayed to match.
+- **Displays:** the BANDS card's strip shows each band's gain reduction, falling from the top in its colour, and each band's GR read-out under it (atomics, read by the editor's timer). The GR meter and the history's red show the final stage, as now, so they read what they read today.
+- **Unchanged:** Listen to removed (input minus output, so it includes the bands), Gain lock, Auto to target, dither, the meters and the loudness panel.
+- **CPU:** the crossover (two or four biquads per crossover per channel, plus the all-passes) and one base-rate limiter per band. Target: four bands add under 2.5 times Fancy Comp at its defaults (§0.4, the ratio printed in the same test).
+
+### 4. Decisions
+
+- **Decision 1: the bands' ceiling.**
+  - **A (R).** Each band limits 3 dB under Ceiling, fixed: the model's balance, half the pumping of bands at Ceiling for 0.4 dB of loudness, and no new control.
+  - **B.** A **Band headroom** knob in the EDIT drawer, 0 to 6 dB, 3 by default, for the trade between loudness and pumping (a drawer mockup follows).
+  - **C.** Each band at Ceiling: the loudest, but twice the pumping of A.
+- **Decision 2: latency.**
+  - **A (R).** The band stage's 5 ms only while Bands is 2 to 4: the default keeps v1.7.1's latency, and the host is told when the count changes, as EQ's spectral bands do.
+  - **B.** Always report it, so changing Bands never changes latency; every saved project's latency grows by 5 ms.
+- **Decision 3: crossover types.**
+  - **A (R).** LR 24 and LR 48, minimum phase, LR 24 by default: no added latency, and they sum flat.
+  - **B.** Also MultiComp's Linear phase: no phase shift at the crossovers, but its FIR adds about 21 ms of latency and the most CPU.
+- **Decision 4: Auto release in the bands.**
+  - **A (R).** The footer's Auto release applies to every band, each from its own Release (the fast path, with the slow path 8 times it), as the LIMITER card's Release works now; the band knobs keep showing their values. Mockup 74's caption had them reading "Auto"; they show their value instead, since it still sets the fast path.
+  - **B.** Bands always use their plain Release, and Auto release is the final stage's only.
+
+### 5. Parameters
+
+| ID | Name | Range | Default | Unit | Skew |
+|---|---|---|---|---|---|
+| `bands` | Bands | 1, 2, 3, 4 | 1 | | |
+| `crossoverType` | Crossover | LR 24 dB · Min phase, LR 48 dB · Min phase | LR 24 | | |
+| `crossover1` | Crossover 1 | 20 to 20000 | 150 | Hz | log |
+| `crossover2` | Crossover 2 | 20 to 20000 | 2500 | Hz | log |
+| `crossover3` | Crossover 3 | 20 to 20000 | 8000 | Hz | log |
+| `bandRelease1` to `bandRelease4` | Band 1 to 4 release | 1 to 1000 | 120, 80, 50, 40 | ms | log, as Release |
+
+Appended after `clipAmount`. No state migration: a state without them loads Bands 1. Two bands use Crossover 1, three use 1 and 2, four use all three. The crossover handles are dragged on the strip or typed (`2500`, `2.5k`).
+
+### 6. Tests
+
+1. Legacy: Bands 1 renders exactly as v1.7.1 at every Style, oversampling and filter, with True peak, Auto release, the clipper, DC filter and Gain lock on and off; latency unchanged.
+2. Crossover: Bands 2, 3 and 4 at LR 24 and LR 48 on noise 30 dB under the ceiling (nothing limits): the output's magnitude against the input's within 0.05 dB from 20 Hz to 20 kHz.
+3. Pumping: the model's body-only mix at 3 bands: the 1 kHz tone's mean dip at most half of Bands 1's (model: 1.4 against 5.1 dB).
+4. Band independence: a 60 Hz tone pushed 9 dB over Ceiling with a 5 kHz tone 20 dB under it, 3 bands: the 60 Hz band shows at least 6 dB of reduction, and the 5 kHz tone's level moves under 0.5 dB.
+5. Per-band release: a 60 Hz burst at 3 bands, Auto release off: band 1 takes 2 to 6 times longer to recover 6 dB at a 500 ms release than at 120 ms.
+6. Ceiling: never over Ceiling (dBTP with True peak) at 2, 3 and 4 bands, on the model's mixes and the existing dense test signal, at every oversampling.
+7. Latency: Bands 2 to 4 report 5 ms more (240 samples at 48 kHz); the bypass and Listen to removed paths stay aligned (the existing bypass null test at 3 bands).
+8. Sweeps: Bands, the crossovers and the band releases automated through their ranges: no NaN or inf, and no step over 0.1 between samples on a 100 Hz sine (§4 rule 2).
+9. Offline renders are bit-identical to real time and to random block sizes at 3 bands; enabling automation without changing a value leaves the output bit-identical (§4 rule 8).
+10. MultiComp renders exactly as before the crossover moved (its legacy tests).
+11. CPU (§0.4): 2, 3 and 4 bands at the defaults, with the ratio to Fancy Comp, in `docs/measurements/limit-w3.txt`.
+
+### 7. Build order
+
+Approval, then one push: the crossover into `fancy-core` (MultiComp's tests unchanged), the band stage in `LimitDsp`, the parameters, the BANDS card (mockup 74 A, window 760 x 637, its minimum too), tests from a pre-push port of the model, manual and checklist. Then Gate's multiband (▲) needs its layout approved.
