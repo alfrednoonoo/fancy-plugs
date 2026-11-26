@@ -1,7 +1,9 @@
 #include "EqSpectral.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 
 namespace eq
@@ -26,10 +28,28 @@ double distancePast (double distanceDb) noexcept
     return distanceDb;
 }
 
-// 10^(dB / 20), by exp: cheaper than pow.
+// 10^(dB / 20): 2^y as 2^k times a polynomial for 2^f, k the nearest integer, to a relative 2e-6
+// (docs/eq.md, "Ratios to Comp": std::exp per bin was a large part of the Windows cost).
 float dbToGain (float db) noexcept
 {
-    return std::exp (db * 0.11512925464970228f);
+    const auto y = std::clamp (db * 0.16609640474436813f, -120.0f, 120.0f);
+    const auto k = (int) (y + 126.5f) - 126; // floor (y + 0.5): y + 126.5 is positive
+    const auto f = (y - (float) k) * 0.6931471805599453f;
+    const auto poly = 1.0f + f * (1.0f + f * (0.5f + f * (1.0f / 6.0f + f * (1.0f / 24.0f + f * (1.0f / 120.0f + f * (1.0f / 720.0f))))));
+    return poly * std::bit_cast<float> ((std::uint32_t) (k + 127) << 23);
+}
+
+// 10 log10 (x) for a positive, normal x, to 3e-5 dB: x = 2^k m with m in [1 / sqrt 2, sqrt 2), and
+// ln m from the series in t = (m - 1) / (m + 1). Cheaper than log10 per bin.
+float powerToDb (float x) noexcept
+{
+    const auto bits = std::bit_cast<std::uint32_t> (x);
+    const auto k = (std::int32_t) (bits - 0x3F3504F3u) >> 23;
+    const auto m = std::bit_cast<float> (bits - (std::uint32_t) (k * (1 << 23)));
+    const auto t = (m - 1.0f) / (m + 1.0f);
+    const auto t2 = t * t;
+    const auto ln = 2.0f * t * (1.0f + t2 * (1.0f / 3.0f + t2 * (1.0f / 5.0f + t2 * (1.0f / 7.0f + t2 * (1.0f / 9.0f)))));
+    return 4.3429448190325175f * ln + 3.0102999566398120f * (float) k;
 }
 } // namespace
 
@@ -225,7 +245,7 @@ const std::vector<float>& SpectralStage::levelsFor (bool key, int domain) noexce
     {
         const auto sum = (double) power[(size_t) k] + (k > 0 ? (double) power[(size_t) (k - 1)] : 0.0)
                        + (k + 1 < bins ? (double) power[(size_t) (k + 1)] : 0.0);
-        out[(size_t) k] = (float) (10.0 * std::log10 (sum * calibration + 1.0e-30));
+        out[(size_t) k] = powerToDb ((float) (sum * calibration) + 1.0e-30f);
     }
 
     return out;

@@ -4,7 +4,7 @@ get_property(fancy_screen_sources GLOBAL PROPERTY FANCY_SCREEN_SOURCES)
 get_property(fancy_screen_includes GLOBAL PROPERTY FANCY_SCREEN_INCLUDES)
 get_property(fancy_screen_defs GLOBAL PROPERTY FANCY_SCREEN_DEFS)
 
-target_sources(fancy-tests PRIVATE TestStartListener.cpp DecibelsTests.cpp PitchShifterTests.cpp ValueEntryTests.cpp PopupTests.cpp PresetTests.cpp ListenTests.cpp HostRenderTests.cpp HostTests.cpp WorkflowTests.cpp ${fancy_screen_sources})
+target_sources(fancy-tests PRIVATE TestStartListener.cpp DecibelsTests.cpp PitchShifterTests.cpp ComplexFftTests.cpp ValueEntryTests.cpp PopupTests.cpp PresetTests.cpp ListenTests.cpp HostRenderTests.cpp HostTests.cpp WorkflowTests.cpp ${fancy_screen_sources})
 
 # FancyBench's analysis and test-file code (Phase 3 Q1), tested without its hosting.
 # PortabilityTests.cpp checks the platform layer (docs/mac.md, step 1).

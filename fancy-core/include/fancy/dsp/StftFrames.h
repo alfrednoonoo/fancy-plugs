@@ -2,6 +2,8 @@
 
 #include <juce_dsp/juce_dsp.h>
 
+#include "ComplexFft.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -29,6 +31,7 @@ namespace fancy::dsp
 //
 // analysePair() and synthesisePair() put two channels through one complex FFT each way, with the
 // same results (to rounding) as analyse() and synthesise() on each: Fancy EQ uses them, FIR doesn't.
+// Their transforms are ComplexFft's (vDSP on the Mac, its own SSE FFT on Windows).
 //
 // prepare() allocates; everything else doesn't.
 class StftFrames
@@ -67,6 +70,7 @@ public:
         stageInterval = extra / numStages;
 
         fft = std::make_unique<juce::dsp::FFT> (juce::roundToInt (std::log2 ((double) fftLength)));
+        pairFft.prepare (juce::roundToInt (std::log2 ((double) fftLength)));
         measurePairScaling();
 
         analysisWindow.assign ((size_t) frameLength, 1.0f);
@@ -238,7 +242,7 @@ public:
 
         std::fill (pairIn.begin() + frameLength, pairIn.end(), juce::dsp::Complex<float> {});
 
-        fft->perform (pairIn.data(), pairOut.data(), false);
+        pairFft.perform (pairIn.data(), pairOut.data(), false);
 
         const auto half = 0.5f * forwardPairScale;
 
@@ -273,7 +277,7 @@ public:
                 pairIn[(size_t) (fftLength - k)] = { ar + bi, br - ai };
         }
 
-        fft->perform (pairIn.data(), pairOut.data(), true);
+        pairFft.perform (pairIn.data(), pairOut.data(), true);
 
         auto& ringA = outputRings[(size_t) outputA];
         auto& ringB = outputRings[(size_t) outputB];
@@ -313,7 +317,7 @@ private:
         real[0] = 1.0f;
         fft->performRealOnlyForwardTransform (real.data(), true);
         pairIn[0] = { 1.0f, 0.0f };
-        fft->perform (pairIn.data(), pairOut.data(), false);
+        pairFft.perform (pairIn.data(), pairOut.data(), false);
         forwardPairScale = std::abs (pairOut[0].real()) > 1.0e-12f ? real[0] / pairOut[0].real() : 1.0f;
 
         std::fill (real.begin(), real.end(), 0.0f);
@@ -323,7 +327,7 @@ private:
 
         fft->performRealOnlyInverseTransform (real.data());
         std::fill (pairIn.begin(), pairIn.end(), juce::dsp::Complex<float> { 1.0f, 0.0f });
-        fft->perform (pairIn.data(), pairOut.data(), true);
+        pairFft.perform (pairIn.data(), pairOut.data(), true);
         inversePairScale = std::abs (pairOut[0].real()) > 1.0e-12f ? real[0] / pairOut[0].real() : 1.0f;
     }
 
@@ -347,6 +351,7 @@ private:
     int numStages = 1, stageInterval = 0;
 
     std::unique_ptr<juce::dsp::FFT> fft;
+    ComplexFft pairFft; // the paired calls' transforms: fancy::dsp::ComplexFft, SSE on Windows
     std::vector<float> analysisWindow, synthesisWindow;
     std::vector<juce::dsp::Complex<float>> pairIn, pairOut;
     float forwardPairScale = 1.0f, inversePairScale = 1.0f;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fancy/dsp/ComplexFft.h>
 #include <fancy/dsp/PitchShifter.h>
 #include <fancy/dsp/Svf.h>
 
@@ -22,7 +23,8 @@ namespace verb
 // by a new random step, the same for both channels, so the difference between them (the image)
 // stays as it was captured. The steps come from a seeded generator, so offline renders repeat:
 // one of stepCount equally spaced angles, from a table. Both channels go through one complex
-// inverse FFT (left real, right imaginary), half the work of two real ones.
+// inverse FFT (left real, right imaginary), half the work of two real ones, by
+// fancy::dsp::ComplexFft.
 //
 // prepare() allocates; push(), capture() and next() don't.
 class SpectralFreeze
@@ -59,6 +61,7 @@ private:
     std::uint32_t seed = 0x9e3779b9u;
 
     std::unique_ptr<juce::dsp::FFT> fft;
+    fancy::dsp::ComplexFft pairFft; // the complex inverse: vDSP on the Mac, SSE on Windows
     std::vector<float> window, buffer;
     std::vector<juce::dsp::Complex<float>> packed, unpacked;
     std::vector<double> stepCos, stepSin;

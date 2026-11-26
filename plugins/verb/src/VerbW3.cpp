@@ -48,9 +48,10 @@ void SpectralFreeze::prepare (double sampleRate)
     inverseCorrection = std::abs (buffer[0]) > 1.0e-12f ? 1.0 / (double) buffer[0] : 1.0;
 
     // The same for the complex inverse that synthesises both channels at once.
+    pairFft.prepare (order);
     packed.assign ((size_t) size, { 1.0f, 0.0f });
     unpacked.assign ((size_t) size, { 0.0f, 0.0f });
-    fft->perform (packed.data(), unpacked.data(), true);
+    pairFft.perform (packed.data(), unpacked.data(), true);
     complexCorrection = std::abs (unpacked[0].real()) > 1.0e-12f ? 1.0 / (double) unpacked[0].real() : 1.0;
 
     stepCos.resize ((size_t) stepCount);
@@ -192,7 +193,7 @@ void SpectralFreeze::addFrame (int offset) noexcept
             packed[(size_t) (size - k)] = { (float) (lr + ri), (float) (rr - li) };
     }
 
-    fft->perform (packed.data(), unpacked.data(), true);
+    pairFft.perform (packed.data(), unpacked.data(), true);
 
     auto& left = accumulator[0];
     auto& right = accumulator[1];
