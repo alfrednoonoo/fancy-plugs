@@ -209,6 +209,10 @@ bool renderEq (const juce::File& outputDir)
     editor->showDynamicPreview (false);
     ok = writeBothScales (*editor, "eq-dynamic", outputDir) && ok;
 
+    // v1.7.2 (mockup 71, panel 2): the same band made spectral.
+    editor->showSpectralPreview (false);
+    ok = writeBothScales (*editor, "eq-spectral", outputDir) && ok;
+
     editor->showDynamicPreview (true);
     ok = writeBothScales (*editor, "eq-dynamic-compact", outputDir) && ok;
 
@@ -228,6 +232,10 @@ bool renderEq (const juce::File& outputDir)
     editor->showListPreview();
     ok = writeBothScales (*editor, "eq-list", outputDir) && ok;
 
+    // v1.7.2 (mockup 71, panel 5): the same list with band 3 spectral.
+    editor->showSpectralPreview (true);
+    ok = writeBothScales (*editor, "eq-spectral-list", outputDir) && ok;
+
     editor->showGroupsPreview();
     ok = writeBothScales (*editor, "eq-groups", outputDir) && ok;
 
@@ -241,14 +249,6 @@ bool renderEq (const juce::File& outputDir)
         editor->setSize (constrainer->getMinimumWidth(), constrainer->getMinimumHeight());
         ok = writeBothScales (*editor, "eq-list-small", outputDir) && ok;
     }
-
-    // v1.7.2 (mockup 71): a spectral band in the band editor and in the list, at the default size.
-    editor->setSize (802, 645);
-    editor->showSpectralPreview (false);
-    ok = writeBothScales (*editor, "eq-spectral", outputDir) && ok;
-
-    editor->showSpectralPreview (true);
-    ok = writeBothScales (*editor, "eq-spectral-list", outputDir) && ok;
 
     return ok;
 }

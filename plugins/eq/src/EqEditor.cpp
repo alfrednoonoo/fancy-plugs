@@ -1497,6 +1497,7 @@ void EqEditor::showListPreview()
     processor.setParameter ("b2group", 1.0f);
     processor.setParameter ("b3group", 1.0f);
     processor.setParameter ("b3dyn", 1.0f);
+    processor.setParameter ("b3spectral", 0.0f); // set only by the spectral list shot
     processor.setParameter ("bandView", 1.0f);
 
     parameter ("compact").setValueNotifyingHost (0.0f);
@@ -1588,6 +1589,9 @@ void EqEditor::showDynamicPreview (bool compact)
     processor.setParameter ("b2dyn", 1.0f);
     processor.setParameter ("b2thresh", -24.0f);
     processor.setParameter ("b2range", -6.0f);
+    processor.setParameter ("b2spectral", 0.0f); // set only by the spectral shot
+    processor.setParameter ("bandView", 0.0f);
+    listShown = false;
 
     graph.showPreviewChange (1, -3.6f);
 
