@@ -579,3 +579,95 @@ Mockup 64 approved by the user on 23 November 2026; `tests/VerbW2bTests.cpp`.
 - `extraWidth` (100 to 200 %, default 100) is appended after the Gate's parameters, so no stateVersion bump: a state without it loads at 100 %. `readTargets` multiplies Width by `extraWidth / 100`, exactly 1 at 100 %, so the existing Width smoother carries it and nothing else in `VerbDsp` changes.
 - SETUP: the knob under Equal loudness at (20, 253), with its note, as mockup 64.
 - Test 2's mono sum is held to float rounding (1e-6), not to the bit: each output channel is rounded to float before `(L + R) / 2` is formed, so the sum can differ in its last bit even though the mid is computed identically.
+
+## Phase 4 Wave 3: Freeze and shimmer
+
+**Draft, for the user's approval.** Item 4 of Wave 3 (`docs/enhancements.md`; backlog items 9 and 10 of section 5), for v1.7.2. Both are live stages, like Ducking and the Gate: the rack still only builds the IR. Modelled first: `docs/research/verb-freeze-model.py` (the design study the backlog asked for) and `docs/research/shimmer-model.py`, which Room's shimmer shares. The pitch shifter is the shared `fancy::dsp::PitchShifter` from Delay's Wave 3 note.
+
+### 1. What it adds
+
+- **Freeze** (`freeze`, off, automatable): the reverb holds what it's playing, indefinitely, and new input no longer enters it. The dry signal is unaffected. Turned off, the held sound dies away at the IR's own decay, as if the reverb had been let go, and the reverb takes new input again.
+- **Shimmer** (`shimmer`, 0 to 100 %, 0) and **Interval** (`shimmerPitch`: Octave up, Fifth up, Fourth up, Octave and fifth up, Two octaves up, Octave down; Octave up): the reverb's output is fed back into its input through a pitch shifter, so each pass comes back an interval higher and the tail grows a choir of octaves above the note.
+
+At Freeze off and Shimmer 0 the path is today's, so saved projects render as v1.7.1 to the bit.
+
+### 2. What the model found
+
+**Freeze.** A convolver has no loop to hold, as Room's and Delay's freezes hold theirs. Three ways were modelled, on a chord through a generated hall (stereo, left and right correlated 0.57, Decay 2.5 s), frozen 1.5 s after the chord, over 10 s:
+
+| | Level | Wanders (50 ms, 5th to 95th %) | Spectrum, per third octave | Repeats (envelope) | L/R correlation |
+|---|---|---|---|---|---|
+| Spectral, independent random phases | −1.1 dB | 3.3 dB | within 1.9 dB | 0.14 | −0.01 |
+| **Spectral, one random phase step for both channels** | **−1.0 dB** | **3.2 dB** | **within 2.0 dB** | **0.16** | **+0.66** |
+| Spectral, phase vocoder (each bin at its measured frequency) | −4.1 dB | 3.3 dB | within 5.2 dB | 0.38 | −0.02 |
+| The last 1 s looped, 50 ms crossfade | +9.0 dB | 14.9 dB | within 12.6 dB | 0.90, every 1.0 s | +0.36 |
+
+- **Spectral freeze** captures the wet signal's magnitude spectrum over the last 250 ms (STFT, 4096 points at 48 kHz, hop 1024) and resynthesises it continuously with new random phases each hop. It holds the captured spectrum within 2 dB and never repeats. It wanders by 3 dB in 50 ms frames, as any steady noisy tail does. Giving both channels the same random step keeps the captured difference between them, so the image stays as wide as the reverb was (+0.66 against +0.57 captured); independent phases make it fully decorrelated.
+- **A loop** repeats audibly every loop length, and carries the decay it captured, so the level saws up and down by 15 dB.
+- **Recirculating through the convolver** can't hold. The generated IR's strongest bin is 11.2 dB over its average, so a loop gain of 0 dB on average runs away at those frequencies. Held safely under them, the tail falls 11 dB a pass, and each pass narrows the sound onto the IR's strongest modes (after 10 passes 1 % of the bins hold 99.5 % of the energy): a ringing, not a freeze.
+- The −1 dB level is the model's scaling of random phases; the plugin calibrates it to 0 dB.
+
+**Shimmer.** The loop: `wet = IR ∗ (input + f)`, `f = g × Shift(HP(wet))`. HP is a 200 Hz high-pass, so falling shifts don't pile up mud. The loop gain is `g = Shimmer × 0.9 / √E`, where E is the energy the IR passes (the builder already measures it for Equal loudness), so 100 % sends 0.81 of the energy round the loop. A 220 Hz note, 0.4 s, through the hall:
+
+| Interval | Shimmer | Falls 60 dB after | What sounds 5 s after the note (dB against the strongest) |
+|---|---|---|---|
+| | 0 % | 2.9 s | (silent) |
+| +12 | 50 % | 3.5 s | 440 −12, 880 −2, 1760 0, 3520 0, 7040 −8, 14080 −12 |
+| +12 | 75 % | 3.9 s | 880 −9, 1760 −3, 3520 0, 7040 −4, 14080 −5 |
+| +12 | 100 % | 4.3 s | 880 −14, 1760 −6, 3520 0, 7040 −1, 14080 0 |
+| +7 | 100 % | 5.4 s | 330 −28 … 1661 −8, 2489 0 |
+
+- **It always dies away.** Even a bright IR with no damping passes at most −0.44 dB per octave per pass at 100 %, so there's no runaway and no infinite tail; Freeze is the way to hold one.
+- **The shifter must filter its input.** Shifting a partial near 14 kHz up an octave passes Nyquist and folds it back down. A low-pass after the shifter can't remove that, and without one before it, Shimmer 100 % at +12 rose 70 dB in 5 s as the folded partials fed themselves. Low-passing the shifter's input at 0.45 × the rate ÷ the ratio stops it; the shared shifter does this for every rising shift.
+- **A loop guard** (section 3) caps what's fed back at the input's own level. The generated hall never reached it, but Room's sparser network did, by up to 27 dB on single notes (Room's note). A user IR can be as tonal (Metal Ping in the library is), so Verb has the guard too.
+- The shifter runs plain here, not aligned: the dense tail makes its heads uncorrelated, so alignment buys nothing (Delay's note, section 2).
+
+### 3. How it's built
+
+- **Freeze:** the wet output (after the convolver, before Center/Width, the Wet gain, Ducking and the Gate) is always written into a 400 ms history ring, a copy that changes no output. When Freeze turns on, eight frames of it are analysed in one block (eight 4096-point FFTs per channel, scaled with the rate as EQ's spectral stage is), and their RMS magnitudes become the frozen spectrum. From then, one inverse FFT per channel per 1024-sample hop resynthesises it: a new random phase step per bin, shared by both channels, seeded, so offline renders repeat. The input to the convolver (and the shimmer loop) fades out over 20 ms, and the live wet crossfades into the frozen sound over 200 ms at equal power. Turning Freeze off, the frozen sound fades at the IR's own decay: its broadband RT60, measured by the builder from −5 to −35 dB as the Decay module measures, while the convolver takes input again.
+- **Shimmer:** the feedback is taken from the convolver's output (so Wet, Ducking and the Gate don't change the loop) and added to the convolver's input after Pre-delay. The convolver runs in sub-blocks of at most 1024 samples (21 ms at 48 kHz, scaled with the rate), and the shifter reads the wet at least that far back. The loop's timing then doesn't depend on the host's block size, so offline renders are bit-identical at any block size (test 5). At a 128-sample host block nothing is split. In Low CPU mode the convolver's own 4096 samples add to the loop's delay.
+- **Loop gain:** `g` is recomputed with each IR build, from E (stereo: every path the IR has), and moves through the 64 ms crossfade.
+- **Loop guard:** the feedback's 50 ms RMS is held under the peak 50 ms RMS of the convolver's input, held for the IR's RT60 and then released at 60 dB per RT60, by a gain on the feedback (10 ms attack). It only acts when the loop builds above the input.
+- **Freeze and Shimmer together:** freezing mutes the loop with the input; the frozen sound holds whatever octaves were sounding.
+- **CPU:** Shimmer adds the shifter (two Hermite reads per channel and the input low-pass) and, at host blocks over 1024, the extra convolver calls. Freeze adds one 4096-point inverse FFT per channel per hop while frozen. Targets with a 3 s IR in Zero latency (§0.4): Shimmer adds under 0.5 % over the same IR, Freeze under 0.3 %.
+
+### 4. Decisions
+
+- **Decision 1: how Freeze holds.**
+  - **A (R).** Spectral freeze with one random phase step for both channels, as modelled: holds the spectrum within 2 dB, never repeats, keeps the image.
+  - **B.** The last second looped with a crossfade: simpler, but it repeats audibly every second and saws in level.
+- **Decision 2: what happens on release.**
+  - **A (R).** The frozen sound decays at the IR's own RT60, as if the reverb had been let go.
+  - **B.** It fades out over 200 ms. Quicker, but an abrupt end to a long pad.
+- **Decision 3: the intervals.**
+  - **A (R).** A list of six: Octave up (the default), Fifth up, Fourth up, Octave and fifth up, Two octaves up, Octave down. They're the ones that stay consonant as they stack.
+  - **B.** A free semitone knob, −12 to +24 st: any interval, but most of them turn to clusters after three passes.
+- **Decision 4: where the controls go.**
+  - **A (R).** **Freeze** as a toggle button at the top right of the IR display, lit and with the display tinted while frozen, as Delay's Freeze sits on its tap graph. **Shimmer** (a small knob) and **Interval** (a dropdown) in the SETUP drawer's AFTER THE REVERB group, after Ducking and the Gate. A mockup follows approval, measured on Verb's latest screenshots; if the drawer has no room, it grows, per the layout rule.
+  - **B.** All three in the SETUP drawer. No change to the main window, but Freeze is played live and would be behind a click.
+
+### 5. Parameters
+
+| ID | Name | Range | Default | Unit |
+|---|---|---|---|---|
+| `freeze` | Freeze | off/on | off | |
+| `shimmer` | Shimmer | 0 to 100 | 0 | % |
+| `shimmerPitch` | Shimmer interval | the six intervals | Octave up | |
+
+Appended after `extraWidth`. No `stateVersion` bump: a state without them loads Freeze off and Shimmer 0.
+
+### 6. Tests
+
+1. Legacy: Freeze off and Shimmer 0 render exactly as v1.7.1, in both latency modes, with Ducking, the Gate and Extra width.
+2. Freeze: a chord through a library hall, frozen: over 10 s, each third octave within 2 dB of the captured spectrum, the 50 ms RMS within 4 dB (5th to 95th percentile), no envelope repetition above 0.3 at lags of 0.2 to 5 s, and the L/R correlation within 0.15 of the captured one. A 3.1 kHz tone played while frozen adds nothing at 3.1 kHz above −60 dB.
+3. Release: after Freeze off, the frozen sound falls 60 dB in the IR's measured RT60 ± 10 %.
+4. Shimmer: +12 at 100 %, the model's 220 Hz note: 880, 1760 and 3520 Hz sound 2 s after the note within 30 dB of the strongest; the output falls 60 dB within 10 s; no NaN or inf.
+5. Determinism: offline renders with Shimmer 75 % are bit-identical at block sizes 1, 64, 1000 and 8192, in both latency modes.
+6. Folding: Two octaves up at 100 % on a 6 kHz tone: below 5 kHz, nothing above −80 dB of the tone after 2 s.
+7. Guard: the Metal Ping library IR at Shimmer 100 %, Fifth up, six notes: the loudest 50 ms after the note is no more than 10 dB over Shimmer 0's.
+8. Freeze with Shimmer: freezing mutes the loop; the frozen sound's level holds within 1 dB over 10 s.
+9. CPU (§0.4): a 3 s IR with Shimmer and with Freeze, in `docs/measurements/verb-w3.txt`.
+
+### 7. Build order
+
+Approval, then the mockup (`reference/phase4/72__verb_w3_mockup.png`: the IR display's Freeze and the SETUP drawer's Shimmer row), then one push: the history ring and spectral freeze, the shimmer loop with its guard, the sub-block convolver calls, the parameters, the controls, tests, manual and checklist. If Verb is built before Delay, `PitchShifter` and its tests come in this push.

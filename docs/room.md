@@ -358,3 +358,76 @@ One push, Decisions 1 to 4 A. Parameters appended after `autoGain`: `lowDecay` (
 - **Layout:** the drawer as mockup 56 measures it (Duck from at 262, 143; Decay shape at 398, 345, knobs centred at 448 and 538). On the main page the 64 px are shared: the display grows 32 px and the cards 32 px (knobs 16 px lower, centred), the footer moves down 64 px, and the meter's well and the faders lengthen by 64 px with the meter's 59 dB span kept.
 - **Changed from section 5, test 2:** measured in the **63 Hz** octave, not 125 Hz. The 125 Hz octave is only part way into the 250 Hz shelf: the model gives 1.13 s and 3.36 s there, outside 1.0 ± 0.12 and 4.0 ± 0.4. At 63 Hz the pre-push model gives 1.094 and 3.788 s, and 1 kHz 1.921 and 2.072 s.
 - **Changed from section 5, test 3:** the network takes about 70 ms to build up from an impulse, so Attack 0's late tail peaks at 70 ms and Attack 150 ms's at 200 ms (pre-push model). The test checks that Attack moves the peak 120 to 180 ms later (130 ms), with the energy within 1 dB (−0.16 dB).
+
+## Phase 4 Wave 3: shimmer
+
+**Draft, for the user's approval.** Item 5 of Wave 3 (`docs/enhancements.md`; backlog item 8 of section 14), for v1.7.2. Modelled first: `docs/research/shimmer-model.py` (run with `room`: it renders Room's late network with `docs/research/room-model.py`). The loop, its gain and its guard are the ones in Verb's Wave 3 note, so the two plugins' shimmer means the same; the pitch shifter is the shared `fancy::dsp::PitchShifter` from Delay's Wave 3 note.
+
+### 1. What it adds
+
+**Shimmer** (`shimmer`, 0 to 100 %, 0) and **Interval** (`shimmerPitch`: Octave up, Fifth up, Fourth up, Octave and fifth up, Two octaves up, Octave down; Octave up). The late network's output is fed back into its input through the pitch shifter, so each pass comes back an interval higher and the tail grows octaves above the note. At 0 the shifter isn't run, so saved projects render as v1.7.1 to the bit.
+
+### 2. What the model found
+
+Room at its defaults (Decay 1.8 s, late network only), a 220 Hz note, 0.4 s:
+
+| Interval | Shimmer | Falls 60 dB after | What sounds 2 s after the note (dB against the strongest) |
+|---|---|---|---|
+| | 0 % | 1.5 s | (the plain tail) |
+| +12 | 50 % | 2.4 s | 220 −18, 880 −14, 1760 −11, 3520 −4, 7040 0 |
+| +12 | 75 % | 2.9 s | 880 −25, 1760 −18, 3520 −7, 7040 0 |
+| +12 | 100 % | 3.2 s | 880 −32, 1760 −23, 3520 −10, 7040 0, 14080 −20 |
+
+- **It dies away** at every setting, as in Verb: the loop gain is `Shimmer × 0.9 / √E`, with E the energy the network passes, so 100 % sends 0.81 of the energy round. Room's High cut (9 kHz) and Damping thin out the top, so the octaves gather round 3.5 to 7 kHz.
+- **Room needs the loop guard.** Room's network is sparser than a convolution hall: a held note's shifted partials can land on the same strong modes pass after pass, and gain on every pass even though the average gain is under 1. At +7 st, 100 %, the loudest 50 ms after the note against Shimmer 0's, six notes:
+
+  | | 196 Hz | 220 | 246.9 | 261.6 | 329.6 | 392 |
+  |---|---|---|---|---|---|---|
+  | No guard | +23.7 dB | +27.1 | +23.6 | +12.2 | +18.0 | +17.3 |
+  | **With the guard** | **+8.7 dB** | **+8.6** | **+2.6** | **+7.9** | **+7.3** | **+5.4** |
+
+  With the guard, what's fed back is never louder than Room's own input was, and the tail blooms by up to 9 dB instead of 27. The model applies the guard per pass; the plugin applies it as a limiter in time (section 3), which acts sooner, so these figures are the most it should allow.
+- **Folding:** the shifter low-passes its input at 0.45 × the rate ÷ the ratio before a rising shift, or folded partials feed themselves and run away (Verb's note, section 2).
+
+### 3. How it's built
+
+- **The loop:** the late network's output (each running network, as the tail is summed now) goes through its own copy of Low cut and High cut, a 200 Hz high-pass and the shifter, scaled by `g`, and is added to the diffusers' input, after the Attack taps. The diffusers smear the shifter's grain edges before the network hears them. Room runs per sample, so the loop needs no block splitting: the shifter reads at least 1 ms back.
+- **Loop gain:** E comes from the formula Auto gain already uses (each line's `1 / (1 − g²)`, averaged), with the network's input and output gains, recomputed at the knots while Size or Decay move. It leaves out Damping and Low decay, which only lower the real energy, so the loop never passes more than 0.81.
+- **Loop guard:** as Verb's: the feedback's 50 ms RMS is held under the peak 50 ms RMS of Room's input, held for Decay and released at 60 dB per Decay, through a gain on the feedback with a 10 ms attack.
+- **Freeze:** the network's input gain already falls to 0 while frozen, and the feedback enters through it, so a frozen tail holds what's sounding and stops climbing. Low decay, Attack, Ducking, the gate, the reverb EQ and Width are unchanged.
+- **CPU:** the shifter (two Hermite reads per channel and its input low-pass), the cut-filter copies and the high-pass, only while Shimmer is above 0. Target: under 0.3 % over Room at Normal quality (§0.4).
+
+### 4. Decisions
+
+- **Decision 1: the intervals.** As Verb's decision 3, so the two plugins offer the same list.
+  - **A (R).** The six consonant intervals, Octave up by default.
+  - **B.** A free semitone knob, −12 to +24 st.
+- **Decision 2: where the controls go.**
+  - **A (R).** The EDIT drawer: **Shimmer** as a small knob and **Interval** as a dropdown, beside the reverb EQ. The main window doesn't change. A mockup follows approval, measured on Room's latest screenshots; if the drawer has no room, it grows, per the layout rule.
+  - **B.** The Tone card on the main window, as the backlog placed it. Quicker to reach, but the card is full, so the window would grow.
+- **Decision 3: the guard.**
+  - **A (R).** On, always, as modelled: the tail blooms by up to 9 dB on a held note and can't swell further.
+  - **B.** No guard: a fuller swell on some notes (up to 27 dB on a pure tone), with Room's level safety left to the user's output stage.
+
+### 5. Parameters
+
+| ID | Name | Range | Default | Unit |
+|---|---|---|---|---|
+| `shimmer` | Shimmer | 0 to 100 | 0 | % |
+| `shimmerPitch` | Shimmer interval | the six intervals | Octave up | |
+
+Appended after `duckFrom`. No state migration: a state without them loads Shimmer 0.
+
+### 6. Tests
+
+1. Legacy: Shimmer 0 renders exactly as v1.7.1 at every Quality, with Freeze, Ducking, the gate, Low decay and Attack on and off.
+2. Shimmer +12 at 100 %, the model's 220 Hz note: 3520 and 7040 Hz sound 2 s after the note within 12 dB of the strongest; the output falls 60 dB within 6 s; no NaN or inf.
+3. Guard: +7 at 100 %, the six notes: the loudest 50 ms after each note is no more than 10 dB over Shimmer 0's.
+4. Freeze with Shimmer 100 %: the frozen tail holds within the existing Freeze test's tolerance, and its spectrum doesn't climb (each third octave within 1 dB over 10 s).
+5. Folding: Two octaves up at 100 % on a 6 kHz tone: below 5 kHz, nothing above −80 dB of the tone after 2 s.
+6. Offline renders are bit-identical to real time and to random block sizes with Shimmer at 75 % (Room's existing test).
+7. CPU (§0.4): Normal with Shimmer 100 %, in `docs/measurements/room-w3.txt`.
+
+### 7. Build order
+
+Approval, then the drawer mockup (`reference/phase4/73__room_w3_mockup.png`), then one push: the loop and guard in `RoomDsp`, the parameters, the drawer, tests, manual and checklist. It comes after Delay's or Verb's push, whichever brings `PitchShifter`.

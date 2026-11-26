@@ -546,3 +546,80 @@ A new screenshot `eq-list-large` (the largest window, twelve bands, List) is com
 ### 5. As built
 
 `EqEditor::listHeight`, `listSpan`, `listColumnX` and `wantedStripHeight`; the strip's height as laid out is `stripShown`, checked on the 30 Hz tick, never while a mouse button is down. Tests 1 to 6 in two cases of `tests/EqGroupsTests.cpp`. Screens `eq-list-large` and `eq-list-small`. The column arithmetic was checked for every content width from 656 to 1732 px before pushing: no control overlaps another, and the cross is clear of the scroll bar.
+
+## Phase 4 Wave 3: spectral dynamics
+
+**Draft, for the user's approval.** Item 3 of Wave 3 (`docs/enhancements.md`; backlog item 8 of section 4), for v1.7.2. Modelled first: `docs/research/eq-spectral-model.py`.
+
+### 1. What it adds
+
+A dynamic band today moves its whole bell or shelf when the level in its region passes Threshold (`docs/phase2_1-D.md`). **Spectral** (`bNspectral`, off), a per-band switch beside DYN, does the same arithmetic per frequency inside the band's shape. Each FFT bin has its own level, the band's gain computer (Threshold, Range, Reach, the 6 dB knee, Above or Below), and its own Attack and Release. Its change is weighted by the band's shape: 1 at the centre, falling to 0 where the band's curve does. A resonance inside a wide band is then cut on its own, and the rest of the band is left alone. This is Pro-Q 4's spectral dynamics, built on FIR's STFT framing.
+
+The band's static Gain stays in the IIR chain as today; only the dynamic part moves into the spectral stage. A band with Spectral off, or DYN off, is today's band. With no spectral band the stage doesn't exist, so the EQ has no latency and renders as v1.7.1 to the bit.
+
+### 2. What the model found
+
+Pink noise at −24 dBFS with a 2.5 kHz tone at −14 dBFS that sounds for 0.5 s in each second, as a ringing resonance would. The band: a bell at 2.5 kHz, Q 1 (about 1.2 to 5 kHz), DYN Above, Threshold −30 dB, Range −9 dB, Reach 12, Attack 5 ms, Release 80 ms.
+
+| | Tone | Noise at 1.5 kHz while the tone sounds | Noise at 4 kHz | Noise alone | 90 % of the cut after | Latency |
+|---|---|---|---|---|---|---|
+| Today's dynamic band | −9.0 dB | −4.1 dB | −4.4 dB | −0.1 dB | 13 ms | 0 |
+| **Spectral, 1024 points** | **−9.0 dB** | **0.0 dB** | **0.0 dB** | **0.0 dB** | **19 ms** | **1024 samples, 21.3 ms** |
+| Spectral, 2048 points | −9.0 dB | 0.0 dB | 0.0 dB | 0.0 dB | 24 ms | 2048 samples, 42.7 ms |
+
+- **Selective:** today's band takes 4 dB out of everything between 1.2 and 5 kHz whenever the resonance rings. The spectral band cuts the resonance by the full Range and leaves the noise round it untouched.
+- **Exact at rest:** with Range 0 the output is the input delayed by the latency, to float rounding (−319 dBFS in double precision).
+- **Pre-echo:** clicks over the held, cut tone spread backwards by at most one frame. The click's energy in the 10 ms before it is 29 dB (1024) and 32 dB (2048) under its energy after it: a short, quiet smear, as in FIR.
+- **Threshold means the level at one frequency.** Each bin's level is measured over the Hann window's main lobe and calibrated so a sine reads its RMS, as the band's detector does. A tone at Threshold triggers both kinds of band alike. Broadband material spreads its level over many bins, so each bin sits far under Threshold, and the noise alone wasn't cut at all. That's the point of a spectral band: it reacts to peaks and resonances, not to a loud band in general (decision 3).
+
+### 3. How it's built
+
+- **The stage** sits before the IIR chain, at the host rate, ahead of any oversampling: one STFT of the input, 1024 points at 44.1 and 48 kHz (scaled with the rate, so 2048 at 88.2 and 96 kHz, and the bins stay about 47 Hz wide), Hann, 75 % overlap. Detection reads the same spectrum, or the sidechain's, analysed only while a spectral band uses it. Per bin, every spectral band's weighted change (in dB) is summed and applied once, then the frame is overlap-added.
+- **Channels:** each band keeps its channel setting. Stereo, Left and Right bands act on the L and R spectra; Mid and Side bands on M and S, formed from them per bin.
+- **The framing moves to `fancy-core`** (`fancy::dsp::StftFrames`): FIR's input and output rings, windows, overlap-add and staged FFTs, with FIR switched to it and held bit-identical by its tests and a legacy copy of `SpectralEngine` (decision 5).
+- **Latency:** 1024 samples at 48 kHz, reported only while at least one band is spectral (decision 2). Turning the first spectral band on or off changes the reported latency and crossfades, as switching Minimum to Linear phase does today.
+- **Linear phase:** as DYN, Spectral needs Minimum phase. In Linear mode spectral bands play their static settings.
+- **Graph:** the white total curve includes each bin's current change, published per frame as 512 log-spaced values (FIR's curve mechanism), so a spectral band shows a narrow dip at the resonance where today's band shows the whole bell moving. The reach fill and the "reach −9 dB · now −3.6 dB" read-out stay; "now" is the deepest bin.
+- **CPU:** one stereo STFT, two forward and two inverse 1024-point FFTs per 256-sample hop, plus each spectral band's gain computer over its bins. Target: four spectral bands under 1 % at 48 kHz and 128 samples (§0.4), against the 1.5 % for eight dynamic bands today.
+
+### 4. Decisions
+
+- **Decision 1: the FFT size.**
+  - **A (R).** 1024 points at 48 kHz (21 ms), scaled with the rate: about 47 Hz bins, fine enough to single out a resonance above 200 Hz, and the shorter wait.
+  - **B.** A drawer setting, 1024, 2048 or 4096: finer bins for low resonances, at 43 or 85 ms.
+- **Decision 2: when the latency is reported.**
+  - **A (R).** Only while a band is spectral, so the EQ at its defaults and every saved project keep 0 latency. Switching costs a host latency change, as Linear phase does.
+  - **B.** A drawer option, **Reserve spectral latency**, which keeps it reported all the time so switching a band never changes the host's compensation (useful when automating Spectral). Off by default, with A's behaviour otherwise.
+- **Decision 3: what Threshold means for a spectral band.**
+  - **A (R).** The level at one frequency, calibrated on a sine as today's detector is: the same number triggers a tone the same way, and broadband material rarely triggers. The manual says to set Threshold by the resonance's level.
+  - **B.** Offset by the band's width, so broadband noise triggers a spectral band about where it triggers today's. Switching Spectral on then changes less, but resonances need a higher Threshold to stand out.
+- **Decision 4: where the switch goes.**
+  - **A (R).** A **SPECTRAL** chip beside the DYN chip in the band editor (both layouts), in the band colour when on, shown only while DYN is on and disabled in Linear mode with the tooltip "Spectral bands need Minimum phase". The band list's DYN column shows "S" for a spectral band. A mockup follows approval, measured on EQ's latest screenshots.
+  - **B.** An **Above | Below | Spectral** row instead of the Above | Below switch. One control fewer, but Spectral is independent of the direction, so Below would lose it.
+- **Decision 5: FIR's STFT code.**
+  - **A (R).** Move the framing into `fancy-core` and use it in both, as the backlog planned: one tested piece, FIR held bit-identical.
+  - **B.** A separate small STFT inside the EQ, leaving FIR untouched: less risk to FIR, two copies of the same thing.
+
+### 5. Parameters
+
+| ID | Name | Range | Default |
+|---|---|---|---|
+| `bNspectral` | Band N Spectral | off/on | off |
+
+24 parameters, appended after `bNgroup` for bands 1 to 24. No `stateVersion` bump: a state without them loads Off. Under decision 2 B, `reserveSpectral` (off, not automatable) is added as well.
+
+### 6. Tests
+
+1. Legacy: no spectral band renders exactly as v1.7.1, minimum and linear phase, with eight dynamic bands, with 0 latency reported.
+2. Selective: the model's case. The spectral band cuts the tone by 9 ± 0.5 dB and moves the noise at 1.5 and 4 kHz by under 0.5 dB, while today's band on the same input moves it by over 3 dB.
+3. Calibration: a sine at the band's centre, 12 dB over Threshold, Range −6: the change at the sine is −6 ± 0.5 dB, as today's band test 2.
+4. Reconstruction: Range 0 gives the input delayed by the latency, within 1e-6.
+5. Latency: the reported latency equals the measured impulse delay, at 44.1, 48 and 96 kHz; switching the first spectral band on and off changes it and crossfades with no step beyond the input's own.
+6. Timing: 90 % of the cut within 30 ms of the tone's start at Attack 5 ms.
+7. Channels and sidechain: a Mid spectral band cuts a centred tone and not the same tone in the side; with Sidechain, the sidechain's tone triggers the cut and the main input's doesn't.
+8. FIR: every FIR test passes unchanged, and FIR renders bit-identically to the legacy `SpectralEngine` in every mode and size.
+9. CPU (§0.4): four spectral bands, in `docs/measurements/eq-w3.txt`.
+
+### 7. Build order
+
+Approval, then the band editor mockup (`reference/phase4/71__eq_w3_mockup.png`), then two pushes: first the framing moved into `fancy-core` with FIR on it (test 8 green before anything uses it), then the spectral stage, the parameters, the chip, the graph, tests, manual and checklist.

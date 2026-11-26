@@ -321,3 +321,102 @@ One push, with every recommended option; `tests/DelayW2Tests.cpp`, its numbers r
 ## v1.7.2: the tap graph's label strip
 
 Freeze covered the top of a loud tap's handle near 375 ms. Mockup 67 (`reference/phase4/67__delay_freeze_mockup.png`, source `design/phase4-mockup-src/w3_mockups.py`), layout A (user, 25 November 2026): the tap graph is 24 px taller, with a strip across its top for "dry", Freeze and the caption, which no handle or grid line enters. Freeze stays where it was, the handles keep their travel, and everything below moves down; the Out meter and the Wet and Dry faders are 24 px longer. Window 820 x 472 (minimum too). No parameter, state or DSP change.
+
+## Phase 4 Wave 3: reverse and pitch-shifted taps
+
+**Draft, for the user's approval.** Item 6 of Wave 3 (`docs/enhancements.md`; backlog items 3 and 4 of section 6), for v1.7.2. Modelled first: `docs/research/delay-reverse-pitch-model.py`. The pitch shifter is shared: Verb's and Room's shimmer (their Wave 3 notes) use the same `fancy::dsp::PitchShifter` in `fancy-core`.
+
+### 1. What it adds
+
+Two per-tap settings, appended after `tNmodStereo`:
+
+- **Reverse** (`tNreverse`, off): the tap plays what came in backwards, in windows one tap time long. Inside each window the read head runs backwards from the write head, so its delay grows from 0 to twice the tap time: on average the tap time, as a forward tap. Each window fades in and out over 5 ms. A note swells in and ends on its attack, the classic reverse echo.
+- **Pitch** (`tNpitch`, −12 to +12 st, step 0.01, default 0): the tap's repeats are shifted by Pitch. The shifter sits on the tap's read, inside the feedback loop, so each repeat is shifted again: +12 st gives a rising cascade of octaves (440, 880, 1760 Hz…), −12 a falling one, and ±0.1 st a slowly drifting detune. With Feedback at 0 it's one shifted echo.
+
+Off and 0 st run today's code, so saved projects render as v1.7.1 to the bit.
+
+### 2. What the model found
+
+**Reverse,** a 500 ms tap on a 437.25 Hz tone, which jumps a quarter cycle at every window edge:
+
+| Fade at the edges | Level | Click above 6 kHz, worst edge |
+|---|---|---|
+| none | 0.00 dB | −5 dB under the tone (a loud click) |
+| 2 ms | −0.02 dB | −76 dB |
+| **5 ms** | **−0.05 dB** | **−92 dB** |
+| 10 ms | −0.11 dB | −104 dB |
+| 30 ms | −0.34 dB | −123 dB |
+
+5 ms is inaudible and costs nothing in level. **Where a note lands depends on where it falls in the window:** in a 500 ms reverse tap with windows starting every 0.5 s, a pluck at 0.55 s is heard 0.90 s later, one at 0.70 s 0.60 s later and one at 0.95 s 0.10 s later. Each window is the last tap time played backwards, so the swell always ends at a window edge. Windows locked to the host's beat make those edges land on the grid (decision 2).
+
+**The pitch shifter,** +12 st on 16 tones from 150 Hz to 1.5 kHz and on pink noise. The classic shifter is two read heads half a grain apart, each faded in and out by a raised cosine. On a steady tone the two heads come in at different phases and partly cancel, so the level wavers at the grain rate. **Aligned** grains start up to 10 ms earlier or later, wherever they best match (correlate with) the grain fading out, as WSOLA time-stretching does:
+
+| Shifter | Grain window | Tone wavers, median | Tone wavers, worst | Tone level | Noise level | Average delay |
+|---|---|---|---|---|---|---|
+| Plain | 20 ms | 2.2 dB | 15.8 dB | −0.8 dB | −0.7 dB | 11 ms |
+| Plain | 40 ms | 3.6 dB | 19.8 dB | −1.2 dB | −0.9 dB | 21 ms |
+| Plain | 80 ms | 2.0 dB | 22.4 dB | −0.5 dB | −1.2 dB | 41 ms |
+| Aligned | 20 ms | 0.5 dB | 1.9 dB | 0.0 dB | −0.5 dB | 16 ms |
+| **Aligned** | **40 ms** | **0.5 dB** | **1.9 dB** | **0.0 dB** | **−0.9 dB** | **26 ms** |
+| Aligned | 80 ms | 0.5 dB | 1.9 dB | 0.0 dB | −1.0 dB | 46 ms |
+
+The plain shifter warbles audibly on held notes, by up to 20 dB on some pitches; the aligned one doesn't. With alignment the window matters little for tones. 40 ms holds two periods of 50 Hz for falling shifts and keeps the doubled attack a shifter gives a drum hit to about 20 ms.
+
+**Pitch in the loop,** aligned, 40 ms, a 300 ms tap at 60 % feedback (−4.4 dB a repeat without Pitch):
+
+| Pitch | Repeats 1 to 5 |
+|---|---|
+| +12 st from 220 Hz | 440, 880, 1760, 3520, 7039 Hz; −4.6 dB a repeat |
+| +7 st from 220 Hz | 330, 494, 740, 1108, 1661 Hz; −4.6 dB a repeat |
+| −12 st from 1760 Hz | 880, 440, 220, 110, 55 Hz; −4.3 dB a repeat |
+
+The cascade is exact and the shifter costs about 0.2 dB a pass, so Feedback keeps its meaning. A rising cascade passes 20 kHz within six or seven octaves. Before a rising shift the shifter low-passes its input at 0.45 × the rate ÷ the ratio, so nothing it raises can pass Nyquist and fold back down: the shimmer model (`docs/research/shimmer-model.py`) found that a filter after the shifter can't stop the fold, and at full feedback the folded partials fed themselves and ran away.
+
+### 3. How it's built
+
+- **`fancy::dsp::PitchShifter`** (new, `fancy-core`): a delay line with two heads reading at the new speed (4-point Hermite, as the taps' modulated read), grains of `40 ms / |1 − ratio|`, at most 400 ms, crossfaded by raised cosines that sum to 1, with the input low-pass above for a rising shift (fourth order). At each grain start the new grain's first half is correlated against the outgoing grain over a 10 ms search, on a 4× decimated copy, and starts at the best match. A plain mode skips the search, for Verb's and Room's shimmer, whose dense tails gain nothing from it. Fixed buffers, allocated in `prepare`. At 0 st it isn't run.
+- **Timing:** a pitched tap's base delay is the tap time minus the shifter's average delay (26 ms), so its repeats still land on the tap time; a tap shorter than 27 ms lands that much late. Mod depth and Random move the heads as they move today's read.
+- **Reverse:** a second head per tap, reading backwards; with Pitch it reads at −ratio, so a reversed tap is shifted without the shifter. The forward loop (Feedback, filters, Character, Diffusion) is unchanged, and the reverse head reads the ring for the output (decision 1). The window is the tap time up to 5 s; above that it is `10 s − tap time`, at least 50 ms, so the head never reads further back than the ring holds (at least 10.9 s at every rate). A new tap time takes effect at the next window.
+- **Freeze:** the frozen loop bypasses the shifter as it bypasses the filters and Character, so a frozen loop holds instead of climbing. A reverse tap keeps playing the frozen loop backwards.
+- **Switching:** Reverse crossfades over 30 ms, as the other toggles do; Pitch is smoothed over 30 ms, a short glide.
+- **CPU:** a pitched tap reads two heads per channel instead of one, plus a correlation search per grain (about 3 million multiply-adds a second per channel at +12 st). Target: four pitched taps add under 1 % over the same taps unpitched (§0.4). A reversed tap adds one read.
+
+### 4. Decisions
+
+- **Decision 1: what a reverse tap's feedback does.**
+  - **A (R).** The loop stays forward and the reverse head reads the ring for the output, so every repeat is reversed and the feedback's timing is today's.
+  - **B.** The loop takes the reversed output, so the repeats alternate backwards and forwards, and their spacing changes with where each note fell in its window.
+- **Decision 2: where the reverse windows start.**
+  - **A (R).** In Note mode while the host plays, on the tap's own note grid from the host's position, so swells end on the beat. In ms mode, or with the transport stopped, from when the tap started running.
+  - **B.** Always from when the tap started running: simpler, but a swell's end drifts against the bar.
+- **Decision 3: the shifter.**
+  - **A (R).** Aligned grains, as modelled: steady on held notes, for about 3 million multiply-adds a second more per pitched channel.
+  - **B.** The plain two-head shifter: cheaper, but it warbles on held notes (median 2 to 4 dB, worst 20 dB).
+- **Decision 4: where the controls go.**
+  - **A (R).** On the Tone page: **Pitch** as a seventh knob after Pan (the page's knobs spaced as the Motion page's seven are), and **Reverse** as a two-way direction switch (**▶ | ◀**) under Feedback, as the wave switch sits under Rate. The tap's tab shows a small ◀ while it's reversed, beside its Character letter. A mockup follows approval, measured on Delay's latest screenshot.
+  - **B.** A third knob-card page, **Tone | Motion | Shift**, holding Reverse and Pitch: nothing moves on the other pages, but it's two controls on a page of their own.
+
+### 5. Parameters
+
+| ID | Name | Range | Default | Unit | Skew |
+|---|---|---|---|---|---|
+| `tNreverse` | Reverse | off/on | off | | |
+| `tNpitch` | Pitch | −12 to +12, step 0.01 | 0 | st | linear |
+
+32 parameters, appended after `tNmodStereo` for taps 1 to 16. No `stateVersion` bump: a state without them loads Off and 0. Pitch takes `7`, `-12` or `-0.1` typed, and shows "+7.00 st".
+
+### 6. Tests
+
+1. Legacy: Reverse off and Pitch 0 render exactly as v1.7.1's engine (a copy in `tests/`), every Character, with modulation, Freeze and the ceiling.
+2. Reverse: a 437.25 Hz tone through a 500 ms reverse tap: level within 0.1 dB of a forward tap's, and the peak above 6 kHz within 10 ms of each window edge at least 80 dB under the tone. An impulse at time t in a window lands at `2 × window end − t`, ±1 sample.
+3. Reverse windows in Note mode with a host position: a 1/4 tap at 120 BPM starts its windows on the quarter-note grid, ±1 sample.
+4. Pitch: a 1 kHz tone at +7 st comes out at 1498.3 ± 1 Hz, wavering under 2 dB (2 ms RMS), and lands on the tap time ±2 ms (cross-correlated envelope).
+5. Cascade: +12 st, 60 % feedback, a 220 Hz note: repeats 1 to 4 at 440, 880, 1760 and 3520 Hz ± 1 %, each 4.4 ± 0.5 dB under the last.
+6. No aliasing: +12 st, 95 % feedback for 20 s on a 5 kHz tone: nothing below 4 kHz above −80 dB, and no NaN or inf.
+7. Freeze with Pitch +12: the frozen loop's spectrum after 10 s matches its spectrum at freeze time within 1 dB per third octave.
+8. Switching Reverse and moving Pitch under signal: no step beyond the input's own (the existing click test).
+9. CPU (§0.4): four taps at +12 st against the same four at 0 st, in `docs/measurements/delay-w3.txt`.
+
+### 7. Build order
+
+Approval, then the Tone page mockup (`reference/phase4/69__delay_w3_mockup.png`), then one push: `PitchShifter` with its own tests, the reverse head and pitch in `DelayDsp`, the parameters, the Tone page, tests, manual and checklist. The shifter is built here first, so Verb's and Room's shimmer reuse a tested part.
