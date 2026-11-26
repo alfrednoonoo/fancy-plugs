@@ -757,7 +757,7 @@ LimitEditor::BandsCard::BandsCard (LimitProcessor& processor)
       crossoverDropdown (*processor.getApvts().getParameter ("crossoverType"))
 {
     setUpLabel (crossoverLabel, "Crossover", juce::Justification::centredLeft);
-    crossoverLabel.setBounds (291, 5, 62, 24);
+    crossoverLabel.setBounds (277, 5, 62, 24);
 
     bandsSegments.setBounds (67, 8, 116, 20);
     bandsSegments.setTextHeight (labelHeight);
@@ -765,7 +765,10 @@ LimitEditor::BandsCard::BandsCard (LimitProcessor& processor)
                               "turns down the rest. 1 is the plain limiter.");
     addLatencyNote (bandsSegments);
 
-    crossoverDropdown.setBounds (355, 7, 143, 22);
+    // MultiComp's width for the same text at 12 px, so "Min phase" isn't cut off; the right edge is
+    // the mockup's, the label moves 14 px left.
+    crossoverDropdown.setBounds (341, 7, 157, 22);
+    crossoverDropdown.setTextHeight (labelHeight);
     crossoverDropdown.setTooltip ("The crossovers' slope. Both sum back flat.");
 
     strip.setBounds (12, 34, 486, (int) BandStrip::stripHeight + 13);
