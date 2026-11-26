@@ -393,7 +393,7 @@ The cascade is exact and the shifter costs about 0.2 dB a pass, so Feedback keep
   - **A (R).** Aligned grains, as modelled: steady on held notes, for about 3 million multiply-adds a second more per pitched channel.
   - **B.** The plain two-head shifter: cheaper, but it warbles on held notes (median 2 to 4 dB, worst 20 dB).
 - **Decision 4: where the controls go.**
-  - **A (R).** On the Tone page: **Pitch** as a seventh knob after Pan (the page's knobs spaced as the Motion page's seven are), and **Reverse** as a two-way direction switch (**▶ | ◀**) under Feedback, as the wave switch sits under Rate. The tap's tab shows a small ◀ while it's reversed, beside its Character letter. A mockup follows approval, measured on Delay's latest screenshot.
+  - **A (R).** On the Tone page: **Pitch** as a seventh knob after Pan, and **Reverse** as a two-way direction switch (**▶ | ◀**) under Feedback, as the wave switch sits under Rate. The tap's tab shows a small ◀ while it's reversed, beside its Character letter. A mockup follows approval, measured on Delay's latest screenshot. *Mockup 69 (user, 26 November 2026: grow the window, don't clamp): the window grows 64 px wider, to 884 x 472 (its minimum too), so the Tone knobs keep their 64 px spacing and Pitch gets its own column; the tap graph and knob card widen, and the Motion page's five knobs (Rate to Diffusion) spread to the same 64 px.*
   - **B.** A third knob-card page, **Tone | Motion | Shift**, holding Reverse and Pitch: nothing moves on the other pages, but it's two controls on a page of their own.
 
 ### 5. Parameters

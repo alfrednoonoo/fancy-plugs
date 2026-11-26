@@ -133,21 +133,30 @@ m.PAGE_HEIGHTS["eq-list-large"] = 3800
 # ---------------------------------------------------------------------------------------------
 # Delay's Tone page with Pitch and Reverse (docs/delay.md, Phase 4 Wave 3, decision 4 A). Screenshots: delay@2x.png and
 # delay-motion@2x.png of run 45649213148 (commit a74c0a1), 820 x 472. The Tone knobs' faces are centred at x 246 + 64 i
-# (1x), the Motion page's five at 383 to 618; seven Tone knobs at 62 px reach Diffusion's place, x 618.
-TONE_X0, TONE_OLD, TONE_NEW = 246, 64, 62
+# (1x); the Motion page's five at 383, 441, 499, 555 and 618. The window grows DELAY_GROW px wider, so Pitch gets a
+# column at today's 64 px spacing and the Motion knobs spread to the same spacing (user, 26 November 2026: "don't clamp").
+TONE_X0, TONE_STEP, DELAY_GROW = 246, 64, 64
+MOTION_X = [383, 441, 499, 555, 618]
+# Uniform columns in each band of the 820 px shot: title, header, graph, tap row, card, checkboxes.
+DELAY_BANDS = [(0, 20, 600), (20, 73, 555), (73, 262, [405, 445, 480]), (262, 292, 600), (292, 442, 600), (442, 472, 610)]
 
 
-def tone_seven():
-    """Moves the six real Tone columns (label, knob, value) to 62 px spacing, leaving the seventh place empty."""
+def delay_wide():
+    W, H = m.grow("delay-v172", "delay-v172-wide", DELAY_GROW, DELAY_BANDS)
+    m.grow("delay-v172-motion", "delay-v172-motion-wide", DELAY_GROW, DELAY_BANDS)
     from PIL import Image
     folder = m.pathlib.Path(__file__).resolve().parent / "img"
-    im = Image.open(folder / "delay-v172-w2b.png").convert("RGB")
-    top, bottom = 600, 806
-    cols = [im.crop((2 * (TONE_X0 + TONE_OLD * i) - 62, top, 2 * (TONE_X0 + TONE_OLD * i) + 62, bottom)) for i in range(6)]
-    im.paste((38, 38, 38), (2 * TONE_X0 - 66, top, 1296, bottom))
-    for i, col in enumerate(cols):
-        im.paste(col, (round(2 * (TONE_X0 + TONE_NEW * i)) - 62, top))
-    im.save(folder / "delay-v172-tone7-w2b.png")
+    src = Image.open(folder / "delay-v172-motion-w2b.png").convert("RGB")
+    im = Image.open(folder / "delay-v172-motion-wide-w2b.png").convert("RGB")
+    top, bottom = 600, 870
+    # Each column runs to the midpoints between knobs; Rate's keeps the whole wave switch (to x 414).
+    edges = [352, 415, 470, 527, 586, 652]
+    im.paste((38, 38, 38), (2 * edges[0], top, 2 * (655 + DELAY_GROW) - 4, bottom))
+    for i, x in enumerate(MOTION_X):
+        col = src.crop((2 * edges[i], top, 2 * edges[i + 1], bottom))
+        im.paste(col, (2 * (MOTION_X[0] + TONE_STEP * i - (x - edges[i])), top))
+    im.save(folder / "delay-v172-motion-spread-w2b.png")
+    return W, H
 
 
 def tab_badge(x, y, glyph, colour=YELLOW):
@@ -157,38 +166,38 @@ def tab_badge(x, y, glyph, colour=YELLOW):
 
 
 def direction(selected):
-    return m.seg(TONE_X0 - 25, 408, 50, 17, ["&#9654;&#xFE0E;", "&#9664;&#xFE0E;"], selected, YELLOW, fs=9)
+    return m.seg(TONE_X0 - 25, 408, 50, 17, ["&#9654;&#xFE0E;", "&#9664;&#xFE0E;"], selected, YELLOW, fs=9) + outline(TONE_X0 - 27, 406, 54, 21)
 
 
 def pitch(value, v):
-    x = TONE_X0 + 6 * TONE_NEW
+    x = TONE_X0 + 6 * TONE_STEP
     return m.knob(x, 305, "Pitch", value, YELLOW, v, size=50, fs=13, bi=True, width=60) + outline(x - 31, 305, 62, 98)
 
 
 @m.plugin("delay-w3", "69__delay_w3_mockup.png")
 def delay_w3():
-    tone_seven()
-    W, H = 820, 472
-    moved = outline(TONE_X0 - 34, 305, 5 * TONE_NEW + 66, 98)
-    rev_tab = tab_badge(24, 278, "&#9664;")
+    W, H = delay_wide()
+    rev_tab = tab_badge(24, 278, "&#9664;") + outline(11, 265, 26, 28)
     return w1.page("Fancy Delay: v1.7.2 mockup (Reverse and Pitch on the Tone page)",
                    m.lead("docs/delay.md, Phase 4 Wave 3: reverse and pitch-shifted taps", "Decisions 1 to 4 A (user, 26 November 2026)"), [
-        ("1 · The Tone page, tap 1 as it loads: forward, 0 st",
-         "<b>Pitch</b> (&minus;12 to +12 st, 0 by default, centred) is a seventh knob after Pan. The six knobs move from 64 to 62 px apart, "
-         "the Motion page's spacing, so Pitch takes Diffusion's place; no knob or label changes size and the window stays 820 x 472. "
+        (f"1 · The Tone page, tap 1 as it loads: forward, 0 st. The window grows {DELAY_GROW} px wider, to {W} x {H}",
+         "<b>Pitch</b> (&minus;12 to +12 st, 0 by default, centred) is a seventh knob after Pan, at the six knobs' own 64 px spacing: none of them moves. "
+         f"To give it its column, <b>the window grows {DELAY_GROW} px wider, from 820 to {W} px</b> (its minimum too): the tap graph and the knob card widen, "
+         "and Volume, the meters and the faders move across, as in Wave 2. "
          "<b>Reverse</b> is a two-way direction switch, <b>&#9654; | &#9664;</b>, under Feedback, where the wave switch sits under Rate on the Motion page.",
-         shot("delay-v172-tone7", W, H, moved + direction(0) + outline(TONE_X0 - 27, 406, 54, 21) + pitch("0.00 st", 0.5),
-              "Forward and 0 st are today's sound, to the bit. Both are per tap, like Feedback and Pan.")),
+         shot("delay-v172-wide", W, H, direction(0) + pitch("0.00 st", 0.5),
+              "Forward and 0 st are today's sound, to the bit. Both are per tap, like Feedback and Pan. The graph keeps 0 to 2000 ms across its new width.")),
         ("2 · Tap 1 reversed, +7 st",
          "With &#9664; chosen the tap plays each window of one tap time backwards, so a note swells in and ends on its attack. "
          "Its tab gets a small <b>&#9664;</b> in its bottom-right corner, so a reversed tap shows on every page.",
-         shot("delay-v172-tone7", W, H, moved + direction(1) + outline(TONE_X0 - 27, 406, 54, 21) + pitch("+7.00 st", 19 / 24)
-              + rev_tab + outline(11, 265, 26, 28),
+         shot("delay-v172-wide", W, H, direction(1) + pitch("+7.00 st", 19 / 24) + rev_tab,
               "Pitch shifts each repeat again, inside the feedback loop: +12 st gives rising octaves, &minus;12 falling ones, &plusmn;0.1 st a slow drift. "
               "Typed values take 7, -12 or -0.1. A tooltip on the switch reads \"Forward\" or \"Reverse: plays each window of one tap time backwards\".")),
-        ("3 · The Motion page of the same tap",
-         "The Character letter keeps the top-right corner and the &#9664; takes the bottom-right one, so a Tape tap that's reversed shows both. Nothing else on the page changes.",
-         shot("delay-v172-motion", W, H, rev_tab + outline(11, 265, 26, 28), "", crop=(0, 250, 420, 200))),
+        ("3 · The Motion page of the same tap, in the wider window",
+         "Rate, Depth, Random, Stereo and Diffusion spread to the same 64 px spacing as the Tone page (today 56 to 63 px), using the width the window gains; "
+         "the wave switch stays under Rate. The Character letter keeps the tab's top-right corner and the &#9664; takes the bottom-right one, so a Tape tap that's reversed shows both.",
+         shot("delay-v172-motion-spread", W, H, rev_tab + outline(MOTION_X[0] - 34, 305, 4 * TONE_STEP + 68, 128),
+              "Only the positions change; no knob, label or switch changes size.")),
     ])
 
 
