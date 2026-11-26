@@ -549,7 +549,7 @@ A new screenshot `eq-list-large` (the largest window, twelve bands, List) is com
 
 ## Phase 4 Wave 3: spectral dynamics
 
-**Approved by the user on 26 November 2026: A in every decision, with the B options kept as fallbacks (section 4).** Item 3 of Wave 3 (`docs/enhancements.md`; backlog item 8 of section 4), for v1.7.2. Modelled first: `docs/research/eq-spectral-model.py`.
+**Approved by the user on 26 November 2026: A in every decision; decision 1's B is kept as the fallback (section 4).** Item 3 of Wave 3 (`docs/enhancements.md`; backlog item 8 of section 4), for v1.7.2. Modelled first: `docs/research/eq-spectral-model.py`.
 
 ### 1. What it adds
 
@@ -584,7 +584,7 @@ Pink noise at −24 dBFS with a 2.5 kHz tone at −14 dBFS that sounds for 0.5 s
 
 ### 4. Decisions
 
-Chosen: A in all five (user, 26 November 2026). Each B stays written here as the fallback if A disappoints in the build or in REAPER: a drawer FFT size if low resonances need finer bins, Reserve spectral latency if automating Spectral is awkward, and so on.
+Chosen: A in all five (user, 26 November 2026). Only decision 1's B is a fallback: if 1024 points can't single out low resonances in REAPER, the drawer's FFT size setting is added. The other B options are not taken up.
 
 - **Decision 1: the FFT size.**
   - **A (R).** 1024 points at 48 kHz (21 ms), scaled with the rate: about 47 Hz bins, fine enough to single out a resonance above 200 Hz, and the shorter wait.
@@ -608,7 +608,7 @@ Chosen: A in all five (user, 26 November 2026). Each B stays written here as the
 |---|---|---|---|
 | `bNspectral` | Band N Spectral | off/on | off |
 
-24 parameters, appended after `bNgroup` for bands 1 to 24. No `stateVersion` bump: a state without them loads Off. Under decision 2 B, `reserveSpectral` (off, not automatable) is added as well.
+24 parameters, appended after `bNgroup` for bands 1 to 24. No `stateVersion` bump: a state without them loads Off.
 
 ### 6. Tests
 

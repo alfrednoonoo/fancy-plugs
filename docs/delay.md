@@ -324,7 +324,7 @@ Freeze covered the top of a loud tap's handle near 375 ms. Mockup 67 (`reference
 
 ## Phase 4 Wave 3: reverse and pitch-shifted taps
 
-**Draft, for the user's approval.** Item 6 of Wave 3 (`docs/enhancements.md`; backlog items 3 and 4 of section 6), for v1.7.2. Modelled first: `docs/research/delay-reverse-pitch-model.py`. The pitch shifter is shared: Verb's and Room's shimmer (their Wave 3 notes) use the same `fancy::dsp::PitchShifter` in `fancy-core`.
+**Approved by the user on 26 November 2026: A in every decision.** Item 6 of Wave 3 (`docs/enhancements.md`; backlog items 3 and 4 of section 6), for v1.7.2. Modelled first: `docs/research/delay-reverse-pitch-model.py`. The pitch shifter is shared: Verb's and Room's shimmer (their Wave 3 notes) use the same `fancy::dsp::PitchShifter` in `fancy-core`.
 
 ### 1. What it adds
 

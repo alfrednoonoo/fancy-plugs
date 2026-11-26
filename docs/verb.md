@@ -582,7 +582,7 @@ Mockup 64 approved by the user on 23 November 2026; `tests/VerbW2bTests.cpp`.
 
 ## Phase 4 Wave 3: Freeze and shimmer
 
-**Draft, for the user's approval.** Item 4 of Wave 3 (`docs/enhancements.md`; backlog items 9 and 10 of section 5), for v1.7.2. Both are live stages, like Ducking and the Gate: the rack still only builds the IR. Modelled first: `docs/research/verb-freeze-model.py` (the design study the backlog asked for) and `docs/research/shimmer-model.py`, which Room's shimmer shares. The pitch shifter is the shared `fancy::dsp::PitchShifter` from Delay's Wave 3 note.
+**Approved by the user on 26 November 2026: A in every decision.** Item 4 of Wave 3 (`docs/enhancements.md`; backlog items 9 and 10 of section 5), for v1.7.2. Both are live stages, like Ducking and the Gate: the rack still only builds the IR. Modelled first: `docs/research/verb-freeze-model.py` (the design study the backlog asked for) and `docs/research/shimmer-model.py`, which Room's shimmer shares. The pitch shifter is the shared `fancy::dsp::PitchShifter` from Delay's Wave 3 note.
 
 ### 1. What it adds
 

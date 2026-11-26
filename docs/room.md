@@ -361,7 +361,7 @@ One push, Decisions 1 to 4 A. Parameters appended after `autoGain`: `lowDecay` (
 
 ## Phase 4 Wave 3: shimmer
 
-**Draft, for the user's approval.** Item 5 of Wave 3 (`docs/enhancements.md`; backlog item 8 of section 14), for v1.7.2. Modelled first: `docs/research/shimmer-model.py` (run with `room`: it renders Room's late network with `docs/research/room-model.py`). The loop, its gain and its guard are the ones in Verb's Wave 3 note, so the two plugins' shimmer means the same; the pitch shifter is the shared `fancy::dsp::PitchShifter` from Delay's Wave 3 note.
+**Approved by the user on 26 November 2026: A in every decision.** Item 5 of Wave 3 (`docs/enhancements.md`; backlog item 8 of section 14), for v1.7.2. Modelled first: `docs/research/shimmer-model.py` (run with `room`: it renders Room's late network with `docs/research/room-model.py`). The loop, its gain and its guard are the ones in Verb's Wave 3 note, so the two plugins' shimmer means the same; the pitch shifter is the shared `fancy::dsp::PitchShifter` from Delay's Wave 3 note.
 
 ### 1. What it adds
 
