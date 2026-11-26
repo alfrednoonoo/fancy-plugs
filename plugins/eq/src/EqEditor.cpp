@@ -1713,7 +1713,7 @@ bool EqEditor::keyPressed (const juce::KeyPress& key)
     if (deleteKey && selectedBand >= 0 && selectedBand < eq::maxBands && eqProcessor().isBandUsed (selectedBand)
         && fancy::ui::MenuLayer::findOpen (getPopupParent()) == nullptr && fancy::ui::DialogLayer::findOpen (getPopupParent()) == nullptr)
     {
-        removeSelectedBand();
+        removeBandNow(); // no confirm: Undo brings it back (user, 26 November 2026)
         return true;
     }
 

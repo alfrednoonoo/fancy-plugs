@@ -40,8 +40,8 @@ public:
     juce::Colour getAccentColour() override { return bandColour (selectedBand); }
     std::vector<PopupOpener> getPopupOpeners() override;
 
-    // Delete or Backspace deletes the selected band, as its x does: it asks first if the band has
-    // been changed since it was added (Phase 4, user, 26 November 2026).
+    // Delete or Backspace deletes the selected band at once, without the x's confirm: Undo brings
+    // it back (user, 26 November 2026).
     bool keyPressed (const juce::KeyPress&) override;
 
     // For rendered screenshots: mockup values, optionally with the EDIT drawer open.
