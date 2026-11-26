@@ -17,7 +17,7 @@ Inside, it runs at 4x the sample rate by default, then a final true-peak stage c
 | Part | What it shows |
 |---|---|
 | Threshold meter | The input level, with the Threshold handle over it, scaled 0 to -30 dB. Below it, Threshold in red |
-| GR | How far the limiter is turning the signal down right now, in red |
+| GR | How far the limiter is turning the signal down right now, in red. With bands, it's the LIMITER card's limiter after them; each band has its own GR in the BANDS card |
 | History | The last 4 s: the input after Threshold's push as a grey fill, the output as a white line, the gain reduction in red from the top, and the ceiling as a dashed red line |
 | Read-outs | **Short-term** loudness (3 s), **Integrated** loudness since the start or the last reset, the highest **True peak** of the output, and the loudness **Range** (LRA). Click the panel to reset them |
 | Out | The output's peak level, with a dB scale |
@@ -56,6 +56,23 @@ Inside, it runs at 4x the sample rate by default, then a final true-peak stage c
 | Meter ballistics | EBU, RMS | EBU | What the LUFS bar shows: short-term loudness, or plain RMS over 300 ms |
 | Reset loudness | button | | Same as clicking the read-outs |
 
+### Bands (Phase 4)
+
+The **BANDS** card, between the history and the LIMITER card, splits the signal into up to four frequency bands and limits each on its own before the LIMITER card's limiter. A plain limiter turns everything down when the kick hits, so the vocal and the cymbals pump with it; with the bass limited in its own band, the bands above keep their level. In a test mix pushed 8 dB, three bands cut the dip in a steady tone after each kick from about 5 dB to under 1.5 dB.
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| Bands | 1, 2, 3, 4 | 1 | How many bands. 1 is the plain limiter, exactly as before. 2 to 4 add 5 ms of latency |
+| Crossover | LR 24 dB, LR 48 dB (minimum phase) | LR 24 | The crossovers' slope. Both add back up flat |
+| Crossovers | 20 Hz to 20 kHz | 150 Hz, 2.5 kHz, 8 kHz | Where the bands meet: the blue lines on the strip. Drag one, or click it to type a frequency (`2500` or `2.5k`). They stay at least a third of an octave apart. 2 bands use the first, 3 the first two |
+| Release (each band) | 1-1000 ms | 120, 80, 50, 40 ms | How fast that band recovers. Auto release, when on, works on every band from its own Release |
+| GR (each band) | | | How far that band is turning down right now |
+
+- The strip shows each band's gain reduction falling from the top in its colour. With one band it shows the limiter's own.
+- Each band is limited 3 dB under Ceiling, so the bands do most of the work and the LIMITER card's limiter only catches what they add up to. That costs about 0.4 dB of loudness against a plain limiter at the same push, and halves the pumping again.
+- **Clicky drums:** a kick's click reaches every band, so the top band still ducks briefly on each hit. Turn on **EDIT > Clip before limiting** for those.
+- Listen to removed plays what the bands and the limiter take away together.
+
 ## Getting a master to a loudness target
 
 1. Put Fancy Limit last on the master track, and pick the Target for where it's going.
@@ -86,7 +103,7 @@ A song that only reaches the target with a lot of reduction will sound squashed.
 
 ## Latency
 
-The latency is fixed by the oversampling setting, never by Lookahead: 5 ms of lookahead room plus 1 ms for the final true-peak stage, plus the oversampling filters. At 48 kHz that's 312 samples with oversampling off and 318 at the default 4x, minimum phase (about 6.6 ms); linear phase adds more. Hosts with delay compensation, REAPER included, line everything up for you. Some hosts only read a new latency when playback stops and starts, so change Oversampling while stopped.
+The latency is fixed by the oversampling setting and the number of bands (2 to 4 bands add 5 ms, 240 samples at 48 kHz), never by Lookahead: 5 ms of lookahead room plus 1 ms for the final true-peak stage, plus the oversampling filters. At 48 kHz that's 312 samples with oversampling off and 318 at the default 4x, minimum phase (about 6.6 ms); linear phase adds more. Hosts with delay compensation, REAPER included, line everything up for you. Some hosts only read a new latency when playback stops and starts, so change Oversampling while stopped.
 
 ## CPU
 

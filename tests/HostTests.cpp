@@ -559,6 +559,7 @@ TEST_CASE ("Each latency change reaches the host once", "[host][latency]")
    #endif
    #if FANCY_HAS_LIMIT
     { LimitProcessor p; checkLatencyNotices (p, "oversampling", 0.0f, 1.0f); }
+    { LimitProcessor p; checkLatencyNotices (p, "bands", 0.0f, 2.0f); } // Phase 4 Wave 3, v1.7.2
    #endif
    #if FANCY_HAS_DS
     { DsProcessor p; checkLatencyNotices (p, "lookahead", 0.0f, 2.0f); }

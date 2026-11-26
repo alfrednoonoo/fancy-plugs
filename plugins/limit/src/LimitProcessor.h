@@ -31,6 +31,10 @@ public:
     // Message thread.
     void setParameter (const juce::String& parameterId, float value);
 
+    // Phase 4 Wave 3: "crossover1" to "crossover3", "bandRelease1" to "bandRelease4".
+    static juce::String crossoverId (int index) { return "crossover" + juce::String (index + 1); }
+    static juce::String bandReleaseId (int band) { return "bandRelease" + juce::String (band + 1); }
+
 private:
     float read (const char* parameterId) const;
     bool isOn (const char* parameterId) const;

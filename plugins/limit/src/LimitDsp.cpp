@@ -1,5 +1,6 @@
 #include "LimitDsp.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace
@@ -61,6 +62,47 @@ fancy::dsp::TruePeakLimiter::Settings LimitDsp::guardSettings (const Targets& ta
     return settings;
 }
 
+// Phase 4 Wave 3: a band's limiter, as the final stage's at the base rate (Style, Link, the
+// Lookahead window, Auto release and the curve), with the band's own Release, sample peaks only,
+// and a fixed 5 ms delay, so Lookahead still doesn't change the latency.
+fancy::dsp::TruePeakLimiter::Settings LimitDsp::bandSettings (const Targets& targets, int band, double baseRate) noexcept
+{
+    auto bandTargets = targets;
+    bandTargets.releaseMs = targets.bandReleaseMs[(size_t) std::clamp (band, 0, maxBands - 1)];
+    bandTargets.truePeak = false;
+
+    auto settings = limiterSettings (bandTargets, baseRate, 1, baseRate);
+
+    // The core's delay is the window plus its 8-sample interpolator: 5 ms in all.
+    settings.maxWindow = std::max (1, (int) std::lround (bandLookaheadMs / 1000.0 * baseRate) - 8);
+    settings.window = std::min (settings.window, settings.maxWindow);
+    return settings;
+}
+
+std::array<double, LimitDsp::maxBands - 1> LimitDsp::sanitisedCrossovers (const Targets& targets, int bands) noexcept
+{
+    auto hz = targets.crossoverHz;
+    fancy::dsp::sanitiseCrossovers (hz.data(), std::clamp (bands, 1, maxBands) - 1);
+    return hz;
+}
+
+void LimitDsp::configureBands (const Targets& targets, bool snap) noexcept
+{
+    // The count in use, which a change of count reaches only after its fade.
+    const auto count = std::clamp (active.bands, 2, maxBands);
+    const auto hz = sanitisedCrossovers (targets, count);
+
+    crossover.setSteep (targets.crossoverLr48);
+    crossover.setBandCount (count);
+    crossover.setFrequencies (hz.data(), count - 1);
+
+    if (snap)
+        crossover.snap();
+
+    for (int band = 0; band < maxBands; ++band)
+        bandLimiters[(size_t) band].setSettings (bandSettings (targets, band, rate));
+}
+
 void LimitDsp::prepare (double sampleRate)
 {
     rate = sampleRate;
@@ -97,16 +139,33 @@ void LimitDsp::prepare (double sampleRate)
         }
     }
 
+    // Phase 4 Wave 3: the band stage.
+    crossover.prepare (sampleRate, true);
+    bandSignals.assign ((size_t) (maxBands * 2 * maxChunk), 0.0);
+
+    for (int band = 0; band < maxBands; ++band)
+        bandLimiters[(size_t) band].prepare (sampleRate, bandSettings (current, band, sampleRate));
+
     auto longest = 0;
 
     for (int os = osOff; os <= os8; ++os)
         for (const auto linear : { false, true })
-            longest = std::max (longest, latencyFor (os, linear));
+            longest = std::max (longest, latencyFor (os, linear, maxBands));
 
     dryLength = longest + 1;
 
     for (auto& line : dryLines)
         line.assign ((size_t) dryLength, 0.0f);
+
+    auto removedSize = 1;
+
+    while (removedSize < longest + maxChunk + 1)
+        removedSize <<= 1;
+
+    removedMask = removedSize - 1;
+
+    for (auto& line : removedLines)
+        line.assign ((size_t) removedSize, 0.0f);
 
     for (auto& buffer : scratch)
         buffer.assign ((size_t) maxChunk, 0.0f);
@@ -121,14 +180,14 @@ void LimitDsp::prepare (double sampleRate)
     // Phase 4 Wave 1: the DC filter, a first-order high-pass at 5 Hz.
     dcCoefficient = std::exp (-2.0 * juce::MathConstants<double>::pi * 5.0 / sampleRate);
 
-    active = { current.oversampling, current.linearPhase };
+    active = { current.oversampling, current.linearPhase, current.bands };
     reset();
 }
 
-int LimitDsp::latencyFor (int oversamplingIndex, bool linearPhase) const noexcept
+int LimitDsp::latencyFor (int oversamplingIndex, bool linearPhase, int bands) const noexcept
 {
     const auto factor = 1 << oversamplingIndex;
-    const auto core = limiters[(size_t) oversamplingIndex].getLatencySamples() / factor + guard.getLatencySamples();
+    const auto core = limiters[(size_t) oversamplingIndex].getLatencySamples() / factor + guard.getLatencySamples() + bandLatencyFor (bands);
 
     if (oversamplingIndex == osOff)
         return core;
@@ -160,6 +219,20 @@ void LimitDsp::reset()
 
     dryPosition = 0;
     holdOffSamples = 0;
+
+    crossover.reset();
+
+    for (auto& limiter : bandLimiters)
+        limiter.reset();
+
+    for (auto& line : removedLines)
+        std::fill (line.begin(), line.end(), 0.0f);
+
+    removedPosition = 0;
+
+    for (auto& value : bandReductions)
+        value.store (0.0f, std::memory_order_relaxed);
+
     noiseState = 0x2545f491u;
     dcInput.fill (0.0);
     dcOutput.fill (0.0);
@@ -177,7 +250,7 @@ void LimitDsp::reset()
 void LimitDsp::snapToTargets (const Targets& targets) noexcept
 {
     current = targets;
-    active = { targets.oversampling, targets.linearPhase };
+    active = { targets.oversampling, targets.linearPhase, targets.bands };
 
     const auto margin = targets.truePeak ? dbToGain (-truePeakMarginDb) : 1.0;
     inputGain.snapTo (dbToGain (-targets.thresholdDb));
@@ -190,6 +263,7 @@ void LimitDsp::snapToTargets (const Targets& targets) noexcept
     const auto factor = 1 << active.oversampling;
     limiterFor (active).setSettings (limiterSettings (targets, rate * factor, factor, rate));
     guard.setSettings (guardSettings (targets, rate));
+    configureBands (targets, true);
 }
 
 void LimitDsp::process (float* const* channels, int numChannels, int numSamples) noexcept
@@ -246,12 +320,22 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
 
         if (switchGain.isSettled())
         {
-            active = { settings.oversampling, settings.linearPhase };
+            active = { settings.oversampling, settings.linearPhase, settings.bands };
 
             if (auto* oversampler = oversamplerFor (active))
                 oversampler->reset();
 
             limiterFor (active).reset();
+
+            // Phase 4 Wave 3: the bands start from rest, at the new count.
+            crossover.reset();
+            configureBands (settings, true);
+
+            for (auto& bandLimiter : bandLimiters)
+                bandLimiter.reset();
+
+            for (auto& line : removedLines)
+                std::fill (line.begin(), line.end(), 0.0f);
 
             for (auto& line : dryLines)
                 std::fill (line.begin(), line.end(), 0.0f);
@@ -330,6 +414,16 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
         clipped[(size_t) i] = 0.0f;
     }
 
+    // Phase 4 Wave 3: the bands, each limited on its own at the base rate, then summed. One band
+    // skips this, so the output is as before.
+    const auto multiband = active.bands > 1;
+
+    if (multiband)
+    {
+        configureBands (settings, false);
+        processBands (a, b, numSamples, settings.listen);
+    }
+
     // 2. The limiter, at the oversampled rate. Listen keeps what it takes away instead.
     const auto limit = [&] (float& l, float& r, int baseIndex)
     {
@@ -384,10 +478,21 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
     }
 
     // 3. The true-peak guard, back to the ceiling's scale, the final clip at Ceiling, then the meters.
+    // Phase 4 Wave 3: with bands, Listen adds what they took away, delayed to meet the final stage's.
+    const auto removedDelay = getLatencySamples() - bandLatencyFor (active.bands);
+
     for (int i = 0; i < numSamples; ++i)
     {
         double l = a[i], r = b[i];
         guard.process (l, r, settings.listen ? 0.0 : 1.0);
+
+        if (multiband && settings.listen)
+        {
+            const auto at = (size_t) ((removedPosition + i - removedDelay) & removedMask);
+            l += (double) removedLines[0][at];
+            r += (double) removedLines[1][at];
+        }
+
         a[i] = (float) l;
         b[i] = (float) r;
 
@@ -476,6 +581,67 @@ void LimitDsp::processChunk (float* const* channels, int numChannels, int numSam
             --holdOffSamples;
     }
 
+    if (multiband)
+        removedPosition = (removedPosition + numSamples) & removedMask;
+}
+
+// Phase 4 Wave 3: split, limit each band 3 dB under the ceiling (1 in this scale), and sum, in
+// place. With Listen, what the bands took away goes to the removed lines, at removedPosition.
+void LimitDsp::processBands (float* a, float* b, int numSamples, bool listen) noexcept
+{
+    const auto count = active.bands;
+    constexpr auto stride = maxChunk;
+    auto* signals = bandSignals.data();
+
+    crossover.process (a, b, signals, stride, numSamples);
+
+    const auto headroom = dbToGain (-bandHeadroomDb);
+    const auto push = 1.0 / headroom;
+    std::array<float, maxBands> smallest;
+    smallest.fill (1.0f);
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        double sumLeft = 0.0, sumRight = 0.0, inLeft = 0.0, inRight = 0.0;
+
+        for (int band = 0; band < count; ++band)
+        {
+            auto& limiter = bandLimiters[(size_t) band];
+            auto l = signals[(band * 2) * stride + i] * push;
+            auto r = signals[(band * 2 + 1) * stride + i] * push;
+            double delayed[2];
+
+            limiter.process (l, r, 1.0, delayed);
+
+            sumLeft += l * headroom;
+            sumRight += r * headroom;
+            inLeft += delayed[0] * headroom;
+            inRight += delayed[1] * headroom;
+
+            smallest[(size_t) band] = std::min (smallest[(size_t) band], (float) std::min (limiter.getLastGain (0), limiter.getLastGain (1)));
+        }
+
+        if (listen)
+        {
+            const auto at = (size_t) ((removedPosition + i) & removedMask);
+            removedLines[0][at] = (float) (inLeft - sumLeft);
+            removedLines[1][at] = (float) (inRight - sumRight);
+        }
+
+        a[i] = (float) sumLeft;
+        b[i] = (float) sumRight;
+    }
+
+    for (int band = 0; band < count; ++band)
+    {
+        const auto reductionDb = -peakDb (smallest[(size_t) band]);
+        auto& slot = bandReductions[(size_t) band];
+        auto shown = slot.load (std::memory_order_relaxed);
+
+        while (reductionDb > shown && ! slot.compare_exchange_weak (shown, reductionDb, std::memory_order_relaxed))
+        {
+        }
+    }
 }
 
 double LimitDsp::softClip (double x, double ceiling) noexcept

@@ -5,6 +5,8 @@
 #include <fancy/ui/Meter.h>
 #include <fancy/ui/ShellEditor.h>
 
+#include <array>
+#include <memory>
 #include <vector>
 
 class LimitEditor final : public fancy::ui::ShellEditor
@@ -17,6 +19,9 @@ public:
 
     // For rendered screenshots: the mockup's values, optionally with the EDIT drawer open.
     void showPreview (bool drawerOpen);
+
+    // Phase 4 Wave 3: mockup 74's panel 1, three bands limiting.
+    void showBandsPreview();
 
     // The read-out panel's values, for the screenshots and the tests.
     struct Readings
@@ -89,6 +94,65 @@ private:
         float progress = -1.0f; // -1 idle, 0 to 1 measuring
     };
 
+    // Phase 4 Wave 3 (mockup 74 A; docs/limit.md, "multiband limiting"): the crossover strip, each
+    // band's reduction falling from the top in its colour. Drag a crossover's blue line to move it,
+    // or click it to type a frequency.
+    class BandStrip final : public juce::Component, public juce::SettableTooltipClient
+    {
+    public:
+        explicit BandStrip (LimitProcessor& processor);
+
+        void setReductions (const std::array<float, LimitDsp::maxBands>& reductionsDb);
+        void askForCrossover (int index);
+
+        void paint (juce::Graphics&) override;
+        void mouseDown (const juce::MouseEvent&) override;
+        void mouseDrag (const juce::MouseEvent&) override;
+        void mouseUp (const juce::MouseEvent&) override;
+
+        static constexpr float stripHeight = 44.0f, scaleDb = 12.0f;
+
+    private:
+        float xForHz (double hz) const noexcept;
+        double hzForX (float x) const noexcept;
+        int crossoverAt (juce::Point<float> position) const;
+
+        LimitProcessor& limitProcessor;
+        std::array<float, LimitDsp::maxBands> reductions {};
+        int dragging = -1;
+        bool dragged = false;
+    };
+
+    // The BANDS card: the band count, the crossover type, the strip, and each band's Release and GR.
+    class BandsCard final : public juce::Component
+    {
+    public:
+        explicit BandsCard (LimitProcessor& processor);
+
+        // Each tick: the final stage's reduction stands in for the one band's.
+        void update (float finalReductionDb, float seconds);
+
+        // For screenshots: fixed reductions, no updates.
+        void showValues (const std::array<float, LimitDsp::maxBands>& reductionsDb);
+
+        void paint (juce::Graphics&) override;
+
+        BandStrip strip;
+
+    private:
+        void refreshBands();
+        static float cellX (int band) noexcept;
+
+        LimitProcessor& limitProcessor;
+        juce::Label crossoverLabel;
+        fancy::ui::ParamSegments bandsSegments;
+        fancy::ui::ParamDropdown crossoverDropdown;
+        std::array<std::unique_ptr<fancy::ui::Knob>, LimitDsp::maxBands> releaseKnobs;
+        std::array<float, LimitDsp::maxBands> shown {};
+        int bands = 1;
+        bool frozen = false;
+    };
+
     void onTick (float seconds) override;
     void updateAutoTarget (float seconds);
 
@@ -104,6 +168,7 @@ private:
     fancy::ui::GainReductionMeter gainMeter;
 
     Display display;
+    BandsCard bandsCard; // Phase 4 Wave 3
 
     fancy::ui::Knob ceilingKnob, releaseKnob, lookaheadKnob, linkKnob;
 

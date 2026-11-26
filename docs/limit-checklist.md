@@ -69,3 +69,13 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] Clip 0 and 12: barely any orange, then a lot; the Clip knob dims while the checkbox is off.
 - [ ] The output never passes Ceiling (dBTP with True peak) with the clipper on.
 - [ ] Render offline twice: the renders match.
+
+## Bands (Phase 4 Wave 3)
+
+- [ ] The window is taller (760 x 637): the BANDS card sits between the history and the LIMITER card, and nothing else is squeezed. A project saved with v1.7.1 opens with Bands at 1 and sounds as before.
+- [ ] A full mix pushed 6 to 8 dB, Bands 3: the vocal and cymbals pump less with the kick than at Bands 1; band 1's red drops most on the strip, and each GR read-out moves.
+- [ ] Drag a blue crossover line: it moves, stops a third of an octave from its neighbour, and the sound follows without clicks. Click a line without dragging: a box asks for the frequency; `2.5k` works. Ctrl+Z takes it back.
+- [ ] Change Bands from 1 to 3 while stopped: REAPER's PDC shows 5 ms more (240 samples at 48 kHz). Changing it while playing fades out and back in.
+- [ ] Each band's Release knob changes how fast that band's red recovers; double-click resets it; click its value to type one.
+- [ ] Listen to removed with 3 bands plays what's taken away; the output never passes Ceiling (dBTP with True peak) at 2, 3 or 4 bands.
+- [ ] Render offline twice at 3 bands: the renders match.

@@ -103,6 +103,37 @@ fancy::FancyProcessor::Layout createLayout()
     layout.add (toggle ("clip", "Clip before limiting", false));
     layout.add (dbParameter ("clipAmount", "Clip", 0.0f, 12.0f, 3.0f));
 
+    // Phase 4 Wave 3, appended (docs/limit.md, "multiband limiting"): one band is the old sound.
+    // Bands and the crossover type change the latency or the phase in a step, so, as Oversampling,
+    // they're deliberate settings that automation doesn't flip.
+    const auto dot = juce::String::charToString (0x00b7);
+
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "bands", 1 }, "Bands", juce::StringArray { "1", "2", "3", "4" }, 0,
+                                          ChoiceAttributes {}.withAutomatable (false)));
+    layout.add (std::make_unique<Choice> (juce::ParameterID { "crossoverType", 1 }, "Crossover",
+                                          juce::StringArray { "LR 24 dB " + dot + " Min phase", "LR 48 dB " + dot + " Min phase" }, 0,
+                                          ChoiceAttributes {}.withAutomatable (false)));
+
+    const float crossoverDefaults[] { 150.0f, 2500.0f, 8000.0f };
+
+    for (int i = 0; i < 3; ++i)
+        layout.add (fancy::floatParameter (
+            LimitProcessor::crossoverId (i), "Crossover " + juce::String (i + 1), fancy::logRange (20.0f, 20000.0f, 0.1f), crossoverDefaults[i],
+            juce::AudioParameterFloatAttributes {}
+                .withLabel ("Hz")
+                .withStringFromValueFunction ([] (float value, int) { return fancy::formatHz (value); })
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseHz (text); })));
+
+    const float releaseDefaults[] { 120.0f, 80.0f, 50.0f, 40.0f };
+
+    for (int i = 0; i < 4; ++i)
+        layout.add (fancy::floatParameter (
+            LimitProcessor::bandReleaseId (i), "Band " + juce::String (i + 1) + " release", fancy::logRange (1.0f, 1000.0f, 0.1f), releaseDefaults[i],
+            juce::AudioParameterFloatAttributes {}
+                .withLabel ("ms")
+                .withStringFromValueFunction ([] (float value, int) { return timeText (value); })
+                .withValueFromStringFunction ([] (const juce::String& text) { return fancy::parseMs (text); })));
+
     return layout;
 }
 
@@ -177,6 +208,16 @@ LimitDsp::Targets LimitProcessor::readTargets() const
     targets.linearRelease = isOn ("releaseCurve");
     targets.clip = isOn ("clip");                          // Phase 4 Wave 2
     targets.clipAmountDb = (double) read ("clipAmount");
+
+    // Phase 4 Wave 3.
+    targets.bands = juce::jlimit (1, LimitDsp::maxBands, juce::roundToInt (read ("bands")) + 1);
+    targets.crossoverLr48 = juce::roundToInt (read ("crossoverType")) == 1;
+
+    for (int i = 0; i < LimitDsp::maxBands - 1; ++i)
+        targets.crossoverHz[(size_t) i] = (double) read (crossoverId (i).toRawUTF8());
+
+    for (int i = 0; i < LimitDsp::maxBands; ++i)
+        targets.bandReleaseMs[(size_t) i] = (double) read (bandReleaseId (i).toRawUTF8());
 
     return targets;
 }

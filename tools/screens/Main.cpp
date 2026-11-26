@@ -820,6 +820,22 @@ int main (int argc, char** argv)
 
    #if FANCY_HAS_LIMIT
     ok = renderPlugin<LimitProcessor, LimitEditor> ("limit", outputDir) && ok;
+
+    // v1.7.2 (mockup 74 A, panel 1): three bands limiting.
+    {
+        LimitProcessor processor;
+        const std::unique_ptr<juce::AudioProcessorEditor> base (processor.createEditorAndMakeActive());
+
+        if (auto* editor = dynamic_cast<LimitEditor*> (base.get()))
+        {
+            editor->showBandsPreview();
+            ok = writeBothScales (*editor, "limit-bands", outputDir) && ok;
+        }
+        else
+        {
+            ok = false;
+        }
+    }
    #endif
 
    #if FANCY_HAS_DS

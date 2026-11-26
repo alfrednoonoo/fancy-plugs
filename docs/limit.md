@@ -375,7 +375,7 @@ A limiter keeps its own output under the ceiling, so it must hear itself. Keyed 
 
 ## Phase 4 Wave 3: multiband limiting
 
-**Layout A of mockup 74 approved by the user on 26 November 2026; this note waits for approval.** Item 1 of Wave 3 (`docs/enhancements.md`; backlog item 6 of section 10, ▲), for v1.7.2. Modelled first: `docs/research/limit-multiband-model.py`.
+**Layout A of mockup 74 approved by the user on 26 November 2026; the note approved the same day with every recommended option (A).** Item 1 of Wave 3 (`docs/enhancements.md`; backlog item 6 of section 10, ▲), for v1.7.2. Modelled first: `docs/research/limit-multiband-model.py`.
 
 ### 1. What it adds
 
@@ -457,3 +457,13 @@ Appended after `clipAmount`. No state migration: a state without them loads Band
 ### 7. Build order
 
 Approval, then one push: the crossover into `fancy-core` (MultiComp's tests unchanged), the band stage in `LimitDsp`, the parameters, the BANDS card (mockup 74 A, window 760 x 637, its minimum too), tests from a pre-push port of the model, manual and checklist. Then Gate's multiband (▲) needs its layout approved.
+
+### 8. As built
+
+- **Band limiters:** `LimitDsp::bandSettings` is `limiterSettings` at the base rate with the band's Release and True peak off, and a window of at most 5 ms less the core's 8-sample interpolator, so each band delays by exactly 5 ms (240 samples at 48 kHz). The bands run in the limiter's scale (Ceiling = 1), each pushed up by 3 dB into its limiter and brought back down.
+- **Bands and Crossover type aren't automatable,** as Oversampling: one changes the latency and the other the phase in a step. The note's test 8 sweeps them anyway by setting the targets directly (the count steps 4, 3, 2, 1 while the crossovers and band releases sweep). A change of count fades out and back in, as a change of Oversampling does; at 2 to 4 the latency doesn't change, but the bands start from rest.
+- **Listen to removed with bands:** the final stage's removed signal, as before, plus what the bands took away (each band's delayed input less its output), delayed to meet it. With oversampling on, the bands' part skips the oversampling filters, so the two parts line up to the filters' group delay, not to the sample; test 7 holds the sum of the kept and removed signals to the input within 1e-3 with oversampling off.
+- **Crossovers on the strip** are dragged between their neighbours, a third of an octave from each, or clicked to type a value (a dialog, as Custom target's, taking `2500` or `2.5k`). The strip shows the crossovers as the stage uses them (`LimitDsp::sanitisedCrossovers`). With one band it shows the final stage's reduction in band 1's colour, and the band row is empty.
+- **Layout:** `bandsGrow` (172) in `LimitEditor.cpp` moves the LIMITER card and the footer down and lengthens the Threshold, GR, Out and LUFS meters; the window and its minimum are 760 x 637. The band knobs are the shared `Knob` (27 px face, as Room's and Verb's drawer knobs), with typed values.
+- **Pumping test (3)** measures the 1 kHz tone through a band-pass (Q 4) in 5 ms RMS windows; the model, measured the same way, gives a mean dip of -5.3 dB at one band and -1.4 dB at three (ratio 0.27, the test's limit 0.5).
+- **Screenshot:** `limit-bands` (mockup 74's panel 1, three bands limiting); `limit` shows the default, one band.
