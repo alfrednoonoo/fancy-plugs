@@ -11,6 +11,7 @@ Fancy EQ is a parametric equalizer with up to 24 bands, each on the whole signal
 | Double-click a handle | Resets the band |
 | Double-click empty space | Adds a band there |
 | Right-click a handle | Band type, Slope, Channel, On, Delete band |
+| Delete or Backspace | Deletes the selected band, as its × does: it asks first if you've changed the band since adding it |
 
 The white line is the total response. The filled shapes are the individual bands, and the orange line is the analyzer. The left scale is EQ gain in dB. The right scale is for the analyzer, in dBFS.
 

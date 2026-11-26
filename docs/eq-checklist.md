@@ -100,6 +100,7 @@ Tell me "EQ OK", or list which items failed and what you saw. Once it's OK, I'll
 - [ ] Click the band type dropdown: the list shows each type's icon, then Low pass and High pass with a slope submenu each. Pick High pass, 24 dB/oct.
 - [ ] Right-click a band handle: the menu's title reads the band, type and frequency. **Set frequency…** opens the band's Freq field to type in.
 - [ ] Change a band's Q, then delete it with ×: it asks first. A band you've just added and not changed goes without asking.
+- [ ] Select a band on the graph and press Delete (and Backspace): it deletes as × does, asking first if the band was changed; Ctrl+Z brings it back. With a value being typed, Delete edits the text instead.
 
 ## Undo, A/B and Compare (Phase 2.1 W)
 

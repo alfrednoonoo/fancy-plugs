@@ -1706,6 +1706,20 @@ void EqEditor::showCompactPreview()
     graph.update();
 }
 
+bool EqEditor::keyPressed (const juce::KeyPress& key)
+{
+    const auto deleteKey = key == juce::KeyPress (juce::KeyPress::deleteKey) || key == juce::KeyPress (juce::KeyPress::backspaceKey);
+
+    if (deleteKey && selectedBand >= 0 && selectedBand < eq::maxBands && eqProcessor().isBandUsed (selectedBand)
+        && fancy::ui::MenuLayer::findOpen (getPopupParent()) == nullptr && fancy::ui::DialogLayer::findOpen (getPopupParent()) == nullptr)
+    {
+        removeSelectedBand();
+        return true;
+    }
+
+    return ShellEditor::keyPressed (key);
+}
+
 std::vector<fancy::ui::ShellEditor::PopupOpener> EqEditor::getPopupOpeners()
 {
     auto openers = ShellEditor::getPopupOpeners();
