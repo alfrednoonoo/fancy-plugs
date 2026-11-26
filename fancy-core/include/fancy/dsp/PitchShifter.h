@@ -23,10 +23,10 @@ namespace fancy::dsp
 // Aligned mode moves each new grain's start by up to 10 ms to where it best matches the grain
 // fading out, so a held note's two heads add in phase instead of wavering. The match compares 10 ms
 // of what both heads read: as far ahead as is already written (about 10 ms for a rising shift,
-// whose heads start far back), otherwise the stretch just before now. It runs on every 4th sample
-// (at 48 kHz) across the whole search, then sample by sample near the best, and prefers the middle
-// of the search among equal matches. Both channels share one match, on their sum, so the stereo
-// image holds still. Plain mode skips it.
+// whose heads start far back), otherwise the stretch just before now. It tries every 4th sample
+// (at 48 kHz) of the search, comparing every 8th sample of the 10 ms, then sample by sample near
+// the best, and prefers the middle of the search among equal matches. Both channels share one
+// match, on their sum, so the stereo image holds still. Plain mode skips it.
 //
 // Buffers are allocated in prepare(); process() allocates nothing.
 class PitchShifter
@@ -68,6 +68,7 @@ public:
         for (auto& channel : line)
             channel.assign ((size_t) size, 0.0f);
 
+        sumLine.assign ((size_t) size, 0.0f);
         target.assign ((size_t) std::max (matchCount, fineCount) + 1, 0.0);
         reset();
     }
@@ -81,6 +82,8 @@ public:
     {
         for (auto& channel : line)
             std::fill (channel.begin(), channel.end(), 0.0f);
+
+        std::fill (sumLine.begin(), sumLine.end(), 0.0f);
 
         for (auto& filter : lowA)
             filter.reset();
@@ -113,11 +116,17 @@ public:
             filterCountdown = 16;
         }
 
+        auto sum = 0.0f;
+
         for (int ch = 0; ch < numChannels; ++ch)
         {
             const auto low = lowB[ch].tick (filterB, lowA[ch].tick (filterA, in[ch]).low).low;
-            line[(size_t) ch][(size_t) write] = std::isfinite (low) ? (float) low : 0.0f;
+            const auto value = std::isfinite (low) ? (float) low : 0.0f;
+            line[(size_t) ch][(size_t) write] = value;
+            sum += value;
         }
+
+        sumLine[(size_t) write] = sum;
 
         write = (write + 1) & mask;
 
@@ -133,9 +142,9 @@ public:
         }
 
         if (--countdown <= 0)
-            startGrain (ratio, numChannels);
+            startGrain (ratio);
 
-        double sum[maxChannels] {};
+        double mixed[maxChannels] {};
         auto gainSum = 0.0;
 
         for (auto& head : heads)
@@ -146,7 +155,7 @@ public:
             const auto gain = 0.5 - 0.5 * head.phaseCos;
 
             for (int ch = 0; ch < numChannels; ++ch)
-                sum[ch] += gain * read (ch, head.delay);
+                mixed[ch] += gain * read (ch, head.delay);
 
             gainSum += gain;
 
@@ -168,7 +177,7 @@ public:
         const auto scale = 1.0 / std::max (gainSum, 0.5);
 
         for (int ch = 0; ch < numChannels; ++ch)
-            out[ch] = sum[ch] * scale;
+            out[ch] = mixed[ch] * scale;
     }
 
 private:
@@ -200,22 +209,16 @@ private:
                         data[(size_t) ((write - whole - 1) & mask)], data[(size_t) ((write - whole - 2) & mask)], fraction);
     }
 
-    // The channels' sum at a delay, linearly interpolated, for the match.
-    double readSum (int numChannels, double delay) const noexcept
+    // The channels' sum at a delay, linearly interpolated, for the match. The sum is kept as its
+    // own line, so the match reads one line however many channels there are.
+    double readSum (double delay) const noexcept
     {
         const auto whole = (int) delay;
         const auto fraction = delay - (double) whole;
-        auto value = 0.0;
+        const auto a = (double) sumLine[(size_t) ((write - whole) & mask)];
+        const auto b = (double) sumLine[(size_t) ((write - whole - 1) & mask)];
 
-        for (int ch = 0; ch < numChannels; ++ch)
-        {
-            const auto& data = line[(size_t) ch];
-            const auto a = (double) data[(size_t) ((write - whole) & mask)];
-            const auto b = (double) data[(size_t) ((write - whole - 1) & mask)];
-            value += a + (b - a) * fraction;
-        }
-
-        return value;
+        return a + (b - a) * fraction;
     }
 
     int grainLength (double ratio) const noexcept
@@ -241,13 +244,13 @@ private:
 
     // How well a grain starting at `delay` matches the outgoing head: the normalised correlation of
     // `count` reads `spacing` samples apart, from `first` samples after now (negative: before).
-    double score (int numChannels, double delay, double ratio, int first, int count, int spacing, double targetEnergy) const noexcept
+    double score (double delay, double ratio, int first, int count, int spacing, double targetEnergy) const noexcept
     {
         auto product = 0.0, energy = 0.0;
 
         for (int j = 0; j < count; ++j)
         {
-            const auto value = readSum (numChannels, delay - ratio * (double) (first + spacing * j));
+            const auto value = readSum (delay - ratio * (double) (first + spacing * j));
             product += value * target[(size_t) j];
             energy += value * value;
         }
@@ -255,13 +258,13 @@ private:
         return product / std::sqrt (energy * targetEnergy + 1.0e-30);
     }
 
-    double fillTarget (int numChannels, double outgoingDelay, double ratio, int first, int count, int spacing) noexcept
+    double fillTarget (double outgoingDelay, double ratio, int first, int count, int spacing) noexcept
     {
         auto energy = 0.0;
 
         for (int j = 0; j < count; ++j)
         {
-            const auto value = readSum (numChannels, outgoingDelay - ratio * (double) (first + spacing * j));
+            const auto value = readSum (outgoingDelay - ratio * (double) (first + spacing * j));
             target[(size_t) j] = value;
             energy += value * value;
         }
@@ -269,7 +272,7 @@ private:
         return energy;
     }
 
-    void startGrain (double ratio, int numChannels) noexcept
+    void startGrain (double ratio) noexcept
     {
         auto* next = ! heads[0].active ? &heads[0] : (! heads[1].active ? &heads[1] : nullptr);
 
@@ -305,7 +308,10 @@ private:
             // which keeps the average delay where getAverageDelaySamples() says.
             const auto bias = [this] (double shift) { return centreBias * std::abs (shift - 0.5 * search) / (0.5 * search); };
 
-            const auto energy = fillTarget (numChannels, outgoing->delay, ratio, first, matchCount, stride);
+            // The coarse pass reads every second stride, which matches as well (the pre-push) for
+            // half the work; the fine pass then reads every fineStep.
+            const auto coarseCount = matchCount / 2, coarseSpacing = 2 * stride;
+            const auto energy = fillTarget (outgoing->delay, ratio, first, coarseCount, coarseSpacing);
 
             if (energy > 1.0e-12)
             {
@@ -313,20 +319,20 @@ private:
 
                 for (double shift = 0.0; shift <= search + 1.0e-9; shift += (double) stride)
                 {
-                    if (const auto value = score (numChannels, startDelay (shift), ratio, first, matchCount, stride, energy) - bias (shift); value > bestScore)
+                    if (const auto value = score (startDelay (shift), ratio, first, coarseCount, coarseSpacing, energy) - bias (shift); value > bestScore)
                     {
                         bestScore = value;
                         best = shift;
                     }
                 }
 
-                const auto fineEnergy = fillTarget (numChannels, outgoing->delay, ratio, first, fineCount, fineStep);
+                const auto fineEnergy = fillTarget (outgoing->delay, ratio, first, fineCount, fineStep);
                 const auto coarse = best;
                 bestScore = -1.0e9;
 
                 for (auto shift = std::max (0.0, coarse - (double) (stride - 1)); shift <= std::min (search, coarse + (double) (stride - 1)) + 1.0e-9; shift += (double) fineStep)
                 {
-                    if (const auto value = score (numChannels, startDelay (shift), ratio, first, fineCount, fineStep, fineEnergy) - bias (shift); value > bestScore)
+                    if (const auto value = score (startDelay (shift), ratio, first, fineCount, fineStep, fineEnergy) - bias (shift); value > bestScore)
                     {
                         bestScore = value;
                         best = shift;
@@ -347,6 +353,7 @@ private:
     Mode mode = Mode::aligned;
 
     std::array<std::vector<float>, maxChannels> line;
+    std::vector<float> sumLine;
     std::vector<double> target;
     std::array<Head, 2> heads;
 

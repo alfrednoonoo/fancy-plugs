@@ -363,9 +363,10 @@ void DelayDsp::setTapTargets (Tap& tap, const TapSpec& spec, bool anySolo, doubl
 
 void DelayDsp::snapTap (Tap& tap) noexcept
 {
-    // A tap starts from a silent ring, so its shifter needs no warming.
+    // A tap starts from a silent ring, so a shifter that runs from now on needs no warming. One
+    // that starts later must warm up first.
     tap.pitchMix.setTarget (tap.pitchWanted ? 1.0 : 0.0);
-    tap.warmed = shifterWarm;
+    tap.warmed = tap.pitchWanted ? shifterWarm : 0;
 
     for (auto* smoother : { &tap.feedback, &tap.width, &tap.volume, &tap.panLeft, &tap.panRight, &tap.inGate, &tap.outGate,
                             &tap.lowpassMix, &tap.highpassMix, &tap.crushMix, &tap.loopMix, &tap.saturateMix, &tap.pingMix,

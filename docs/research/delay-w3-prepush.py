@@ -6,7 +6,7 @@ The design model (delay-reverse-pitch-model.py) reads the future when it aligns 
 shifter is causal: it matches the last 10 ms either head would have read. This runs each test of
 section 6 the way tests/DelayW3Tests.cpp measures it, so the limits are checked before CI.
 
-Run: python docs/research/delay-w3-prepush.py [test ...]   (tests 2 4 5 6 7; all by default)
+Run: python docs/research/delay-w3-prepush.py [test ...]   (tests 2 4 5 6 7 8; all by default)
 """
 import math
 import sys
@@ -135,12 +135,12 @@ class PitchShifter:
             def reads(delay, count, spacing):
                 return self.read_sum_many(delay - ratio * (k_start + spacing * np.arange(count)))
 
-            target = reads(out.delay, self.match_count, self.stride)
+            target = reads(out.delay, self.match_count // 2, 2 * self.stride)
             energy = float(np.dot(target, target))
             if energy > 1e-12:
                 bias = lambda sh: self.centre_bias * abs(sh - 0.5 * self.search) / (0.5 * self.search)
                 shifts = np.arange(0.0, self.search + 1e-9, float(self.stride))
-                scores = [np.dot(c := reads(start_delay(sh), self.match_count, self.stride), target) / math.sqrt(np.dot(c, c) * energy + 1e-30) - bias(sh) for sh in shifts]
+                scores = [np.dot(c := reads(start_delay(sh), self.match_count // 2, 2 * self.stride), target) / math.sqrt(np.dot(c, c) * energy + 1e-30) - bias(sh) for sh in shifts]
                 coarse = float(shifts[int(np.argmax(scores))])
                 ft = reads(out.delay, self.fine_count, self.fine_step)
                 fe = float(np.dot(ft, ft))
@@ -382,10 +382,95 @@ def test2():
     print(f"   impulse at {at}: lands at {lands}, want 2 x window end - t = {2 * 2 * w - at}")
 
 
+def test8():
+    """Switching, as tests/DelayW3Tests.cpp does it: a 20 ms tap, Dry 1, a 200 Hz tone at 0.25;
+    Reverse on at 0.15 s, Pitch +7 at 0.3, Reverse off at 0.45, Pitch -5 at 0.65, 0 at 0.8. The
+    worst second difference after 50 ms (limit 2e-3). Run 45792294707 failed it at 0.0519: the
+    tap counted as warmed from its start, so Pitch's first fade-in met the shifter's empty line;
+    warmed = 3600 below reproduces that exactly."""
+    R = RATE
+
+    class Sm:
+        def __init__(s, ms, v=0.0):
+            s.c = 1 - math.exp(-1 / (ms * 0.001 * R))
+            s.cur = s.tgt = v
+
+        def next(s):
+            if s.cur != s.tgt:
+                s.cur += (s.tgt - s.cur) * s.c
+                if abs(s.tgt - s.cur) < 1e-9:
+                    s.cur = s.tgt
+            return s.cur
+
+    def herm_read(ring, w, d):
+        whole = int(d)
+        f = d - whole
+        m = len(ring) - 1
+        return hermite(ring[(w - whole + 1) & m], ring[(w - whole) & m], ring[(w - whole - 1) & m], ring[(w - whole - 2) & m], f)
+
+    class Sm:
+        def __init__(s, ms, v=0.0): s.c = 1 - math.exp(-1 / (ms * 0.001 * R)); s.cur = s.tgt = v
+        def next(s):
+            if s.cur != s.tgt:
+                s.cur += (s.tgt - s.cur) * s.c
+                if abs(s.tgt - s.cur) < 1e-9: s.cur = s.tgt
+            return s.cur
+    def herm_read(ring, w, d):
+        whole = int(d); f = d - whole; m = len(ring) - 1
+        return hermite(ring[(w - whole + 1) & m], ring[(w - whole) & m], ring[(w - whole - 1) & m], ring[(w - whole - 2) & m], f)
+    n = int(R)
+    x = 0.25 * np.sin(2 * np.pi * 200 * np.arange(n) / R)
+    ring = np.zeros(1 << 16); m = len(ring) - 1
+    head = 960; lead = 1248; warmN = 3600; fadeN = 240
+    pitch = Sm(30); pmix = Sm(30); rmix = Sm(30)
+    sh = None; running = False; warmed = 0; wanted = False
+    ratio = 1.0; rfor = 0.0
+    K = 0; W = 960; rdel = 0.0; since = 1 << 30
+    rev = False; st = 0.0
+    at = lambda s: int(round(s * R / 64)) * 64
+    y = np.zeros(n); tag = np.zeros(n, dtype=int)
+    for i in range(n):
+        if i == at(0.15): rev = True
+        if i == at(0.3): st = 7.0
+        if i == at(0.45): rev = False
+        if i == at(0.65): st = -5.0
+        if i == at(0.8): st = 0.0
+        pitch.tgt = st; wanted = st != 0 and not rev; rmix.tgt = 1.0 if rev else 0.0
+        semis = pitch.next()
+        if wanted and warmed < warmN: warmed += 1; pmix.tgt = 0.0
+        else: pmix.tgt = 1.0 if wanted else 0.0
+        pm = pmix.next(); rm = rmix.next()
+        if semis != rfor: ratio = 2 ** (semis / 12); rfor = semis
+        read = ring[(i - head) & m]
+        pitching = pm > 0 or wanted
+        if pitching:
+            if sh is None: sh = PitchShifter(R)
+            pin = ring[(i - max(2, head - lead)) & m]
+            s_ = sh.process(pin, ratio); running = True
+            read += (s_ - read) * pm
+        elif running:
+            sh = None; running = False; warmed = 0
+        out = read
+        if K == 0:
+            W = 960; rdel = 0.0
+        if rm > 0:
+            edge = min(K, W - K, since)
+            env = 1.0 if edge >= fadeN else 0.5 - 0.5 * math.cos(math.pi * edge / fadeN)
+            v = herm_read(ring, i, max(2.0, rdel)) * env
+            out += (v - out) * rm
+        rdel = min(rdel + 1 + ratio, 480000 - 4); since = min(since + 1, 1 << 30)
+        K += 1
+        if K >= W: K = 0
+        ring[i & m] = x[i]
+        y[i] = x[i] + out
+    d2 = np.abs(y[2:] - 2 * y[1:-1] + y[:-2])
+    print(f"8. Switching Reverse and Pitch: worst second difference {d2[2400:].max():.5f} (limit 0.002)")
+
+
 if __name__ == "__main__":
-    tests = sys.argv[1:] or ["2", "4", "5", "6", "7"]
+    tests = sys.argv[1:] or ["2", "4", "5", "6", "7", "8"]
     for name in tests:
-        {"2": test2, "4": test4, "5": test5, "6": test6, "7": test7}[name]()
+        {"2": test2, "4": test4, "5": test5, "6": test6, "7": test7, "8": test8}[name]()
 
 
 def test_shifter():
