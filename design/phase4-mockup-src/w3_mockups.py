@@ -315,6 +315,64 @@ def eq_w3():
 
 m.PAGE_HEIGHTS["eq-w3"] = 3600
 
+# ---------------------------------------------------------------------------------------------
+# Room's Shimmer (docs/room.md, Phase 4 Wave 3, decisions A). Screenshot: room-edit@2x.png of run 45826938789
+# (commit 3848b23), 760 x 529. The EDIT drawer is x 0 to 650. GATE's title is at (24, 336), its knobs' labels at
+# y 348 and values at y 404. DECAY SHAPE's title is at (398, 424); Low decay and Attack are 30 px knobs centred at
+# x 448 and 538, labels at y 438. Under the Gate row, x 20 to 380 and y 418 to 529 are empty.
+ROOM_W, ROOM_H, ROOM_GROW = 760, 529, 80
+ROOM_PURPLE = "#9A59B5"
+ROOM_NOTE = "Feeds the tail back an interval higher on each pass. It always dies away."
+INTERVALS = ["Octave up", "Fifth up", "Fourth up", "Octave and fifth up", "Two octaves up", "Octave down"]
+
+
+def room_shimmer_a(value="0 %", v=0.0):
+    """A: the SHIMMER group in the drawer's empty bottom-left, level with DECAY SHAPE. Knob in Ducking's column."""
+    return (m.group_title(24, 424, "SHIMMER")
+            + m.knob(68, 438, "Shimmer", value, ROOM_PURPLE, v, size=30, fs=12, width=80)
+            + '<div class="o" style="left:120px;top:446px;font-size:12px;color:#fff">Interval</div>'
+            + '<div class="o dd" style="left:180px;top:442px;width:150px;height:24px;font-size:12px">Octave up</div>'
+            + caption(120, 474, ROOM_NOTE, 250)
+            + outline(20, 420, 364, 92))
+
+
+def room_shimmer_b():
+    """B: under DECAY SHAPE in the right-hand column of the grown drawer. Knob in Low decay's column."""
+    return (m.group_title(398, 512, "SHIMMER")
+            + m.knob(448, 526, "Shimmer", "0 %", ROOM_PURPLE, 0.0, size=30, fs=12, width=80)
+            + '<div class="o" style="left:494px;top:526px;font-size:12px;color:#fff">Interval</div>'
+            + '<div class="o dd" style="left:494px;top:544px;width:150px;height:24px;font-size:12px">Octave up</div>'
+            + outline(394, 508, 254, 92))
+
+
+@m.plugin("room-w3", "73__room_w3_mockup.png")
+def room_w3():
+    W2, H2 = m.grow("room-edit-v172", "room-edit-v172-tall", ROOM_GROW, [(0, 650, 516), (650, 760, 380)], axis="y")
+    items = "".join(f'<div class="on">&#10003; {i}</div>' if i == "Octave up" else f"<div>{i}</div>" for i in INTERVALS)
+    menu = f'<div class="o new menu" style="left:180px;top:300px;width:150px;font-size:12px">{items}</div>'
+    return w1.page("Fancy Room: v1.7.2 mockup (Shimmer)",
+                   m.lead("docs/room.md, Phase 4 Wave 3: shimmer", "Decisions 1 to 3 A (user, 26 November 2026)"), [
+        ("1 · A (recommended): a SHIMMER group in the EDIT drawer's empty corner, under the Gate row; the window stays 760 x 529",
+         "<b>Shimmer</b> (0 to 100 %, 0 by default) is a small knob like Low decay's, in Ducking's column, with <b>Interval</b> (Octave up, Fifth up, Fourth up, "
+         "Octave and fifth up, Two octaves up, Octave down) beside it, the same list as Verb's. The group sits level with DECAY SHAPE, so the drawer's bottom row reads as two groups.",
+         shot("room-edit-v172", ROOM_W, ROOM_H, room_shimmer_a(),
+              "At 0 % the output is today's, to the bit, and Interval does nothing. No existing control moves or changes size; the main window doesn't change. "
+              "The tooltip reads \"Shimmer: feeds the tail back into the room through a pitch shifter, so each pass comes back an interval higher. "
+              "0 % is off; Freeze holds it.\"")),
+        ("2 · A at 50 %, Interval open",
+         "The six intervals, Octave up ticked. With no room below, the list opens upwards.",
+         shot("room-edit-v172", ROOM_W, ROOM_H, room_shimmer_a("50 %", 0.5) + menu, "", crop=(0, 280, 400, 249))),
+        (f"3 · B: beside the reverb EQ, under DECAY SHAPE; the window grows {ROOM_GROW} px taller ({W2} x {H2})",
+         f"The note's literal place: the right-hand column, below DECAY SHAPE. It has no room there today, so the drawer and the window grow {ROOM_GROW} px "
+         "(the minimum too); the meters and faders lengthen and the main page's cards get the height evenly, as in Wave 2.",
+         shot("room-edit-v172-tall", W2, H2, room_shimmer_b(),
+              "Costs height on the main page too, for one row that only EDIT shows, and leaves the bottom-left corner empty. "
+              "The note goes in the tooltip only.")),
+    ])
+
+
+m.PAGE_HEIGHTS["room-w3"] = 2200
+
 if __name__ == "__main__":
     for key in sys.argv[1:] or list(m.PLUGINS):
         m.render(key)

@@ -430,4 +430,4 @@ Appended after `duckFrom`. No state migration: a state without them loads Shimme
 
 ### 7. Build order
 
-Approval, then the drawer mockup (`reference/phase4/73__room_w3_mockup.png`), then one push: the loop and guard in `RoomDsp`, the parameters, the drawer, tests, manual and checklist. It comes after Delay's or Verb's push, whichever brings `PitchShifter`.
+Approval, then the drawer mockup (`reference/phase4/73__room_w3_mockup.png`; drawn 26 November 2026 on `room-edit` of run 45826938789: A, a SHIMMER group in the drawer's empty bottom-left corner, level with DECAY SHAPE, the window unchanged; B, under DECAY SHAPE with the window 80 px taller; waiting for approval), then one push: the loop and guard in `RoomDsp`, the parameters, the drawer, tests, manual and checklist. It comes after Delay's or Verb's push, whichever brings `PitchShifter`.
