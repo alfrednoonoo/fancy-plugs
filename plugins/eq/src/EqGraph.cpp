@@ -336,7 +336,13 @@ void EqGraph::update()
 
             for (int point = 0; point < eq::SpectralStage::curvePoints; ++point)
             {
-                const auto value = std::round (processor.getSpectralCurveDb (point) * 20.0f) / 20.0f;
+                auto value = std::round (processor.getSpectralCurveDb (point) * 20.0f) / 20.0f;
+
+                if (previewSpectralHz > 0.0f)
+                {
+                    const auto octaves = std::log2 (eq::SpectralStage::curveHz (point) / (double) previewSpectralHz) / (double) previewSpectralWidth;
+                    value = (float) ((double) previewSpectralDb * std::exp (-0.5 * octaves * octaves));
+                }
 
                 if (value != spectralCurve[(size_t) point])
                 {

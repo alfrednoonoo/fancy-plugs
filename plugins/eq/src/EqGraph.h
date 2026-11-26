@@ -33,6 +33,16 @@ public:
     // For rendered screenshots: a dynamic band's change, as if the detector had moved it.
     void showPreviewChange (int band, float changeDb) { previewBand = band; previewChangeDb = changeDb; }
 
+    // For rendered screenshots: the spectral total, as if a resonance were being cut: a dip of
+    // depthDb at hz, Gaussian over log frequency (widthOctaves its standard deviation). hz 0 reads
+    // the processor again.
+    void showPreviewSpectral (float hz, float depthDb, float widthOctaves)
+    {
+        previewSpectralHz = hz;
+        previewSpectralDb = depthDb;
+        previewSpectralWidth = widthOctaves;
+    }
+
     // Phase 3 Q2.4: what the Match card shows on the graph while it's open. The spectra are on
     // the analyzer's scale and the target on the EQ's.
     struct MatchOverlay
@@ -172,6 +182,7 @@ private:
     int dragBand = -1;
     int previewBand = -1;
     float previewChangeDb = 0.0f;
+    float previewSpectralHz = 0.0f, previewSpectralDb = 0.0f, previewSpectralWidth = 1.0f;
     bool draggingQ = false;
     juce::Point<float> dragPosition, lastMouse;
 

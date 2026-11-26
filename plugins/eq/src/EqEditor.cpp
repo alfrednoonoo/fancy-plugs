@@ -1468,6 +1468,7 @@ void EqEditor::applyPreviewValues()
     processor.setParameter ("gain", -7.3f);
 
     graph.showPreviewSpectrum();
+    graph.showPreviewSpectral (0.0f, 0.0f, 1.0f);
     selectBand (1);
 }
 
@@ -1616,6 +1617,9 @@ void EqEditor::showSpectralPreview (bool list)
     {
         showDynamicPreview (false);
         eqProcessor().setParameter ("b2spectral", 1.0f);
+
+        // Mockup 71, panel 2: the total dips about 2 dB round band 2, some 0.75 octave across.
+        graph.showPreviewSpectral (3200.0f, -2.0f, 0.2f);
         bandEditors[(size_t) selectedBand]->update();
     }
 
