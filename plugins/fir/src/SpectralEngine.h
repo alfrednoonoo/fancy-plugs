@@ -2,6 +2,8 @@
 
 #include "FirShared.h"
 
+#include <fancy/dsp/StftFrames.h>
+
 #include <juce_dsp/juce_dsp.h>
 
 #include <memory>
@@ -119,19 +121,12 @@ private:
 
     double rate;
     int frameLength, fftLength, bins, hop, synthesisLength, extra, latency;
-    int stageInterval = 0;
 
-    std::unique_ptr<FFT> fft;
-    std::vector<float> analysisWindow, synthesisWindow;
+    // Phase 4 Wave 3: the framing, in fancy-core (docs/eq.md, decision 5 A).
+    fancy::dsp::StftFrames framing;
     double levelScale = 1.0, powerScale = 1.0;
 
-    int inputSize, inputMask, outputSize, outputMask;
-    std::vector<float> inputRings[4], outputRings[2];
-    long long time = 0;
-
     // The frame in progress.
-    long long frameEnd = -1;
-    int nextStage = numStages;
     int frameChannels = 2;
     bool frameKey = false, frameLearns = false;
     FrameSettings frameSettings;

@@ -43,7 +43,7 @@ if("FANCY_HAS_MULTICOMP=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_FIR=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE FirTests.cpp AdaptiveTests.cpp FirQ27Tests.cpp FirW1Tests.cpp FirW2Tests.cpp FirW2bTests.cpp LegacyFirEngine.cpp)
+    target_sources(fancy-tests PRIVATE FirTests.cpp AdaptiveTests.cpp FirQ27Tests.cpp FirW1Tests.cpp FirW2Tests.cpp FirW2bTests.cpp StftFramesTests.cpp LegacyFirEngine.cpp LegacyFirW2Engine.cpp)
 endif()
 
 if("FANCY_HAS_GATE=1" IN_LIST fancy_screen_defs)

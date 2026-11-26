@@ -47,20 +47,6 @@ double martinBias (double frames, double m, double qInverse) noexcept
     return 1.0 + 2.0 * (frames - 1.0) / qTilde;
 }
 
-int nextPowerOfTwo (int value) noexcept
-{
-    auto size = 1;
-
-    while (size < value)
-        size <<= 1;
-
-    return size;
-}
-
-double hann (int n, int length) noexcept
-{
-    return 0.5 - 0.5 * std::cos (2.0 * std::numbers::pi * (double) n / (double) length);
-}
 } // namespace
 
 int SpectralEngine::latencyOf (const Config& config) noexcept
@@ -84,68 +70,12 @@ SpectralEngine::SpectralEngine (const Config& config, double sampleRate, Shared&
     synthesisLength = config.convolve ? frameLength : (config.lowLatency ? frameLength / 2 : frameLength);
     extra = frameLength >= firstStagedSize ? frameLength / 8 : 0;
     latency = synthesisLength + extra;
-    stageInterval = extra / numStages;
 
-    fft = std::make_unique<FFT> (juce::roundToInt (std::log2 ((double) fftLength)));
-
-    analysisWindow.assign ((size_t) frameLength, 1.0f);
-    synthesisWindow.assign ((size_t) frameLength, 1.0f);
-
-    if (! config.convolve)
-    {
-        if (config.lowLatency)
-        {
-            // An asymmetric pair: their product is a Hann of synthesisLength over the last
-            // part of the frame, which overlap-adds to 1 at a hop of half that.
-            const auto shortLength = synthesisLength;
-            const auto rise = frameLength - shortLength / 2;
-
-            for (int n = 0; n < frameLength; ++n)
-            {
-                const auto analysis = n < rise ? std::sqrt (hann (n, 2 * rise))
-                                               : std::sqrt (hann (n - (frameLength - shortLength), shortLength));
-
-                const auto product = n < frameLength - shortLength ? 0.0 : hann (n - (frameLength - shortLength), shortLength);
-
-                analysisWindow[(size_t) n] = (float) analysis;
-                synthesisWindow[(size_t) n] = analysis > 1.0e-9 ? (float) (product / analysis) : 0.0f;
-            }
-        }
-        else
-        {
-            // Square-root Hann both ways overlap-add to 2 at a quarter of the frame.
-            for (int n = 0; n < frameLength; ++n)
-            {
-                const auto root = std::sqrt (hann (n, frameLength));
-
-                analysisWindow[(size_t) n] = (float) root;
-                synthesisWindow[(size_t) n] = (float) (0.5 * root);
-            }
-        }
-    }
-
-    auto windowSum = 0.0, windowEnergy = 0.0;
-
-    for (const auto value : analysisWindow)
-    {
-        windowSum += (double) value;
-        windowEnergy += (double) value * (double) value;
-    }
-
-    // A sine at amplitude A reads A, whatever the window and size.
-    levelScale = 2.0 / windowSum;
-    powerScale = 1.0 / windowEnergy;
-
-    inputSize = nextPowerOfTwo (frameLength + extra + 8);
-    inputMask = inputSize - 1;
-    outputSize = nextPowerOfTwo (fftLength + latency + hop + 8);
-    outputMask = outputSize - 1;
-
-    for (auto& ring : inputRings)
-        ring.assign ((size_t) inputSize, 0.0f);
-
-    for (auto& ring : outputRings)
-        ring.assign ((size_t) outputSize, 0.0f);
+    // Phase 4 Wave 3 (docs/eq.md, decision 5 A): the rings, windows, FFT and frame timing are
+    // fancy::dsp::StftFrames now, moved from here as they were.
+    framing.prepare ({ frameLength, config.lowLatency, config.convolve, extra, numStages });
+    levelScale = framing.getLevelScale();
+    powerScale = framing.getPowerScale();
 
     for (auto& spectrum : spectra)
         spectrum.assign ((size_t) fftLength * 2, 0.0f);
@@ -208,11 +138,7 @@ SpectralEngine::SpectralEngine (const Config& config, double sampleRate, Shared&
 
 void SpectralEngine::reset() noexcept
 {
-    for (auto& ring : inputRings)
-        std::fill (ring.begin(), ring.end(), 0.0f);
-
-    for (auto& ring : outputRings)
-        std::fill (ring.begin(), ring.end(), 0.0f);
+    framing.reset();
 
     for (int ch = 0; ch < 2; ++ch)
     {
@@ -223,10 +149,6 @@ void SpectralEngine::reset() noexcept
     }
 
     resStarted[0] = resStarted[1] = false;
-
-    time = 0;
-    frameEnd = -1;
-    nextStage = numStages;
 }
 
 double SpectralEngine::perHop (double milliseconds) const noexcept
@@ -324,16 +246,7 @@ void SpectralEngine::refreshProfile() noexcept
 
 void SpectralEngine::analyse (int channel) noexcept
 {
-    auto& spectrum = spectra[channel];
-    const auto& ring = inputRings[channel];
-
-    // The frame ends at frameEnd, exclusive.
-    for (int n = 0; n < frameLength; ++n)
-        spectrum[(size_t) n] = ring[(size_t) ((frameEnd - frameLength + n) & inputMask)] * analysisWindow[(size_t) n];
-
-    std::fill (spectrum.begin() + frameLength, spectrum.end(), 0.0f);
-
-    fft->performRealOnlyForwardTransform (spectrum.data(), true);
+    framing.analyse (channel, spectra[channel]);
 }
 
 void SpectralEngine::learnFrame() noexcept
@@ -1156,12 +1069,7 @@ void SpectralEngine::synthesise (int channel) noexcept
         spectrum[(size_t) k * 2 + 1] *= gain[(size_t) k];
     }
 
-    fft->performRealOnlyInverseTransform (spectrum.data());
-
-    auto& ring = outputRings[channel];
-
-    for (int n = 0; n < frameLength; ++n)
-        ring[(size_t) ((frameEnd - frameLength + n) & outputMask)] += spectrum[(size_t) n] * synthesisWindow[(size_t) n];
+    framing.synthesise (channel, spectrum);
 }
 
 void SpectralEngine::convolveChannels() noexcept
@@ -1178,15 +1086,7 @@ void SpectralEngine::convolveChannels() noexcept
         left[(size_t) k * 2 + 1] = a * d + b * c;
     }
 
-    fft->performRealOnlyInverseTransform (left.data());
-
-    for (int n = 0; n < fftLength; ++n)
-    {
-        const auto position = (size_t) ((frameEnd - frameLength + n) & outputMask);
-
-        outputRings[0][position] += left[(size_t) n];
-        outputRings[1][position] += left[(size_t) n];
-    }
+    framing.synthesiseUnwindowed (left, 0, 1);
 }
 
 void SpectralEngine::runStage (int stage) noexcept
@@ -1226,69 +1126,59 @@ void SpectralEngine::process (const float* inLeft, const float* inRight, const f
     // mid and side too, so each domain's detector hears its own domain.
     const auto midSide = engineConfig.midSide && ! engineConfig.convolve && numChannels > 1;
 
+    const auto runOne = [this] (int stage) { runStage (stage); };
+
+    const auto startFrame = [&]
+    {
+        frameChannels = numChannels > 1 ? 2 : 1;
+        frameKey = hasKey;
+        frameLearns = learns;
+        frameSettings = settings;
+    };
+
     for (int i = 0; i < numSamples; ++i)
     {
-        const auto position = (size_t) (time & inputMask);
-
         if (midSide)
         {
-            inputRings[0][position] = 0.5f * (inLeft[i] + inRight[i]);
-            inputRings[1][position] = 0.5f * (inLeft[i] - inRight[i]);
-            inputRings[2][position] = hasKey ? 0.5f * (keyLeft[i] + keyRight[i]) : 0.0f;
-            inputRings[3][position] = hasKey ? 0.5f * (keyLeft[i] - keyRight[i]) : 0.0f;
+            framing.write (0, 0.5f * (inLeft[i] + inRight[i]));
+            framing.write (1, 0.5f * (inLeft[i] - inRight[i]));
+            framing.write (2, hasKey ? 0.5f * (keyLeft[i] + keyRight[i]) : 0.0f);
+            framing.write (3, hasKey ? 0.5f * (keyLeft[i] - keyRight[i]) : 0.0f);
         }
         else
         {
-            inputRings[0][position] = inLeft[i];
-            inputRings[1][position] = numChannels > 1 ? inRight[i] : inLeft[i];
-            inputRings[2][position] = hasKey ? keyLeft[i] : 0.0f;
-            inputRings[3][position] = hasKey ? keyRight[i] : 0.0f;
+            framing.write (0, inLeft[i]);
+            framing.write (1, numChannels > 1 ? inRight[i] : inLeft[i]);
+            framing.write (2, hasKey ? keyLeft[i] : 0.0f);
+            framing.write (3, hasKey ? keyRight[i] : 0.0f);
         }
 
-        ++time;
-
-        // A frame is ready every hop, once the first frame has filled.
-        if (time >= frameLength && (time - frameLength) % hop == 0)
-        {
-            // An unfinished frame can't happen, because the stages take half a hop.
-            while (nextStage < numStages)
-                runStage (nextStage++);
-
-            frameEnd = time;
-            nextStage = 0;
-            frameChannels = numChannels > 1 ? 2 : 1;
-            frameKey = hasKey;
-            frameLearns = learns;
-            frameSettings = settings;
-        }
-
-        while (nextStage < numStages && time >= frameEnd + (long long) (nextStage * stageInterval))
-            runStage (nextStage++);
+        // A frame is ready every hop, once the first frame has filled; an unfinished frame can't
+        // happen, because the stages take half a hop.
+        framing.advance (runOne, startFrame);
 
         // The sample that's now a full latency old, read and cleared for later frames.
-        const auto readPosition = (size_t) ((time - 1 - latency) & outputMask);
-
         if (midSide)
         {
-            const auto mid = outputRings[0][readPosition], side = outputRings[1][readPosition];
+            const auto mid = framing.read (0), side = framing.read (1);
 
             outLeft[i] = mid + side;
 
             if (outRight != nullptr)
                 outRight[i] = mid - side;
 
-            outputRings[0][readPosition] = 0.0f;
-            outputRings[1][readPosition] = 0.0f;
+            framing.clear (0);
+            framing.clear (1);
             continue;
         }
 
-        outLeft[i] = outputRings[0][readPosition];
-        outputRings[0][readPosition] = 0.0f;
+        outLeft[i] = framing.read (0);
+        framing.clear (0);
 
         if (outRight != nullptr)
         {
-            outRight[i] = numChannels > 1 ? outputRings[1][readPosition] : outLeft[i];
-            outputRings[1][readPosition] = 0.0f;
+            outRight[i] = numChannels > 1 ? framing.read (1) : outLeft[i];
+            framing.clear (1);
         }
     }
 }
