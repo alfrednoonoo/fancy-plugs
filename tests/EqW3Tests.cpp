@@ -576,7 +576,7 @@ TEST_CASE ("eq w3 cpu measurement", "[.measure]")
     const auto dynamicOnly = median (0), spectral = median (4);
     const auto x = [comp] (double percent) { return fancytest::timesComp (percent, comp); };
     std::printf ("eq w3 cpu (median of %d, 48 kHz, 128 samples, stereo): Fancy Comp default %.3f %%; four dynamic bands %.3f %%%s; "
-                 "four spectral bands %.3f %%%s (target < 1)\n",
+                 "four spectral bands %.3f %%%s (target < 2 x Comp)\n",
                  runs, comp, dynamicOnly, x (dynamicOnly).c_str(), spectral, x (spectral).c_str());
     SUCCEED();
 }
