@@ -522,7 +522,6 @@ GateEditor::BandsCard::BandsCard (GateProcessor& processor)
         auto threshold = std::make_unique<Knob> (*processor.getApvts().getParameter (GateProcessor::bandThresholdId (band)), "Threshold",
                                                  bandColours[band], bandKnobStyle, true);
         threshold->setBounds (juce::roundToInt (centre + 58.0f) - 32, 94, 64, 66);
-        threshold->setShowDefaultMark (true);
         threshold->setTooltip ("Band " + name + " opens this far above or below the Threshold fader, which still moves every band.");
         addChildComponent (*threshold);
         thresholdKnobs[(size_t) band] = std::move (threshold);

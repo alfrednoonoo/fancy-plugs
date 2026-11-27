@@ -118,7 +118,7 @@ Use it on a drum mic whose bleed changes level through a song, such as a tom mic
 
 ## Bands (Phase 4)
 
-The **BANDS** card, between the history and the envelope card, splits the signal into up to three frequency bands and gates each one on its own sound. A close mic hears more than its own drum: on a tom mic, a gate set low enough to keep the tom's ring is held open by the cymbals, and one set high enough to shut in the gaps still lets every cymbal through while the tom rings. With the lows in their own band, the tom opens the lows, and the highs open only when there's enough high end of their own. On a test tom mic, two bands cut the cymbal while the tom rang by about 13 dB and in the gaps by the full Range, with the tom kept; the best single-band setting cut the cymbal while the tom rang by under 2 dB.
+The **BANDS** card, between the history and the envelope card, splits the signal into up to three frequency bands and gates each one on its own sound. A close mic hears more than its own drum: on a tom mic, a gate set low enough to keep the tom's ring is held open by the cymbals, and one set high enough to shut in the gaps still lets every cymbal through while the tom rings. With the lows in their own band, the tom opens the lows, and the highs open only when there's enough high end of their own. On a test tom mic, two bands cut the cymbal while the tom rang by 10 to 13 dB and in the gaps by the full Range, with the tom kept; the best single-band setting cut the cymbal while the tom rang by under 2 dB.
 
 | Control | Range | Default | What it does |
 |---|---|---|---|
