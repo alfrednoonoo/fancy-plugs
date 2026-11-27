@@ -152,57 +152,87 @@
           "points": [
             [
               5.8,
-              23.5,
+              17.1,
               "Threshold fader",
               "Set the level where compression starts, on top of the input meter, so you see what crosses it."
             ],
             [
-              17.2,
-              23.5,
+              17.1,
+              17.1,
               "GR meter",
               "See how much is being turned down, for each channel."
             ],
             [
               29.8,
-              17.9,
+              13.0,
               "Detector input",
               "Compress from the track itself or from a sidechain, such as a kick ducking a bass."
             ],
             [
-              38.5,
-              39,
+              36.7,
+              66.7,
               "Ratio and Knee",
               "Choose how firmly it compresses, and how gradually it starts."
             ],
             [
-              63,
-              39,
+              64.8,
+              66.7,
               "Attack and Release",
               "Let the punch through or catch it, and let Auto set the release for you."
             ],
             [
-              65,
-              75,
+              64.9,
+              85.1,
               "Lowpass and Highpass",
               "Filter what the detector hears, so a bass drum doesn’t pump the whole mix."
             ],
             [
-              92.6,
-              30,
+              92.5,
+              22.0,
               "Wet and Dry",
               "Blend compressed and uncompressed sound for parallel compression."
             ],
             [
               16.5,
-              91.8,
+              94.0,
               "Checkbox row",
               "Link the channels, make up the lost level automatically, and limit the output."
             ],
             [
               57.5,
-              91.8,
+              94.0,
               "Listen to removed",
               "Hear only what the compressor takes away."
+            ],
+            [
+              35.3,
+              15.5,
+              "Time shown",
+              "1.5, 3, 6 or 12 s."
+            ],
+            [
+              61.7,
+              18.7,
+              "Grid",
+              "Beat and bar lines from the host’s tempo."
+            ],
+            [
+              42.8,
+              40.2,
+              "Input and output in dB",
+              "Input in grey and output in teal, from -60 dB at the middle to 0 dB at the edges. The gap is the reduction; the dashed lines are the threshold."
+            ],
+            [
+              30.3,
+              26.8,
+              "Gain reduction",
+              "The yellow line, hanging from the top."
+            ],
+            [
+              69.1,
+              18.7,
+              "Peak",
+              "The largest reduction in view. Click it to clear it."
             ]
           ]
         },
@@ -214,49 +244,49 @@
           "points": [
             [
               53,
-              22,
-              "Five pages",
-              "Detector, Character, Upward, Options and History: the settings you set once and leave."
+              42.9,
+              "Four pages",
+              "Detector, Character, Upward and Options: the settings you set once and leave."
             ],
             [
               60,
-              38,
+              54.6,
               "Detector EQ curve",
               "Shape what the detector hears. Drag the numbered points on the curve, or use the controls below."
             ],
             [
               42,
-              34.5,
+              52.0,
               "Bands 1 to 6",
               "Pick the band to edit. A band that’s off is dimmed."
             ],
             [
               34.5,
-              58.5,
+              69.6,
               "Type",
               "Off, Low shelf, Bell or High shelf."
             ],
             [
               58,
-              64.5,
+              74.0,
               "Freq, Gain and Q",
               "The selected band’s settings, anywhere from 20 Hz to 20 kHz."
             ],
             [
               78,
-              60.5,
+              71.1,
               "Cut slopes",
               "12, 24 or 48 dB per octave for Highpass and Lowpass."
             ],
             [
               40,
-              83,
+              87.6,
               "Auto threshold",
               "Let the threshold follow the input’s long-term level."
             ],
             [
               78.3,
-              26.8,
+              46.4,
               "Done",
               "Close the drawer and go back to the main controls."
             ]
@@ -270,37 +300,37 @@
           "points": [
             [
               66,
-              36,
+              53.1,
               "Bell in use",
               "A +12 dB bell at 3 kHz makes the detector react to harsh upper mids first."
             ],
             [
               47.5,
-              39,
+              55.3,
               "A fourth band",
               "Six bands in all, each with its own type."
             ],
             [
               50.5,
-              49,
+              62.7,
               "24 dB slope",
               "A steeper Highpass keeps the kick out and still follows the bass."
             ],
             [
               58.5,
-              64.5,
+              74.0,
               "Bell controls",
               "Freq, Gain and Q of the selected band."
             ],
             [
               70.5,
-              83,
+              87.6,
               "Auto threshold",
               "On, with the offset from the input’s long-term level and the reference it follows."
             ],
             [
               9.5,
-              50,
+              46.6,
               "Threshold in use",
               "The Threshold meter shows the threshold Auto has set."
             ]
@@ -314,25 +344,25 @@
           "points": [
             [
               52.5,
-              36,
+              53.1,
               "Type",
               "Off, Warm (even harmonics, lows saturate more) or Bright (odd harmonics, highs saturate more)."
             ],
             [
               47.5,
-              43.6,
+              58.7,
               "Position",
               "Saturate before the compressor, or after it."
             ],
             [
               36.5,
-              60,
+              70.7,
               "Drive",
               "How hard the Character stage is driven."
             ],
             [
               68,
-              65,
+              74.4,
               "Curve",
               "The saturation curve at the current Type and Drive."
             ]
@@ -345,32 +375,32 @@
           "alt": "Fancy Comp’s EDIT drawer on the Upward page",
           "points": [
             [
-              50,
-              21,
+              50.0,
+              42.8,
               "EDIT pages",
               "Open five pages of deeper settings without leaving the window: Detector, Character, Upward, Options and History."
             ],
             [
               31.2,
-              49,
+              62.7,
               "Up threshold and ratio",
               "Lift the quiet parts of a performance towards the loud ones."
             ],
             [
               31.2,
-              68,
+              76.6,
               "Max lift and Floor",
               "Limit how far it lifts, and keep it from raising the noise between phrases."
             ],
             [
               54.3,
-              58,
+              69.2,
               "Transfer curve",
               "See both directions of compression on one curve, with the lift being applied right now."
             ],
             [
               5.8,
-              52,
+              49.1,
               "Threshold meter",
               "The meter keeps showing the threshold in use while you work in the drawer."
             ]
@@ -384,67 +414,67 @@
           "points": [
             [
               53.5,
-              35.6,
+              52.8,
               "Oversampling",
               "Off, 2x, 4x or 8x, to keep fast gain changes from aliasing."
             ],
             [
               53.5,
-              42.2,
+              57.7,
               "Oversampling filter",
               "Linear or minimum phase for the oversampling filters."
             ],
             [
               53.5,
-              48.8,
+              62.5,
               "Release curve",
               "Exponential, or Linear for a constant dB rate like older compressors."
             ],
             [
               44,
-              57,
+              68.5,
               "Feedback detection",
               "The detector listens to the compressor’s own output, for a gentler response."
             ],
             [
               43,
-              63,
+              72.9,
               "Attack = 90 % rise",
               "Make Attack the time to reach 90 %, as some compressors quote it."
             ],
             [
               66.3,
-              42,
+              57.5,
               "Link amount",
               "How strongly linked channels follow the louder one."
             ],
             [
               77,
-              42,
+              57.5,
               "Output",
               "The same output level as the header knob."
             ],
             [
               34.5,
-              68.7,
+              77.1,
               "Optical",
               "Optical ballistics: a slowing attack, a two-stage release, and slow recovery from long squashing."
             ],
             [
               66.3,
-              64.5,
+              74.0,
               "Hold",
               "Wait this long after a peak before releasing."
             ],
             [
               77.3,
-              64.5,
+              74.0,
               "Range",
               "The most it will turn down."
             ],
             [
               70,
-              83.5,
+              87.9,
               "Link mode",
               "Stereo, Mid/Side, M>S or S>M: compress mid and side apart, or one by the other’s level."
             ]
@@ -458,59 +488,21 @@
           "points": [
             [
               30,
-              17.9,
+              13.1,
               "Host sync",
               "Duck in time with the host, without a sidechain track."
             ],
             [
               36,
-              74,
+              81.0,
               "Rate",
               "One virtual kick per note of this length."
             ],
             [
               51,
-              78.3,
+              84.1,
               "Shape",
               "How long each one lasts."
-            ]
-          ]
-        },
-        {
-          "id": "history",
-          "label": "History",
-          "image": "comp-history",
-          "alt": "Fancy Comp’s History page",
-          "points": [
-            [
-              36,
-              30.5,
-              "Time shown",
-              "1.5, 3, 6 or 12 s."
-            ],
-            [
-              55,
-              34.9,
-              "Grid",
-              "Beat and bar lines from the host’s tempo."
-            ],
-            [
-              50,
-              62,
-              "Input and output in dB",
-              "Input in grey and output in teal, from -60 dB at the middle to 0 dB at the edges. The gap is the reduction."
-            ],
-            [
-              40,
-              50,
-              "Gain reduction",
-              "The yellow line, hanging from the top."
-            ],
-            [
-              67,
-              34.9,
-              "Peak",
-              "The largest reduction in view. Click it to clear it."
             ]
           ]
         },
@@ -522,19 +514,19 @@
           "points": [
             [
               22,
-              2.6,
+              1.9,
               "LISTENING",
               "The title strip says so while you’re hearing the detector instead of the output."
             ],
             [
-              41,
-              91.5,
+              32.1,
+              94.2,
               "Preview filter",
               "Hear the filtered detector signal, to set Lowpass and Highpass. It turns off when you close the window."
             ],
             [
               65.2,
-              75,
+              81.7,
               "Detector filters",
               "Set them by ear while previewing."
             ]
@@ -543,15 +535,15 @@
       ],
       "lead": {
         "title": "Set the threshold where you can see the signal.",
-        "text": "The Threshold fader sits on top of the input meter. Pull it down until the peaks cross it, and the GR meter beside it shows what that costs.",
+        "text": "The Threshold fader sits on top of the input meter, and its level runs across the history as a dashed line. Pull it down until the peaks cross it, and the GR meter and the history show what that costs.",
         "image": "comp",
         "box": [
           0,
-          22.5,
-          76.6,
-          100
+          15.4,
+          78.7,
+          73.0
         ],
-        "alt": "The Threshold fader over the input meter, next to the GR meter and the Ratio and Knee knobs"
+        "alt": "The Threshold fader over the input meter, next to the GR meter, the history and the Ratio, Knee, Attack and Release knobs"
       },
       "can": [
         [
@@ -623,7 +615,7 @@
       ],
       "window": [
         934,
-        547
+        747
       ],
       "pairs": [
         [
@@ -942,69 +934,113 @@
           "points": [
             [
               3.3,
-              22,
+              16.1,
               "Threshold",
               "Set where the gate opens, on top of the input meter, with the closing level shown below it."
             ],
             [
-              11.5,
-              24,
+              25.3,
+              14.8,
               "Detector input",
               "Open from the track itself or from a sidechain."
             ],
             [
               46,
-              23,
+              16.8,
               "Lookahead",
               "Open 50 ms early, so not even the first transient is cut."
             ],
             [
               60.8,
-              20.3,
+              14.8,
               "Gate, Duck or Upward",
               "Close on silence, turn the track down while the sidechain plays, or lift what’s above the threshold."
             ],
             [
               47,
-              34,
+              24.8,
               "History",
               "Watch the level and the gate opening and closing over the last few seconds."
             ],
             [
               40.6,
-              52,
+              65.0,
               "Attack, Hold and Release",
               "How fast it opens, how long it stays open, and how slowly it closes."
             ],
             [
               19,
-              74,
+              81.0,
               "Range",
               "Close only part of the way, so the gate never sounds abrupt."
             ],
             [
               63.5,
-              80,
+              85.4,
               "Detector filters",
               "Filter what it listens to, so only the snare opens a snare mic."
             ],
             [
               51,
-              91.7,
+              93.9,
               "MIDI on open/close",
               "Send a MIDI note on every opening, to trigger a sample."
             ],
             [
               93.5,
-              45,
+              42.1,
               "Wet, Dry and Noise",
               "Blend the gated and ungated sound, and add white noise only while it’s open."
             ],
             [
               25.5,
-              66,
+              75.2,
               "Level or Transient",
               "Open on the level, or on a sudden rise in level, whatever the level is."
+            ]
+          ]
+        },
+        {
+          "id": "bands",
+          "label": "Bands",
+          "image": "gate-bands",
+          "alt": "Fancy Gate’s BANDS card with three bands",
+          "points": [
+            [
+              37,
+              32.8,
+              "Bands",
+              "1 to 3 bands, each gated on its own sound. 1 gates the whole signal."
+            ],
+            [
+              47.5,
+              32.8,
+              "Crossover",
+              "LR 24 or LR 48 dB, minimum phase. Both add back up flat."
+            ],
+            [
+              36.9,
+              42.5,
+              "Crossovers",
+              "Drag a blue line, or click it to type a frequency, to set where the bands meet."
+            ],
+            [
+              27.3,
+              49.6,
+              "Threshold (each band)",
+              "Where that band opens, above or below the Threshold fader."
+            ],
+            [
+              35.4,
+              50.5,
+              "Range (each band)",
+              "How much of the Range knob that band uses."
+            ],
+            [
+              14.2,
+              50.2,
+              "Open or shut",
+              "Lit yellow while that band is open."
             ]
           ]
         },
@@ -1015,32 +1051,32 @@
           "alt": "Fancy Gate keyed from the sidechain, with Lookahead and MIDI on",
           "points": [
             [
-              11.5,
-              24,
+              25.3,
+              14.8,
               "Sidechain L+R",
               "The gate listens to the sidechain instead of the track."
             ],
             [
               46,
-              23,
+              16.8,
               "Lookahead",
               "On: the gate opens 50 ms early, and the plugin reports 50 ms of latency."
             ],
             [
               62,
-              27.3,
+              19.9,
               "No sidechain signal",
               "A sidechain is chosen but nothing arrives, with a hint on routing it in REAPER."
             ],
             [
               16,
-              52,
+              65.0,
               "Pre-open",
               "With Lookahead on, open a few ms before the hit."
             ],
             [
               58,
-              92,
+              94.2,
               "MIDI note and velocity",
               "Send A4 on channel 1 on every opening, with the velocity from the level."
             ]
@@ -1054,25 +1090,25 @@
           "points": [
             [
               25.5,
-              66,
+              75.2,
               "Transient",
               "Opens on a sudden rise in level, so a drum hit opens it and a held bass note doesn’t."
             ],
             [
               44,
-              79,
+              84.7,
               "Rise",
               "How far the level must jump above its recent average to count as a hit."
             ],
             [
               53.5,
-              52,
+              65.0,
               "Hold and Release",
               "It closes Hold after the last hit and fades over Release, whatever the level."
             ],
             [
               7,
-              50,
+              46.3,
               "Threshold",
               "A floor: noise between hits stays under it."
             ]
@@ -1086,19 +1122,19 @@
           "points": [
             [
               80.5,
-              20.3,
+              14.8,
               "Upward",
               "Turns the sound up above the threshold, and leaves the rest alone."
             ],
             [
               28,
-              79,
+              84.7,
               "Boost",
               "The most it raises the level by."
             ],
             [
               15,
-              89.5,
+              92.3,
               "Boost light",
               "Lights while it’s raising the level."
             ]
@@ -1112,37 +1148,37 @@
           "points": [
             [
               31,
-              52.5,
+              65.3,
               "MIDI trigger",
               "Open and close it from MIDI notes instead of the detector."
             ],
             [
               64,
-              58,
+              69.3,
               "Ratio",
               "Below inf:1 it’s a gentle expander instead of a full gate."
             ],
             [
               75.5,
-              58,
+              69.3,
               "De-bleed",
               "Keeps out-of-band bleed from opening it. It needs Lowpass and Highpass set."
             ],
             [
               47.5,
-              72.5,
+              79.9,
               "Learn",
               "Listens for 3 s and sets Threshold."
             ],
             [
               45.5,
-              82.5,
+              87.2,
               "Ceiling",
               "Holds the output’s true peak under a level, in every mode."
             ],
             [
               66.5,
-              77.5,
+              83.6,
               "Host sync",
               "With Host sync as the detector input: opens on the beat, with Rate and Shape."
             ]
@@ -1156,13 +1192,13 @@
           "points": [
             [
               64,
-              58,
+              69.3,
               "Up ratio",
               "How strongly the level above the threshold is raised."
             ],
             [
               45.5,
-              82.5,
+              87.2,
               "Ceiling",
               "Set to -1 dBTP, so the boost can’t push peaks over."
             ]
@@ -1176,19 +1212,19 @@
           "points": [
             [
               23,
-              2.3,
+              1.7,
               "LISTENING",
               "Shown in the title strip while you preview."
             ],
             [
-              14,
-              91.5,
+              13.4,
+              94.2,
               "Preview filter",
               "Hear what the detector hears, to set Lowpass and Highpass by ear."
             ],
             [
               63.5,
-              80,
+              85.4,
               "Detector filters",
               "Lowpass and Highpass on what the gate listens to."
             ]
@@ -1201,9 +1237,9 @@
         "image": "gate",
         "box": [
           0,
-          18,
+          13.2,
           80,
-          42
+          30.6
         ],
         "alt": "Fancy Gate’s history, with the gate opening on each hit"
       },
@@ -1251,6 +1287,10 @@
         [
           "Set the threshold for you",
           "Learn listens for 3 s and sets it."
+        ],
+        [
+          "Gate in bands",
+          "Up to three bands, each opened by its own sound: on a tom mic, the lows open for the tom while the highs stay shut through the cymbals."
         ]
       ],
       "details": [
@@ -1265,7 +1305,7 @@
       ],
       "window": [
         790,
-        465
+        637
       ],
       "pairs": [
         [
@@ -1301,69 +1341,113 @@
           "points": [
             [
               31,
-              16.8,
+              12.3,
               "Style",
               "Clean, Punchy or Dense: how the limiter shapes the peaks it catches."
             ],
             [
               83.5,
-              20.8,
+              15.2,
               "Target",
               "Pick a loudness target, such as Streaming at -14 LUFS, to aim for."
             ],
             [
               7.6,
-              46,
+              36.6,
               "Threshold",
               "Pull it down, over the input meter, to push the level into the limiter."
             ],
             [
               39,
-              50,
+              36.5,
               "History",
               "See the input, the output and each reduction in red against the ceiling."
             ],
             [
               74,
-              30,
+              21.9,
               "Loudness",
               "Short-term and integrated loudness, true peak and range, measured as EBU R128 does."
             ],
             [
               18,
-              78,
+              83.9,
               "Ceiling",
               "The highest level the output can reach, measured in true peak."
             ],
             [
               49.5,
-              78,
+              83.9,
               "Release and Lookahead",
               "How fast it lets go, and how far ahead it looks."
             ],
             [
               14.5,
-              95.6,
+              96.8,
               "True peak and Auto release",
               "Catch peaks between samples, and let the release follow the music."
             ],
             [
               51,
-              95.6,
+              96.8,
               "Listen to removed",
               "Hear only what the limiter takes away."
             ],
             [
               36,
-              20.8,
+              15.2,
               "Auto to target",
               "Let it find the Threshold that reaches the target."
             ],
             [
               68,
-              95.6,
+              96.8,
               "Gain lock",
               "Hear the limiting without the added level, so louder doesn’t fool you."
+            ]
+          ]
+        },
+        {
+          "id": "bands",
+          "label": "Bands",
+          "image": "limit-bands",
+          "alt": "Fancy Limit’s BANDS card with three bands",
+          "points": [
+            [
+              41.5,
+              47.4,
+              "Bands",
+              "1 to 4 bands, each limited on its own before the LIMITER card. 1 is the plain limiter."
+            ],
+            [
+              49.5,
+              47.4,
+              "Crossover",
+              "LR 24 or LR 48 dB, minimum phase. Both add back up flat."
+            ],
+            [
+              36.8,
+              57.5,
+              "Crossovers",
+              "Drag a blue line, or click it to type a frequency, to set where the bands meet."
+            ],
+            [
+              19.0,
+              69.8,
+              "Release (each band)",
+              "How fast that band recovers."
+            ],
+            [
+              33.8,
+              62.0,
+              "GR (each band)",
+              "How far that band is turning down right now."
+            ],
+            [
+              66,
+              53.0,
+              "Band strip",
+              "Each band’s gain reduction, falling from the top in its colour."
             ]
           ]
         },
@@ -1375,55 +1459,55 @@
           "points": [
             [
               51.5,
-              39.8,
+              29.1,
               "Oversampling",
               "Off, 2x, 4x or 8x. It sets the latency, not Lookahead."
             ],
             [
               51.5,
-              48.3,
+              35.3,
               "Oversampling filter",
               "Minimum or linear phase."
             ],
             [
               51.5,
-              57,
+              41.6,
               "Dither",
               "Off, 16-bit or 24-bit, plain or shaped, for the last bounce."
             ],
             [
               51.5,
-              65.5,
+              47.8,
               "Meter ballistics",
               "Show short-term loudness (EBU) or plain RMS on the LUFS bar."
             ],
             [
               51.5,
-              74,
+              54.0,
               "Reset loudness",
               "Start the integrated loudness and range again."
             ],
             [
               72,
-              29.3,
+              21.4,
               "Done",
               "Close the drawer."
             ],
             [
               51.5,
-              82.8,
+              60.4,
               "Release curve",
               "Exponential, or Linear."
             ],
             [
               43.7,
-              91.3,
+              66.6,
               "DC filter",
               "A 5 Hz high-pass that removes a DC offset."
             ],
             [
               73,
-              91.3,
+              66.6,
               "Clip before limiting",
               "Shave the sharpest peaks with a clipper first, by up to Clip."
             ]
@@ -1436,9 +1520,9 @@
         "image": "limit",
         "box": [
           14,
-          17,
+          12.4,
           84,
-          60
+          43.8
         ],
         "alt": "Fancy Limit’s history next to the loudness readings"
       },
@@ -1478,12 +1562,16 @@
         [
           "Clip first",
           "A clipper before the limiter takes the sharpest peaks."
+        ],
+        [
+          "Limit in bands",
+          "Up to four bands, each limited on its own, so the kick no longer turns the whole mix down with it."
         ]
       ],
       "details": [
         [
           "Latency",
-          "Fixed by the oversampling setting: 318 samples at 48 kHz at the default 4x. The host compensates for it."
+          "Fixed by the oversampling setting: 318 samples at 48 kHz at the default 4x; 2 to 4 bands add 5 ms. The host compensates for it."
         ],
         [
           "Oversampling",
@@ -1492,7 +1580,7 @@
       ],
       "window": [
         760,
-        465
+        637
       ],
       "pairs": [
         [
@@ -2246,6 +2334,32 @@
           ]
         },
         {
+          "id": "spectral",
+          "label": "Spectral",
+          "image": "eq-spectral",
+          "alt": "Fancy EQ with band 2 dynamic and SPECTRAL on",
+          "points": [
+            [
+              15.7,
+              87.6,
+              "SPECTRAL",
+              "Under ST and DYN while DYN is on: the band reacts per frequency inside its shape, so a resonance in a wide band is cut on its own."
+            ],
+            [
+              64.8,
+              46.5,
+              "Cut per frequency",
+              "The dashed outline is the most it can cut; the filled shape is what it’s cutting at each frequency right now."
+            ],
+            [
+              29.7,
+              13.0,
+              "Reach and now",
+              "The band’s reach, and how far it’s cutting at this moment."
+            ]
+          ]
+        },
+        {
           "id": "default",
           "label": "Default bands",
           "image": "eq",
@@ -2360,6 +2474,20 @@
               90.3,
               "Add band",
               "Add a band under the last row. With more than six, the list scrolls."
+            ]
+          ]
+        },
+        {
+          "id": "spectral-list",
+          "label": "Spectral in the list",
+          "image": "eq-spectral-list",
+          "alt": "Fancy EQ’s band list with a spectral band",
+          "points": [
+            [
+              63.8,
+              70.1,
+              "DYN cell",
+              "A spectral band’s cell shows its reach and a ringed S."
             ]
           ]
         },
@@ -2648,6 +2776,10 @@
         [
           "Keep the level steady",
           "Auto gain follows your boosts and cuts."
+        ],
+        [
+          "Cut a resonance inside a wide band",
+          "Spectral dynamics react per frequency inside a dynamic band’s shape."
         ]
       ],
       "details": [
@@ -3989,68 +4121,68 @@
           "alt": "Fancy Delay with three taps",
           "points": [
             [
-              12,
-              30,
+              11.1,
+              33.3,
               "Tap map",
               "Every tap’s time and level on one line, with its feedback repeats faded."
             ],
             [
-              15,
-              51.7,
+              13.8,
+              53.8,
               "Tap tabs",
               "Pick a tap to edit, or add one, up to 16."
             ],
             [
-              47.5,
-              56.7,
+              44.0,
+              58.9,
               "Tone or Motion",
               "Switch the tap’s second page."
             ],
             [
-              75,
-              56.7,
+              76.7,
+              58.9,
               "Solo, bypass and remove",
               "Hear the tap alone, switch it off, or delete it."
             ],
             [
-              24.2,
-              68,
+              22.5,
+              69.1,
               "Time",
               "A note value in time with the host’s tempo, or milliseconds."
             ],
             [
-              33.8,
-              70,
+              31.4,
+              71.2,
               "Feedback",
               "How many repeats."
             ],
             [
-              41.5,
-              82,
+              38.6,
+              82.8,
               "Lowpass and Highpass",
               "Darken or thin the repeats."
             ],
             [
-              65.5,
-              73,
+              60.6,
+              74.2,
               "Resolution, Width and Pan",
               "Bit-crush the tap, and place it in the stereo field."
             ],
             [
-              78.3,
-              64,
+              79.8,
+              65.7,
               "Volume",
               "The tap’s level."
             ],
             [
-              35.5,
-              92,
+              32.8,
+              91.7,
               "Footer",
               "Filters inside the loop, ping-pong, saturated feedback and smooth time changes."
             ],
             [
-              13,
-              23.2,
+              12.0,
+              21.8,
               "Freeze",
               "Stop the input and hold whatever the taps are repeating."
             ]
@@ -4063,46 +4195,72 @@
           "alt": "Fancy Delay’s Motion page with a Tape tap",
           "points": [
             [
-              43,
-              64,
+              32.8,
+              65.9,
               "Character",
               "Clean, Tape or BBD for this tap."
             ],
             [
-              38.5,
-              82,
+              35.7,
+              83.1,
               "Amount",
               "How much of the character."
             ],
             [
-              50.3,
-              70,
+              47.1,
+              71.4,
               "Rate, Depth and Random",
               "Wow and flutter on the repeats: speed, depth and how much of it wanders at random."
             ],
             [
-              47.5,
-              56.7,
+              44.0,
+              58.9,
               "Motion page",
               "The second page for the selected tap."
             ],
             [
-              52,
-              87.3,
+              48.2,
+              88.3,
               "Shape",
               "Sine sweeps the pitch smoothly; Triangle holds it up, then down, for a steady detune."
             ],
             [
-              67,
-              87,
+              67.9,
+              82.8,
               "Stereo",
               "How far ahead the right side’s wobble runs, from 0 to 180°."
             ],
             [
-              79,
-              73,
+              76.0,
+              74.4,
               "Diffusion",
               "Smear each repeat into the next, towards a wash."
+            ]
+          ]
+        },
+        {
+          "id": "reverse",
+          "label": "Reverse and Pitch",
+          "image": "delay-reverse",
+          "alt": "Fancy Delay with tap 1 reversed and pitched up a fifth",
+          "points": [
+            [
+              32.2,
+              88.3,
+              "Direction",
+              "Forward or Reverse. Reverse plays the tap’s repeats backwards, so each note swells in and ends on its attack."
+            ],
+            [
+              74.7,
+              69.9,
+              "Pitch",
+              "Shift the repeats by -12 to +12 st. Each pass is shifted again, so +12 climbs in octaves."
+            ],
+            [
+              2.7,
+              52.8,
+              "Reversed tab",
+              "A small ◀ marks a reversed tap, on both pages."
             ]
           ]
         },
@@ -4113,38 +4271,38 @@
           "alt": "Fancy Delay’s EDIT drawer",
           "points": [
             [
-              28.3,
-              69,
+              26.1,
+              70.8,
               "Note multiplier",
               "Multiply the selected tap’s note value."
             ],
             [
-              12,
-              87,
+              11.1,
+              87.9,
               "Swing",
               "Move taps on odd eighth notes later, from straight (50 %) to 75 %."
             ],
             [
-              38.8,
-              78,
+              35.9,
+              79.0,
               "Output",
               "The same output level as the header knob."
             ],
             [
-              51.5,
-              63.5,
+              47.7,
+              65.3,
               "Ducking",
               "Turn the repeats down while you play: Amount, Threshold and Release."
             ],
             [
-              76,
-              58.8,
+              77.7,
+              61.0,
               "Done",
               "Close the drawer."
             ],
             [
-              77.5,
-              78,
+              71.7,
+              79.0,
               "Ceiling",
               "Hold the output’s true peak under a level, so high feedback can’t clip."
             ]
@@ -4157,9 +4315,9 @@
         "image": "delay",
         "box": [
           0,
-          17,
+          16.1,
           85,
-          52
+          54.4
         ],
         "alt": "Fancy Delay’s tap map with three taps"
       },
@@ -4199,6 +4357,14 @@
         [
           "Keep feedback safe",
           "A true-peak ceiling on the output."
+        ],
+        [
+          "Play echoes backwards",
+          "Reverse turns each repeat around, so it swells into the beat."
+        ],
+        [
+          "Climb or fall in pitch",
+          "Pitch shifts each repeat again, in octaves, fifths or a slow drift."
         ]
       ],
       "details": [
@@ -4208,8 +4374,8 @@
         ]
       ],
       "window": [
-        820,
-        448
+        884,
+        472
       ],
       "pairs": [
         [
@@ -4302,6 +4468,26 @@
               70,
               "Wet and Dry",
               "Balance the reverb against the original."
+            ]
+          ]
+        },
+        {
+          "id": "frozen",
+          "label": "Freeze",
+          "image": "verb-frozen",
+          "alt": "Fancy Verb with Freeze on",
+          "points": [
+            [
+              73.4,
+              17.1,
+              "Freeze",
+              "Hold what the reverb is playing, as a pad, for as long as it’s on. New playing no longer enters the reverb."
+            ],
+            [
+              34.6,
+              28.7,
+              "Frozen display",
+              "The display takes a purple tint while Freeze holds."
             ]
           ]
         },
@@ -4592,6 +4778,26 @@
               "Cut the reverb off with a threshold, a hold and a decay."
             ]
           ]
+        },
+        {
+          "id": "shimmer",
+          "label": "Shimmer",
+          "image": "verb-shimmer",
+          "alt": "Fancy Verb’s SETUP panel with Shimmer at 50 %",
+          "points": [
+            [
+              48.3,
+              84.8,
+              "Shimmer",
+              "Feed the reverb’s output back through a pitch shifter, so each pass comes back higher. It always dies away."
+            ],
+            [
+              75.3,
+              88.2,
+              "Interval",
+              "How far each pass is shifted: an octave up by default."
+            ]
+          ]
         }
       ],
       "lead": {
@@ -4650,6 +4856,14 @@
         [
           "Keep the level steady",
           "Equal loudness evens out different impulses."
+        ],
+        [
+          "Hold the reverb",
+          "Freeze holds what it’s playing as a pad, without looping."
+        ],
+        [
+          "Shimmer",
+          "Each pass through the reverb comes back an interval higher."
         ]
       ],
       "details": [
@@ -4827,6 +5041,26 @@
               "Close the drawer."
             ]
           ]
+        },
+        {
+          "id": "shimmer",
+          "label": "Shimmer",
+          "image": "room-shimmer",
+          "alt": "Fancy Room’s EDIT drawer with Shimmer at 50 %",
+          "points": [
+            [
+              13.7,
+              83.9,
+              "Shimmer",
+              "Feed the tail back into the room an interval higher on each pass. At 0 % it’s off."
+            ],
+            [
+              45.0,
+              85.8,
+              "Interval",
+              "Octave, fifth, fourth, octave and fifth, two octaves up, or an octave down."
+            ]
+          ]
         }
       ],
       "lead": {
@@ -4881,6 +5115,10 @@
         [
           "Keep the level steady",
           "Auto gain follows Size and Decay."
+        ],
+        [
+          "Shimmer",
+          "Each pass through the tail comes back an interval higher."
         ]
       ],
       "details": [

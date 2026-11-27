@@ -277,6 +277,10 @@ To build a single plugin, run the workflow by hand and pick it:
 gh workflow run build.yml -f plugin=kicker
 ```
 
+## Licence
+
+Fancy Plugs is free software under the GNU Affero General Public License, version 3 (`LICENSE`). It's built with JUCE, used under the same licence. You may use, study, change and share it; anything you share that's built from it must be under the AGPL v3 too, with its source.
+
 ## Attribution
 
 UI design based on "ReaPlugs (vst GUI)" by Eugene Reznik, CC BY 4.0 — https://www.figma.com/community/file/967866927752067729. Modified from the original.

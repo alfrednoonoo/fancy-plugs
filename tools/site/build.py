@@ -278,7 +278,7 @@ def footer():
     <img src="{R}logo-lockup.svg" width="233" height="64" alt="Fancy Plugs" loading="lazy">
     <a href="{R}manual.pdf">Manual (PDF)</a><a href="{GH}/releases">Releases</a><a href="{GH}">Source on GitHub</a><a href="{R}about/">About</a><span>Version {E(REL["version"])}</span>
   </div>
-  <p>Free to download and use. UI design based on “ReaPlugs (vst GUI)” by Eugene Reznik, <a href="https://www.figma.com/community/file/967866927752067729">CC BY 4.0</a>, modified from the original. The Inter typeface is used under the <a href="{R}fonts/Inter-LICENSE.txt">SIL Open Font License</a>.</p>
+  <p>Free to download and use, and open source under the <a href="{GH}/blob/main/LICENSE">GNU AGPL v3</a>. UI design based on “ReaPlugs (vst GUI)” by Eugene Reznik, <a href="https://www.figma.com/community/file/967866927752067729">CC BY 4.0</a>, modified from the original. The Inter typeface is used under the <a href="{R}fonts/Inter-LICENSE.txt">SIL Open Font License</a>.</p>
 </div></footer>'''
 
 
@@ -616,7 +616,7 @@ def download():
     return f'''<div class="wrap">
   <div class="page-head"><div>
     <h1>Download</h1>
-    <p class="lede">All sixteen plugins, free to download and use, in one zip for Windows and one for Mac. Each zip has a <code>How to install.txt</code>.</p>
+    <p class="lede">All sixteen plugins, free to download and use, in one zip for Windows and one for Mac. Each zip has a <code>How to install.txt</code>. They’re open source under the <a href="{GH}/blob/main/LICENSE">GNU AGPL v3</a>, and the source is <a href="{GH}">on GitHub</a>.</p>
   </div></div>
   <div class="dl">
     <div id="windows">
@@ -752,11 +752,12 @@ def about():
     <h2>Credits</h2>
     <p>UI design based on “ReaPlugs (vst GUI)” by Eugene Reznik, <a href="https://www.figma.com/community/file/967866927752067729">CC BY 4.0</a>. Modified from the original.</p>
     <p>The Inter typeface is used under the <a href="{R}fonts/Inter-LICENSE.txt">SIL Open Font License</a>.</p>
-    <p>Built with JUCE.</p>
+    <p>Built with <a href="https://juce.com">JUCE</a>, used under the GNU AGPL v3.</p>
   </section>
   <section class="prose">
     <h2>Source</h2>
     <p>The plugins, this site and the manual are built from one repository: <a href="{GH}">{GH.replace("https://", "")}</a>. Bugs and questions go to its <a href="{GH}/issues">issues</a>.</p>
+    <p>Fancy Plugs is free software under the <a href="{GH}/blob/main/LICENSE">GNU Affero General Public License, version 3</a>: you may use, study, change and share it, and anything you share that’s built from it must be under the same licence, with its source.</p>
   </section>
 </div>'''
 
