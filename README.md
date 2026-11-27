@@ -1,3 +1,5 @@
+> **This repo has moved to [alfrednoonoo/soul-plugs](https://github.com/alfrednoonoo/soul-plugs)**, with its full history and every release. The suite is now called Soul Plugs; the website is [alfrednoonoo.github.io/soul-plugs](https://alfrednoonoo.github.io/soul-plugs/). Nothing new is published here.
+
 # Fancy Plugs
 
 Sixteen effects for Windows 10 and 11 (x64, VST3) and macOS 11 or later (Intel and Apple silicon, VST3 and Audio Units), built for personal use and signed off by ear in REAPER. Version **1.7.2**.

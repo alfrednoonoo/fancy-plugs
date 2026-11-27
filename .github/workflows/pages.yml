@@ -1,20 +1,9 @@
 name: website
 
-# Builds the website (docs/website-plan.md) with tools/site/build.py and publishes it to GitHub Pages.
-# It runs only when something the site is made from changes, and never starts the plugin build.
+# This repo has moved to alfrednoonoo/soul-plugs. The site here is only redirect pages
+# (redirect/), one per old page, plus a 404.html that sends any other path to the same
+# path on https://alfrednoonoo.github.io/soul-plugs/.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'site-src/**'
-      - 'tools/site/**'
-      - 'tools/manual/content.py'
-      - 'design/website/**'
-      - 'docs/images/**'
-      - 'docs/manual/**'
-      - 'assets/fonts/**'
-      - 'README.md'
-      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -31,17 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.13'
-      - name: Install the build's Python packages
-        run: pip install pillow fonttools brotli markdown pypdf
-      - name: Build the site
-        run: python tools/site/build.py site
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: site
+          path: redirect
 
   deploy:
     needs: build
