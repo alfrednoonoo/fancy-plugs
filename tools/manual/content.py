@@ -707,3 +707,46 @@ RANGE.setdefault("Chorus", {}).update({
     "Width": "0–100 %", "Low cut": "Off, 20–1000 Hz", "High cut": "1–20 kHz, Off", "Age": "0–100 %", "Tempo sync": "off/on",
     "Keep bass mono": "off/on", "LFO shape": "Sine, Triangle, Smooth random", "Input": "Stereo, Mono", "LFO phase": "0–180°",
     "Ducking": "0–100 %", "Output": "-24 to +12 dB"})
+
+# v1.7.2 (Wave 3): the new controls whose names don't meet a manual's table row. Per-band and per-tap
+# names reach ref.py without "Band n " ("Band 1 threshold" is "threshold"), so these keys are lower
+# case where the plain control's row (Threshold, Range, Release) would otherwise be used.
+for _plugin, _values in {
+    "Delay": {"Reverse": "off/on", "Pitch": "-12 to +12 st"},
+    "EQ": {"Spectral": "off/on"},
+    "Verb": {"Freeze": "off/on", "Shimmer": "0–100 %",
+             "Shimmer interval": "Octave up, Fifth up, Fourth up, Octave and fifth up, Two octaves up, Octave down"},
+    "Room": {"Shimmer interval": "Octave up, Fifth up, Fourth up, Octave and fifth up, Two octaves up, Octave down"},
+    "Limit": {"Bands": "1–4", "Crossover": "LR 24, LR 48 dB (minimum phase)", "Crossover 1": "20 Hz–20 kHz", "Crossover 2": "20 Hz–20 kHz",
+              "Crossover 3": "20 Hz–20 kHz", "release": "1–1000 ms"},
+    "Gate": {"Bands": "1–3", "Crossover": "LR 24, LR 48 dB (minimum phase)", "Crossover 1": "20 Hz–20 kHz", "Crossover 2": "20 Hz–20 kHz",
+             "threshold": "-24 to +24 dB", "range": "0–100 %"},
+}.items():
+    RANGE.setdefault(_plugin, {}).update(_values)
+
+for _plugin, _values in {
+    "Delay": {
+        "Reverse": "The direction switch under Feedback: plays the tap's repeats backwards, in windows one tap time long, so each note swells in and ends on its attack.",
+        "Pitch": "Shifts the tap's repeats, again on every pass through the feedback loop: +12 st climbs in octaves. With Reverse, each echo is shifted once.",
+    },
+    "EQ": {"Spectral": "The SPECTRAL chip of a dynamic band: the band acts per frequency inside its shape, so a resonance is cut on its own. The first one adds 21 ms of latency."},
+    "Verb": {
+        "Freeze": "Holds what the reverb is playing for as long as it's on; new playing no longer enters it. Turned off, the held sound dies away at the IR's decay.",
+        "Shimmer": "In SETUP: feeds the reverb's output back in through a pitch shifter, so each pass comes back an interval higher. At 0 % it's off.",
+        "Shimmer interval": "How far each Shimmer pass is shifted.",
+    },
+    "Room": {"Shimmer interval": "How far each Shimmer pass is shifted."},
+    "Limit": {
+        "Crossover 1": "Where bands 1 and 2 meet: the first blue line on the BANDS strip.",
+        "Crossover 2": "Where bands 2 and 3 meet. Used from 3 bands.",
+        "Crossover 3": "Where bands 3 and 4 meet. Used at 4 bands.",
+        "release": "How fast that band recovers (defaults 120, 80, 50 and 40 ms). Auto release, when on, works on every band from its own Release.",
+    },
+    "Gate": {
+        "Crossover 1": "Where bands 1 and 2 meet: the first blue line on the BANDS strip.",
+        "Crossover 2": "Where bands 2 and 3 meet. Used at 3 bands.",
+        "threshold": "Where that band opens, above or below the Threshold fader (defaults 0, +6 and +6 dB). The fader still moves every band.",
+        "range": "How much of the Range knob that band uses; the knob reads the band's own Range in dB. -inf counts as -120 dB.",
+    },
+}.items():
+    DESC.setdefault(_plugin, {}).update(_values)

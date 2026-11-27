@@ -102,7 +102,7 @@ def manual_html(plugin, sections):
 
 def reference_table(plugin):
     rows = []
-    per = {"Delay": "each tap", "EQ": "each band", "MultiComp": "each band"}.get(plugin, "")
+    per = {"Delay": "each tap", "EQ": "each band", "MultiComp": "each band", "Gate": "each band", "Limit": "each band"}.get(plugin, "")
     for item in REF[plugin]:
         name = item["name"]
         default = (item["default"] or "").replace("\ufffd", "×")
