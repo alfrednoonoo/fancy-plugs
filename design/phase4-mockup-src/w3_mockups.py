@@ -644,6 +644,95 @@ def comp_w3():
 
 m.PAGE_HEIGHTS["comp-w3"] = 1800
 
+
+# Mockup 77 (user, 27 November 2026: "A, above the knobs, but reduce the knob sizes", with Waveform
+# Compressor's big waveform over a compact knob row as inspiration). Drawn on A's grown screenshot:
+# the centre column x 212 to 736, y 123 to 697, is redrawn with the shared small knob (Knob::smallStyle,
+# a 50 px dial against today's 72 px medium), and the space they free goes to the graph.
+TEAL, GREEN, BLUE = "#00A985", "#2DCC70", "#3598DB"
+COMP_KNOBS = [("Ratio", "4:1", TEAL, 0.25), ("Knee", "0.50 dB", TEAL, 0.05), ("Attack", "3.0 ms", TEAL, 0.15), ("Release", "200.0 ms", TEAL, 0.6),
+              ("Pre-comp", "0.0 ms", GREEN, 0.0), ("RMS size", "5.0 ms", GREEN, 0.12), ("Lowpass", "24 kHz", BLUE, 1.0), ("Highpass", "93 Hz", BLUE, 0.08)]
+
+
+def comp_card(x, y, w, h):
+    return f'<div class="o" style="left:{x}px;top:{y}px;width:{w}px;height:{h}px;background:#262626;border-radius:6px"></div>'
+
+
+def comp_history_tall(top, height):
+    """The HISTORY card at any height: the title row, then the graph to 10 px from the bottom."""
+    graph_h = height - 46
+    html = comp_card(212, top, CARD_W, height)
+    html += ('<div class="o" style="left:224px;top:%dpx;font-size:12px;font-weight:600;letter-spacing:.06em;color:#8D8D8D">HISTORY</div>' % (top + 11))
+    html += m.seg(300, top + 7, 176, 22, ["1.5 s", "3 s", "6 s", "12 s"], 1, "#4C4C4C", fs=12, new=False, dark="#1E1E1E", text="#fff")
+    html += comp_check(492, top + 10, "Grid")
+    html += ('<div class="o" style="left:600px;top:%dpx;width:124px;font-size:12px;color:#FFCF07;text-align:right">peak 7.7 dB</div>' % (top + 11))
+    html += (f'<div class="o" style="left:224px;top:{top + 36}px;width:{GRAPH_W}px;height:{graph_h}px">'
+             f'{m.history_svg(m.beat_columns(), "db", w=GRAPH_W, h=graph_h)}</div>')
+    return html, graph_h
+
+
+def comp_small_knob(cx, top, index):
+    label, value, colour, v = COMP_KNOBS[index]
+    return m.knob(cx, top, label, value, colour, v, size=42, fs=13, width=64)
+
+
+def comp_c1():
+    """C1: today's two rows of cards, each knob small. The history card takes what they free."""
+    html = cover(212, 123, CARD_W, 574, "#303030")
+    history, graph_h = comp_history_tall(123, 324)
+    html += history
+    html += comp_card(212, 453, CARD_W, 120)
+    for i in range(4):
+        html += comp_small_knob(212 + CARD_W / 4 * (i + 0.5), 459, i)
+    for i, name in ((1, "Weird"), (2, "Classic"), (3, "Auto")):
+        cx = 212 + CARD_W / 4 * (i + 0.5)
+        html += comp_check(cx - 30, 550, name)
+    html += comp_card(212, 579, 260, 118) + comp_card(478, 579, 258, 118)
+    for i, cx in ((4, 277), (5, 407), (6, 542), (7, 672)):
+        html += comp_small_knob(cx, 593, i)
+    return html + outline(210, 121, CARD_W + 4, 578), graph_h
+
+
+def comp_c2():
+    """C2: one row of eight small knobs in three cards (teal, green, blue), Waveform Compressor's arrangement."""
+    html = cover(212, 123, CARD_W, 574, "#303030")
+    history, graph_h = comp_history_tall(123, 418)
+    html += history
+    for x, w in ((212, 256), (474, 128), (608, 128)):
+        html += comp_card(x, 547, w, 150)
+    for i, cx in enumerate((244, 308, 372, 436, 506, 570, 640, 704)):
+        html += comp_small_knob(cx, 557, i)
+    for cx, name in ((308, "Weird"), (372, "Classic"), (436, "Auto")):
+        html += comp_check(cx - 28, 665, f'<span style="font-size:12px">{name}</span>')
+    return html + outline(210, 121, CARD_W + 4, 578), graph_h
+
+
+@m.plugin("comp-w3-small", "77__comp_history_small_knobs_mockup.png")
+def comp_w3_small():
+    WA, HA = m.grow("comp-v172", "comp-v172-a", COMP_GROW, [(0, 212, 300), (212, 736, 121), (736, 934, 300)], axis="y")
+    c1, g1 = comp_c1()
+    c2, g2 = comp_c2()
+    return w1.page("Fancy Comp: v1.7.2 layout mockup (History above smaller knobs)",
+                   "User, 27 November 2026: layout A of mockup 76 (the HISTORY card above the knobs), with the knobs made smaller so the waveform "
+                   "gets the room, taking Waveform Compressor's big waveform over a compact knob row as the idea (in this suite's own style). Every "
+                   "knob becomes the suite's shared small knob, a 50 px dial (Knob::smallStyle, as in the EDIT drawers) against today's 72 px. "
+                   f"The window stays as A had it, {WA} x {HA}; the meters, faders, Detector row and footer are A's. Changed things in dashed yellow.", [
+        (f"1 · C1 (recommended): today's two rows of cards, with small knobs; the graph {g1} px tall",
+         "Ratio, Knee, Attack and Release keep their card with Weird, Classic and Auto under them; Pre-comp and RMS size, and Lowpass and Highpass, "
+         "keep theirs. The knob cards are 136 px shorter in all, so the graph is taller than the EDIT page's (260) and 24 px wider.",
+         shot("comp-v172-a", WA, HA, c1,
+              "The grouping you know stays: the time controls together, the detector's filters in their own blue card. Every knob keeps its label, "
+              "its value under it (click to type), and its arc; only the dial is smaller.")),
+        (f"2 · C2: one row of all eight knobs, as Waveform Compressor's strip; the graph {g2} px tall",
+         "The teal four, the green two and the blue two in three cards side by side, 64 px apart; Weird, Classic and Auto under Knee, Attack and Release.",
+         shot("comp-v172-a", WA, HA, c2,
+              "The biggest waveform, but eight knobs 64 px apart is tight: the checkbox labels run nearly into each other, and the row reads as one "
+              "long strip rather than the three groups.")),
+    ])
+
+
+m.PAGE_HEIGHTS["comp-w3-small"] = 1900
+
 if __name__ == "__main__":
     for key in sys.argv[1:] or list(m.PLUGINS):
         m.render(key)
