@@ -159,9 +159,9 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 
 ## History on the main page (v1.7.2)
 
-- [ ] The window is taller (934 x 747): the HISTORY card is at the top of the middle, over the knob cards; the knobs are smaller, each with its label and value; the meters and faders are longer; the EDIT drawer has four pages (no History).
-- [ ] Play a drum loop and turn Ratio, Attack and Release: the teal output and the yellow GR line change as you turn. Drag Threshold: the dashed lines move with the handle.
-- [ ] Zoom, Grid, pause and peak work as they did on the History page.
-- [ ] Open EDIT: the drawer opens over the knobs and the waveform shortens above it, still moving; Done brings it back to full height.
-- [ ] Every knob still types a value (click its value, or Ctrl-click it), and double-click resets it.
-- [ ] A project saved with v1.7.1 sounds the same.
+- [x] The window is taller (934 x 747): the HISTORY card is at the top of the middle, over the knob cards; the knobs are smaller, each with its label and value; the meters and faders are longer; the EDIT drawer has four pages (no History).
+- [x] Play a drum loop and turn Ratio, Attack and Release: the teal output and the yellow GR line change as you turn. Drag Threshold: the dashed lines move with the handle.
+- [x] Zoom, Grid, pause and peak work as they did on the History page.
+- [x] Open EDIT: the drawer opens over the knobs and the waveform shortens above it, still moving; Done brings it back to full height.
+- [x] Every knob still types a value (click its value, or Ctrl-click it), and double-click resets it.
+- [x] A project saved with v1.7.1 sounds the same.

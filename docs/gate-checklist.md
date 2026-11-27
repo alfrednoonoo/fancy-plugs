@@ -113,12 +113,12 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 
 ## Bands (Phase 4 Wave 3)
 
-- [ ] The window is taller (790 x 637): the BANDS card sits between the history and the envelope card, and nothing else is squeezed. A project saved with v1.7.1 opens with Bands at 1 and sounds as before.
-- [ ] A tom mic with cymbal bleed, Bands 2 (crossover about 250 Hz), Threshold set on the toms: the toms ring as before, and the cymbals while a tom rings are much quieter than at Bands 1; band 1's "open" lights with each hit, band 2's stays "shut" on the cymbals.
-- [ ] Raise band 2's Threshold: it needs more high end to open. Lower band 2's Range to 50 %: the cymbals come back, about half as far down; the knob reads the band's Range in dB.
-- [ ] Drag a blue crossover line: it moves, stops a third of an octave from its neighbour, and the sound follows without clicks. Click a line without dragging: a box asks for the frequency; `2.5k` works. Ctrl+Z takes it back.
-- [ ] Bands 2 or 3: Lowpass, Highpass and De-bleed (EDIT) dim. Bands 1: they work again.
-- [ ] Change Bands while playing: it fades out and back in, with no click; REAPER's PDC doesn't change.
-- [ ] MIDI out with 2 bands: one note per hit even when both bands open; the light and the Gain meter follow whichever band is open.
-- [ ] Wet and Dry both up with 3 bands: no thin or hollow sound (no comb).
-- [ ] Render offline twice at 3 bands: the renders match.
+- [x] The window is taller (790 x 637): the BANDS card sits between the history and the envelope card, and nothing else is squeezed. A project saved with v1.7.1 opens with Bands at 1 and sounds as before.
+- [x] A tom mic with cymbal bleed, Bands 2 (crossover about 250 Hz), Threshold set on the toms: the toms ring as before, and the cymbals while a tom rings are much quieter than at Bands 1; band 1's "open" lights with each hit, band 2's stays "shut" on the cymbals.
+- [x] Raise band 2's Threshold: it needs more high end to open. Lower band 2's Range to 50 %: the cymbals come back, about half as far down; the knob reads the band's Range in dB.
+- [x] Drag a blue crossover line: it moves, stops a third of an octave from its neighbour, and the sound follows without clicks. Click a line without dragging: a box asks for the frequency; `2.5k` works. Ctrl+Z takes it back.
+- [x] Bands 2 or 3: Lowpass, Highpass and De-bleed (EDIT) dim. Bands 1: they work again.
+- [x] Change Bands while playing: it fades out and back in, with no click; REAPER's PDC doesn't change.
+- [x] MIDI out with 2 bands: one note per hit even when both bands open; the light and the Gain meter follow whichever band is open.
+- [x] Wet and Dry both up with 3 bands: no thin or hollow sound (no comb).
+- [x] Render offline twice at 3 bands: the renders match.

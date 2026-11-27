@@ -205,14 +205,14 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 
 ## Spectral dynamics (Phase 4 Wave 3, v1.7.2)
 
-- [ ] Open a project saved with v1.7.1 that uses Fancy EQ with dynamic bands: it sounds as before, with no latency, and every SPECTRAL chip is off.
-- [ ] A dynamic band: SPECTRAL shows under ST and DYN, in the normal layout and in Compact mode. DYN off hides it.
-- [ ] A snare with a ring: a wide bell over the ring, DYN Above, Threshold just under the ring's level, Range -9, SPECTRAL on. The ring is cut and the snare's body and crack are left; with SPECTRAL off the whole band ducks.
-- [ ] The white total shows a narrow dip at the ring while it sounds; "now" reads the deepest point.
-- [ ] Turning the first band's SPECTRAL on: a brief fade, and REAPER's PDC shows 1024 samples; off again: 0. No click either way.
-- [ ] Linear phase: the chip dims and its tooltip says "Spectral bands need Minimum phase".
-- [ ] A Mid spectral band on a stereo mix: centred sounds are cut, wide ones aren't. A Side band: the reverse.
-- [ ] Sidechain on a spectral band, a vocal routed to pins 3/4: the vocal's frequencies are carved out of the track.
-- [ ] Band list: the spectral band's DYN cell shows its reach and a ringed S.
-- [ ] Render offline twice: the renders match.
+- [x] Open a project saved with v1.7.1 that uses Fancy EQ with dynamic bands: it sounds as before, with no latency, and every SPECTRAL chip is off.
+- [x] A dynamic band: SPECTRAL shows under ST and DYN, in the normal layout and in Compact mode. DYN off hides it.
+- [x] A snare with a ring: a wide bell over the ring, DYN Above, Threshold just under the ring's level, Range -9, SPECTRAL on. The ring is cut and the snare's body and crack are left; with SPECTRAL off the whole band ducks.
+- [x] The white total shows a narrow dip at the ring while it sounds; "now" reads the deepest point.
+- [x] Turning the first band's SPECTRAL on: a brief fade, and REAPER's PDC shows 1024 samples; off again: 0. No click either way.
+- [x] Linear phase: the chip dims and its tooltip says "Spectral bands need Minimum phase".
+- [x] A Mid spectral band on a stereo mix: centred sounds are cut, wide ones aren't. A Side band: the reverse.
+- [x] Sidechain on a spectral band, a vocal routed to pins 3/4: the vocal's frequencies are carved out of the track.
+- [x] Band list: the spectral band's DYN cell shows its reach and a ringed S.
+- [x] Render offline twice: the renders match.
 
