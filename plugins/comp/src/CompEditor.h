@@ -26,11 +26,20 @@ public:
     // Phase 4 Wave 2: the Options page with Host sync chosen (reference/phase4/43__comp_w2_mockup.png).
     void showSyncPreview();
 
+    // Phase 4 Wave 3 (docs/comp.md, "History on the main page"): opens or closes the EDIT drawer,
+    // and the HISTORY card follows it. The rest is for tests.
+    void setDrawerOpen (bool open);
+    juce::Component& getBodyForTests() noexcept { return getBody(); }
+    juce::Rectangle<int> getHistoryGraphBounds() const { return levelHistory.getBounds(); }
+    juce::Rectangle<int> getDrawerBounds() const { return drawer.getBounds(); }
+
 private:
     class Panels final : public juce::Component
     {
     public:
         void paint (juce::Graphics&) override;
+
+        int historyCardBottom = 0; // Phase 4 Wave 3: where the HISTORY card ends
     };
 
     void onTick (float seconds) override;
@@ -38,6 +47,8 @@ private:
     void updateSyncGroup(); // Phase 4 Wave 2
     void updateDimming();
     void updateHistoryCaption();
+    void layoutHistory();        // Phase 4 Wave 3
+    void showHistoryPreview();
     void selectBand (int band);  // Phase 4 Wave 2
     void updateBandControls();
     CompParameters makeParameters();
@@ -106,6 +117,10 @@ private:
     fancy::ui::ParamDropdown syncRateDropdown;
     fancy::ui::Knob syncShapeKnob;
     int shownTab = 0;
+
+    // Phase 4 Wave 3: the HISTORY card on the main page (it was the drawer's History page).
+    juce::Label historyTitle;
+    bool historyShortened = false;
     DrawerTabs zoomSwitch;
     fancy::ui::ToggleCheckbox gridCheckbox;
     HistoryCaption historyCaption;

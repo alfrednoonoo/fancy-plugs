@@ -39,7 +39,7 @@ juce::Font smallFont (float height = 10.0f)
 // DrawerTabs ------------------------------------------------------------------
 
 DrawerTabs::DrawerTabs()
-    : DrawerTabs (juce::StringArray { "Detector", "Character", "Upward", "Options", "History" })
+    : DrawerTabs (juce::StringArray { "Detector", "Character", "Upward", "Options" })
 {
 }
 

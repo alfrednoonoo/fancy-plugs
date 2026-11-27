@@ -656,7 +656,7 @@ One push. `fancy::ui::LevelHistory::levelDistance` (with `floorDb` = −60) maps
 
 ## Phase 4 Wave 3: History on the main page
 
-**Layout C1 of mockup 77 approved by the user on 27 November 2026; this note waits for approval.** Asked for by the user on 27 November 2026 as a late addition to Wave 3 (v1.7.2): the waveform from EDIT > History on the main page, "so people can see how turning the knobs directly affects the audio waveform". Mockup 76 placed it (A, above the knobs, chosen; B, below); the user then asked for smaller knobs, with Woodstock Audio's Waveform Compressor (a big waveform over a compact knob row) as the idea, and chose C1 of mockup 77. Mockups: `reference/phase4/76__comp_history_main_mockup.png` and `77__comp_history_small_knobs_mockup.png` (`design/phase4-mockup-src/w3_mockups.py`, `comp-w3` and `comp-w3-small`).
+**Layout C1 of mockup 77 and this note approved by the user on 27 November 2026, every decision A.** Asked for by the user on 27 November 2026 as a late addition to Wave 3 (v1.7.2): the waveform from EDIT > History on the main page, "so people can see how turning the knobs directly affects the audio waveform". Mockup 76 placed it (A, above the knobs, chosen; B, below); the user then asked for smaller knobs, with Woodstock Audio's Waveform Compressor (a big waveform over a compact knob row) as the idea, and chose C1 of mockup 77. Mockups: `reference/phase4/76__comp_history_main_mockup.png` and `77__comp_history_small_knobs_mockup.png` (`design/phase4-mockup-src/w3_mockups.py`, `comp-w3` and `comp-w3-small`).
 
 **A standing rule set aside, by the user's choice:** "never shrink existing controls" (23 November 2026). Here the user asked for the knobs to shrink, on Comp's main page only; no other control shrinks, and the window still grows.
 
@@ -706,3 +706,10 @@ Editor only (`CompEditor`): the layout constants, `Knob::smallStyle` for the eig
 ### 6. Build order
 
 Approval of this note, then one push: the layout, the moved history, the drawer, tests 1 to 3, the screenshots, the manual (History moves from "EDIT drawer" to its own section beside the main controls; the drawer has four pages), `tools/manual/content.py` (the `comp-history` view goes; the History section uses the `comp` shot) and `docs/comp-checklist.md`. At the release, the site's Comp views and window size.
+
+### 7. As built
+
+- **Layout** (`CompEditor`, body coordinates): the cards keep the editor's existing 4 px gaps and colours (cards in `bgBody` on `bgSection`, as before; fancy-core wins over the mockup's), so the numbers differ slightly from section 2: the HISTORY card is y 50 to 370, its title row at y 56 (HISTORY, the zoom switch at x 296, 200 x 24 as on the page, Grid at x 510, peak right-aligned to x 724) and its graph (224, 86, 500 x 276); the Ratio to Release card y 374 to 502, knobs 90 x 99 at y 378 centred on its quarters, Weird, Classic and Auto at y 478; the lower cards y 506 to 624, knobs centred at 277, 407, 541 and 671. The Threshold, GR and Out meters and the Wet and Dry faders are 200 px longer, over the same dB ranges (the Out meter's pixels per dB scaled with it); the footer is at y 640.
+- **Drawer** (decision 3 A): 524 x 374 at y 250. `setDrawerOpen` opens or closes it and lays out the card; the editor's tick also catches the drawer's own Done button. With it open the card ends at y 246 and the graph is 500 x 152.
+- **Drawer pages** (decision 1 A): `DrawerTabs` has four; the screenshot tool no longer renders `comp-history`, and the `comp` shot shows the history (`showHistoryPreview`, the Wave 1 preview beat). The site's Comp views change at the release.
+- **Tests:** `tests/CompW3Tests.cpp`, tests 1 to 3 of section 5 (the size, the small knobs and no overlaps with the drawer closed and open, the graph and drawer bounds and the four pages).

@@ -32,6 +32,18 @@ Fancy Comp is a compressor with a sidechain input, detector filters, lookahead a
 | Listen to removed | off | Plays only what the compression takes off, before make-up, so you hear which parts of the sound it's pulling down: the attack of a snare, the low end of a mix. It's temporary, like Preview filter, and the two switch each other off. Wet, Dry and Output don't apply while it's on |
 | Limit output | off | Turns on a brickwall limiter with a 0 dBFS ceiling. It adds 104 samples of latency |
 
+## History
+
+The **HISTORY** card at the top of the window shows the last seconds of what Comp did, oldest on the left, so you can watch what each knob does to the sound as you turn it. The input waveform is grey and the output is teal over it (before make-up, so the gap between them is what was taken off), both in dB, from −60 dB at the centre line to 0 dB at the top and bottom edges, with faint lines every 12 dB and their values at the left. On this scale quiet passages, breaths and room tone stay visible, and the gap between grey and teal is the reduction in dB. The gain reduction is a yellow line from the top (0 to 24 dB, scale on the right; unlinked, the right channel is a lighter second line), and the threshold in use is a dashed pair of lines on the same dB scale as the waveforms, level with the Threshold fader's handle beside it.
+
+- **1.5 s, 3 s, 6 s, 12 s** sets how much time is shown.
+- **Grid** draws beat lines, and bar lines brighter, from REAPER's tempo while it plays.
+- **Click the graph** to pause it, and again to go on. The audio carries on.
+- **peak** at the top right is the largest reduction in view; click it to clear it.
+- While the EDIT drawer is open, the card gets shorter and sits above it, so the waveform stays in view while you change the drawer's settings.
+
+The zoom, Grid and pause aren't saved; the window opens at 3 s with Grid on.
+
 ## Detector input
 
 | Setting | What the compressor listens to |
@@ -45,7 +57,7 @@ To use the sidechain in REAPER, route another track to channels 3 and 4 of this 
 
 ## EDIT drawer
 
-Click **EDIT** at the right of the Detector input row to open it, and **Done** to close it. A switch in its title row picks one of five pages: **Detector**, **Character**, **Upward**, **Options** and **History**. The drawer opens on the page you used last.
+Click **EDIT** at the right of the Detector input row to open it, and **Done** to close it. A switch in its title row picks one of four pages: **Detector**, **Character**, **Upward** and **Options**. The drawer opens on the page you used last. It opens over the knobs, in the lower part of the window, and the HISTORY card shortens to sit above it.
 
 ### Options
 
@@ -94,17 +106,6 @@ The graph shows the curve for the current Type and Drive, input against output. 
 Upward compression raises quiet passages, as in Fancy MultiComp: below **Up threshold** the level is raised by **Up ratio** (1:2 lifts a signal 10 dB under the Up threshold by 5 dB), up to **Max lift**. Below **Floor** nothing is raised, and the lift fades out over the 8 dB above it, so noise and silence stay where they are. Up threshold is held at or below Threshold. The lift uses Attack and Release (and Auto release) like the downward part.
 
 The graph draws the whole static curve, downward in teal and upward in green, with a dot at the current level. The GR meter still shows only the reduction.
-
-### History
-
-The last seconds of what Comp did, oldest on the left: the input waveform in grey, the output in teal over it (before make-up, so the gap between them is what was taken off), both in dB, from −60 dB at the centre line to 0 dB at the top and bottom edges, with faint lines every 12 dB and their values at the left. On this scale quiet passages, breaths and room tone stay visible, and the gap between grey and teal is the reduction in dB. The gain reduction is a yellow line from the top (0 to 24 dB, scale on the right; unlinked, the right channel is a lighter second line), and the threshold in use is a dashed pair of lines on the same dB scale as the waveforms.
-
-- **1.5 s, 3 s, 6 s, 12 s** sets how much time is shown.
-- **Grid** draws beat lines, and bar lines brighter, from REAPER's tempo while it plays.
-- **Click the graph** to pause it, and again to go on. The audio carries on.
-- **peak** at the top right is the largest reduction in view; click it to clear it.
-
-The history keeps recording while the drawer is closed, so it's current when you open it.
 
 ## Attack and release times
 

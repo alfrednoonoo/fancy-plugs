@@ -266,7 +266,8 @@ bool renderCompDrawer (const juce::File& outputDir)
         return false;
 
     auto ok = true;
-    const char* const names[] { "comp-detector", "comp-character", "comp-upward", "comp-options", "comp-history" };
+    // Phase 4 Wave 3: History is on the main page now, so the "comp" shot shows it.
+    const char* const names[] { "comp-detector", "comp-character", "comp-upward", "comp-options" };
 
     for (int tab = 0; tab < DrawerTabs::numTabs; ++tab)
     {

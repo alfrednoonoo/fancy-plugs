@@ -156,3 +156,12 @@ On a Mac (Apple silicon, and Intel if one is available), after installing with `
 - [ ] EDIT > Detector: click tabs 1 to 6; the band's Type, Freq, Gain and Q show below. Set band 4 to Bell: its handle appears on the curve with a 4; drag it, and the wheel changes its Q. Set a band to Off: its tab dims and its handle goes.
 - [ ] Preview filter with Highpass at 90 Hz on a mix with a kick: switch Cut slopes Highpass between 12, 24 and 48 dB; the kick gets quieter in the preview each step, and the curve and its "HP ... dB/oct" label follow.
 - [ ] Options > Link mode on a stereo mix with a vocal: Mid/Side keeps the guitars' width steady while the vocal is controlled; M>S narrows the image as the vocal gets loud; S>M turns the middle down by the sides. The GR read-outs say M and S. Back to Stereo: the GR labels return to dB, and switching causes no click.
+
+## History on the main page (v1.7.2)
+
+- [ ] The window is taller (934 x 747): the HISTORY card is at the top of the middle, over the knob cards; the knobs are smaller, each with its label and value; the meters and faders are longer; the EDIT drawer has four pages (no History).
+- [ ] Play a drum loop and turn Ratio, Attack and Release: the teal output and the yellow GR line change as you turn. Drag Threshold: the dashed lines move with the handle.
+- [ ] Zoom, Grid, pause and peak work as they did on the History page.
+- [ ] Open EDIT: the drawer opens over the knobs and the waveform shortens above it, still moving; Done brings it back to full height.
+- [ ] Every knob still types a value (click its value, or Ctrl-click it), and double-click resets it.
+- [ ] A project saved with v1.7.1 sounds the same.

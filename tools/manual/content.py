@@ -106,7 +106,7 @@ MORE = {
                ("kicker-duck", "The DUCK tag beside EDIT while Duck is up", "Duck and Clip oversampling")],
     "Exciter": [("exciter-edit", "The EDIT drawer", "EDIT drawer"),
                 ("exciter-harmonics", "The EDIT drawer's Harmonics page", "Band 2, Punch, High cut and Width (Phase 4)")],
-    "Comp": [("comp-history", "EDIT drawer: History page", "History"), ("comp-sync", "Host sync as the detector input, with its Rate and Shape", "Host sync (Phase 4)"),
+    "Comp": [("comp-sync", "Host sync as the detector input, with its Rate and Shape", "Host sync (Phase 4)"),
              ("comp-options", "EDIT drawer: Options page", "Options"), ("comp-detector", "EDIT drawer: Detector page (detector EQ)", "Detector"),
              ("comp-character", "EDIT drawer: Character page", "Character"),
              ("comp-listening", "Preview filter on: the title strip says LISTENING", "Checkboxes")],

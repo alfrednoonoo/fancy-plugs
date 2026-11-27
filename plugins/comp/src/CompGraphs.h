@@ -17,7 +17,9 @@
 class DrawerTabs final : public fancy::ui::ViewTabs
 {
 public:
-    enum Tab { detector, character, upward, options, history, numTabs };
+    // Phase 4 Wave 3 (docs/comp.md, "History on the main page", decision 1 A): History left the
+    // drawer for the main page.
+    enum Tab { detector, character, upward, options, numTabs };
 
     DrawerTabs();
     explicit DrawerTabs (juce::StringArray names);

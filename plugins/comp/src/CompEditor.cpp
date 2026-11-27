@@ -9,13 +9,49 @@ constexpr int baseWidth = 934;
 
 // Phase 4 Wave 2: Host sync's small Shape knob, 66 tall with its label and value.
 constexpr fancy::ui::Knob::Style syncKnobStyle { 32.0f, 27.0f, 3.0f, 9.0f, 7.0f, 13.0f, 3.0f, 2.0f, 16.0f, 11.0f, false, true };
-constexpr int baseHeight = 527;
+// Phase 4 Wave 3 (docs/comp.md, "History on the main page"; mockup 77 C1): the HISTORY card
+// over smaller knobs, and the window 200 px taller.
+constexpr int historyGrow = 200;
+constexpr int baseHeight = 527 + historyGrow;
 constexpr int bodyHeight = baseHeight - ShellEditor::headerHeight;
 
 constexpr int gridLeft = 212;
 constexpr int gridWidth = 524;
 constexpr int rowTop = 50;
-constexpr int rowHeight = 374;
+constexpr int rowHeight = 374 + historyGrow;
+constexpr int cardGap = 4;
+
+// The HISTORY card, then the Ratio to Release card, then the two lower cards, 4 px apart.
+constexpr int historyBottom = 370;
+constexpr int knobCardY = historyBottom + cardGap, knobCardHeight = 128;
+constexpr int lowerCardY = knobCardY + knobCardHeight + cardGap, lowerCardHeight = rowTop + rowHeight - lowerCardY;
+constexpr int graphX = gridLeft + 12, graphY = rowTop + 36, graphWidth = 500, graphBottomMargin = 8;
+
+// Decision 3 A: the drawer keeps its 374 px pages and opens over the lower part of the centre
+// column; the HISTORY card shortens to what's above it.
+constexpr int drawerHeight = 374;
+constexpr int drawerY = rowTop + rowHeight - drawerHeight;
+constexpr int historyBottomWithDrawer = drawerY - cardGap;
+
+// The meters and faders lengthen with the window, over the same dB ranges as before.
+constexpr fancy::ui::OutMeter::Geometry outGeometry { 32.5f, 25.0f, 395.0f + historyGrow, 60.07f,
+                                                      5.545f * (395.0f + historyGrow - 60.07f) / (395.0f - 60.07f), 403.0f + historyGrow, true, true };
+constexpr fancy::ui::GainReductionMeter::Geometry gainGeometry { 44.0f, 25.0f, 270.0f + historyGrow, false, "GR" };
+
+fancy::ui::ThresholdMeter::Style thresholdStyle()
+{
+    fancy::ui::ThresholdMeter::Style style;
+    style.wellHeight += (float) historyGrow;
+    return style;
+}
+
+// The eight main-page knobs: the shared small knob, 90 x 99 with its label and value.
+constexpr int knobWidth = 90, knobHeight = 99;
+
+juce::Rectangle<int> knobAt (float centreX, int top)
+{
+    return { juce::roundToInt (centreX) - knobWidth / 2, top, knobWidth, knobHeight };
+}
 
 void setValue (juce::RangedAudioParameter& parameter, float value)
 {
@@ -39,32 +75,37 @@ void CompEditor::Panels::paint (juce::Graphics& g)
     g.setColour (colours::bgBody);
     g.fillRect (0, rowTop, 108, rowHeight);
     g.fillRect (112, rowTop, 96, rowHeight);
-    g.fillRect (gridLeft, rowTop, gridWidth, 199);
-    g.fillRect (gridLeft, 253, 260, 171);
-    g.fillRect (476, 253, 260, 171);
+
+    // Phase 4 Wave 3: the HISTORY card, then the knob cards.
+    g.fillRect (gridLeft, rowTop, gridWidth, historyCardBottom - rowTop);
+    g.fillRect (gridLeft, knobCardY, gridWidth, knobCardHeight);
+    g.fillRect (gridLeft, lowerCardY, 260, lowerCardHeight);
+    g.fillRect (476, lowerCardY, 260, lowerCardHeight);
 }
 
 CompEditor::CompEditor (CompProcessor& processor)
     : ShellEditor (processor, baseWidth, baseHeight, HeaderStyle::full),
       detectorDropdown (parameter ("detector")),
       editLink (colours::uiTeal),
-      thresholdMeter (parameter ("threshold")),
-      ratioKnob (parameter ("ratio"), "Ratio", colours::uiTeal, Knob::mediumStyle),
-      kneeKnob (parameter ("knee"), "Knee", colours::uiTeal, Knob::mediumStyle),
-      attackKnob (parameter ("attack"), "Attack", colours::uiTeal, Knob::mediumStyle),
-      releaseKnob (parameter ("release"), "Release", colours::uiTeal, Knob::mediumStyle),
+      thresholdMeter (parameter ("threshold"), thresholdStyle()),
+      gainReductionMeter (gainGeometry),
+      ratioKnob (parameter ("ratio"), "Ratio", colours::uiTeal, Knob::smallStyle),
+      kneeKnob (parameter ("knee"), "Knee", colours::uiTeal, Knob::smallStyle),
+      attackKnob (parameter ("attack"), "Attack", colours::uiTeal, Knob::smallStyle),
+      releaseKnob (parameter ("release"), "Release", colours::uiTeal, Knob::smallStyle),
       weirdCheckbox (parameter ("weird"), "Weird", colours::uiTealBright),
       classicCheckbox (parameter ("classic"), "Classic", colours::uiTealBright),
       autoCheckbox (parameter ("auto"), "Auto", colours::uiTealBright),
-      preCompKnob (parameter ("precomp"), "Pre-comp", colours::accentGreen, Knob::mediumStyle),
-      rmsKnob (parameter ("rms"), "RMS size", colours::accentGreen, Knob::mediumStyle),
-      lowpassKnob (parameter ("lowpass"), "Lowpass", colours::uiBlue, Knob::mediumStyle),
-      highpassKnob (parameter ("highpass"), "Highpass", colours::uiBlue, Knob::mediumStyle),
+      preCompKnob (parameter ("precomp"), "Pre-comp", colours::accentGreen, Knob::smallStyle),
+      rmsKnob (parameter ("rms"), "RMS size", colours::accentGreen, Knob::smallStyle),
+      lowpassKnob (parameter ("lowpass"), "Lowpass", colours::uiBlue, Knob::smallStyle),
+      highpassKnob (parameter ("highpass"), "Highpass", colours::uiBlue, Knob::smallStyle),
       linkCheckbox (parameter ("link"), "Link channels"),
       makeupCheckbox (parameter ("makeup"), "Auto make-up"),
       previewCheckbox (getFancyProcessor(), "Preview filter"),
       removedCheckbox (getFancyProcessor(), "Listen to removed", colours::uiTeal, 1),
       limitCheckbox (parameter ("limit"), "Limit output"),
+      outMeter (outGeometry),
       wetFader (parameter ("wet"), colours::uiTeal),
       dryFader (parameter ("dry"), colours::uiTeal),
       oversamplingDropdown (parameter ("oversampling")),
@@ -112,40 +153,52 @@ CompEditor::CompEditor (CompProcessor& processor)
     detectorDropdown.setBounds (129, 13, 131, 24);
     editLink.setBounds (656, 13, 64, 24);
 
-    thresholdMeter.setBounds (0, 74, 108, 326);
-    gainReductionMeter.setBounds (112, 74, 96, 326);
+    thresholdMeter.setBounds (0, 74, 108, 326 + historyGrow);
+    gainReductionMeter.setBounds (112, 74, 96, 326 + historyGrow);
 
-    ratioKnob.setBounds (258, 75, 90, 123);
-    kneeKnob.setBounds (372, 75, 90, 123);
-    attackKnob.setBounds (486, 75, 90, 123);
-    releaseKnob.setBounds (600, 75, 90, 123);
-    weirdCheckbox.setBounds (388, 205, 70, 20);
-    classicCheckbox.setBounds (497, 205, 76, 20);
-    autoCheckbox.setBounds (619, 205, 60, 20);
+    // Phase 4 Wave 3 (mockup 77 C1): four small knobs across their card, the checkboxes under
+    // Knee, Attack and Release.
+    {
+        const auto column = [] (int index) { return (float) gridLeft + (float) gridWidth / 4.0f * ((float) index + 0.5f); };
+        const auto knobTop = knobCardY + 4, checkTop = knobTop + knobHeight + 1;
+
+        ratioKnob.setBounds (knobAt (column (0), knobTop));
+        kneeKnob.setBounds (knobAt (column (1), knobTop));
+        attackKnob.setBounds (knobAt (column (2), knobTop));
+        releaseKnob.setBounds (knobAt (column (3), knobTop));
+        weirdCheckbox.setBounds (juce::roundToInt (column (1)) - 35, checkTop, 70, 20);
+        classicCheckbox.setBounds (juce::roundToInt (column (2)) - 38, checkTop, 76, 20);
+        autoCheckbox.setBounds (juce::roundToInt (column (3)) - 30, checkTop, 60, 20);
+    }
 
     attackKnob.setShowDefaultMark (true);
     releaseKnob.setShowDefaultMark (true);
     rmsKnob.setShowDefaultMark (true);
 
-    preCompKnob.setBounds (244, 277, 90, 123);
-    rmsKnob.setBounds (350, 277, 90, 123);
-    lowpassKnob.setBounds (508, 277, 90, 123);
-    highpassKnob.setBounds (614, 277, 90, 123);
+    {
+        const auto knobTop = lowerCardY + (lowerCardHeight - knobHeight) / 2;
+
+        preCompKnob.setBounds (knobAt (277.0f, knobTop));
+        rmsKnob.setBounds (knobAt (407.0f, knobTop));
+        lowpassKnob.setBounds (knobAt (541.0f, knobTop));
+        highpassKnob.setBounds (knobAt (671.0f, knobTop));
+    }
 
     // Phase 4 Wave 1: five, spaced evenly by their measured widths (mockup, section 1).
-    linkCheckbox.setBounds (24, 440, 125, 20);
-    makeupCheckbox.setBounds (167, 440, 128, 20);
-    previewCheckbox.setBounds (314, 440, 121, 20);
+    constexpr int footerY = 440 + historyGrow;
+    linkCheckbox.setBounds (24, footerY, 125, 20);
+    makeupCheckbox.setBounds (167, footerY, 128, 20);
+    previewCheckbox.setBounds (314, footerY, 121, 20);
     previewCheckbox.setTooltip ("Listen to what the detector hears, through Lowpass and Highpass. Turns off when you close this window, and is never saved.");
-    removedCheckbox.setBounds (453, 440, 153, 20);
+    removedCheckbox.setBounds (453, footerY, 153, 20);
     removedCheckbox.setTooltip ("Listen to what the compression takes off, before make-up. Turns off when you close this window, and is never saved.");
-    limitCheckbox.setBounds (624, 440, 113, 20);
+    limitCheckbox.setBounds (624, footerY, 113, 20);
 
-    outMeter.setBounds (750, 24, 70, 426);
+    outMeter.setBounds (750, 24, 70, 426 + historyGrow);
     wetLabel.setBounds (820, 24, 44, 17);
     dryLabel.setBounds (866, 24, 44, 17);
-    wetFader.setBounds (820, 49, 44, 401);
-    dryFader.setBounds (866, 49, 44, 401);
+    wetFader.setBounds (820, 49, 44, 401 + historyGrow);
+    dryFader.setBounds (866, 49, 44, 401 + historyGrow);
 
     for (juce::Component* item : std::initializer_list<juce::Component*> {
              &detectorLabel, &detectorDropdown, &editLink, &thresholdMeter, &gainReductionMeter,
@@ -159,7 +212,7 @@ CompEditor::CompEditor (CompProcessor& processor)
     styleLabel (phaseLabel, "Oversampling filter", colours::textPrimary, juce::Justification::centredLeft);
     styleLabel (releaseCurveLabel, "Release curve", colours::textPrimary, juce::Justification::centredLeft);
 
-    drawer.setBounds (gridLeft, rowTop, gridWidth, rowHeight);
+    drawer.setBounds (gridLeft, drawerY, gridWidth, drawerHeight); // Phase 4 Wave 3, decision 3 A
 
     oversamplingLabel.setBounds (24, 60, 130, 24);
     oversamplingDropdown.setBounds (160, 60, 110, 24);
@@ -187,7 +240,7 @@ CompEditor::CompEditor (CompProcessor& processor)
     drawerOutputKnob.setBounds (412, 60, 90, 99);
 
     // Phase 3 Q2.5: the view switch in the drawer's title row, after "EDIT".
-    drawerTabs.setBounds (82, 12, 350, 24);
+    drawerTabs.setBounds (82, 12, 280, 24); // four tabs at their old width (Phase 4 Wave 3)
     drawerTabs.onChange = [this] (int tab) { showTab (tab); };
     drawer.addAndMakeVisible (drawerTabs);
 
@@ -331,16 +384,25 @@ CompEditor::CompEditor (CompProcessor& processor)
                                          &feedbackCheckbox, &attack90Checkbox, &opticalCheckbox, &linkAmountKnob, &drawerOutputKnob, &holdKnob, &rangeKnob,
                                          &linkModeLabel, &linkModeDropdown };
 
-    // History page.
-    zoomSwitch.setBounds (24, 56, 200, 24);
+    // Phase 4 Wave 3 (mockup 77 C1): the HISTORY card on the main page, as the drawer's History
+    // page was, with its title row over the graph.
+    historyTitle.setText ("HISTORY", juce::dontSendNotification);
+    historyTitle.setFont (font (Weight::semiBold, 12.0f).withExtraKerningFactor (0.06f));
+    historyTitle.setColour (juce::Label::textColourId, colours::textSecondary);
+    historyTitle.setJustificationType (juce::Justification::centredLeft);
+    historyTitle.setBorderSize ({});
+    historyTitle.setInterceptsMouseClicks (false, false);
+    historyTitle.setBounds (graphX, rowTop + 6, 70, 24);
+
+    zoomSwitch.setBounds (296, rowTop + 6, 200, 24);
     zoomSwitch.setSelected (1);
     zoomSwitch.onChange = [this] (int zoom) { levelHistory.setZoom (zoom); updateHistoryCaption(); };
 
-    gridCheckbox.setBounds (238, 58, 70, 20);
+    gridCheckbox.setBounds (510, rowTop + 8, 70, 20);
     gridCheckbox.setOn (true);
     gridCheckbox.onChange = [this] (bool on) { levelHistory.setGrid (on); };
 
-    historyCaption.setBounds (300, 56, 200, 24);
+    historyCaption.setBounds (584, rowTop + 6, graphX + graphWidth - 584, 24);
     historyCaption.setTooltip ("The largest gain reduction in view. Click to clear it.");
     historyCaption.onClick = [this]
     {
@@ -352,11 +414,12 @@ CompEditor::CompEditor (CompProcessor& processor)
         updateHistoryCaption();
     };
 
-    levelHistory.setBounds (24, 90, 476, 260);
     levelHistory.setTooltip ("Input in grey and output in teal, in dB (-60 at the centre), before make-up; gain reduction in yellow. Click to pause.");
     levelHistory.onPausedChange = [this] { updateHistoryCaption(); };
 
-    tabContents[DrawerTabs::history] = { &zoomSwitch, &gridCheckbox, &historyCaption, &levelHistory };
+    for (juce::Component* item : std::initializer_list<juce::Component*> { &historyTitle, &zoomSwitch, &gridCheckbox, &historyCaption, &levelHistory })
+        body.addAndMakeVisible (item);
+
     updateHistoryCaption();
 
     for (auto& contents : tabContents)
@@ -371,7 +434,8 @@ CompEditor::CompEditor (CompProcessor& processor)
     showTab (DrawerTabs::detector);
 
     body.addChildComponent (drawer);
-    editLink.onClick = [this] { drawer.setVisible (! drawer.isVisible()); };
+    editLink.onClick = [this] { setDrawerOpen (! drawer.isVisible()); };
+    layoutHistory();
     addLatencyNote (oversamplingDropdown);
 
     for (auto* knob : { &ratioKnob, &kneeKnob, &attackKnob, &releaseKnob })
@@ -456,6 +520,27 @@ void CompEditor::showSyncPreview()
     setValue (parameter ("detector"), (float) CompDsp::hostSync);
     showTab (DrawerTabs::options);
     syncNote.setText ("A hit on every step of the host's grid. Release shapes the duck most.", juce::dontSendNotification);
+}
+
+// Phase 4 Wave 3 (decision 3 A): the graph fills its card, which ends above the drawer while it's open.
+void CompEditor::layoutHistory()
+{
+    const auto bottom = drawer.isVisible() ? historyBottomWithDrawer : historyBottom;
+    historyShortened = drawer.isVisible();
+
+    levelHistory.setBounds (graphX, graphY, graphWidth, bottom - graphBottomMargin - graphY);
+
+    if (panels.historyCardBottom != bottom)
+    {
+        panels.historyCardBottom = bottom;
+        panels.repaint();
+    }
+}
+
+void CompEditor::setDrawerOpen (bool open)
+{
+    drawer.setVisible (open);
+    layoutHistory();
 }
 
 void CompEditor::updateHistoryCaption()
@@ -555,12 +640,14 @@ void CompEditor::onTick (float seconds)
     gainReductionMeter.update (left, right, seconds);
     outMeter.update (processor.outputMeter, seconds);
 
-    // Phase 4 Wave 1: the history keeps reading while hidden, so it's current when shown.
+    // Phase 4 Wave 1: the history reads every tick. Phase 4 Wave 3: it's on the main page, and
+    // follows the drawer (whose Done button closes it without telling the editor).
+    if (drawer.isVisible() != historyShortened)
+        layoutHistory();
+
     const auto count = processor.popHistory (historyBuffer.data(), (int) historyBuffer.size());
     levelHistory.push (historyBuffer.data(), count);
-
-    if (drawer.isVisible() && drawerTabs.getSelected() == DrawerTabs::history)
-        updateHistoryCaption();
+    updateHistoryCaption();
 }
 
 void CompEditor::showPreview (bool drawerOpen)
@@ -581,8 +668,9 @@ void CompEditor::showPreview (bool drawerOpen)
     gainReductionMeter.show (2.8f, 2.6f);
     outMeter.show (-4.2f, -5.8f);
 
-    drawer.setVisible (drawerOpen);
+    setDrawerOpen (drawerOpen);
     showTab (DrawerTabs::detector);
+    showHistoryPreview(); // Phase 4 Wave 3: the main page shows the history too
 }
 
 void CompEditor::showDrawerPreview (int tab)
@@ -611,58 +699,60 @@ void CompEditor::showDrawerPreview (int tab)
     selectBand (1);
     updateDimming();
 
-    // Phase 4 Wave 1: the mockup's Hold and Range, and a history of a beat at 120 BPM into
-    // 3:1 at -12 dB, linked, at the 3 s zoom (reference/phase4/29__comp_w1_mockup.png).
+    // Phase 4 Wave 1: the mockup's Hold and Range.
     setValue (parameter ("hold"), 20.0f);
     setValue (parameter ("range"), 12.0f);
 
+    showTab (tab);
+}
+
+// Phase 4 Wave 1: a history of a beat at 120 BPM into 3:1 at -12 dB, linked, at the 3 s zoom
+// (reference/phase4/29__comp_w1_mockup.png). Phase 4 Wave 3: shown on the main page.
+void CompEditor::showHistoryPreview()
+{
+    constexpr int columns = fancy::dsp::LevelHistoryRecorder::columnsPerSpan * 2;
+    const auto secondsPerColumn = 3.0 / (double) columns;
+    std::vector<fancy::dsp::LevelColumn> preview ((size_t) columns);
+    auto reduction = 0.0;
+    auto previousBeat = -1;
+
+    for (int c = 0; c < columns; ++c)
     {
-        constexpr int columns = fancy::dsp::LevelHistoryRecorder::columnsPerSpan * 2;
-        const auto secondsPerColumn = 3.0 / (double) columns;
-        std::vector<fancy::dsp::LevelColumn> preview ((size_t) columns);
-        auto reduction = 0.0;
-        auto previousBeat = -1;
+        const auto t = (double) c * secondsPerColumn;
+        const auto beatPosition = (t - 0.11) / 0.5 + 10.0;
+        const auto phase = beatPosition - std::floor (beatPosition);
+        auto amplitude = phase < 0.03 ? 0.95 : 0.95 * std::exp (-phase * 3.2);
+        amplitude = amplitude * (0.8 + 0.2 * std::abs (std::sin ((double) c * 0.85))) + 0.03;
 
-        for (int c = 0; c < columns; ++c)
-        {
-            const auto t = (double) c * secondsPerColumn;
-            const auto beatPosition = (t - 0.11) / 0.5 + 10.0;
-            const auto phase = beatPosition - std::floor (beatPosition);
-            auto amplitude = phase < 0.03 ? 0.95 : 0.95 * std::exp (-phase * 3.2);
-            amplitude = amplitude * (0.8 + 0.2 * std::abs (std::sin ((double) c * 0.85))) + 0.03;
+        const auto levelDb = 20.0 * std::log10 (amplitude);
+        const auto target = std::max (0.0, levelDb + 12.0) * (1.0 - 1.0 / 3.0);
+        reduction += (target > reduction ? 0.7 : 0.03) * (target - reduction);
 
-            const auto levelDb = 20.0 * std::log10 (amplitude);
-            const auto target = std::max (0.0, levelDb + 12.0) * (1.0 - 1.0 / 3.0);
-            reduction += (target > reduction ? 0.7 : 0.03) * (target - reduction);
+        auto& column = preview[(size_t) c];
+        column.inputPeak = (float) amplitude;
+        column.outputPeak = (float) (amplitude * std::pow (10.0, -reduction / 20.0));
+        column.reductionDb[0] = column.reductionDb[1] = (float) reduction;
+        column.thresholdDb = -12.0f;
 
-            auto& column = preview[(size_t) c];
-            column.inputPeak = (float) amplitude;
-            column.outputPeak = (float) (amplitude * std::pow (10.0, -reduction / 20.0));
-            column.reductionDb[0] = column.reductionDb[1] = (float) reduction;
-            column.thresholdDb = -12.0f;
+        const auto beat = (int) std::floor (beatPosition);
 
-            const auto beat = (int) std::floor (beatPosition);
+        if (previousBeat >= 0 && beat != previousBeat)
+            column.mark = beat % 4 == 0 ? fancy::dsp::LevelColumn::bar : fancy::dsp::LevelColumn::beat;
 
-            if (previousBeat >= 0 && beat != previousBeat)
-                column.mark = beat % 4 == 0 ? fancy::dsp::LevelColumn::bar : fancy::dsp::LevelColumn::beat;
-
-            previousBeat = beat;
-        }
-
-        zoomSwitch.setSelected (1);
-        levelHistory.setZoom (1);
-        levelHistory.show (preview);
-        updateHistoryCaption();
+        previousBeat = beat;
     }
 
-    showTab (tab);
+    zoomSwitch.setSelected (1);
+    levelHistory.setZoom (1);
+    levelHistory.show (preview);
+    updateHistoryCaption();
 }
 
 std::vector<ShellEditor::PopupOpener> CompEditor::getPopupOpeners()
 {
     auto openers = ShellEditor::getPopupOpeners();
     openers.push_back ({ "dropdown-detector", [this] { detectorDropdown.click(); } });
-    openers.push_back ({ "dropdown-oversampling", [this] { drawer.setVisible (true); showTab (DrawerTabs::options); oversamplingDropdown.click(); } });
+    openers.push_back ({ "dropdown-oversampling", [this] { setDrawerOpen (true); showTab (DrawerTabs::options); oversamplingDropdown.click(); } });
     openers.push_back ({ "tooltip-attack", [this] { showTip (attackKnob, attackKnob.getTooltip()); } });
     openers.push_back ({ "value-threshold", [this] { thresholdMeter.openValueEditor(); } });
     openers.push_back ({ "sidechain-notice", [this] { forceSidechainNotice (true); } });

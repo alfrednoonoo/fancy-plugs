@@ -23,7 +23,7 @@ if("FANCY_HAS_EXCITER=1" IN_LIST fancy_screen_defs)
 endif()
 
 if("FANCY_HAS_COMP=1" IN_LIST fancy_screen_defs)
-    target_sources(fancy-tests PRIVATE CompTests.cpp CompQ25Tests.cpp CompW1Tests.cpp CompW2Tests.cpp CompOpticalTests.cpp CompSceqTests.cpp LegacyCompDsp.cpp LegacyCompQ25Dsp.cpp LegacyCompW2Dsp.cpp)
+    target_sources(fancy-tests PRIVATE CompTests.cpp CompQ25Tests.cpp CompW1Tests.cpp CompW2Tests.cpp CompOpticalTests.cpp CompSceqTests.cpp CompW3Tests.cpp LegacyCompDsp.cpp LegacyCompQ25Dsp.cpp LegacyCompW2Dsp.cpp)
 endif()
 
 if("FANCY_HAS_EQ=1" IN_LIST fancy_screen_defs)
