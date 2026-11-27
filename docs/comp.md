@@ -653,3 +653,56 @@ Approval of this note and mockup 65, then one push: the paint change, the toolti
 ### 6. As built
 
 One push. `fancy::ui::LevelHistory::levelDistance` (with `floorDb` = −60) maps a peak to its distance from the centre line and is used for the waveforms and the threshold; the level lines go under the waveforms and their labels over them, outlined in the well colour. The threshold pair is hidden when the threshold is at or under the floor. Test: "the history draws levels in dB…" in `tests/CompW1Tests.cpp`.
+
+## Phase 4 Wave 3: History on the main page
+
+**Layout C1 of mockup 77 approved by the user on 27 November 2026; this note waits for approval.** Asked for by the user on 27 November 2026 as a late addition to Wave 3 (v1.7.2): the waveform from EDIT > History on the main page, "so people can see how turning the knobs directly affects the audio waveform". Mockup 76 placed it (A, above the knobs, chosen; B, below); the user then asked for smaller knobs, with Woodstock Audio's Waveform Compressor (a big waveform over a compact knob row) as the idea, and chose C1 of mockup 77. Mockups: `reference/phase4/76__comp_history_main_mockup.png` and `77__comp_history_small_knobs_mockup.png` (`design/phase4-mockup-src/w3_mockups.py`, `comp-w3` and `comp-w3-small`).
+
+**A standing rule set aside, by the user's choice:** "never shrink existing controls" (23 November 2026). Here the user asked for the knobs to shrink, on Comp's main page only; no other control shrinks, and the window still grows.
+
+### 1. What changes
+
+- **The HISTORY card** goes at the top of the centre column, where the knob cards began: today's History page whole (the waveforms in dB, the GR line, the dashed threshold, the legend, the 1.5 / 3 / 6 / 12 s zoom, Grid, the peak read-out that clears on a click, and click to pause), with its graph 500 x 278 px against the page's 476 x 260.
+- **Every main-page knob gets smaller:** Ratio, Knee, Attack, Release, Pre-comp, RMS size, Lowpass and Highpass go from `Knob::mediumStyle` (72 px dial) to the shared `Knob::smallStyle` (50 px, as the EDIT drawer's knobs). Each keeps its label, its value (click it, or Ctrl-click the knob, to type one), its arc, its colour and its default mark. The cards keep their grouping: Ratio to Release with Weird, Classic and Auto under Knee, Attack and Release; Pre-comp and RMS size; Lowpass and Highpass in their blue card.
+- **The window grows 200 px taller**, to 934 x 747 (its minimum too). The Detector row, EDIT, the Threshold and GR meters, Out, Wet and Dry stay in their columns; the meters and faders lengthen with the window, and the footer moves down 200 px.
+- **Unchanged:** every parameter, the DSP, the presets and the state; the history's recorder, its columns and its drawing.
+
+### 2. Layout (body coordinates at 100 %, under the 73 px header)
+
+| Part | Position and size |
+|---|---|
+| HISTORY card | x 212, y 50, 524 x 324: HISTORY at (224, 61); zoom switch (300, 57, 176 x 22); Grid (492, 60); peak right-aligned in (600, 61, 124 x 14); graph (224, 86, 500 x 278) |
+| Ratio to Release card | x 212, y 380, 524 x 120: knobs centred at x 277.5, 408.5, 539.5 and 670.5, labels at y 386; Weird, Classic and Auto at y 477 under Knee, Attack and Release |
+| Pre-comp and RMS size card | x 212, y 506, 260 x 118: knobs at x 277 and 407, labels at y 520 |
+| Lowpass and Highpass card | x 478, y 506, 258 x 118: knobs at x 542 and 672 |
+| Threshold, GR, Out, Wet, Dry | as now, 200 px longer; their scales respaced evenly over the longer wells |
+| Footer | 200 px lower |
+
+### 3. Decisions
+
+- **Decision 1: EDIT > History.**
+  - **A (R).** The page goes: the drawer's switch keeps Detector, Character, Upward and Options. The waveform is always in view (decision 3), so a second copy would only be a fifth page to find.
+  - **B.** Keep it as well, showing the same history at the page's size.
+- **Decision 2: hiding the card.**
+  - **A (R).** Always shown: it's what the main page is for now, and a show and hide switch would change the window's height or leave a hole.
+  - **B.** A History checkbox in the footer that folds the card away and gives the knob cards back their medium knobs: two layouts to keep right, and a window that changes height.
+- **Decision 3: the EDIT drawer.** Its pages are laid out for 374 px, the knob cards are now 244 px tall, and nothing in the drawer may be squeezed.
+  - **A (R).** The drawer keeps its size and opens over the lower 374 px of the centre column (y 250 to 624), and the HISTORY card shortens to the 194 px above it: the graph becomes 500 x 152, mockup 76 A's size, and comes back to 278 when the drawer closes. The waveform stays whole and in view while you set Character, Upward or the detector's EQ, which change it too.
+  - **B.** The drawer covers the whole centre column (574 px), as it covers the knobs today: the history is hidden while it's open, and its pages have 200 px of empty space under them.
+
+### 4. Code and state
+
+Editor only (`CompEditor`): the layout constants, `Knob::smallStyle` for the eight knobs, the history widgets moved from the drawer's History page to the body, and (decision 3 A) the card's height following the drawer. `DrawerTabs` loses `history` (decision 1 A); the drawer's page isn't saved, so nothing stored points at it. The editor already reads the history every tick, open or not; the card now repaints at the editor's timer rate whenever the window is open, on the message thread only. Zoom, Grid and pause stay per editor, not saved. No parameter and no `stateVersion` change: projects load and render bit-identically. `fancy::ui::LevelHistory` scales its columns to its width, so 500 px needs no change to it or to the recorder.
+
+### 5. Tests
+
+1. The editor opens at 934 x 727 plus the title strip, and its minimum height is the same.
+2. The eight main-page knobs use `Knob::smallStyle`; every control on the page sits inside the window and no two overlap, with the drawer closed and open.
+3. The history graph is 500 x 278 with the drawer closed and 500 x 152 with it open; the drawer is 524 x 374 at y 250; the drawer's switch has four pages.
+4. The existing History tests (column rate, merged zooms, the peak read-out, beat marks, the dB mapping) pass unchanged.
+5. Comp's legacy, automation and render tests pass unchanged (nothing in the DSP moves).
+6. Screenshots: `comp` against mockup 77 C1; `comp-edit` and the drawer pages with the history above the drawer; `comp-history` goes, and `comp` takes its place in the manual.
+
+### 6. Build order
+
+Approval of this note, then one push: the layout, the moved history, the drawer, tests 1 to 3, the screenshots, the manual (History moves from "EDIT drawer" to its own section beside the main controls; the drawer has four pages), `tools/manual/content.py` (the `comp-history` view goes; the History section uses the `comp` shot) and `docs/comp-checklist.md`. At the release, the site's Comp views and window size.
