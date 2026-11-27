@@ -580,6 +580,70 @@ def gate_w3():
 
 m.PAGE_HEIGHTS["gate-w3"] = 3000
 
+
+# ---------------------------------------------------------------------------------------------
+# Comp's History on the main page (user, 27 November 2026, a late Wave 3 addition): the waveform
+# from EDIT > History in view while the knobs turn. On Comp's screenshot from run 45902595407
+# (commit da9d0f3), img/comp-v172-w2b.png, 934 x 527 at 1x. Measured from it and CompEditor.cpp
+# (header 73 px, gridLeft 212, gridWidth 524, rowTop 50, rowHeight 374): the knob cards are x 212 to
+# 736, y 123 to 497; Threshold x 0 to 107 and GR x 113 to 207, y 123 to 497; Out, Wet and Dry x 736
+# to 934; the footer's checkboxes at y 523. The drawer covers the knob cards (y 123 to 497).
+COMP_GROW = 200  # the HISTORY card (194) and its 6 px gap
+CARD_W, GRAPH_W, GRAPH_H = 524, 500, 152
+
+
+def comp_check(x, y, label, on=True):
+    box = (f'<div style="width:14px;height:14px;border-radius:3px;display:flex;align-items:center;justify-content:center;'
+           f'background:{"#00A985" if on else "transparent"};border:{"none" if on else "1px solid #8D8D8D"};color:#141414;font-size:11px;'
+           f'font-weight:700">{"&#10003;" if on else ""}</div>')
+    return (f'<div class="o" style="left:{x}px;top:{y}px;height:16px;display:flex;align-items:center;gap:7px;font-size:13px;color:#fff">'
+            f'{box}{label}</div>')
+
+
+def comp_history_card(top):
+    """The HISTORY card, x 212 to 736, 194 tall: the title row (zoom, Grid, peak) and the graph."""
+    html = f'<div class="o" style="left:212px;top:{top}px;width:{CARD_W}px;height:194px;background:#262626;border-radius:6px"></div>'
+    html += ('<div class="o" style="left:224px;top:%dpx;font-size:12px;font-weight:600;letter-spacing:.06em;color:#8D8D8D">HISTORY</div>' % (top + 11))
+    html += m.seg(300, top + 7, 176, 22, ["1.5 s", "3 s", "6 s", "12 s"], 1, "#4C4C4C", fs=12, new=False, dark="#1E1E1E", text="#fff")
+    html += comp_check(492, top + 10, "Grid")
+    html += ('<div class="o" style="left:600px;top:%dpx;width:124px;font-size:12px;color:#FFCF07;text-align:right">peak 7.7 dB</div>' % (top + 11))
+    html += (f'<div class="o" style="left:224px;top:{top + 36}px;width:{GRAPH_W}px;height:{GRAPH_H}px">'
+             f'{m.history_svg(m.beat_columns(), "db", w=GRAPH_W, h=GRAPH_H)}</div>')
+    return html + outline(210, top - 2, CARD_W + 4, 198)
+
+
+@m.plugin("comp-w3", "76__comp_history_main_mockup.png")
+def comp_w3():
+    # A: rows repeated above the knob cards in the centre (y 121 is the gap under the Detector row),
+    # and inside the meters' wells and the faders' tracks at the sides.
+    WA, HA = m.grow("comp-v172", "comp-v172-a", COMP_GROW, [(0, 212, 300), (212, 736, 121), (736, 934, 300)], axis="y")
+    # B: rows repeated under the knob cards (y 499 is the gap above the footer).
+    WB, HB = m.grow("comp-v172", "comp-v172-b", COMP_GROW, [(0, 212, 300), (212, 736, 499), (736, 934, 300)], axis="y")
+    return w1.page("Fancy Comp: v1.7.2 layout mockup (History on the main page)",
+                   "User, 27 November 2026: the waveform from EDIT &gt; History on the main page, so you see what turning a knob does to the audio "
+                   "without opening the drawer. It changes the visible layout, so the layout comes before the design note. Changed things in dashed "
+                   "yellow, on the plugin's real screenshot (1x coordinates). The graph is today's History, as built in v1.7.1 (input in grey, "
+                   "output in teal before make-up, both in dB from -60 at the centre line to 0 at the edges; the gain reduction in yellow from the "
+                   "top; the threshold dashed), here a beat at 120 BPM into 3:1 at -12 dB.", [
+        (f"1 · A (recommended): a HISTORY card at the top of the centre column, above the knobs; the window grows {COMP_GROW} px taller ({WA} x {HA})",
+         "The card holds everything the History page has: the <b>1.5 s, 3 s, 6 s, 12 s</b> zoom, <b>Grid</b>, <b>peak</b> (click to clear) and the "
+         "graph (click to pause), 500 x 152 px against the page's 476 x 260. It sits beside the Threshold meter, at the same height as its handle, "
+         "so the dashed threshold lines and the handle are read together, and right above Ratio, Knee, Attack and Release.",
+         shot("comp-v172-a", WA, HA, comp_history_card(123),
+              f"Nothing moves sideways or shrinks: the knob cards and the footer move down {COMP_GROW} px, and the Threshold, GR and Out meters and the "
+              f"Wet and Dry faders lengthen with the window (their scales are respaced evenly in the build; the mockup only stretches the picture). "
+              f"The minimum height grows to {HA}. The EDIT drawer still covers only the knob cards, so the waveform stays in view while you work "
+              "in it; its History page goes, and its switch keeps Detector, Character, Upward and Options.")),
+        (f"2 · B: the same card under the knob cards; the window grows {COMP_GROW} px taller ({WB} x {HB})",
+         "The knobs stay exactly where they are today, and the waveform sits under them, above the footer's checkboxes.",
+         shot("comp-v172-b", WB, HB, comp_history_card(503),
+              "The same card, size and behaviour. The knobs don't move, but the waveform is further from the Threshold handle and the dashed "
+              "threshold lines it draws, and it sits between the knobs and the checkboxes (Auto make-up, Limit output) that also change it.")),
+    ])
+
+
+m.PAGE_HEIGHTS["comp-w3"] = 1800
+
 if __name__ == "__main__":
     for key in sys.argv[1:] or list(m.PLUGINS):
         m.render(key)
